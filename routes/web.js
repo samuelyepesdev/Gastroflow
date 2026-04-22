@@ -35,6 +35,7 @@ const recetasRoutes = require('./tenant/recetas');
 const perfilRoutes = require('./tenant/perfil');
 const whatsappRoutes = require('./tenant/whatsapp');
 const proveedoresRoutes = require('./tenant/proveedores');
+const finanzasRoutes = require('./tenant/finanzas');
 const cajaRoutes = require('./tenant/caja');
 const serviciosRoutes = require('./tenant/servicios');
 const soporteTenantRoutes = require('./tenant/soporte');
@@ -61,6 +62,7 @@ router.use('/configuracion', requireAuthWithTenant, requirePlanFeature('configur
 router.use('/ventas', requireAuthWithTenant, requirePlanFeature('ventas'), ventasRoutes);
 router.use('/eventos', requireAuthWithTenant, requirePlanFeature('eventos'), eventosRoutes);
 router.use('/inventario', requireAuthWithTenant, requirePlanFeature('inventario'), inventarioRoutes);
+router.use('/finanzas', requireAuthWithTenant, requirePermission('finanzas.ver'), finanzasRoutes);
 router.use('/proveedores', requireAuthWithTenant, requirePlanFeature('inventario'), requirePermission('proveedores.ver'), proveedoresRoutes);
 router.use('/recetas', requireAuthWithTenant, requirePlanFeature('recetas'), recetasRoutes);
 router.use('/dashboard', requireAuthWithTenant, requirePlanFeature('dashboard'), dashboardRoutes);

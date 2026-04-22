@@ -50,6 +50,7 @@ module.exports = function navbarLocals(req, res, next) {
                 whatsappAjustes: hp('whatsapp.ajustes') && cs('configuracion'),
                 proveedores: hp('proveedores.ver') && cs('proveedores'),
                 caja: hp('caja.ver') && cs('caja'),
+                finanzas: hp('finanzas.ver'),
                 servicios: hp('servicios.ver') && cs('servicios'),
             };
 

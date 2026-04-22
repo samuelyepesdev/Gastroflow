@@ -39,6 +39,24 @@ class FacturaService {
         });
 
         const facturaId = result.insertId;
+
+        // --- INTEGRACIÓN CON FINANZAS ---
+        const FinanzasService = require('./FinanzasService');
+        try {
+            // Verificamos si alguno de los productos es cerámica para categorizar el ingreso
+            // Nota: Aquí se podría profundizar verificando la categoría del producto o insumo
+            const tieneCeramicas = productos.some(p => p.nombre && p.nombre.toLowerCase().includes('cerámica'));
+            
+            await FinanzasService.registrarIngresoVenta(tenantId, {
+                monto: total,
+                factura_id: facturaId,
+                esCeramica: tieneCeramicas
+            });
+        } catch (finErr) {
+            console.error('Error al registrar ingreso en finanzas:', finErr);
+        }
+        // --------------------------------
+
         for (const p of productos) {
             try {
                 if (!p.es_servicio && p.producto_id) {

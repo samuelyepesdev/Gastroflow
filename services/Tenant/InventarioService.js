@@ -64,6 +64,24 @@ class InventarioService {
                 'UPDATE insumos SET stock_actual = ?, costo_promedio = ? WHERE id = ? AND tenant_id = ?',
                 [nuevoStock, nuevoCosto, insumo_id, tenantId]
             );
+
+            // --- INTEGRACIÓN CON FINANZAS ---
+            // Si hay un costo real pagado, registrar el gasto
+            if (costo > 0 && cant > 0) {
+                const FinanzasService = require('./FinanzasService');
+                try {
+                    await FinanzasService.registrarGastoInventario(tenantId, {
+                        monto: costo * cant,
+                        insumo_nombre: insumo.nombre,
+                        mov_id: insumo_id, // Podríamos obtener el ID real del INSERT de movimientos si quisiéramos más precisión
+                        categoria_nombre: insumo.categoria_nombre
+                    });
+                } catch (finErr) {
+                    console.error('Error al registrar gasto en finanzas:', finErr);
+                }
+            }
+            // --------------------------------
+
             await conn.commit();
             return { nuevoStock, nuevoCosto };
         } catch (e) {

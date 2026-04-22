@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gastos y Ganancias | Finanzas</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root { --primary-gradient: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); }
+        .kpi-card { border: none; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); transition: transform 0.2s; }
+        .kpi-card:hover { transform: translateY(-5px); }
+        .bg-gradient-primary { background: var(--primary-gradient); color: white; }
+        .bg-gradient-success { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; }
+        .bg-gradient-danger { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; }
+        .card-header { background: transparent; border-bottom: 1px solid rgba(0,0,0,0.05); font-weight: bold; }
+        .category-item { padding: 10px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; }
+        .category-item:last-child { border-bottom: none; }
+    </style>
+</head>
+<body class="bg-light">
+    <%- include('../partials/navbar', { user, tenant, allowedByPlan }) %>
+
+    <div class="container py-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1 class="h3 mb-0 text-gray-800">📊 Finanzas Reales</h1>
+                <p class="text-muted small">Control de ingresos, gastos y rentabilidad de Cerámicas.</p>
+            </div>
+            <div class="d-flex gap-2">
+                <select class="form-select form-select-sm" id="filtroDias" onchange="location.href='?dias='+this.value">
+                    <option value="7" <%= dias == 7 ? 'selected' : '' %>>Últimos 7 días</option>
+                    <option value="30" <%= dias == 30 ? 'selected' : '' %>>Últimos 30 días</option>
+                    <option value="90" <%= dias == 90 ? 'selected' : '' %>>Últimos 90 días</option>
+                </select>
+                <button class="btn btn-sm btn-primary rounded-pill" data-bs-toggle="modal" data-bs-target="#modalNuevoGasto">
+                    <i class="bi bi-plus-circle me-1"></i> Nuevo Gasto
+                </button>
+            </div>
+        </div>
+
+        <!-- KPI Cards -->
+        <div class="row g-4 mb-4">
+            <div class="col-md-4">
+                <div class="card kpi-card bg-gradient-success h-100">
+                    <div class="card-body">
+                        <div class="small text-white-50 text-uppercase fw-bold mb-1">Ingresos Totales</div>
+                        <div class="h2 mb-0 fw-bold">$<%= Number(resumen.ingresos).toLocaleString('es-CO') %></div>
+                        <div class="mt-2 small"><i class="bi bi-arrow-up-circle me-1"></i> Ventas y otros</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card kpi-card bg-gradient-danger h-100">
+                    <div class="card-body">
+                        <div class="small text-white-50 text-uppercase fw-bold mb-1">Egresos (Gastos)</div>
+                        <div class="h2 mb-0 fw-bold">$<%= Number(resumen.egresos).toLocaleString('es-CO') %></div>
+                        <div class="mt-2 small"><i class="bi bi-cart-dash me-1"></i> Inventario y operativos</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card kpi-card bg-gradient-primary h-100">
+                    <div class="card-body">
+                        <div class="small text-white-50 text-uppercase fw-bold mb-1">Ganancia Neta</div>
+                        <div class="h2 mb-0 fw-bold">$<%= Number(resumen.utilidad).toLocaleString('es-CO') %></div>
+                        <div class="mt-2 small"><i class="bi bi-lightning-charge me-1"></i> ROI del periodo</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <!-- Gráfico de Gastos por Categoría -->
+            <div class="col-md-7">
+                <div class="card kpi-card h-100">
+                    <div class="card-header"><i class="bi bi-pie-chart me-2"></i>Distribución de Gastos</div>
+                    <div class="card-body">
+                        <canvas id="chartGastos" style="max-height: 300px;"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lista de Categorías -->
+            <div class="col-md-5">
+                <div class="card kpi-card h-100">
+                    <div class="card-header"><i class="bi bi-list-stars me-2"></i>Gastos por Categoría</div>
+                    <div class="card-body p-0">
+                        <% if (resumen.gastosPorCategoria && resumen.gastosPorCategoria.length > 0) { %>
+                            <div class="list-group list-group-flush">
+                                <% resumen.gastosPorCategoria.forEach(cat => { %>
+                                    <div class="category-item">
+                                        <span class="fw-semibold text-secondary"><%= cat.categoria_gasto %></span>
+                                        <span class="fw-bold text-danger">$<%= Number(cat.total).toLocaleString('es-CO') %></span>
+                                    </div>
+                                <% }) %>
+                            </div>
+                        <% } else { %>
+                            <div class="p-4 text-center text-muted">No hay gastos registrados en este periodo.</div>
+                        <% } %>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Nuevo Gasto -->
+    <div class="modal fade" id="modalNuevoGasto" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Registrar Gasto Manual</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="formGasto">
+                        <div class="mb-3">
+                            <label class="form-label">Monto</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" class="form-control" id="gastoMonto" required>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Categoría</label>
+                            <select class="form-select" id="gastoCategoria">
+                                <option value="General">General</option>
+                                <option value="Servicios">Servicios Públicos</option>
+                                <option value="Nómina">Nómina / Sueldos</option>
+                                <option value="Arriendo">Arriendo</option>
+                                <option value="Mantenimiento">Mantenimiento</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Descripción</label>
+                            <textarea class="form-control" id="gastoMotivo" rows="2" placeholder="Ej: Pago de luz mes de abril"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                    <button type="button" class="btn btn-primary" onclick="guardarGasto()">Guardar Gasto</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        // Renderizar Gráfico
+        const ctx = document.getElementById('chartGastos').getContext('2d');
+        const data = <%- JSON.stringify(resumen.gastosPorCategoria || []) %>;
+        
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: data.map(d => d.categoria_gasto),
+                datasets: [{
+                    data: data.map(d => d.total),
+                    backgroundColor: ['#4f46e5', '#10b981', '#f59e0b', '#ef4444', '#06b6d4', '#8b5cf6'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'right' }
+                }
+            }
+        });
+
+        async function guardarGasto() {
+            const payload = {
+                monto: document.getElementById('gastoMonto').value,
+                motivo: document.getElementById('gastoMotivo').value,
+                categoria: document.getElementById('gastoCategoria').value,
+                tipo: 'salida'
+            };
+
+            try {
+                // Aquí podrías usar una API genérica de caja o crear una específica
+                const r = await fetch('/caja/api/movimientos', { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if(r.ok) {
+                    Swal.fire('Éxito', 'Gasto registrado', 'success').then(() => location.reload());
+                } else {
+                    Swal.fire('Error', 'No se pudo guardar', 'error');
+                }
+            } catch(e) {
+                Swal.fire('Error', e.message, 'error');
+            }
+        }
+    </script>
+</body>
+</html>

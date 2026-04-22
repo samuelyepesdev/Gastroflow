@@ -52,6 +52,11 @@
                                                                 class="bi bi-wallet2"></i>Caja</a></li>
                                                     <% } %>
 
+                                                <% if (nav.can.finanzas) { %>
+                                                    <li class="nav-item"><a class="nav-link" href="/finanzas"><i
+                                                                class="bi bi-pie-chart"></i>Finanzas</a></li>
+                                                    <% } %>
+
                                                         <% if (nav.can.cocina) { %>
                                                             <li class="nav-item"><a class="nav-link" href="/cocina"><i
                                                                         class="bi bi-fire"></i>Cocina</a></li>
