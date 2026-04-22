@@ -25,8 +25,10 @@ class FacturasController {
     static async store(req, res) {
         try {
             const tenantId = req.tenant?.id;
-            if (!tenantId) return res.status(403).json({ error: 'Contexto de tenant no disponible' });
-            const result = await FacturaService.create(tenantId, req.body);
+            const result = await FacturaService.create(tenantId, { 
+                ...req.body, 
+                usuario_id: req.user.id 
+            });
             res.status(201).json(result);
         } catch (error) {
             console.error('Error al crear factura:', error);

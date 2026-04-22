@@ -40,20 +40,57 @@ class FacturaService {
 
         const facturaId = result.insertId;
 
-        // --- INTEGRACIÓN CON FINANZAS ---
+        // --- INTEGRACIÓN CON FINANZAS (Garantizada) ---
         const FinanzasService = require('./FinanzasService');
+        const InsumoRepository = require('../../repositories/Tenant/InsumoRepository');
+        const ProductRepository = require('../../repositories/Tenant/ProductRepository');
+        
         try {
-            // Verificamos si alguno de los productos es cerámica para categorizar el ingreso
-            // Nota: Aquí se podría profundizar verificando la categoría del producto o insumo
-            const tieneCeramicas = productos.some(p => p.nombre && p.nombre.toLowerCase().includes('cerámica'));
+            let tieneCeramicas = false;
+            const usuario_id = facturaData.usuario_id || null;
             
+            // Intento de detección de cerámicas
+            try {
+                for (const p of productos) {
+                    let esCeramica = false;
+                    
+                    // 1. Por nombre directo
+                    if (p.nombre && p.nombre.toLowerCase().includes('cerámica')) {
+                        esCeramica = true;
+                    } 
+                    // 2. Por ID virtual de Insumo (> 1M)
+                    else if (p.producto_id && p.producto_id > 1000000) {
+                        const insumoDb = await InsumoRepository.findById(p.producto_id - 1000000, tenantId);
+                        if (insumoDb && (insumoDb.nombre.toLowerCase().includes('cerámica') || insumoDb.categoria_nombre === 'Cerámicas')) {
+                            esCeramica = true;
+                        }
+                    }
+                    // 3. Por Producto existente (si ya se creó)
+                    else if (p.producto_id) {
+                        const prodDb = await ProductRepository.findById(p.producto_id, tenantId);
+                        if (prodDb && (prodDb.nombre.toLowerCase().includes('cerámica') || prodDb.categoria_nombre === 'Cerámicas')) {
+                            esCeramica = true;
+                        }
+                    }
+
+                    if (esCeramica) {
+                        tieneCeramicas = true;
+                        break;
+                    }
+                }
+            } catch (e) {
+                console.error('Error opcional en detección de cerámicas:', e);
+            }
+            
+            // REGISTRO FINAL (Siempre se ejecuta)
             await FinanzasService.registrarIngresoVenta(tenantId, {
                 monto: total,
                 factura_id: facturaId,
-                esCeramica: tieneCeramicas
+                esCeramica: tieneCeramicas,
+                usuario_id: usuario_id
             });
         } catch (finErr) {
-            console.error('Error al registrar ingreso en finanzas:', finErr);
+            console.error('CRÍTICO: Error al registrar ingreso en finanzas:', finErr);
         }
         // --------------------------------
 

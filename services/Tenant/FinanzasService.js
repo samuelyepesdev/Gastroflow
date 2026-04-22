@@ -10,15 +10,18 @@ class FinanzasService {
     /**
      * Registra un ingreso por venta (automático)
      */
-    static async registrarIngresoVenta(tenantId, { monto, factura_id, detalle, esCeramica = false }) {
+    static async registrarIngresoVenta(tenantId, { monto, factura_id, detalle, esCeramica = false, usuario_id }) {
         // Intentar obtener sesión de caja abierta
         const sesion = await CajaRepository.getSesionAbierta(tenantId);
         
+        // Prioridad de usuario: 1. El que viene en la req, 2. El de la sesión de caja, 3. Usuario 1 (admin)
+        const finalUsuarioId = usuario_id || (sesion ? sesion.usuario_id : 1);
+
         return await FinanzasRepository.createMovimiento(tenantId, {
             sesion_id: sesion ? sesion.id : null,
-            usuario_id: 1, // Por defecto sistema o el que viene de la sesión
+            usuario_id: finalUsuarioId,
             tipo: 'entrada',
-            monto: monto,
+            monto: parseFloat(monto) || 0,
             motivo: detalle || `Venta Factura #${factura_id}`,
             categoria_gasto: esCeramica ? 'Venta Cerámica' : 'Venta General',
             referencia_tipo: 'venta',
