@@ -38,7 +38,17 @@
                             <%= Number(i.stock_minimo).toLocaleString('es-CO', { minimumFractionDigits: 0 }) %>
                         </td>
                         <td class="text-end">
-                            <%= i.costo_promedio !=null ? '$' + Number(i.costo_promedio).toLocaleString('es-CO', {
+                            <% 
+                                let costoMostrar = i.costo_promedio;
+                                if (!costoMostrar || Number(costoMostrar) === 0) {
+                                    if (i.categoria_nombre === 'Cerámicas' && i.precio_venta > 0) {
+                                        costoMostrar = i.precio_venta;
+                                    } else if (i.precio_compra > 0 && i.cantidad_compra > 0) {
+                                        costoMostrar = i.precio_compra / i.cantidad_compra;
+                                    }
+                                }
+                            %>
+                            <%= (costoMostrar != null && Number(costoMostrar) > 0) ? '$' + Number(costoMostrar).toLocaleString('es-CO', {
                                 minimumFractionDigits: 0, maximumFractionDigits: 0 }) : '-' %>
                         </td>
                         <% if (user && user.permisos && user.permisos.includes('inventario.editar')) { %>
@@ -107,8 +117,17 @@
                         Mín: <%= Number(i.stock_minimo).toLocaleString('es-CO', { minimumFractionDigits: 0 }) %>
                     </span>
                     <span class="badge bg-light text-dark border-secondary-subtle">
-                        Costo prom: <%= i.costo_promedio !=null ? '$' + Number(i.costo_promedio).toLocaleString('es-CO',
-                            { minimumFractionDigits: 0 }) : '-' %>
+                        <% 
+                            let costoM = i.costo_promedio;
+                            if (!costoM || Number(costoM) === 0) {
+                                if (i.categoria_nombre === 'Cerámicas' && i.precio_venta > 0) {
+                                    costoM = i.precio_venta;
+                                } else if (i.precio_compra > 0 && i.cantidad_compra > 0) {
+                                    costoM = i.precio_compra / i.cantidad_compra;
+                                }
+                            }
+                        %>
+                        Costo prom: <%= (costoM != null && Number(costoM) > 0) ? '$' + Number(costoM).toLocaleString('es-CO', { minimumFractionDigits: 0 }) : '-' %>
                     </span>
                 </div>
                 <% if (user && user.permisos && user.permisos.includes('inventario.editar')) { %>

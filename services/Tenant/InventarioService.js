@@ -203,7 +203,18 @@ class InventarioService {
         const conStock = (insumos || []).filter(i => (parseFloat(i.stock_actual) || 0) > 0);
         for (const i of conStock) {
             const stock = parseFloat(i.stock_actual) || 0;
-            const costo = i.costo_promedio != null ? parseFloat(i.costo_promedio) : 0;
+            let costo = i.costo_promedio != null ? parseFloat(i.costo_promedio) : 0;
+
+            // Fallback: si el costo promedio es 0, intentamos usar precio_venta para cerámicas
+            // o el costo unitario base de la ficha del insumo.
+            if (costo === 0) {
+                if (i.categoria_nombre === 'Cerámicas' && parseFloat(i.precio_venta) > 0) {
+                    costo = parseFloat(i.precio_venta);
+                } else if (parseFloat(i.precio_compra) > 0 && parseFloat(i.cantidad_compra) > 0) {
+                    costo = parseFloat(i.precio_compra) / parseFloat(i.cantidad_compra);
+                }
+            }
+
             valorTotal += stock * costo;
         }
         return {
