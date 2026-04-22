@@ -4,6 +4,7 @@
 
 const FinanzasRepository = require('../../repositories/Tenant/FinanzasRepository');
 const CajaRepository = require('../../repositories/Tenant/CajaRepository');
+const db = require('../../config/database');
 
 class FinanzasService {
     /**
