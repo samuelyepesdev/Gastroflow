@@ -1,5 +1,8 @@
 <script>
     const base = '/inventario';
+    let modoCompraRapida = false;
+    let colaInsumosCompra = [];
+
     function abrirEntrada(id, nombre) { document.getElementById('entradaInsumoId').value = id; document.getElementById('entradaInsumoNombre').textContent = nombre; document.getElementById('entradaCantidad').value = ''; document.getElementById('entradaCosto').value = ''; document.getElementById('entradaRef').value = ''; new bootstrap.Modal(document.getElementById('modalEntrada')).show(); }
     function abrirSalida(id, nombre, disp) { document.getElementById('salidaInsumoId').value = id; document.getElementById('salidaInsumoNombre').textContent = nombre; document.getElementById('salidaDisponible').textContent = disp; document.getElementById('salidaCantidad').value = ''; document.getElementById('salidaRef').value = ''; new bootstrap.Modal(document.getElementById('modalSalida')).show(); }
     function abrirAjuste(id, nombre, disp) {
@@ -168,8 +171,22 @@
             });
             if (r.ok) {
                 bootstrap.Modal.getOrCreateInstance(document.getElementById('modalEntrada')).hide();
-                await Swal.fire({ icon: 'success', title: 'Entrada registrada', timer: 1200, showConfirmButton: false });
-                location.reload();
+                
+                if (modoCompraRapida && colaInsumosCompra.length > 0) {
+                    await Swal.fire({ 
+                        icon: 'success', 
+                        title: 'Entrada registrada', 
+                        text: 'Cargando siguiente insumo...',
+                        timer: 800, 
+                        showConfirmButton: false,
+                        toast: true,
+                        position: 'top-end'
+                    });
+                    procesarSiguienteInsumo();
+                } else {
+                    await Swal.fire({ icon: 'success', title: 'Entrada registrada', timer: 1200, showConfirmButton: false });
+                    location.reload();
+                }
             } else {
                 const e = await r.json();
                 Swal.fire({ icon: 'error', title: 'Error', text: e.error || 'No se pudo registrar' });
@@ -180,6 +197,38 @@
             setLoading(btn, false);
         }
     });
+
+    function procesarSiguienteInsumo() {
+        if (colaInsumosCompra.length === 0) {
+            modoCompraRapida = false;
+            Swal.fire({
+                icon: 'success',
+                title: '¡Proceso completado!',
+                text: 'Se han procesado todos los insumos seleccionados.',
+                confirmButtonText: 'Entendido'
+            }).then(() => location.reload());
+            return;
+        }
+
+        const insumo = colaInsumosCompra.shift();
+        const stockActual = parseFloat(insumo.stock_actual) || 0;
+        const stockMin = parseFloat(insumo.stock_minimo) || 0;
+        const falta = Math.max(0, stockMin - stockActual);
+
+        // Preparamos el modal de entrada
+        document.getElementById('entradaInsumoId').value = insumo.id || insumo.insumo_id;
+        document.getElementById('entradaInsumoNombre').textContent = insumo.nombre;
+        document.getElementById('entradaCantidad').value = falta > 0 ? falta : '';
+        document.getElementById('entradaCosto').value = insumo.precio_compra || '';
+        document.getElementById('entradaRef').value = 'Compra rápida - Lista mercado';
+        document.getElementById('entradaProveedorId').value = insumo.proveedor_id || '';
+        document.getElementById('entradaFactura').value = '';
+
+        // Mostramos el modal
+        const modalEntrada = new bootstrap.Modal(document.getElementById('modalEntrada'));
+        modalEntrada.show();
+    }
+
     document.getElementById('btnConfirmarSalida').addEventListener('click', async () => {
         const id = document.getElementById('salidaInsumoId').value;
         const cantidad = parseFloat(document.getElementById('salidaCantidad').value);
@@ -543,5 +592,66 @@
             w.print();
             w.close();
         });
+
+        document.getElementById('btnAgregarProductosRapido').addEventListener('click', function() {
+            if (listaMercadoActual.length === 0) {
+                Swal.fire({ icon: 'info', title: 'Lista vacía', text: 'No hay productos para agregar en este momento.' });
+                return;
+            }
+
+            Swal.fire({
+                title: '¿Iniciar registro rápido?',
+                text: `Se abrirán los modales de entrada para ${listaMercadoActual.length} insumos uno por uno.`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, comenzar',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    modoCompraRapida = true;
+                    colaInsumosCompra = [...listaMercadoActual];
+                    // Cerrar el modal de lista de mercado
+                    bootstrap.Modal.getInstance(document.getElementById('modalListaMercado')).hide();
+                    // Empezar el proceso
+                    procesarSiguienteInsumo();
+                }
+            });
+        });
+
+        // Lógica para el botón "Registrar Compra" general
+        const btnCompraRapida = document.getElementById('btnCompraRapida');
+        if (btnCompraRapida) {
+            btnCompraRapida.addEventListener('click', () => {
+                new bootstrap.Modal(document.getElementById('modalCompraRapida')).show();
+            });
+        }
+
+        document.getElementById('btnSiguienteCompraRapida')?.addEventListener('click', () => {
+            const input = document.getElementById('buscarInsumoCompra');
+            const val = input.value;
+            const datalist = document.getElementById('listaInsumosDatalist');
+            const opts = datalist.options;
+            let id = null;
+            let nombre = "";
+
+            for (let i = 0; i < opts.length; i++) {
+                if (opts[i].value === val) {
+                    id = opts[i].getAttribute('data-id');
+                    nombre = val.split(' (')[0];
+                    break;
+                }
+            }
+
+            if (!id) {
+                Swal.fire({ icon: 'warning', title: 'Insumo no encontrado', text: 'Por favor selecciona un insumo de la lista.' });
+                return;
+            }
+
+            bootstrap.Modal.getInstance(document.getElementById('modalCompraRapida')).hide();
+            input.value = "";
+            abrirEntrada(id, nombre);
+        });
     })();
+
+
 </script>

@@ -440,6 +440,10 @@
                     title="Copiar lista al portapapeles"><i class="bi bi-clipboard"></i> Copiar lista</button>
                 <button type="button" class="btn btn-outline-primary" id="btnListaMercadoImprimir"
                     title="Imprimir lista"><i class="bi bi-printer"></i> Imprimir</button>
+                <button type="button" class="btn btn-success" id="btnAgregarProductosRapido"
+                    title="Registrar compras de estos insumos uno por uno">
+                    <i class="bi bi-plus-circle me-1"></i> Agregar productos
+                </button>
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
             </div>
         </div>
@@ -475,6 +479,36 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Compra Rápida (Selección de Insumo) -->
+<div class="modal fade" id="modalCompraRapida" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold"><i class="bi bi-cart-plus me-2"></i>Registrar Compra Rápida</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Buscar insumo</label>
+                    <input type="text" class="form-control" id="buscarInsumoCompra" list="listaInsumosDatalist" placeholder="Escribe el nombre o código...">
+                    <datalist id="listaInsumosDatalist">
+                        <% (typeof insumos !== 'undefined' ? insumos : []).forEach(i => { %>
+                            <option value="<%= i.nombre %> (<%= i.codigo %>)" data-id="<%= i.id %>"></option>
+                        <% }) %>
+                    </datalist>
+                    <div class="form-text">Selecciona el insumo al que deseas registrar la entrada.</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="btnSiguienteCompraRapida">
+                    Siguiente <i class="bi bi-arrow-right ms-1"></i>
+                </button>
             </div>
         </div>
     </div>
