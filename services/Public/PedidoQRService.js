@@ -36,7 +36,7 @@ class PedidoQRService {
             // 2. Extraer IDs de productos y validar existencias / precios reales
             const productoIds = itemsInput.map(i => i.producto_id);
             const [productosDb] = await connection.query(
-                `SELECT id, precio_unidad, nombre FROM productos WHERE id IN (?) AND tenant_id = ? AND deleted_at IS NULL AND activo = 1`,
+                `SELECT id, precio_unidad, nombre FROM productos WHERE id IN (?) AND tenant_id = ? AND activo = 1`,
                 [productoIds, tenantId]
             );
 
