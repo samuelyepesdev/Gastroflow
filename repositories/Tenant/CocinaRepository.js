@@ -26,11 +26,8 @@ class CocinaRepository {
             JOIN categorias c ON pr.categoria_id = c.id
             WHERE p.tenant_id = ? 
               AND c.nombre <> 'Cerámicas'
-              AND (
-                (p.estado NOT IN ('cerrado', 'cancelado') AND i.estado IN ('enviado','preparando','listo'))
-                OR 
-                (p.estado = 'cerrado' AND i.estado IN ('enviado','preparando'))
-              )
+              AND p.estado NOT IN ('cerrado', 'cancelado') 
+              AND i.estado IN ('enviado','preparando','listo')
             ORDER BY COALESCE(i.enviado_at, i.created_at) ASC, i.id ASC
         `, [tenantId]);
         return items;
