@@ -1697,6 +1697,27 @@ $(function () {
       AlertManager.error(e.message);
     }
   });
-});
 
+  // ====== Lógica de QR ======
+  $('#btnGenerarQRs').on('click', async function (e) {
+    e.preventDefault();
+    try {
+      Utils.showLoading('Generando Tokens QR...');
+      const r = await fetch('/mesas/qrs/generar', { method: 'POST' });
+      const data = await r.json();
+      Utils.hideLoading();
+      if (!r.ok) throw new Error(data.error || 'Error al generar tokens QR');
+      
+      Swal.fire({
+        icon: 'success',
+        title: '¡Tokens Generados!',
+        text: data.message,
+        timer: 3000
+      });
+    } catch (err) {
+      Utils.hideLoading();
+      Swal.fire({ icon: 'error', title: 'Error', text: err.message });
+    }
+  });
+});
 
