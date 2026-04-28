@@ -33,8 +33,8 @@ class PedidoQRService {
             const tenantId = mesa.tenant_id;
             const mesaId = mesa.id;
 
-            // 2. Extraer IDs de productos y validar existencias / precios reales
-            const productoIds = itemsInput.map(i => i.producto_id);
+            // 2. Extraer IDs de productos únicos y validar existencias / precios reales
+            const productoIds = [...new Set(itemsInput.map(i => Number(i.producto_id)))];
             const [productosDb] = await connection.query(
                 `SELECT id, precio_unidad, nombre FROM productos WHERE id IN (?) AND tenant_id = ? AND activo = 1`,
                 [productoIds, tenantId]
@@ -45,7 +45,7 @@ class PedidoQRService {
             }
 
             const productosMap = new Map();
-            productosDb.forEach(p => productosMap.set(p.id, p));
+            productosDb.forEach(p => productosMap.set(Number(p.id), p));
 
             // 3. Buscar si hay pedido abierto en esa mesa
             const [existentes] = await connection.query(
@@ -89,7 +89,7 @@ class PedidoQRService {
             let totalItemsNuevos = 0;
 
             for (const item of itemsInput) {
-                const prod = productosMap.get(item.producto_id);
+                const prod = productosMap.get(Number(item.producto_id));
                 const cantidad = parseFloat(item.cantidad);
                 if (isNaN(cantidad) || cantidad <= 0) continue;
 
