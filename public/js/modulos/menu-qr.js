@@ -140,4 +140,17 @@ document.addEventListener("DOMContentLoaded", function() {
             btn.innerHTML = originalText;
         }
     });
+
+    // Ocultar carrito flotante cuando el Offcanvas está abierto
+    const cartOffcanvas = document.getElementById('cartOffcanvas');
+    if (cartOffcanvas) {
+        cartOffcanvas.addEventListener('show.bs.offcanvas', () => {
+            document.getElementById('bottomCart').style.visibility = 'hidden';
+            document.getElementById('bottomCart').style.opacity = '0';
+        });
+        cartOffcanvas.addEventListener('hidden.bs.offcanvas', () => {
+            document.getElementById('bottomCart').style.visibility = 'visible';
+            document.getElementById('bottomCart').style.opacity = '1';
+        });
+    }
 });
