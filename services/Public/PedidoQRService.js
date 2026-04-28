@@ -1,5 +1,6 @@
 const db = require('../../config/database');
 const MenuQRRepository = require('../../repositories/Public/MenuQRRepository');
+const WhatsAppService = require('../Tenant/WhatsAppService');
 const InventarioService = require('../Tenant/InventarioService'); // Para validación de stock
 
 class PedidoQRService {
@@ -114,6 +115,15 @@ class PedidoQRService {
             await connection.query('UPDATE pedidos SET total = ? WHERE id = ?', [nuevoTotalGlobal, pedidoId]);
 
             await connection.commit();
+
+            // Emitir evento para notificaciones en tiempo real en el panel administrativo
+            WhatsAppService.events.emit('orderCreated', { 
+                tenantId, 
+                pedidoId, 
+                mesaId,
+                origen: 'qr'
+            });
+
             return { pedidoId, nuevoTotalGlobal };
 
         } catch (error) {

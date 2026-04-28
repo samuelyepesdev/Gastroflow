@@ -87,26 +87,35 @@
                         console.log('Evento de pedido detectado:', data);
 
                         const isCancelled = data.action === 'cancelled';
+                        const isQR = data.origen === 'qr';
 
-                        // Notificación visual opcional con SweetAlert2
-                        const Toast = Swal.mixin({
-                            toast: true,
-                            position: 'top-end',
-                            showConfirmButton: false,
-                            timer: 4000,
-                            timerProgressBar: true
-                        });
+                        // Si la función global existe y hay una mesa abierta, refrescar solo eso
+                        if (typeof window.refreshMesaIfOpen === 'function' && data.mesaId) {
+                            window.refreshMesaIfOpen(data.mesaId);
+                        } else {
+                            // Notificación visual con SweetAlert2 para pedidos nuevos (WhatsApp/Domicilios)
+                            const Toast = Swal.mixin({
+                                toast: true,
+                                position: 'top-end',
+                                showConfirmButton: false,
+                                timer: 4000,
+                                timerProgressBar: true
+                            });
 
-                        Toast.fire({
-                            icon: isCancelled ? 'warning' : 'info',
-                            title: isCancelled ? 'Pedido Cancelado' : 'Nuevo pedido de WhatsApp',
-                            text: isCancelled ? `El pedido #${data.pedidoId} ha sido cancelado por el cliente.` : 'Recargando mesas...'
-                        });
+                            Toast.fire({
+                                icon: isCancelled ? 'warning' : 'info',
+                                title: isCancelled ? 'Pedido Cancelado' : (isQR ? 'Nuevo pedido QR' : 'Nuevo pedido WhatsApp'),
+                                text: isCancelled ? `El pedido #${data.pedidoId} ha sido cancelado.` : 'Actualizando mesas...'
+                            });
 
-                        // Recargar la página para limpiar las mesas
-                        setTimeout(() => {
-                            window.location.reload();
-                        }, 2000);
+                            // Solo recargar si no es QR (los QR suelen ser mesas físicas ya existentes)
+                            // O si la función refreshMesaIfOpen no pudo manejarlo
+                            if (!isQR || isCancelled) {
+                                setTimeout(() => {
+                                    window.location.reload();
+                                }, 2000);
+                            }
+                        }
                     }
                 } catch (err) {
                     console.error('Error procesando notificación:', err);

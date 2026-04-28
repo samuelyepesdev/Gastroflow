@@ -15,7 +15,33 @@ $(function () {
   });
   document.getElementById('canvasPedido')?.addEventListener('hidden.bs.offcanvas', () => {
     document.body.classList.remove('offcanvas-open');
+    pedidoActual = null; // Limpiar al cerrar
   });
+
+  // Exponer función para refrescar si la mesa coincide (usado por SSE en _scripts.ejs)
+  window.refreshMesaIfOpen = async function(mesaId) {
+    if (pedidoActual && pedidoActual.mesa_id == mesaId) {
+      console.log(`[SSE] Refrescando mesa abierta ${mesaId}...`);
+      await cargarPedido(pedidoActual.id);
+      
+      // Notificación discreta (opcional)
+      const Toast = Swal.mixin({
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 3000,
+        timerProgressBar: true
+      });
+      Toast.fire({
+        icon: 'info',
+        title: 'Pedido actualizado',
+        text: 'Se han recibido nuevos productos vía QR.'
+      });
+    } else {
+      // Si la mesa no está abierta, al menos refrescar visualmente el grid de mesas (opcional)
+      if (typeof cargarMesas === 'function') cargarMesas();
+    }
+  };
 
   // Helpers UI
   function formatear(valor) { return `$${Number(valor || 0).toLocaleString('es-CO')}` }
