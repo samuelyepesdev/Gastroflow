@@ -26,7 +26,19 @@
                         <button id="btnNuevaMesa" class="btn btn-primary flex-grow-1">
                             <i class="bi bi-plus-lg me-1"></i>Nueva Mesa
                         </button>
+                        <% if (user.rol === 'superadmin' || (user.permisos && user.permisos.includes('mesas.qr'))) { %>
+                        <div class="dropdown flex-grow-1">
+                            <button class="btn btn-outline-dark w-100 dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                <i class="bi bi-qr-code-scan me-1"></i> Menú QR
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a class="dropdown-item" href="#" id="btnGenerarQRs"><i class="bi bi-magic text-primary me-2"></i>Generar Tokens Faltantes</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="/mesas/qrs/imprimir" target="_blank"><i class="bi bi-printer text-success me-2"></i>Imprimir QRs</a></li>
+                            </ul>
+                        </div>
                         <% } %>
+                    <% } %>
                 </div>
             </div>
 

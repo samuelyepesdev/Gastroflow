@@ -74,6 +74,61 @@ class MesasController {
         }
     }
 
+    // POST /mesas/qrs/generar
+    static async generarTokensQR(req, res) {
+        try {
+            const tenantId = req.tenant?.id;
+            if (!tenantId) return res.status(403).json({ error: 'Contexto de tenant no disponible' });
+            
+            const crypto = require('crypto');
+            const [mesasSinToken] = await db.query('SELECT id FROM mesas WHERE tenant_id = ? AND qr_token IS NULL', [tenantId]);
+            
+            let generados = 0;
+            for (const mesa of mesasSinToken) {
+                const randomString = crypto.randomBytes(8).toString('hex');
+                const token = `t${tenantId}-m${mesa.id}-${randomString}`;
+                await db.query('UPDATE mesas SET qr_token = ? WHERE id = ?', [token, mesa.id]);
+                generados++;
+            }
+            
+            res.json({ message: `Se generaron tokens QR para ${generados} mesas`, generados });
+        } catch (error) {
+            console.error('Error al generar tokens QR:', error);
+            res.status(500).json({ error: 'Error interno al generar tokens QR' });
+        }
+    }
+
+    // GET /mesas/qrs/imprimir
+    static async imprimirQRs(req, res) {
+        try {
+            const tenantId = req.tenant?.id;
+            if (!tenantId) return res.status(403).render('errors/internal', { error: { message: 'Contexto de tenant no disponible' } });
+
+            // Solo mesas físicas (las virtuales no tienen QR pegado)
+            const [mesas] = await db.query(`
+                SELECT id, numero, descripcion, qr_token 
+                FROM mesas 
+                WHERE tenant_id = ? AND tipo = 'fisica' 
+                ORDER BY CAST(numero AS UNSIGNED), numero
+            `, [tenantId]);
+
+            // Determinar la URL base pública
+            const baseUrl = req.protocol + '://' + req.get('host');
+
+            res.render('mesas/qrs', {
+                mesas,
+                baseUrl,
+                user: req.user,
+                tenant: req.tenant
+            });
+        } catch (error) {
+            console.error('Error al cargar vista de impresión de QRs:', error);
+            res.status(500).render('errors/internal', {
+                error: { message: 'Error al cargar QRs', stack: error.stack }
+            });
+        }
+    }
+
     // POST /mesas/crear
     static async store(req, res) {
         try {

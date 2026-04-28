@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Imprimir Códigos QR - Mesas</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    <style>
+        body { background: #f8f9fa; padding: 20px; font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+        .qr-card { 
+            text-align: center; 
+            border: 2px dashed #ccc; 
+            padding: 30px 20px; 
+            background: white; 
+            border-radius: 15px; 
+            page-break-inside: avoid;
+            height: 100%;
+        }
+        .qr-canvas { width: 220px !important; height: 220px !important; margin: 15px auto; display: block; }
+        .mesa-number { font-size: 2.5rem; font-weight: 800; margin: 0; color: #111; letter-spacing: -1px; }
+        .mesa-desc { font-size: 1.1rem; color: #666; font-weight: 500; text-transform: uppercase; letter-spacing: 1px; }
+        .tenant-name { font-size: 1.5rem; font-weight: bold; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 15px; color: #333; }
+        .scan-text { font-weight: 800; font-size: 1.1rem; text-transform: uppercase; letter-spacing: 1px; color: #dc3545; }
+        
+        @media print {
+            body { background: white; padding: 0; }
+            .no-print { display: none !important; }
+            .qr-card { border: 2px solid #000; margin-bottom: 20px; border-radius: 10px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom no-print">
+            <h2 class="mb-0 fw-bold"><i class="bi bi-qr-code-scan me-2"></i> Códigos QR por Mesa</h2>
+            <div>
+                <a href="/mesas" class="btn btn-outline-secondary me-2"><i class="bi bi-arrow-left"></i> Volver a Mesas</a>
+                <button onclick="window.print()" class="btn btn-primary fw-bold"><i class="bi bi-printer me-2"></i> Imprimir QRs</button>
+            </div>
+        </div>
+
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+            <% mesas.forEach(mesa => { %>
+                <div class="col">
+                    <div class="qr-card shadow-sm">
+                        <div class="tenant-name"><%= tenant.nombre %></div>
+                        <p class="scan-text mb-0"><i class="bi bi-camera me-1"></i> ¡Escanea para pedir!</p>
+                        
+                        <!-- Si la mesa aún no tiene token, se muestra un aviso -->
+                        <% if (mesa.qr_token) { %>
+                            <canvas class="qr-canvas" data-url="<%= baseUrl %>/qr/<%= tenant.slug %>/<%= mesa.qr_token %>"></canvas>
+                        <% } else { %>
+                            <div class="alert alert-warning my-4 no-print">Mesa sin token generado</div>
+                        <% } %>
+
+                        <h3 class="mesa-number">Mesa <%= mesa.numero %></h3>
+                        <p class="mesa-desc mb-0"><%= mesa.descripcion %></p>
+                    </div>
+                </div>
+            <% }) %>
+            
+            <% if (mesas.length === 0) { %>
+                <div class="col-12 text-center py-5 no-print">
+                    <i class="bi bi-exclamation-circle text-muted fs-1 d-block mb-3"></i>
+                    <h4 class="text-muted">No hay mesas físicas registradas.</h4>
+                    <p>Ve a la sección de mesas y crea algunas primero.</p>
+                </div>
+            <% } %>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const canvases = document.querySelectorAll('.qr-canvas');
+            canvases.forEach(canvas => {
+                const url = canvas.getAttribute('data-url');
+                if(url) {
+                    new QRious({
+                        element: canvas,
+                        value: url,
+                        size: 300,
+                        level: 'H',
+                        background: 'white',
+                        foreground: 'black'
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html>

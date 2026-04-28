@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title><%= tenant.nombre %> - Menú Digital</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link href="/css/modulos/menu-qr.css" rel="stylesheet">
+    <style>
+        /* CSS Premium Mobile-First */
+        :root {
+            --primary-color: <%= tenant.theme_color || '#e63946' %>;
+            --theme-font: <%= tenant.theme_font || "'Inter', sans-serif" %>;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Top Header -->
+    <div class="header-top">
+        <div class="d-flex align-items-center">
+            <% if (tenant.logo) { %>
+                <img src="data:image/png;base64,<%= tenant.logo.toString('base64') %>" alt="Logo" class="tenant-logo me-2">
+            <% } else { %>
+                <h4 class="mb-0 fw-bold" style="color: var(--primary-color);"><%= tenant.nombre %></h4>
+            <% } %>
+        </div>
+        <div class="table-badge">
+            <i class="bi bi-geo-alt-fill me-1"></i> Mesa <%= mesa.numero %>
+        </div>
+    </div>
+
+    <!-- Categorías Horizontales -->
+    <div class="categories-wrapper" id="catScroll">
+        <% categorias.forEach((cat, idx) => { %>
+            <a href="#cat-<%= cat.id %>" class="category-pill <%= idx === 0 ? 'active' : '' %>" data-id="<%= cat.id %>"><%= cat.nombre %></a>
+        <% }) %>
+    </div>
+
+    <!-- Listado de Productos -->
+    <div class="container-fluid p-0">
+        <% if (categorias.length === 0) { %>
+            <div class="text-center py-5 mt-5">
+                <i class="bi bi-emoji-frown fs-1 text-muted mb-3 d-block"></i>
+                <h5 class="text-muted fw-bold">No hay productos disponibles.</h5>
+            </div>
+        <% } %>
+
+        <% categorias.forEach(cat => { %>
+            <div class="category-section" id="cat-<%= cat.id %>">
+                <h3 class="category-title"><%= cat.nombre %></h3>
+                
+                <% cat.productos.forEach(prod => { %>
+                    <div class="product-card" data-id="<%= prod.id %>" data-nombre="<%= prod.nombre %>" data-precio="<%= prod.precio %>">
+                        <% if (prod.imagen_url) { %>
+                            <img src="<%= prod.imagen_url %>" class="product-img" alt="<%= prod.nombre %>">
+                        <% } else { %>
+                            <div class="product-img-placeholder">
+                                <i class="bi bi-cup-hot"></i>
+                            </div>
+                        <% } %>
+                        <div class="product-info">
+                            <h4 class="product-name"><%= prod.nombre %></h4>
+                            <p class="product-desc"><%= prod.descripcion %></p>
+                            <p class="product-price">$<%= Number(prod.precio).toLocaleString('es-CO') %></p>
+                        </div>
+                        
+                        <!-- Add Button -->
+                        <button class="add-btn" onclick="addToCart('<%= prod.id %>')">
+                            <i class="bi bi-plus"></i>
+                        </button>
+
+                        <!-- QTY Controls -->
+                        <div class="qty-controls" id="qty-<%= prod.id %>">
+                            <button class="qty-btn text-danger" onclick="updateCart('<%= prod.id %>', -1)"><i class="bi bi-dash"></i></button>
+                            <span class="qty-value" id="val-<%= prod.id %>">0</span>
+                            <button class="qty-btn" style="color: var(--primary-color);" onclick="updateCart('<%= prod.id %>', 1)"><i class="bi bi-plus"></i></button>
+                        </div>
+                    </div>
+                <% }) %>
+            </div>
+        <% }) %>
+    </div>
+
+    <!-- Bottom Action Bar -->
+    <div class="bottom-cart" id="bottomCart">
+        <div class="cart-info">
+            <span class="cart-total-price" id="cartTotal">$0</span>
+            <span class="cart-items-count" id="cartItems">0 items</span>
+        </div>
+        <button class="btn-ver-pedido" data-bs-toggle="offcanvas" data-bs-target="#cartOffcanvas">
+            Ver Pedido
+        </button>
+    </div>
+
+    <!-- Offcanvas Cart Review -->
+    <div class="offcanvas offcanvas-bottom" tabindex="-1" id="cartOffcanvas">
+        <div class="offcanvas-header border-bottom">
+            <h5 class="offcanvas-title"><i class="bi bi-cart3 me-2"></i>Tu Pedido</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+        </div>
+        <div class="offcanvas-body">
+            <div id="cartList"></div>
+            
+            <div class="mt-4 pt-3 border-top">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <span class="fs-5 fw-bold text-secondary">Total a Pagar:</span>
+                    <span id="offcanvasTotal" class="fs-3 fw-black" style="color: var(--primary-color); font-weight: 900;">$0</span>
+                </div>
+                <!-- Observaciones -->
+                <div class="mb-4">
+                    <label class="form-label fw-bold small text-muted">¿Alguna indicación para la cocina? (Opcional)</label>
+                    <textarea id="pedidoNotas" class="form-control bg-light border-0" rows="2" placeholder="Ej: Sin cebolla, extra salsa..."></textarea>
+                </div>
+                <button class="btn btn-ver-pedido w-100 py-3" id="btnEnviarPedido">
+                    <i class="bi bi-send-fill me-2"></i> Confirmar y Pedir
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        window.QR_TOKEN = '<%= qrToken %>';
+    </script>
+    <script src="/js/modulos/menu-qr.js"></script>
+</body>
+</html>

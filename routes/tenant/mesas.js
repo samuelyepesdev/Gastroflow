@@ -11,6 +11,12 @@ router.get('/', MesasController.index);
 // GET /mesas/listar - Listado API
 router.get('/listar', MesasController.list);
 
+// POST /mesas/qrs/generar - Generar tokens QR para mesas sin token
+router.post('/qrs/generar', requirePermission('mesas.qr'), MesasController.generarTokensQR);
+
+// GET /mesas/qrs/imprimir - Vista para imprimir QRs
+router.get('/qrs/imprimir', requirePermission('mesas.qr'), MesasController.imprimirQRs);
+
 // POST /mesas/crear - Crear mesa
 router.post('/crear', requirePermission('mesas.gestionar'), BaseRequest.validate(StoreMesaRequest), MesasController.store);
 

@@ -17,6 +17,7 @@ const PERMISSION_TO_MODULE = {
     'mesas.ver': 'mesas',
     'mesas.gestionar': 'mesas',
     'mesas.editar': 'mesas',
+    'mesas.qr': 'mesas',
     'cocina.ver': 'cocina',
     'cocina.gestionar': 'cocina',
     'ventas.ver': 'ventas',
