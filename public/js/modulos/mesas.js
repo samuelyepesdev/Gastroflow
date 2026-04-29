@@ -200,6 +200,10 @@ $(function () {
 
     const $btnLiberar = $('#btnLiberarMesaHeader');
     if ($btnLiberar.length) $btnLiberar.prop('disabled', currentMesaEstado === 'libre').toggleClass('d-none', currentMesaEstado === 'libre');
+
+    const $btnLimpiar = $('#btnLimpiarPedidoHeader');
+    if ($btnLimpiar.length) $btnLimpiar.toggleClass('d-none', items.length === 0);
+
     // No resetear descuentos aquí: se conservan para que al facturar se envíen. Solo se resetean al abrir otra mesa (abrirPedido).
     renderItems();
   }
@@ -1748,6 +1752,72 @@ $(function () {
     } catch (err) {
       Utils.hideLoading();
       Swal.fire({ icon: 'error', title: 'Error', text: err.message });
+    }
+  });
+
+  // Limpiar pedido (vaciar todos los items)
+  async function handleLimpiarPedido(pedidoId, mesaId) {
+    const result = await Swal.fire({
+      title: '¿Vaciar pedido?',
+      text: 'Se eliminarán todos los productos de esta mesa. Esta acción no se puede deshacer.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, vaciar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#f1c40f'
+    });
+
+    if (result.isConfirmed) {
+      try {
+        Utils.showLoading('Vaciando pedido...');
+        const r = await fetch(`/api/mesas/pedidos/${pedidoId}/limpiar`, { method: 'DELETE' });
+        const data = await r.json();
+        Utils.hideLoading();
+
+        if (!r.ok) throw new Error(data.error || 'Error al vaciar pedido');
+
+        Swal.fire({ icon: 'success', title: 'Pedido vaciado', timer: 2000 });
+        
+        // Si el offcanvas está abierto y es la misma mesa, recargar
+        if (pedidoActual && pedidoActual.id == pedidoId) {
+          await cargarPedido(pedidoId);
+        }
+        
+        // Refrescar grid de mesas
+        if (typeof cargarMesas === 'function') cargarMesas();
+        else window.location.reload();
+
+      } catch (err) {
+        Utils.hideLoading();
+        Swal.fire({ icon: 'error', title: 'Error', text: err.message });
+      }
+    }
+  }
+
+  // Evento para botón en el Header del offcanvas
+  $('#btnLimpiarPedidoHeader').on('click', function() {
+    if (pedidoActual) handleLimpiarPedido(pedidoActual.id, pedidoActual.mesa_id);
+  });
+
+  // Evento para botones en el Grid (delegación)
+  $(document).on('click', '.btnLimpiarPedido', async function(e) {
+    e.stopPropagation();
+    const $card = $(this).closest('.mesa-card');
+    const mesaId = $card.data('mesa-id');
+    
+    try {
+        // Necesitamos el ID del pedido activo de esa mesa
+        const resp = await fetch('/api/mesas/abrir', { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify({ mesa_id: mesaId }) 
+        });
+        const data = await resp.json();
+        if (data.pedido) {
+            handleLimpiarPedido(data.pedido.id, mesaId);
+        }
+    } catch (e) {
+        console.error(e);
     }
   });
 });

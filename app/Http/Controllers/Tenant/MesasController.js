@@ -12,6 +12,7 @@ const LiberarMesaService = require('../../../../services/Tenant/Mesas/LiberarMes
 const AgregarItemService = require('../../../../services/Tenant/Mesas/AgregarItemService');
 const AgregarServicioService = require('../../../../services/Tenant/Mesas/AgregarServicioService');
 const EliminarItemService = require('../../../../services/Tenant/Mesas/EliminarItemService');
+const LimpiarPedidoService = require('../../../../services/Tenant/Mesas/LimpiarPedidoService');
 class MesasController {
     // GET /mesas
     static async index(req, res) {
@@ -622,6 +623,21 @@ class MesasController {
         } catch (error) {
             console.error('Error al eliminar mesa:', error);
             res.status(500).json({ error: 'Error al eliminar la mesa' });
+        }
+    }
+
+    // DELETE /mesas/pedidos/:pedidoId/limpiar
+    static async limpiarPedido(req, res) {
+        try {
+            const tenantId = req.tenant?.id;
+            const { pedidoId } = req.params;
+            if (!tenantId) return res.status(403).json({ error: 'Contexto de tenant no disponible' });
+
+            const result = await LimpiarPedidoService.execute({ tenantId, pedidoId });
+            res.json(result);
+        } catch (error) {
+            console.error('Error al limpiar pedido:', error);
+            res.status(500).json({ error: error.message || 'Error al limpiar pedido' });
         }
     }
 }

@@ -42,6 +42,9 @@ router.patch('/items/:itemId/cantidad', MesasController.updateItemCantidad);
 // POST /mesas/pedidos/:pedidoId/items - Agregar item
 router.post('/pedidos/:pedidoId/items', MesasController.addItem);
 
+// DELETE /mesas/pedidos/:pedidoId/limpiar - Vaciar pedido
+router.delete('/pedidos/:pedidoId/limpiar', MesasController.limpiarPedido);
+
 // POST /mesas/pedidos/:pedidoId/servicios - Agregar servicio
 router.post('/pedidos/:pedidoId/servicios', MesasController.addService);
 

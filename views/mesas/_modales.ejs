@@ -62,9 +62,14 @@
             <div class="small text-muted fw-semibold">
                 <span id="labelClienteActual" class="badge bg-light text-dark border-0">Cliente: Consumidor Final</span>
             </div>
-            <button id="btnLiberarMesaHeader" class="btn btn-link btn-sm text-danger text-decoration-none p-0 fw-bold">
-                <i class="bi bi-unlock me-1"></i>Liberar
-            </button>
+            <div class="d-flex align-items-center gap-2">
+                <button id="btnLimpiarPedidoHeader" class="btn btn-link btn-sm text-warning text-decoration-none p-0 fw-bold d-none">
+                    <i class="bi bi-trash me-1"></i>Limpiar
+                </button>
+                <button id="btnLiberarMesaHeader" class="btn btn-link btn-sm text-danger text-decoration-none p-0 fw-bold">
+                    <i class="bi bi-unlock me-1"></i>Liberar
+                </button>
+            </div>
         </div>
 
         <div class="table-responsive flex-grow-1 border-top">
