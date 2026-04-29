@@ -18,25 +18,26 @@ class LimpiarPedidoService {
             
             const mesaId = pedidos[0].mesa_id;
 
-            // 2. Eliminar items (o marcarlos como cancelados si se desea historial, 
-            // pero para "limpiar" suele ser un reset total)
+            // 2. Eliminar items (vaciado total)
             await connection.query(
                 'DELETE FROM pedido_items WHERE pedido_id = ? AND tenant_id = ?',
                 [pedidoId, tenantId]
             );
 
-            // 3. Resetear total del pedido
+            // 3. Cancelar el pedido (para que no aparezca como abierto)
             await connection.query(
-                'UPDATE pedidos SET total = 0, propina = 0 WHERE id = ?',
+                "UPDATE pedidos SET estado = 'cancelado', total = 0, propina = 0 WHERE id = ?",
                 [pedidoId]
             );
 
-            // 4. Asegurar que el estado de la mesa refleje que está "ocupada" pero vacía, 
-            // o si el usuario prefiere liberarla, se podría hacer opcional.
-            // Por defecto mantendremos la mesa pero vacía.
+            // 4. Liberar la mesa (ahora que no tiene items activos ni pedidos abiertos)
+            await connection.query(
+                "UPDATE mesas SET estado = 'libre' WHERE id = ?",
+                [mesaId]
+            );
 
             await connection.commit();
-            return { message: 'Pedido vaciado correctamente', mesaId };
+            return { message: 'Pedido limpiado y mesa liberada correctamente', mesaId };
         } catch (error) {
             await connection.rollback();
             throw error;

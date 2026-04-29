@@ -1778,9 +1778,10 @@ $(function () {
 
         Swal.fire({ icon: 'success', title: 'Pedido vaciado', timer: 2000 });
         
-        // Si el offcanvas está abierto y es la misma mesa, recargar
         if (pedidoActual && pedidoActual.id == pedidoId) {
-          await cargarPedido(pedidoId);
+          // Al limpiar y liberar, cerramos el offcanvas
+          const bsOffcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('canvasPedido'));
+          if (bsOffcanvas) bsOffcanvas.hide();
         }
         
         // Refrescar grid de mesas
@@ -1797,28 +1798,6 @@ $(function () {
   // Evento para botón en el Header del offcanvas
   $('#btnLimpiarPedidoHeader').on('click', function() {
     if (pedidoActual) handleLimpiarPedido(pedidoActual.id, pedidoActual.mesa_id);
-  });
-
-  // Evento para botones en el Grid (delegación)
-  $(document).on('click', '.btnLimpiarPedido', async function(e) {
-    e.stopPropagation();
-    const $card = $(this).closest('.mesa-card');
-    const mesaId = $card.data('mesa-id');
-    
-    try {
-        // Necesitamos el ID del pedido activo de esa mesa
-        const resp = await fetch('/api/mesas/abrir', { 
-            method: 'POST', 
-            headers: { 'Content-Type': 'application/json' }, 
-            body: JSON.stringify({ mesa_id: mesaId }) 
-        });
-        const data = await resp.json();
-        if (data.pedido) {
-            handleLimpiarPedido(data.pedido.id, mesaId);
-        }
-    } catch (e) {
-        console.error(e);
-    }
   });
 });
 
