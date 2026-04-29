@@ -1,81 +1,52 @@
 const express = require('express');
 const router = express.Router();
-const MesasController = require('../../app/Http/Controllers/Tenant/MesasController');
 const { requirePermission } = require('../../middleware/auth');
 const BaseRequest = require('../../app/Http/Requests/BaseRequest');
 const StoreMesaRequest = require('../../app/Http/Requests/Tenant/StoreMesaRequest');
 
-// GET /mesas - Vista principal
-router.get('/', MesasController.index);
+// Importar controladores modularizados
+const Dashboard = require('../../app/Http/Controllers/Tenant/Mesas/MesaDashboardController');
+const Management = require('../../app/Http/Controllers/Tenant/Mesas/MesaManagementController');
+const Actions = require('../../app/Http/Controllers/Tenant/Mesas/MesaActionsController');
+const QR = require('../../app/Http/Controllers/Tenant/Mesas/MesaQRController');
+const Pedido = require('../../app/Http/Controllers/Tenant/Mesas/PedidoController');
+const Items = require('../../app/Http/Controllers/Tenant/Mesas/PedidoItemsController');
 
-// GET /mesas/listar - Listado API
-router.get('/listar', MesasController.list);
+// --- DASHBOARD ---
+router.get('/', Dashboard.index);
+router.get('/listar', Dashboard.list);
 
-// POST /mesas/qrs/generar - Generar tokens QR para mesas sin token
-router.post('/qrs/generar', requirePermission('mesas.qr'), MesasController.generarTokensQR);
+// --- GESTIÓN DE MESAS (CRUD) ---
+router.post('/crear', requirePermission('mesas.gestionar'), BaseRequest.validate(StoreMesaRequest), Management.store);
+router.put('/:mesaId', requirePermission('mesas.editar'), BaseRequest.validate(StoreMesaRequest), Management.update);
+router.delete('/:mesaId', requirePermission('mesas.eliminar'), Management.destroy);
+router.post('/crear-masivas', Management.storeMasivas);
 
-// GET /mesas/qrs/imprimir - Vista para imprimir QRs
-router.get('/qrs/imprimir', requirePermission('mesas.qr'), MesasController.imprimirQRs);
+// --- CÓDIGOS QR ---
+router.post('/qrs/generar', requirePermission('mesas.qr'), QR.generar);
+router.get('/qrs/imprimir', requirePermission('mesas.qr'), QR.imprimir);
 
-// POST /mesas/crear - Crear mesa
-router.post('/crear', requirePermission('mesas.gestionar'), BaseRequest.validate(StoreMesaRequest), MesasController.store);
+// --- PEDIDOS (Ciclo de Vida) ---
+router.post('/abrir', Pedido.abrir);
+router.get('/pedidos/:pedidoId', Pedido.show);
+router.patch('/pedidos/:pedidoId/propina', Pedido.updatePropina);
+router.put('/pedidos/:pedidoId/cliente', Pedido.updateCliente);
+router.delete('/pedidos/:pedidoId/limpiar', Pedido.limpiar);
+router.post('/pedidos/:pedidoId/facturar', Pedido.facturar);
 
-// PUT /mesas/:mesaId - Editar mesa
-router.put('/:mesaId', requirePermission('mesas.editar'), BaseRequest.validate(StoreMesaRequest), MesasController.update);
+// --- ITEMS DEL PEDIDO ---
+router.post('/pedidos/:pedidoId/items', Items.store);
+router.post('/pedidos/:pedidoId/servicios', Items.addService);
+router.put('/items/:itemId/cantidad', Items.updateCantidad);
+router.patch('/items/:itemId/cantidad', Items.updateCantidad);
+router.delete('/items/:itemId', Items.destroy);
+router.put('/items/:itemId/enviar', Items.enviar);
+router.put('/items/:itemId/estado', Items.updateEstado);
+router.put('/items/:itemId/pagar', Items.pagar);
 
-// POST /mesas/crear-masivas - Crear múltiples
-router.post('/crear-masivas', MesasController.storeMasivas);
-
-// POST /mesas/abrir - Abrir pedido
-router.post('/abrir', MesasController.abrirPedido);
-
-// GET /mesas/pedidos/:pedidoId - Ver pedido
-router.get('/pedidos/:pedidoId', MesasController.getPedido);
-
-// PATCH /mesas/pedidos/:pedidoId/propina - Propina
-router.patch('/pedidos/:pedidoId/propina', MesasController.updatePropina);
-
-// PUT/PATCH /mesas/items/:itemId/cantidad - Cantidad item
-router.put('/items/:itemId/cantidad', MesasController.updateItemCantidad);
-router.patch('/items/:itemId/cantidad', MesasController.updateItemCantidad);
-
-// POST /mesas/pedidos/:pedidoId/items - Agregar item
-router.post('/pedidos/:pedidoId/items', MesasController.addItem);
-
-// DELETE /mesas/pedidos/:pedidoId/limpiar - Vaciar pedido
-router.delete('/pedidos/:pedidoId/limpiar', MesasController.limpiarPedido);
-
-// POST /mesas/pedidos/:pedidoId/servicios - Agregar servicio
-router.post('/pedidos/:pedidoId/servicios', MesasController.addService);
-
-// DELETE /mesas/items/:itemId - Eliminar item
-router.delete('/items/:itemId', MesasController.destroyItem);
-
-// PUT /mesas/items/:itemId/pagar - Pagar item individual
-router.put('/items/:itemId/pagar', MesasController.pagarItem);
-
-// PUT /mesas/items/:itemId/enviar - Enviar a cocina
-router.put('/items/:itemId/enviar', MesasController.enviarItem);
-
-// PUT /mesas/items/:itemId/estado - Estado item (cocina)
-router.put('/items/:itemId/estado', MesasController.updateItemEstado);
-
-// POST /mesas/pedidos/:pedidoId/facturar - Cerrar y facturar
-router.post('/pedidos/:pedidoId/facturar', MesasController.facturarPedido);
-
-// PUT /mesas/pedidos/:pedidoId/mover - Mover todo el pedido
-router.put('/pedidos/:pedidoId/mover', MesasController.moverPedido);
-
-// POST /mesas/pedidos/:pedidoId/mover-items - Mover items específicos
-router.post('/pedidos/:pedidoId/mover-items', MesasController.moverItems);
-
-// PUT /mesas/:mesaId/liberar - Liberar mesa
-router.put('/:mesaId/liberar', MesasController.liberarMesa);
-
-// PUT /mesas/pedidos/:pedidoId/cliente - Cliente del pedido
-router.put('/pedidos/:pedidoId/cliente', MesasController.updatePedidoCliente);
-
-// DELETE /mesas/:mesaId - Eliminar mesa definitiva
-router.delete('/:mesaId', requirePermission('mesas.eliminar'), MesasController.destroy);
+// --- ACCIONES OPERATIVAS ---
+router.put('/pedidos/:pedidoId/mover', Actions.moverPedido);
+router.post('/pedidos/:pedidoId/mover-items', Actions.moverItems);
+router.put('/:mesaId/liberar', Actions.liberar);
 
 module.exports = router;
