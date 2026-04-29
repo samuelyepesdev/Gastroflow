@@ -10,7 +10,10 @@
     <style>
         /* CSS Premium Mobile-First */
         :root {
-            --primary-color: <%= tenant.theme_color || '#e63946' %>;
+            --primary-color: <%= tenant.theme_colors.primary %>;
+            --navbar-bg: <%= tenant.theme_colors.navbar %>;
+            --navbar-text: <%= tenant.theme_colors.navbarText %>;
+            --secondary-color: <%= tenant.theme_colors.secondary %>;
             --theme-font: <%= tenant.theme_font || "'Inter', sans-serif" %>;
         }
     </style>
@@ -23,10 +26,10 @@
             <% if (tenant.logo_src) { %>
                 <img src="<%= tenant.logo_src %>" alt="Logo" class="tenant-logo me-2">
             <% } else { %>
-                <h4 class="mb-0 fw-bold" style="color: var(--primary-color);"><%= tenant.nombre %></h4>
+                <h4 class="mb-0 fw-bold" style="color: var(--navbar-text);"><%= tenant.nombre %></h4>
             <% } %>
         </div>
-        <div class="table-badge">
+        <div class="table-badge" style="color: var(--navbar-text);">
             <i class="bi bi-geo-alt-fill me-1"></i> Mesa <%= mesa.numero %>
         </div>
     </div>

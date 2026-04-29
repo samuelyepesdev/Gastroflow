@@ -8,7 +8,8 @@ body {
 
 /* Header */
 .header-top {
-    background: #fff;
+    background: var(--navbar-bg, #fff);
+    color: var(--navbar-text, #333);
     padding: 15px 20px;
     box-shadow: 0 2px 15px rgba(0,0,0,0.04);
     position: sticky;
@@ -23,12 +24,14 @@ body {
     border-radius: 8px;
 }
 .table-badge {
-    background: rgba(230, 57, 70, 0.1);
-    color: var(--primary-color);
+    background: rgba(255, 255, 255, 0.2);
+    color: var(--navbar-text, var(--primary-color));
     padding: 6px 14px;
     border-radius: 20px;
     font-weight: 800;
     font-size: 0.95rem;
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(255,255,255,0.1);
 }
 
 /* Categorías con Scroll Horizontal Oculto */
@@ -179,7 +182,13 @@ body {
 .btn-ver-pedido:active { transform: scale(0.96); }
 
 /* Offcanvas Cart */
-.offcanvas-bottom { border-radius: 24px 24px 0 0; max-height: 95vh; height: 90vh; border: none; box-shadow: 0 -10px 40px rgba(0,0,0,0.15); }
+.offcanvas-bottom { 
+    border-radius: 24px 24px 0 0; 
+    max-height: 85vh; 
+    height: 65vh; /* Ajustado a "casi mitad" pero grande para mejor UX */
+    border: none; 
+    box-shadow: 0 -10px 40px rgba(0,0,0,0.15); 
+}
 .offcanvas-body { padding-bottom: 30px; }
 .offcanvas-header { padding: 20px; }
 .offcanvas-title { font-weight: 900; font-size: 1.4rem; color: #111; }

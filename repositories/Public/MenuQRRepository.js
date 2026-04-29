@@ -21,16 +21,23 @@ class MenuQRRepository {
             logo_src = `data:image/${row.logo_tipo};base64,${Buffer.from(row.logo_data).toString('base64')}`;
         }
 
-        // Obtener color primario de la configuración del tenant
-        const primaryColor = (config.colores && config.colores.primary) ? config.colores.primary : '#e63946';
+        // Extraer paleta de colores completa de la configuración
+        const themeColors = {
+            primary: (config.colores && config.colores.primary) ? config.colores.primary : '#e63946',
+            navbar: (config.colores && config.colores.navbar) ? config.colores.navbar : '#ffffff',
+            navbarText: (config.colores && config.colores.navbarText) ? config.colores.navbarText : '#333333',
+            secondary: (config.colores && config.colores.secondary) ? config.colores.secondary : '#6c757d',
+            mesaLibre: (config.colores && config.colores.mesaLibre) ? config.colores.mesaLibre : '#22c55e',
+            mesaOcupada: (config.colores && config.colores.mesaOcupada) ? config.colores.mesaOcupada : '#f59e0b'
+        };
 
         return {
             id: row.id,
             nombre: row.nombre,
             slug: row.slug,
-            theme_color: primaryColor,
-            theme_font: config.theme_font || "'Inter', sans-serif",
-            logo_src
+            logo_src: logo_src,
+            theme_colors: themeColors,
+            theme_font: config.theme_font || "'Inter', sans-serif"
         };
     }
 
