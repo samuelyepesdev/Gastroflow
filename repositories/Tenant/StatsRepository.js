@@ -154,20 +154,27 @@ class StatsRepository {
      */
     static async getTotalsByPaymentMethod(tenantId, filters = {}) {
         let query = `
-            SELECT forma_pago, 
-                   COALESCE(SUM(total), 0) AS total,
-                   COALESCE(SUM(total_servicios_externos), 0) AS total_externos
-            FROM facturas
-            WHERE tenant_id = ? AND evento_id IS NULL
+            SELECT f.forma_pago, 
+                   COALESCE(SUM(f.total), 0) AS total,
+                   COALESCE(SUM(t_ext.ext_sum), 0) AS total_externos
+            FROM facturas f
+            LEFT JOIN (
+                SELECT df.factura_id, SUM(df.subtotal) AS ext_sum
+                FROM detalle_factura df
+                JOIN servicios s ON s.id = df.servicio_id
+                WHERE df.es_servicio = 1 AND s.es_externo = 1
+                GROUP BY df.factura_id
+            ) t_ext ON t_ext.factura_id = f.id
+            WHERE f.tenant_id = ? AND f.evento_id IS NULL
         `;
         const params = [tenantId];
 
         if (filters.desde && filters.hasta) {
-            query += " AND DATE(CONVERT_TZ(fecha, '+00:00', '-05:00')) BETWEEN ? AND ?";
+            query += " AND DATE(CONVERT_TZ(f.fecha, '+00:00', '-05:00')) BETWEEN ? AND ?";
             params.push(filters.desde, filters.hasta);
         }
 
-        query += ' GROUP BY forma_pago';
+        query += ' GROUP BY f.forma_pago';
 
         const [result] = await db.query(query, params);
         

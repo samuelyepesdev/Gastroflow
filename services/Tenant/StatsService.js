@@ -42,6 +42,7 @@ class StatsService {
             ventasPorEvento,
             eventosEnRango,
             eventosCalendario,
+            totalSalesAllTime,
             totalInvoicesAllTime,
             paymentTotals
         ] = await Promise.all([
