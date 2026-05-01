@@ -81,13 +81,14 @@ class ProductRepository {
      * @param {string} productData.nombre - Product name
      * @param {number} productData.precio_unidad - Unit price
      * @param {number} productData.categoria_id - Category ID
+     * @param {string} [productData.descripcion] - Product description
      * @returns {Promise<Object>} Created product with insertId
      */
     static async create(tenantId, productData) {
-        const { codigo, nombre, precio_unidad, categoria_id } = productData;
+        const { codigo, nombre, precio_unidad, categoria_id, descripcion } = productData;
         const result = await db.query(
-            'INSERT INTO productos (tenant_id, codigo, nombre, precio_unidad, categoria_id) VALUES (?, ?, ?, ?, ?)',
-            [tenantId, codigo, nombre, precio_unidad || 0, categoria_id || 1]
+            'INSERT INTO productos (tenant_id, codigo, nombre, precio_unidad, categoria_id, descripcion) VALUES (?, ?, ?, ?, ?, ?)',
+            [tenantId, codigo, nombre, precio_unidad || 0, categoria_id || 1, descripcion || null]
         );
         return result;
     }
@@ -99,10 +100,10 @@ class ProductRepository {
      * @returns {Promise<Object>} Update result
      */
     static async update(id, tenantId, productData) {
-        const { codigo, nombre, precio_unidad, categoria_id } = productData;
+        const { codigo, nombre, precio_unidad, categoria_id, descripcion } = productData;
         const result = await db.query(
-            'UPDATE productos SET codigo = ?, nombre = ?, precio_unidad = ?, categoria_id = ? WHERE id = ? AND tenant_id = ?',
-            [codigo, nombre, precio_unidad || 0, categoria_id || 1, id, tenantId]
+            'UPDATE productos SET codigo = ?, nombre = ?, precio_unidad = ?, categoria_id = ?, descripcion = ? WHERE id = ? AND tenant_id = ?',
+            [codigo, nombre, precio_unidad || 0, categoria_id || 1, descripcion || null, id, tenantId]
         );
         return result;
     }
@@ -146,14 +147,15 @@ class ProductRepository {
             await connection.beginTransaction();
             for (const p of products) {
                 await connection.query(
-                    `INSERT INTO productos (tenant_id, codigo, nombre, categoria_id, precio_unidad, activo) 
-                     VALUES (?, ?, ?, ?, ?, 1) 
+                    `INSERT INTO productos (tenant_id, codigo, nombre, categoria_id, precio_unidad, descripcion, activo) 
+                     VALUES (?, ?, ?, ?, ?, ?, 1) 
                      ON DUPLICATE KEY UPDATE 
                         nombre = VALUES(nombre), 
                         categoria_id = VALUES(categoria_id), 
                         precio_unidad = VALUES(precio_unidad),
+                        descripcion = VALUES(descripcion),
                         activo = 1`,
-                    [tenantId, String(p.codigo).trim(), String(p.nombre).trim(), p.categoria_id, parseFloat(p.precio_unidad) || 0]
+                    [tenantId, String(p.codigo).trim(), String(p.nombre).trim(), p.categoria_id, parseFloat(p.precio_unidad) || 0, p.descripcion || null]
                 );
             }
             await connection.commit();

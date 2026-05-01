@@ -30,7 +30,12 @@ class StoreProductoRequest extends BaseRequest {
 
             body('categoria_id')
                 .notEmpty().withMessage('La categoría es obligatoria')
-                .isInt().withMessage('Categoría inválida')
+                .isInt().withMessage('Categoría inválida'),
+
+            body('descripcion')
+                .optional({ checkFalsy: true })
+                .isString().withMessage('La descripción debe ser un texto')
+                .isLength({ max: 1000 }).withMessage('La descripción no puede exceder los 1000 caracteres')
         ];
     }
 }

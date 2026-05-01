@@ -28,9 +28,6 @@ class MenuQRService {
         return { tenant, mesa, categorias };
     }
 
-    /**
-     * Helper para agrupar las filas planas devueltas por SQL en una estructura anidada.
-     */
     static _agruparProductosPorCategoria(rawProducts) {
         const categoriasMap = new Map();
         
@@ -46,7 +43,7 @@ class MenuQRService {
                 id: row.producto_id,
                 codigo: row.codigo,
                 nombre: row.nombre,
-                descripcion: row.descripcion_corta || '',
+                descripcion: row.descripcion || '',
                 precio: row.precio_unidad,
                 imagen_url: row.imagen_url || null
             });

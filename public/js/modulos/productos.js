@@ -198,7 +198,8 @@ class ProductManager {
             codigo: data.codigo || document.getElementById('codigo').value,
             nombre: data.nombre || document.getElementById('nombre').value,
             categoria_id: data.categoriaId || document.getElementById('categoriaId').value,
-            precio_unidad: parseFloat(data.precioUnidad || document.getElementById('precioUnidad').value) || 0
+            precio_unidad: parseFloat(data.precioUnidad || document.getElementById('precioUnidad').value) || 0,
+            descripcion: document.getElementById('descripcion') ? document.getElementById('descripcion').value : ''
         };
 
         try {
@@ -259,6 +260,9 @@ class ProductManager {
             document.getElementById('nombre').value = producto.nombre;
             document.getElementById('categoriaId').value = producto.categoria_id || '';
             document.getElementById('precioUnidad').value = producto.precio_unidad;
+            if (document.getElementById('descripcion')) {
+                document.getElementById('descripcion').value = producto.descripcion || '';
+            }
             const paramContainer = document.getElementById('productoParametrosContainer');
             if (paramContainer) {
                 try {

@@ -55,7 +55,7 @@
                 <h3 class="category-title"><%= cat.nombre %></h3>
                 
                 <% cat.productos.forEach(prod => { %>
-                    <div class="product-card" data-id="<%= prod.id %>" data-nombre="<%= prod.nombre %>" data-precio="<%= prod.precio %>">
+                    <div class="product-card" data-id="<%= prod.id %>" data-nombre="<%= prod.nombre %>" data-precio="<%= prod.precio %>" data-descripcion="<%= prod.descripcion %>" data-imagen="<%= prod.imagen_url || '' %>" onclick="showProductDetails(this, event)">
                         <% if (prod.imagen_url) { %>
                             <img src="<%= prod.imagen_url %>" class="product-img" alt="<%= prod.nombre %>">
                         <% } else { %>
@@ -70,12 +70,12 @@
                         </div>
                         
                         <!-- Add Button -->
-                        <button class="add-btn" onclick="addToCart('<%= prod.id %>')">
+                        <button class="add-btn" onclick="event.stopPropagation(); addToCart('<%= prod.id %>')">
                             <i class="bi bi-plus"></i>
                         </button>
 
                         <!-- QTY Controls -->
-                        <div class="qty-controls" id="qty-<%= prod.id %>">
+                        <div class="qty-controls" id="qty-<%= prod.id %>" onclick="event.stopPropagation()">
                             <button class="qty-btn text-danger" onclick="updateCart('<%= prod.id %>', -1)"><i class="bi bi-dash"></i></button>
                             <span class="qty-value" id="val-<%= prod.id %>">0</span>
                             <button class="qty-btn" style="color: var(--primary-color);" onclick="updateCart('<%= prod.id %>', 1)"><i class="bi bi-plus"></i></button>
@@ -123,10 +123,81 @@
         </div>
     </div>
 
+    <!-- Product Detail Modal -->
+    <div class="modal fade" id="productDetailModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg" style="border-radius: 20px; overflow: hidden;">
+                <div class="modal-header border-bottom-0 pb-0" style="background: transparent;">
+                    <button type="button" class="btn-close ms-auto bg-white p-2 border rounded-circle shadow-sm" data-bs-dismiss="modal" aria-label="Close" style="z-index: 10; margin-top: -5px; margin-right: -5px; opacity: 0.85;"></button>
+                </div>
+                <div class="modal-body pt-0 px-4 pb-4">
+                    <div class="text-center mb-3">
+                        <div id="modalProductImgPlaceholder" class="mx-auto rounded-4 mb-3 d-flex align-items-center justify-content-center text-secondary bg-light" style="width: 140px; height: 140px; font-size: 3rem;">
+                            <i class="bi bi-cup-hot"></i>
+                        </div>
+                        <img id="modalProductImg" src="" alt="" class="img-fluid rounded-4 mx-auto mb-3 shadow-sm d-none" style="max-height: 200px; object-fit: cover; width: 100%;">
+                        <h4 id="modalProductName" class="fw-bold mb-1" style="color: #2b2b2b;"></h4>
+                        <p id="modalProductPrice" class="fs-4 fw-black mb-2" style="color: var(--primary-color); font-weight: 800;"></p>
+                    </div>
+                    <div class="bg-light p-3 rounded-4 mb-3">
+                        <h6 class="text-uppercase small fw-bold text-muted mb-2"><i class="bi bi-info-circle me-1"></i> Descripción / Contenido</h6>
+                        <p id="modalProductDesc" class="text-secondary mb-0" style="font-size: 0.95rem; line-height: 1.5; white-space: pre-wrap;"></p>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-secondary flex-grow-1 py-3" data-bs-dismiss="modal" style="border-radius: 12px; font-weight: 600;">Cerrar</button>
+                        <button type="button" class="btn btn-primary flex-grow-1 py-3" id="modalAddBtn" style="border-radius: 12px; font-weight: 600; background-color: var(--primary-color); border-color: var(--primary-color);">
+                            <i class="bi bi-plus-lg me-1"></i> Agregar al Pedido
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         window.QR_TOKEN = '<%= qrToken %>';
+        
+        function showProductDetails(card, event) {
+            // Stop trigger if click on add/qty
+            if (event && (event.target.closest('.add-btn') || event.target.closest('.qty-controls'))) {
+                return;
+            }
+
+            const id = card.getAttribute('data-id');
+            const nombre = card.getAttribute('data-nombre');
+            const precio = card.getAttribute('data-precio');
+            const descripcion = card.getAttribute('data-descripcion') || 'No hay descripción disponible para este producto.';
+            const imagen = card.getAttribute('data-imagen');
+
+            document.getElementById('modalProductName').textContent = nombre;
+            document.getElementById('modalProductPrice').textContent = '$' + Number(precio).toLocaleString('es-CO');
+            document.getElementById('modalProductDesc').textContent = descripcion;
+
+            const imgEl = document.getElementById('modalProductImg');
+            const placeholderEl = document.getElementById('modalProductImgPlaceholder');
+
+            if (imagen && imagen.trim() !== '') {
+                imgEl.src = imagen;
+                imgEl.classList.remove('d-none');
+                placeholderEl.classList.add('d-none');
+            } else {
+                imgEl.src = '';
+                imgEl.classList.add('d-none');
+                placeholderEl.classList.remove('d-none');
+            }
+
+            // Bind the add to cart button inside the modal
+            const addBtn = document.getElementById('modalAddBtn');
+            addBtn.onclick = function() {
+                addToCart(id);
+                bootstrap.Modal.getInstance(document.getElementById('productDetailModal'))?.hide();
+            };
+
+            const modal = new bootstrap.Modal(document.getElementById('productDetailModal'));
+            modal.show();
+        }
     </script>
     <script src="/js/modulos/menu-qr.js"></script>
 </body>
