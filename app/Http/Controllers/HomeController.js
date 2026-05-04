@@ -5,8 +5,9 @@ class HomeController {
      */
     static async index(req, res) {
         if (!req.user) {
-            return res.redirect('/auth/login');
+            return res.render('landing/index');
         }
+
 
         const rol = String((req.user.rol || '')).toLowerCase();
 

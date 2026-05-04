@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GastroFlow — Sistema Integral para Restaurantes en Colombia</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    
+    <!-- External Separate Stylesheet -->
+    <link rel="stylesheet" href="/css/landing.css">
+</head>
+<body>
+
+    <!-- Header Navigation -->
+    <nav class="container">
+        <a href="/" class="logo">
+            <i class="bi bi-fire"></i> GastroFlow
+        </a>
+        <ul class="nav-links">
+            <li><a href="#caracteristicas" class="nav-link">Características</a></li>
+            <li><a href="#precios" class="nav-link">Precios</a></li>
+            <li><a href="#clientes" class="nav-link">Clientes</a></li>
+            <li><a href="/auth/login" class="btn-secondary-nav">Iniciar Sesión</a></li>
+            <li><a href="/auth/register" class="btn-primary-nav"><i class="bi bi-rocket-takeoff-fill"></i> Comenzar Prueba Gratis</a></li>
+        </ul>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero container">
+        <div class="hero-glow"></div>
+        <div class="hero-tag">Inteligencia gastronómica para Colombia</div>
+        <h1>La Solución Inteligente<br>Para Tu Restaurante</h1>
+        <p>Punto de venta, costeo real de recetas, gestión de eventos y facturación electrónica DIAN en un solo lugar. Hecho para restaurantes, cafeterías, bares y food trucks de Colombia.</p>
+        <div class="hero-actions">
+            <a href="/auth/register" class="btn-hero-primary"><i class="bi bi-rocket-takeoff-fill"></i> Comenzar Prueba Gratis</a>
+            <a href="/auth/login" class="btn-hero-secondary">Iniciar Sesión <i class="bi bi-chevron-right"></i></a>
+        </div>
+    </section>
+
+    <!-- Comparison Section (Before & After) -->
+    <section class="comparison container">
+        <div class="section-header">
+            <h2>Transforma la gestión de tu negocio</h2>
+            <p>Cada día sin GastroFlow es dinero que se va por las mermas, el desorden y los errores de caja. Así es como lo cambiamos todo.</p>
+        </div>
+        <div class="comparison-grid">
+            <!-- Before -->
+            <div class="comparison-card negative">
+                <h3><i class="bi bi-x-circle-fill"></i> Antes de GastroFlow</h3>
+                <ul class="comparison-list">
+                    <li><i class="bi bi-dash-square-fill"></i> Libretas perdidas y pedidos equivocados</li>
+                    <li><i class="bi bi-dash-square-fill"></i> Mermas sin control ni registro</li>
+                    <li><i class="bi bi-dash-square-fill"></i> Cuadre de caja manual que tarda horas</li>
+                    <li><i class="bi bi-dash-square-fill"></i> Facturación DIAN en portales externos</li>
+                    <li><i class="bi bi-dash-square-fill"></i> Inventario desactualizado a diario</li>
+                    <li><i class="bi bi-dash-square-fill"></i> Sin historial de ventas por mesero</li>
+                </ul>
+            </div>
+            <!-- After -->
+            <div class="comparison-card positive">
+                <h3><i class="bi bi-check-circle-fill"></i> Con GastroFlow</h3>
+                <ul class="comparison-list">
+                    <li><i class="bi bi-plus-square-fill"></i> Pedidos en pantalla táctil, sin errores</li>
+                    <li><i class="bi bi-plus-square-fill"></i> Inventario costeado automáticamente al gramo</li>
+                    <li><i class="bi bi-plus-square-fill"></i> Cierre del día en 1 clic con resumen completo</li>
+                    <li><i class="bi bi-plus-square-fill"></i> Factura electrónica instantánea desde GastroFlow</li>
+                    <li><i class="bi bi-plus-square-fill"></i> Alertas automáticas de stock mínimo</li>
+                    <li><i class="bi bi-plus-square-fill"></i> Reportes de productividad por empleado</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features container" id="caracteristicas">
+        <div class="section-header">
+            <h2>Diseñado para el día a día de tu restaurante</h2>
+            <p>Cada módulo fue diseñado pensando en las necesidades reales de los restaurantes colombianos, desde el primer pedido hasta el cierre del día.</p>
+        </div>
+        <div class="features-grid">
+            <!-- Feature 1 -->
+            <div class="feature-card">
+                <div class="feature-icon"><i class="bi bi-pc-display-horizontal"></i></div>
+                <h3>Punto de Venta (POS) Táctil</h3>
+                <p>Interfaz ultrarrápida para toma de pedidos. Búsqueda instantánea, carritos de compra, división de cuentas y gestión multi-caja.</p>
+            </div>
+            <!-- Feature 2 -->
+            <div class="feature-card">
+                <div class="feature-icon"><i class="bi bi-calculator"></i></div>
+                <h3>Costeo Preciso y Recetas</h3>
+                <p>Fichas técnicas, control al gramo de insumos, alertas de stock mínimo y control de mermas. ¡No pierdas más dinero en la cocina!</p>
+            </div>
+            <!-- Feature 3 -->
+            <div class="feature-card">
+                <div class="feature-icon"><i class="bi bi-calendar-event"></i></div>
+                <h3>Gestión de Eventos y Banquetes</h3>
+                <p>Realiza cotizaciones profesionales, añade servicios extra, modifica cantidades en bloque y factura bajo un solo evento.</p>
+            </div>
+            <!-- Feature 4 -->
+            <div class="feature-card">
+                <div class="feature-icon"><i class="bi bi-cash-coin"></i></div>
+                <h3>Reportes "Ventas de Hoy"</h3>
+                <p>Cuadre de caja exacto al final del día. Resumen automático separando pagos en Efectivo, Transferencias (Nequi/Daviplata) y Tarjetas.</p>
+            </div>
+            <!-- Feature 5 -->
+            <div class="feature-card">
+                <div class="feature-icon"><i class="bi bi-file-earmark-check"></i></div>
+                <h3>Facturación Electrónica DIAN</h3>
+                <p>Conexión directa y timbrado sin salir del sistema. Emite tiquetes POS o Facturas Electrónicas cumpliendo todos los requisitos.</p>
+            </div>
+            <!-- Feature 6 -->
+            <div class="feature-card">
+                <div class="feature-icon"><i class="bi bi-diagram-3"></i></div>
+                <h3>Multi-Sucursal y Perfiles</h3>
+                <p>Sube tu logo permanente en alta calidad, administra múltiples impresoras de comandas y gestiona permisos de meseros y cajeros.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section class="pricing" id="precios">
+        <div class="container">
+            <div class="section-header">
+                <h2>Planes simples sin contratos de permanencia</h2>
+                <p>Cancela cuando quieras. Precios en COP con IVA incluido.</p>
+            </div>
+            <div class="pricing-grid">
+                <!-- Plan Emprendedor -->
+                <div class="pricing-card">
+                    <h3 class="pricing-title">Emprendedor</h3>
+                    <p class="pricing-desc">Food Trucks & Cafés Pequeños. Todo lo esencial para arrancar con el pie derecho.</p>
+                    <ul class="pricing-features">
+                        <li><i class="bi bi-check-circle-fill"></i> POS básico para 1 caja</li>
+                        <li><i class="bi bi-check-circle-fill"></i> Gestión de productos ilimitada</li>
+                        <li><i class="bi bi-check-circle-fill"></i> Reportes de ventas básicos</li>
+                        <li><i class="bi bi-check-circle-fill"></i> Factura tiquete POS</li>
+                        <li><i class="bi bi-check-circle-fill"></i> Soporte por correo</li>
+                        <li><i class="bi bi-check-circle-fill"></i> 1 usuario operador</li>
+                    </ul>
+                    <a href="/auth/register" class="btn-pricing">Comenzar gratis</a>
+                </div>
+                <!-- Plan Restaurante Pro -->
+                <div class="pricing-card premium">
+                    <span class="popular-badge">El más popular</span>
+                    <h3 class="pricing-title">Restaurante Pro</h3>
+                    <p class="pricing-desc">El combo completo para restaurantes medianos y en crecimiento.</p>
+                    <ul class="pricing-features">
+                        <li><i class="bi bi-check-circle-fill"></i> POS avanzado multi-caja</li>
+                        <li><i class="bi bi-check-circle-fill"></i> Costeo de recetas e insumos</li>
+                        <li><i class="bi bi-check-circle-fill"></i> Alertas de stock mínimo</li>
+                        <li><i class="bi bi-check-circle-fill"></i> Reportes completos de ventas</li>
+                        <li><i class="bi bi-check-circle-fill"></i> Facturación Electrónica DIAN</li>
+                        <li><i class="bi bi-check-circle-fill"></i> Gestión de meseros y cajeros</li>
+                        <li><i class="bi bi-check-circle-fill"></i> Soporte prioritario</li>
+                    </ul>
+                    <a href="/auth/register" class="btn-pricing">Empezar ahora</a>
+                </div>
+                <!-- Gastro Premium -->
+                <div class="pricing-card">
+                    <h3 class="pricing-title">Gastro Premium</h3>
+                    <p class="pricing-desc">Potencia máxima para operaciones grandes de alto volumen.</p>
+                    <ul class="pricing-features">
+                        <li><i class="bi bi-check-circle-fill"></i> Todo el plan Pro incluido</li>
+                        <li><i class="bi bi-check-circle-fill"></i> Módulo completo de Eventos</li>
+                        <li><i class="bi bi-check-circle-fill"></i> Cotizaciones PDF profesionales</li>
+                        <li><i class="bi bi-check-circle-fill"></i> Multi-sucursal sin límite</li>
+                        <li><i class="bi bi-check-circle-fill"></i> API para integraciones</li>
+                        <li><i class="bi bi-check-circle-fill"></i> Soporte 24/7 dedicado</li>
+                    </ul>
+                    <a href="/auth/register" class="btn-pricing">Hablar con ventas</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Testimonials Section -->
+    <section class="testimonials container" id="clientes">
+        <div class="section-header">
+            <h2>Restaurantes que ya confían en GastroFlow</h2>
+            <p>Historias reales de negocios gastronómicos que optimizaron sus procesos.</p>
+        </div>
+        <div class="testimonials-grid">
+            <!-- Testimonial 1 -->
+            <div class="testimonial-card">
+                <p class="testimonial-text">“GastroFlow nos cambió la vida. Antes perdíamos entre $500.000 y $1.000.000 mensuales en mermas que no detectábamos. Con el módulo de costeo de recetas, en el primer mes ya recuperamos la inversión.”</p>
+                <div class="testimonial-author">
+                    <h4>Claudia Moreno</h4>
+                    <p>Propietaria — El Fogón Paisa, Medellín</p>
+                </div>
+            </div>
+            <!-- Testimonial 2 -->
+            <div class="testimonial-card">
+                <p class="testimonial-text">“El módulo de eventos es increíble. Antes hacíamos las cotizaciones en Word y nos tomaba un día entero. Ahora en 10 minutos tengo el PDF listo para enviarle al cliente. La facturación DIAN fue el punto decisivo.”</p>
+                <div class="testimonial-author">
+                    <h4>Andrés Felipe Rojas</h4>
+                    <p>Administrador — Bar La Terraza 360, Bogotá</p>
+                </div>
+            </div>
+            <!-- Testimonial 3 -->
+            <div class="testimonial-card">
+                <p class="testimonial-text">“Empezamos con el plan Emprendedor y en 3 meses ya migré al Pro. El soporte es excelente y el POS táctil es muy intuitivo; mis meseras lo aprendieron en menos de una hora.”</p>
+                <div class="testimonial-author">
+                    <h4>María Isabel Castillo</h4>
+                    <p>Dueña — Cafetería Casa Blanca, Cali</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta-section container">
+        <div class="cta-box">
+            <h2>Transforma tu restaurante desde hoy mismo</h2>
+            <p>Agenda una demostración en vivo de 30 minutos y descubre cómo GastroFlow se adapta a tu restaurante. Sin compromisos ni tarjetas de crédito.</p>
+            <a href="https://wa.me/573173994234?text=Hola,%20me%20gustaría%20agendar%20una%20demostración%20de%20GastroFlow" target="_blank" class="btn-hero-primary"><i class="bi bi-whatsapp me-2"></i> Agendar Demo Gratis</a>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="container">
+        <div class="footer-grid">
+            <div class="footer-column">
+                <h4>GastroFlow</h4>
+                <p>El sistema operativo integral para restaurantes, cafeterías, bares y food trucks de Colombia.</p>
+                <p style="margin-top: 14px; font-size: 1.1rem; display: flex; gap: 14px;">
+                    <a href="https://wa.me/573173994234?text=Hola,%20me%20gustaría%20agendar%20una%20demostración%20de%20GastroFlow" target="_blank" class="footer-link"><i class="bi bi-whatsapp"></i></a>
+                    <a href="mailto:rene28609@gmail.com" class="footer-link"><i class="bi bi-envelope"></i></a>
+                </p>
+            </div>
+            <div class="footer-column">
+                <h4>Producto</h4>
+                <ul class="footer-links">
+                    <li><a href="#caracteristicas" class="footer-link">Características</a></li>
+                    <li><a href="#precios" class="footer-link">Planes y Precios</a></li>
+                </ul>
+            </div>
+            <div class="footer-column">
+                <h4>Recursos</h4>
+                <ul class="footer-links">
+                    <li><a href="#clientes" class="footer-link">Clientes</a></li>
+                    <li><a href="/sitemap.xml" class="footer-link">Sitemap</a></li>
+                </ul>
+            </div>
+            <div class="footer-column">
+                <h4>Contacto</h4>
+                <ul class="footer-links">
+                    <li><a href="mailto:rene28609@gmail.com" class="footer-link"><i class="bi bi-envelope me-2"></i> rene28609@gmail.com</a></li>
+                    <li><a href="https://wa.me/573173994234" target="_blank" class="footer-link"><i class="bi bi-whatsapp me-2"></i> +57 317 399 4234</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2026 GastroFlow. Todos los derechos reservados. Hecho con ❤️ en Colombia.</p>
+            <p>Contacto: <a href="mailto:rene28609@gmail.com" class="footer-link">rene28609@gmail.com</a></p>
+        </div>
+    </footer>
+
+</body>
+</html>
