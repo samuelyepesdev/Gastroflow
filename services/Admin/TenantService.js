@@ -219,6 +219,28 @@ class TenantService {
         `);
         const [facturasRows] = await db.query(`SELECT COUNT(*) AS cnt FROM facturas WHERE evento_id IS NULL`);
         const [ventasMontoRows] = await db.query(`SELECT COALESCE(SUM(total), 0) AS total FROM facturas WHERE evento_id IS NULL`);
+        
+        // Desglose de monto total vendido por método de pago para todos los restaurantes
+        const [montoPorFormaPagoRows] = await db.query(`
+            SELECT forma_pago, COALESCE(SUM(total), 0) AS total 
+            FROM facturas 
+            WHERE evento_id IS NULL 
+            GROUP BY forma_pago
+        `);
+        let totalEfectivo = 0;
+        let totalTransferencia = 0;
+        let totalOtros = 0;
+        montoPorFormaPagoRows.forEach(row => {
+            const fp = String(row.forma_pago || '').toLowerCase().trim();
+            const total = parseFloat(row.total || 0);
+            if (fp === 'efectivo') {
+                totalEfectivo += total;
+            } else if (fp === 'transferencia') {
+                totalTransferencia += total;
+            } else {
+                totalOtros += total;
+            }
+        });
         const [productosRows] = await db.query(`SELECT COUNT(*) AS cnt FROM productos WHERE tenant_id IS NOT NULL`);
         const [clientesRows] = await db.query(`SELECT COUNT(*) AS cnt FROM clientes WHERE tenant_id IS NOT NULL`);
         const [mesasRows] = await db.query(`SELECT COUNT(*) AS cnt FROM mesas WHERE tenant_id IS NOT NULL`);
@@ -403,6 +425,9 @@ class TenantService {
             totalUsuarios: parseInt(rowVal(usuariosRow?.[0]) || 0, 10),
             totalFacturas: parseInt(rowVal(facturasRows?.[0]) || 0, 10),
             totalVentasMonto: parseFloat(rowVal(ventasMontoRows?.[0]) || 0),
+            totalEfectivo: totalEfectivo,
+            totalTransferencia: totalTransferencia,
+            totalOtros: totalOtros,
             totalProductos: parseInt(rowVal(productosRows?.[0]) || 0, 10),
             totalClientes: parseInt(rowVal(clientesRows?.[0]) || 0, 10),
             totalMesas: parseInt(rowVal(mesasRows?.[0]) || 0, 10),
