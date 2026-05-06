@@ -24,6 +24,10 @@ app.use(cookieParser());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
+const idempotency = require('./middleware/idempotency');
+app.use(idempotency);
+
+
 // Route specifically for sitemap.xml
 app.get('/sitemap.xml', (req, res) => {
     const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'https';
@@ -101,8 +105,9 @@ app.use((req, res, next) => {
     }
     
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, idempotency-key, Idempotency-Key');
     next();
+
 });
 
 // Middleware Condicional para Dropdown Navbar
