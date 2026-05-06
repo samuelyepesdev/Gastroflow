@@ -64,10 +64,14 @@ $(function () {
     const insumosBajo = stats.insumosBajoStock != null ? stats.insumosBajoStock : 0;
     $('#insumosBajoStock').text(insumosBajo);
 
-    $('#totalCash').text(mod.formatCurrency(stats.totalEfectivo != null ? stats.totalEfectivo : 0));
-    $('#totalTransfer').text(mod.formatCurrency(stats.totalTransferencia != null ? stats.totalTransferencia : 0));
-    $('#totalExternal').text(mod.formatCurrency(stats.totalServiciosExternos != null ? stats.totalServiciosExternos : 0));
-    $('#totalNet').text(mod.formatCurrency(stats.ventaNeta != null ? stats.ventaNeta : 0));
+    $('#totalCash').text(mod.formatCurrency(stats.totalEfectivoAllTime != null ? stats.totalEfectivoAllTime : 0));
+    $('#totalTransfer').text(mod.formatCurrency(stats.totalTransferenciaAllTime != null ? stats.totalTransferenciaAllTime : 0));
+    $('#totalExternal').text(mod.formatCurrency(stats.totalServiciosExternosAllTime != null ? stats.totalServiciosExternosAllTime : 0));
+    $('#totalNet').text(mod.formatCurrency(stats.ventaNetaAllTime != null ? stats.ventaNetaAllTime : 0));
+
+    // Nuevas tarjetas mensuales
+    $('#totalCashMes').text(mod.formatCurrency(stats.totalEfectivoMes != null ? stats.totalEfectivoMes : 0));
+    $('#totalTransferMes').text(mod.formatCurrency(stats.totalTransferenciaMes != null ? stats.totalTransferenciaMes : 0));
   }
 
   function updateCharts(stats) {

@@ -44,7 +44,9 @@ class StatsService {
             eventosCalendario,
             totalSalesAllTime,
             totalInvoicesAllTime,
-            paymentTotals
+            paymentTotals,
+            paymentTotalsAllTime,
+            paymentTotalsMes
         ] = await Promise.all([
             StatsRepository.getVentasHoy(tenantId),
             StatsRepository.getVentasMes(tenantId),
@@ -60,7 +62,9 @@ class StatsService {
             StatsRepository.getEventosEnRango(tenantId, mesInicio, mesFin),
             StatsRepository.getTotalSalesAllTime(tenantId),
             StatsRepository.getTotalInvoicesAllTime(tenantId),
-            StatsRepository.getTotalsByPaymentMethod(tenantId, filters)
+            StatsRepository.getTotalsByPaymentMethod(tenantId, filters),
+            StatsRepository.getTotalsByPaymentMethod(tenantId, {}),
+            StatsRepository.getTotalsByPaymentMethod(tenantId, { desde: mesInicio, hasta: mesFin })
         ]);
 
         let insumosBajoStock = 0;
@@ -97,7 +101,19 @@ class StatsService {
             totalEfectivo: paymentTotals.efectivo,
             totalTransferencia: paymentTotals.transferencia,
             totalServiciosExternos: paymentTotals.serviciosExternos,
-            ventaNeta: (totalSales - paymentTotals.serviciosExternos)
+            ventaNeta: (totalSales - paymentTotals.serviciosExternos),
+            
+            // Totales históricos (desde el día 1)
+            totalEfectivoAllTime: paymentTotalsAllTime.efectivo,
+            totalTransferenciaAllTime: paymentTotalsAllTime.transferencia,
+            totalServiciosExternosAllTime: paymentTotalsAllTime.serviciosExternos,
+            ventaNetaAllTime: (totalSalesAllTime - paymentTotalsAllTime.serviciosExternos),
+
+            // Totales del mes actual
+            totalEfectivoMes: paymentTotalsMes.efectivo,
+            totalTransferenciaMes: paymentTotalsMes.transferencia,
+            totalServiciosExternosMes: paymentTotalsMes.serviciosExternos,
+            ventaNetaMes: (ventasMes.total - paymentTotalsMes.serviciosExternos)
         };
     }
 

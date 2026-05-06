@@ -40,7 +40,7 @@
     <div class="col-12">
         <h5 class="text-muted mb-2 small text-uppercase fw-bold">Ventas del mes</h5>
     </div>
-    <div class="col-md-6">
+    <div class="col-md-3">
         <div class="card stat-card c-primary text-white clickable" id="cardVentasMes" data-action="go-ventas"
             title="Ir a Ventas">
             <div class="card-body">
@@ -55,7 +55,7 @@
             </div>
         </div>
     </div>
-    <div class="col-md-6">
+    <div class="col-md-3">
         <div class="card stat-card c-teal text-white clickable" id="cardFacturasMes" data-action="go-ventas"
             title="Ir a Ventas">
             <div class="card-body">
@@ -66,6 +66,34 @@
                         <small class="opacity-75" style="font-size: 0.75rem;">Cantidad en el mes</small>
                     </div>
                     <i class="bi bi-receipt stat-icon"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card c-primary text-white" id="cardEfectivoMes">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="stat-label">Efectivo Mes</div>
+                        <div class="stat-value" id="totalCashMes">$0.00</div>
+                        <small class="opacity-75" style="font-size: 0.75rem;">Efectivo del mes</small>
+                    </div>
+                    <i class="bi bi-cash-stack stat-icon"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card c-teal text-white" id="cardTransferenciaMes">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="stat-label">Transferencia Mes</div>
+                        <div class="stat-value" id="totalTransferMes">$0.00</div>
+                        <small class="opacity-75" style="font-size: 0.75rem;">Transferencias del mes</small>
+                    </div>
+                    <i class="bi bi-bank stat-icon"></i>
                 </div>
             </div>
         </div>
