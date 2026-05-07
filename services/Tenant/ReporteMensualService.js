@@ -136,8 +136,12 @@ class ReporteMensualService {
         console.log('--- Iniciando CRON de cierre mensual de reportes ---');
         const tenants = await TenantService.getAllTenants();
 
-        for (const t of tenants) {
-            if (t.activo) {
+        // 1. Filtrar declarativamente los inquilinos activos (Programación Funcional)
+        const tenantsActivos = (tenants || []).filter(t => t && t.activo);
+
+        // 2. Procesar concurrentemente en paralelo todos los reportes usando .map() y Promise.all()
+        await Promise.all(
+            tenantsActivos.map(async (t) => {
                 try {
                     // Si se llama desde el cron de fin de mes, options tendrá { finDeMes: true }
                     // Si no, por defecto será para enviar el mes anterior.
@@ -145,8 +149,9 @@ class ReporteMensualService {
                 } catch (err) {
                     console.error(`Error enviando reporte mensual a tenant ${t.nombre}:`, err.message);
                 }
-            }
-        }
+            })
+        );
+
         console.log('--- Fin de CRON de cierre mensual ---');
     }
 }

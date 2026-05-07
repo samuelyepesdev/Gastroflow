@@ -46,11 +46,10 @@ function recetaCantidadABase(cantidad, unidadReceta, tipoBase) {
 
 /**
  * Costo directo de una receta = suma de (costo_unitario_real × cantidad_usada_en_base) por ingrediente.
- * costo_unitario_real = precio_compra / cantidad_compra_en_base (como en Excel).
+ * Aplicando Programación Funcional (.reduce) en lugar de bucles for mutables.
  */
 function calcularCostoDirecto(ingredientes) {
-    let total = 0;
-    for (const it of ingredientes || []) {
+    const total = (ingredientes || []).reduce((sum, it) => {
         const precioCompra = parseFloat(it.precio_compra) || 0;
         const cantidadCompra = parseFloat(it.cantidad_compra) || 1;
         const unidadCompra = (it.unidad_compra || 'UND').trim();
@@ -58,19 +57,18 @@ function calcularCostoDirecto(ingredientes) {
         const unidadReceta = (it.unidad || 'g').trim();
 
         const { cantidadBase: cantidadBaseCompra, tipoBase } = compraABase(cantidadCompra, unidadCompra);
-        if (cantidadBaseCompra <= 0) continue;
+        if (cantidadBaseCompra <= 0) return sum;
+
         const costoUnitarioReal = precioCompra / cantidadBaseCompra;
         const cantidadRecetaBase = recetaCantidadABase(cantidadUsada, unidadReceta, tipoBase);
-        total += costoUnitarioReal * cantidadRecetaBase;
-    }
+        return sum + (costoUnitarioReal * cantidadRecetaBase);
+    }, 0);
+
     return Math.round(total * 100) / 100;
 }
 
 /**
  * Costo unitario calculado (por unidad base): precio_compra / cantidad_compra_en_base.
- * Para mostrar en listados o cuando el cliente necesita "costo por unidad" sin recalcular.
- * @param {{ precio_compra?: number, cantidad_compra?: number, unidad_compra?: string }} insumo
- * @returns {number}
  */
 function getCostoUnitarioCalculado(insumo) {
     if (!insumo) return 0;
@@ -82,7 +80,6 @@ function getCostoUnitarioCalculado(insumo) {
 
 /**
  * Costo indirecto según configuración: porcentaje (merma), costo fijo por plato, o factor.
- * totalCostosFijos: suma de costos_fijos activos del tenant (cuando metodo === 'costo_fijo').
  */
 function calcularCostoIndirecto(costoDirecto, config, totalCostosFijos = 0) {
     if (!config) return 0;
@@ -93,7 +90,7 @@ function calcularCostoIndirecto(costoDirecto, config, totalCostosFijos = 0) {
     }
     if (metodo === 'costo_fijo') {
         const totalFijo = typeof totalCostosFijos === 'number' ? totalCostosFijos : (parseFloat(config.costo_fijo_mensual) || 0);
-        const unidadesEstimadasMes = parseInt(config.platos_estimados_mes, 10) || 500; // Total porciones/platos estimados al mes (mix productos)
+        const unidadesEstimadasMes = parseInt(config.platos_estimados_mes, 10) || 500;
         return unidadesEstimadasMes > 0 ? Math.round((totalFijo / unidadesEstimadasMes) * 100) / 100 : 0;
     }
     return 0;
@@ -101,11 +98,10 @@ function calcularCostoIndirecto(costoDirecto, config, totalCostosFijos = 0) {
 
 /**
  * Precio sugerido: Precio = Costo total ÷ (1 - Margen de ganancia esperado)
- * Ej: costo $15, margen 65% → precio = 15 / (1 - 0.65) = $42.85
  */
 function calcularPrecioSugerido(costoTotal, config) {
     if (!config) return costoTotal * 2;
-    const metodo = config.metodo_indirectos || 'porcentaje';
+    const metodo = config.metodo_indirectos || 'factor';
     const margen = parseFloat(config.margen_objetivo_default) || 65;
     if (metodo === 'factor') {
         const factor = parseFloat(config.factor_carga) || 2.5;
@@ -116,12 +112,6 @@ function calcularPrecioSugerido(costoTotal, config) {
 }
 
 class CosteoService {
-    /**
-     * Get costing data for a product (by its linked recipe).
-     * @param {number} productoId - Product ID
-     * @param {number} tenantId - Tenant ID
-     * @returns {Promise<Object|null>} Costeo object or null if product has no recipe
-     */
     static async getCosteoByProductoId(productoId, tenantId) {
         const receta = await RecetaRepository.findByProductoId(productoId, tenantId);
         if (!receta) return null;
@@ -131,9 +121,13 @@ class CosteoService {
     static async getCosteoReceta(recetaId, tenantId) {
         const receta = await RecetaRepository.findById(recetaId, tenantId);
         if (!receta) return null;
-        const ingredientes = await RecetaRepository.getIngredientes(recetaId);
-        const config = await ConfiguracionCosteoRepository.findOne(tenantId);
-        const totalCostosFijos = await CostosFijosRepository.getTotalActivo(tenantId);
+        
+        const [ingredientes, config, totalCostosFijos] = await Promise.all([
+            RecetaRepository.getIngredientes(recetaId),
+            ConfiguracionCosteoRepository.findOne(tenantId),
+            CostosFijosRepository.getTotalActivo(tenantId)
+        ]);
+
         const costoDirecto = calcularCostoDirecto(ingredientes);
         const porciones = parseFloat(receta.porciones) || 1;
         const costoMateriaPrimaPorcion = porciones > 0 ? costoDirecto / porciones : costoDirecto;
@@ -142,18 +136,16 @@ class CosteoService {
         const cvuPorcion = Math.round(costoTotalPorcion * 100) / 100;
         const precioSugerido = calcularPrecioSugerido(costoTotalPorcion, config);
         const precioActual = parseFloat(receta.precio_venta_actual) || 0;
+        
         const mermaPct = config && (config.metodo_indirectos || 'porcentaje') === 'porcentaje'
             ? (parseFloat(config.porcentaje_indirectos) || 0) : 0;
         const margenObjetivoPct = parseFloat(config?.margen_objetivo_default) || 65;
 
-        // Precio y rentabilidad (siempre recalculados, no guardados)
         const utilidadBrutaPorcion = precioActual > 0 ? precioActual - cvuPorcion : 0;
         const margenRealPct = precioActual > 0 ? ((precioActual - cvuPorcion) / precioActual) * 100 : null;
         const markupRealPct = cvuPorcion > 0 && precioActual > 0 ? (utilidadBrutaPorcion / cvuPorcion) * 100 : null;
         const margenContribucionPorcion = precioActual > 0 ? precioActual - cvuPorcion : 0;
 
-        // Punto de equilibrio: cuántas porciones vender para cubrir costos fijos
-        // PE = TotalCostosFijos / MargenContribucionPorcion
         const puntoEquilibrioPorciones = margenContribucionPorcion > 0 && totalCostosFijos >= 0
             ? totalCostosFijos / margenContribucionPorcion
             : null;
@@ -197,35 +189,39 @@ class CosteoService {
     }
 
     /**
-     * Get costing alerts: low margin, price below cost, products without recipe.
-     * @param {number} tenantId - Tenant ID
-     * @returns {Promise<Object>} { margenBajo, precioBajoCosto, sinReceta, margen_minimo_alerta }
+     * Get costing alerts concurrent and functional.
      */
     static async getAlertas(tenantId) {
         const config = await this.getConfig(tenantId);
         const margenMinimo = config.margen_minimo_alerta != null ? parseFloat(config.margen_minimo_alerta) : 30;
-        const recetas = await RecetaRepository.findAll(tenantId);
-        const productos = await ProductRepository.findAll(tenantId);
+        const [recetas, productos] = await Promise.all([
+            RecetaRepository.findAll(tenantId),
+            ProductRepository.findAll(tenantId)
+        ]);
+
         const productoIdsConReceta = new Set((recetas || []).map(r => r.producto_id));
         const sinReceta = (productos || [])
             .filter(p => !productoIdsConReceta.has(p.id))
             .map(p => ({ id: p.id, codigo: p.codigo, nombre: p.nombre }));
 
-        const items = [];
-        for (const receta of recetas || []) {
-            const costeo = await this.getCosteoReceta(receta.id, tenantId);
-            if (!costeo) continue;
-            items.push({
-                producto_id: receta.producto_id,
-                producto_nombre: receta.producto_nombre || receta.nombre_receta,
-                producto_codigo: receta.producto_codigo,
-                precio_venta_actual: costeo.precio_venta_actual,
-                costo_total_porcion: costeo.costo_total_porcion,
-                margen_actual_pct: costeo.margen_actual_pct,
-                receta_id: receta.id
-            });
-        }
+        // Transformar recetas de manera funcional y concurrente (Promise.all + .map)
+        const itemsWithNulls = await Promise.all(
+            (recetas || []).map(async (receta) => {
+                const costeo = await this.getCosteoReceta(receta.id, tenantId);
+                if (!costeo) return null;
+                return {
+                    producto_id: receta.producto_id,
+                    producto_nombre: receta.producto_nombre || receta.nombre_receta,
+                    producto_codigo: receta.producto_codigo,
+                    precio_venta_actual: costeo.precio_venta_actual,
+                    costo_total_porcion: costeo.costo_total_porcion,
+                    margen_actual_pct: costeo.margen_actual_pct,
+                    receta_id: receta.id
+                };
+            })
+        );
 
+        const items = itemsWithNulls.filter(Boolean);
         const margenBajo = items.filter(it => it.margen_actual_pct != null && it.margen_actual_pct < margenMinimo);
         const precioBajoCosto = items.filter(it =>
             (parseFloat(it.precio_venta_actual) || 0) < (parseFloat(it.costo_total_porcion) || 0)
@@ -240,45 +236,47 @@ class CosteoService {
     }
 
     /**
-     * Resumen financiero del negocio: punto de equilibrio y ventas necesarias
-     * considerando TODOS los productos con receta (mix del portafolio).
-     * MC% = suma(margen contribución por producto) / suma(precio por producto), asumiendo mix igual.
-     * Ventas equilibrio = Costos fijos / (MC% / 100).
-     * Ventas para meta = (Costos fijos + Ganancia deseada) / (MC% / 100).
-     * @param {number} tenantId
-     * @returns {Promise<Object>}
+     * Resumen financiero de manera puramente funcional e inmutable.
      */
     static async getResumenFinanciero(tenantId) {
-        const totalCostosFijos = await CostosFijosRepository.getTotalActivo(tenantId);
-        const config = await this.getConfig(tenantId);
+        const [totalCostosFijos, config, recetas] = await Promise.all([
+            CostosFijosRepository.getTotalActivo(tenantId),
+            this.getConfig(tenantId),
+            RecetaRepository.findAll(tenantId)
+        ]);
+        
         const gananciaDeseada = parseFloat(config.ganancia_neta_deseada_mensual) || 0;
-        const recetas = await RecetaRepository.findAll(tenantId);
-        const productos = [];
 
-        let sumaPrecios = 0;
-        let sumaMargenContribucion = 0;
+        // Carga en paralelo asíncrona de los costeos de todas las recetas
+        const productsWithNulls = await Promise.all(
+            (recetas || []).map(async (receta) => {
+                const costeo = await this.getCosteoReceta(receta.id, tenantId);
+                if (!costeo) return null;
+                
+                const precio = parseFloat(costeo.precio_venta_actual) || 0;
+                const cvu = parseFloat(costeo.cvu_porcion) || costeo.costo_total_porcion || 0;
+                const mcPorcion = precio - cvu;
+                const mcPct = precio > 0 ? (mcPorcion / precio) * 100 : 0;
 
-        for (const receta of recetas || []) {
-            const costeo = await this.getCosteoReceta(receta.id, tenantId);
-            if (!costeo) continue;
-            const precio = parseFloat(costeo.precio_venta_actual) || 0;
-            const cvu = parseFloat(costeo.cvu_porcion) || costeo.costo_total_porcion || 0;
-            const mcPorcion = precio - cvu;
-            const mcPct = precio > 0 ? (mcPorcion / precio) * 100 : 0;
+                return {
+                    producto_id: receta.producto_id,
+                    producto_nombre: costeo.receta?.producto_nombre || receta.nombre_receta,
+                    producto_codigo: costeo.receta?.producto_codigo,
+                    precio_venta: Math.round(precio * 100) / 100,
+                    cvu_porcion: Math.round(cvu * 100) / 100,
+                    margen_contribucion_porcion: Math.round(mcPorcion * 100) / 100,
+                    margen_contribucion_pct: Math.round(mcPct * 100) / 100,
+                    precioRaw: precio,
+                    mcRaw: mcPorcion
+                };
+            })
+        );
 
-            productos.push({
-                producto_id: receta.producto_id,
-                producto_nombre: costeo.receta?.producto_nombre || receta.nombre_receta,
-                producto_codigo: costeo.receta?.producto_codigo,
-                precio_venta: Math.round(precio * 100) / 100,
-                cvu_porcion: Math.round(cvu * 100) / 100,
-                margen_contribucion_porcion: Math.round(mcPorcion * 100) / 100,
-                margen_contribucion_pct: Math.round(mcPct * 100) / 100
-            });
-
-            sumaPrecios += precio;
-            sumaMargenContribucion += mcPorcion;
-        }
+        const productos = productsWithNulls.filter(Boolean);
+        
+        // Sumatorias declarativas e inmutables usando .reduce
+        const sumaPrecios = productos.reduce((sum, p) => sum + p.precioRaw, 0);
+        const sumaMargenContribucion = productos.reduce((sum, p) => sum + p.mcRaw, 0);
 
         const mcPctNegocio = sumaPrecios > 0 ? (sumaMargenContribucion / sumaPrecios) * 100 : 0;
         const ventasEquilibrio = mcPctNegocio > 0 ? totalCostosFijos / (mcPctNegocio / 100) : null;
