@@ -170,29 +170,37 @@ class InventarioService {
         const ingredientes = await RecetaRepository.getIngredientes(receta.id);
         const porciones = parseFloat(receta.porciones) || 1;
         const factor = (parseFloat(cantidad) || 1) / porciones;
-        const faltantes = [];
-        for (const ing of ingredientes || []) {
-            const insumo = await InsumoRepository.findById(ing.insumo_id, tenantId);
-            if (!insumo) continue;
-            const unidadBase = (insumo.unidad_base || 'g').toString().trim();
-            const cantidadRequerida = (parseFloat(ing.cantidad) || 0) * factor;
-            const requerido = cantidadABase(cantidadRequerida, ing.unidad || unidadBase);
-            const disponible = parseFloat(insumo.stock_actual) || 0;
-            if (disponible < requerido) {
-                faltantes.push({
-                    insumo_nombre: insumo.nombre,
-                    requerido,
-                    disponible,
-                    unidad_base: unidadBase
-                });
-            }
-        }
+
+        // Validar ingredientes de forma paralela y concurrente usando programación funcional
+        const checkResultados = await Promise.all(
+            (ingredientes || []).map(async (ing) => {
+                const insumo = await InsumoRepository.findById(ing.insumo_id, tenantId);
+                if (!insumo) return null;
+                const unidadBase = (insumo.unidad_base || 'g').toString().trim();
+                const cantidadRequerida = (parseFloat(ing.cantidad) || 0) * factor;
+                const requerido = cantidadABase(cantidadRequerida, ing.unidad || unidadBase);
+                const disponible = parseFloat(insumo.stock_actual) || 0;
+
+                if (disponible < requerido) {
+                    return {
+                        insumo_nombre: insumo.nombre,
+                        requerido,
+                        disponible,
+                        unidad_base: unidadBase
+                    };
+                }
+                return null;
+            })
+        );
+
+        const faltantes = checkResultados.filter(Boolean);
         return { ok: faltantes.length === 0, faltantes };
     }
 
     /**
      * Descuenta inventario por la receta del producto (N porciones). Referencia = factura_id o pedido_id.
      * Convierte cantidad de cada ingrediente a unidad_base del insumo.
+     * Procesado de forma concurrente y paralela para optimizar transacciones.
      */
     static async descontarPorReceta(tenantId, productoId, cantidad, referencia) {
         const receta = await RecetaRepository.findByProductoId(productoId, tenantId);
@@ -200,51 +208,52 @@ class InventarioService {
         const ingredientes = await RecetaRepository.getIngredientes(receta.id);
         const porciones = parseFloat(receta.porciones) || 1;
         const factor = (parseFloat(cantidad) || 1) / porciones;
-        for (const ing of ingredientes || []) {
-            const insumo = await InsumoRepository.findById(ing.insumo_id, tenantId);
-            if (!insumo) continue;
-            const cantidadRequerida = (parseFloat(ing.cantidad) || 0) * factor;
-            const cantidadEnBase = cantidadABase(cantidadRequerida, ing.unidad || insumo.unidad_base || 'g');
-            if (cantidadEnBase > 0) {
-                await this.registrarSalida(tenantId, {
-                    insumo_id: ing.insumo_id,
-                    cantidad: cantidadEnBase,
-                    referencia: referencia || `Receta producto ${productoId}`
-                });
-            }
-        }
+
+        // Descontar inventario en paralelo usando programación funcional concurrente
+        await Promise.all(
+            (ingredientes || []).map(async (ing) => {
+                const insumo = await InsumoRepository.findById(ing.insumo_id, tenantId);
+                if (!insumo) return;
+                const cantidadRequerida = (parseFloat(ing.cantidad) || 0) * factor;
+                const cantidadEnBase = cantidadABase(cantidadRequerida, ing.unidad || insumo.unidad_base || 'g');
+                if (cantidadEnBase > 0) {
+                    await this.registrarSalida(tenantId, {
+                        insumo_id: ing.insumo_id,
+                        cantidad: cantidadEnBase,
+                        referencia: referencia || `Receta producto ${productoId}`
+                    });
+                }
+            })
+        );
     }
 
     static async getResumenValorizacion(tenantId) {
         const insumos = await InsumoRepository.findAll(tenantId, {});
-        let valorTotal = 0;
-        let itemsContados = 0;
 
-        (insumos || []).forEach(i => {
+        // Agregación inmutable y pura usando .reduce
+        const valorizacion = (insumos || []).reduce((acc, i) => {
             const stock = parseFloat(i.stock_actual) || 0;
-            
-            // Solo procesamos si hay stock real (evita que negativos resten al capital)
-            if (stock > 0) {
-                let costo = i.costo_promedio != null ? parseFloat(i.costo_promedio) : 0;
+            if (stock <= 0) return acc;
 
-                // Fallback: si el costo promedio es 0, intentamos usar precio_compra base o precio_venta para cerámicas
-                if (costo === 0) {
-                    if (i.categoria_nombre === 'Cerámicas' && parseFloat(i.precio_venta) > 0) {
-                        costo = parseFloat(i.precio_venta);
-                    } else if (parseFloat(i.precio_compra) > 0 && parseFloat(i.cantidad_compra) > 0) {
-                        costo = parseFloat(i.precio_compra) / parseFloat(i.cantidad_compra);
-                    }
+            let costo = i.costo_promedio != null ? parseFloat(i.costo_promedio) : 0;
+            if (costo === 0) {
+                if (i.categoria_nombre === 'Cerámicas' && parseFloat(i.precio_venta) > 0) {
+                    costo = parseFloat(i.precio_venta);
+                } else if (parseFloat(i.precio_compra) > 0 && parseFloat(i.cantidad_compra) > 0) {
+                    costo = parseFloat(i.precio_compra) / parseFloat(i.cantidad_compra);
                 }
-
-                valorTotal += stock * costo;
-                itemsContados++;
             }
-        });
+
+            return {
+                valorTotal: acc.valorTotal + (stock * costo),
+                itemsContados: acc.itemsContados + 1
+            };
+        }, { valorTotal: 0, itemsContados: 0 });
 
         return {
             total_insumos: (insumos || []).length,
-            con_stock: itemsContados,
-            valor_total: Math.round(valorTotal * 100) / 100
+            con_stock: valorizacion.itemsContados,
+            valor_total: Math.round(valorizacion.valorTotal * 100) / 100
         };
     }
 

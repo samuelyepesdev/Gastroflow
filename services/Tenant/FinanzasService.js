@@ -67,11 +67,8 @@ class FinanzasService {
             [tenantId]
         );
 
-        let ingresos = 0, egresos = 0;
-        resumen.forEach(r => {
-            if (r.tipo === 'entrada') ingresos = parseFloat(r.total) || 0;
-            if (r.tipo === 'salida') egresos = parseFloat(r.total) || 0;
-        });
+        const ingresos = parseFloat((resumen || []).find(r => r.tipo === 'entrada')?.total) || 0;
+        const egresos = parseFloat((resumen || []).find(r => r.tipo === 'salida')?.total) || 0;
 
         return {
             ingresos,
