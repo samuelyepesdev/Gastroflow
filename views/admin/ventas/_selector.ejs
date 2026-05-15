@@ -5,8 +5,9 @@
             <div class="col-md-4">
                 <label class="form-label fw-semibold">Restaurante</label>
                 <select id="selectTenant" class="form-select">
+                    <option value="all" <%= activeTenantId === 'all' ? 'selected' : '' %>>--- Todos los restaurantes ---</option>
                     <% (tenants || []).forEach(function(t) { %>
-                        <option value="<%= t.id %>" <%=Number(activeTenantId)===Number(t.id) ? 'selected' : '' %>><%=
+                        <option value="<%= t.id %>" <%= activeTenantId !== 'all' && Number(activeTenantId)===Number(t.id) ? 'selected' : '' %>><%=
                                 t.nombre %>
                         </option>
                         <% }); %>

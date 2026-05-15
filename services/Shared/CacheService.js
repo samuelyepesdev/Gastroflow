@@ -39,6 +39,18 @@ class CacheService {
     delete(key) {
         this.cache.delete(key);
     }
+    
+    /**
+     * Elimina elementos de la caché que coinciden con un prefijo.
+     * @param {string} prefix - Prefijo de las claves a eliminar
+     */
+    deleteByPrefix(prefix) {
+        for (const key of this.cache.keys()) {
+            if (key.startsWith(prefix)) {
+                this.cache.delete(key);
+            }
+        }
+    }
 
     /**
      * Limpia por completo la caché.

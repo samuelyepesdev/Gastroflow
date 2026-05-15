@@ -7,7 +7,13 @@ class VentasController {
     static async index(req, res) {
         try {
             const tenants = await TenantService.getAllTenants();
-            const activeTenantId = Number(req.query.tenantId) || (tenants[0] && tenants[0].id) || null;
+            let activeTenantId = req.query.tenantId;
+            if (!activeTenantId) {
+                activeTenantId = 'all'; // Default to all so they see all 474+ invoices!
+            } else if (activeTenantId !== 'all') {
+                activeTenantId = Number(activeTenantId);
+            }
+
             let ventas = [];
             if (activeTenantId) {
                 ventas = await VentaService.getWithFilters(activeTenantId, {

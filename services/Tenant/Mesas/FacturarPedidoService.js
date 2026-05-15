@@ -144,6 +144,15 @@ class FacturarPedidoService {
                 console.error('CRÍTICO: Error al registrar ingreso en finanzas (pedido):', finErr);
             }
             // --------------------------------
+            
+            // --- INVALIDAR CACHÉ DE ESTADÍSTICAS (Actualización instantánea del Dashboard) ---
+            try {
+                const cacheService = require('../../Shared/CacheService');
+                cacheService.deleteByPrefix(`tenant_dashboard_stats_${tenantId}`);
+                cacheService.delete('superadmin_dashboard_stats');
+            } catch (cacheErr) {
+                console.error('Error opcional al invalidar caché de estadísticas:', cacheErr);
+            }
 
             return { factura_id: facturaId, numero: numeroFactura };
             

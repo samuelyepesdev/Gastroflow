@@ -458,6 +458,12 @@ $(function () {
     $('#limpiarFiltros').on('click', window.clearFilters);
     initStatsCardClicks();
 
+    // --- AUTO-REFRESCO EN TIEMPO REAL ---
+    // Ejecuta la carga periódica de datos respetando los filtros activos
+    setInterval(() => {
+      window.applyFilters();
+    }, 5000);
+
     $('#btnTestReporteMensual').on('click', async function () {
       const btn = $(this);
       const originalText = btn.html();

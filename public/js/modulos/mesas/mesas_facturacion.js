@@ -19,6 +19,9 @@ $(function () {
 
   $('#btnFacturarPedido').on('click', async function () {
     try {
+      // --- GENERAR LLAVE DE IDEMPOTENCIA ÚNICA PARA ESTE INTENTO ---
+      const keyIdemp = 'intent_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+
       if (!mod.pedidoActual || !mod.pedidoActual.id) {
         Swal.fire({ icon: 'error', title: 'No hay pedido activo' });
         return;
@@ -57,7 +60,10 @@ $(function () {
         try {
           const reqFactura = await fetch(`/api/mesas/pedidos/${mod.pedidoActual.id}/facturar`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+              'Content-Type': 'application/json',
+              'Idempotency-Key': keyIdemp
+            },
             body: JSON.stringify({
               cliente_id: clienteIdFacturar,
               forma_pago: 'efectivo',
@@ -87,7 +93,10 @@ $(function () {
         try {
           const reqFactura = await fetch(`/api/mesas/pedidos/${mod.pedidoActual.id}/facturar`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+              'Content-Type': 'application/json',
+              'Idempotency-Key': keyIdemp
+            },
             body: JSON.stringify({
               cliente_id: clienteIdFacturar,
               forma_pago: 'efectivo',
@@ -127,7 +136,7 @@ $(function () {
         });
 
         if (result.isConfirmed) {
-          await mostrarModalPago(totalConPropinaFacturar, clienteIdFacturar);
+          await mostrarModalPago(totalConPropinaFacturar, clienteIdFacturar, keyIdemp);
         } else if (result.isDenied) {
           await mod.runWithOffcanvasHidden(async () => {
             let rowsHtml = '';
@@ -360,7 +369,10 @@ $(function () {
               try {
                 const r = await fetch(`/api/mesas/items/pagar-multiples`, {
                   method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
+                  headers: { 
+                    'Content-Type': 'application/json',
+                    'Idempotency-Key': keyIdemp
+                  },
                   body: JSON.stringify({
                     forma_pago: formaPago,
                     items: itemsSeleccionados.items
@@ -384,14 +396,14 @@ $(function () {
           });
         }
       } else {
-        await mostrarModalPago(totalConPropinaFacturar, clienteIdFacturar);
+        await mostrarModalPago(totalConPropinaFacturar, clienteIdFacturar, keyIdemp);
       }
     } catch (err) {
       Swal.fire({ icon: 'error', title: err.message });
     }
   });
 
-  async function mostrarModalPago(total, clienteId) {
+  async function mostrarModalPago(total, clienteId, keyIdemp) {
     const modal = new bootstrap.Modal(document.getElementById('modalPago'));
     let formaPagoSeleccionada = null;
     let montoRecibido = null;
@@ -468,6 +480,9 @@ $(function () {
     });
 
     $('#btnUsarMontoManual').off('click').on('click', usarMontoManual);
+    
+    // Restablecer el botón de pago por si quedó deshabilitado en ejecuciones previas
+    $('#btnConfirmarPago').prop('disabled', true).html('Confirmar Pago <i class="bi bi-check-circle"></i>');
 
     $('#btnConfirmarPago').off('click').on('click', async function () {
       if (!formaPagoSeleccionada) {
@@ -478,6 +493,10 @@ $(function () {
         Swal.fire({ icon: 'warning', title: 'El monto recibido debe ser mayor o igual al total' });
         return;
       }
+
+      // --- PREVENCIÓN DE DOBLE CLIC FÍSICO ---
+      const $btn = $(this);
+      $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Procesando...');
 
       modal.hide();
 
@@ -490,7 +509,10 @@ $(function () {
       try {
         const resp = await fetch(`/api/mesas/pedidos/${mod.pedidoActual.id}/facturar`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'Idempotency-Key': keyIdemp
+          },
           body: JSON.stringify({
             cliente_id: clienteId,
             forma_pago: formaPagoSeleccionada,

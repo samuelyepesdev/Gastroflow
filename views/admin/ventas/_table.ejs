@@ -6,6 +6,9 @@
                 <thead class="table-light">
                     <tr>
                         <th>#</th>
+                        <% if (activeTenantId === 'all') { %>
+                        <th>Restaurante</th>
+                        <% } %>
                         <th>Fecha</th>
                         <th>Cliente</th>
                         <th>Forma pago</th>
@@ -20,6 +23,11 @@
                             <td>
                                 <%= typeof v.numero !=='undefined' && v.numero !=null ? v.numero : v.id %>
                             </td>
+                            <% if (activeTenantId === 'all') { %>
+                            <td class="fw-semibold text-primary">
+                                <%= v.tenant_nombre %>
+                            </td>
+                            <% } %>
                             <td>
                                 <%= new Date(v.fecha).toLocaleString() %>
                             </td>
