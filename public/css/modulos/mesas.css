@@ -7,8 +7,8 @@ body {
     background-color: #f1f5f9;
 }
 
-/* Tarjetas de mesa */
-.mesa-card {
+/* Tarjetas de mesa (solo antiguas / virtuales) */
+.mesa-card:not(.mesa-real-card) {
     border: none;
     border-radius: 16px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, .07);
@@ -17,25 +17,25 @@ body {
     overflow: hidden;
 }
 
-.mesa-card:hover {
+.mesa-card:not(.mesa-real-card):hover {
     transform: translateY(-3px);
     box-shadow: 0 6px 18px rgba(0, 0, 0, .12);
 }
 
 /* Borde superior por estado */
-.mesa-card.libre {
+.mesa-card:not(.mesa-real-card).libre {
     border-top: 4px solid #22c55e;
 }
 
-.mesa-card.ocupada {
+.mesa-card:not(.mesa-real-card).ocupada {
     border-top: 4px solid #f59e0b;
 }
 
-.mesa-card.reservada {
+.mesa-card:not(.mesa-real-card).reservada {
     border-top: 4px solid #64748b;
 }
 
-.mesa-card.virtual {
+.mesa-card:not(.mesa-real-card).virtual {
     border-top: 4px solid #0ea5e9;
     background: linear-gradient(to bottom right, #ffffff, #f0f9ff);
 }
@@ -332,3 +332,305 @@ body {
     background: rgba(13, 110, 253, 0.05);
     padding-left: 1.5rem;
 }
+
+/* ============================================================
+   ESTILOS PREMIUM DE MESAS FÍSICAS TRIDIMENSIONALES (Loggro Restobar Style)
+   ============================================================ */
+
+/* 1. Tarjeta Contenedora de Mesa Real */
+.mesa-real-card {
+    border: none;
+    border-radius: 24px;
+    background: #ffffff;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.04), 0 1px 4px rgba(0, 0, 0, 0.02);
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.15), box-shadow 0.3s ease;
+    overflow: hidden;
+}
+
+.mesa-real-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.1), 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+/* Efecto de borde superior sutil según estado en tarjetas físicas */
+.mesa-real-card.libre {
+    border-top: 5px solid #10b981;
+}
+
+.mesa-real-card.ocupada {
+    border-top: 5px solid #ef4444;
+}
+
+.mesa-real-card.reservada {
+    border-top: 5px solid #f59e0b;
+}
+
+/* Tarjetas de Mesa Virtuales (Domicilio / WhatsApp) */
+.mesa-real-card.virtual {
+    background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%);
+    border-top: 5px solid #22c55e;
+}
+
+/* 2. Contenedor de la Representación Física Cenital */
+.mesa-real-layout-wrapper {
+    width: 140px;
+    height: 140px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+}
+
+/* 3. El Cuerpo Físico de la Mesa (Cenital) */
+.mesa-real-objeto-cuerpo {
+    position: absolute;
+    width: 90px;
+    height: 90px;
+    border-radius: 50%; /* Elegante mesa redonda */
+    z-index: 10;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.2);
+}
+
+/* Colores Volumétricos de Mesa según Estado */
+.libre .mesa-real-objeto-cuerpo {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    border: 3px solid #34d399;
+    box-shadow: 0 8px 20px rgba(16, 185, 129, 0.25), inset 0 2px 4px rgba(255, 255, 255, 0.2);
+}
+
+.ocupada .mesa-real-objeto-cuerpo {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    border: 3px solid #f87171;
+    box-shadow: 0 8px 24px rgba(239, 68, 68, 0.35), inset 0 2px 4px rgba(255, 255, 255, 0.2);
+    animation: pulse-sombra-mesa-real 2.5s infinite ease-in-out;
+}
+
+.reservada .mesa-real-objeto-cuerpo {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    border: 3px solid #fbbf24;
+    box-shadow: 0 8px 20px rgba(245, 158, 11, 0.25), inset 0 2px 4px rgba(255, 255, 255, 0.2);
+}
+
+/* Brillo Laca/Cristal Superior */
+.mesa-real-objeto-brillo {
+    position: absolute;
+    top: 6%;
+    left: 12%;
+    width: 76%;
+    height: 32%;
+    background: linear-gradient(to bottom, rgba(255, 255, 255, 0.35) 0%, rgba(255, 255, 255, 0) 100%);
+    border-radius: 40px 40px 0 0;
+    pointer-events: none;
+    z-index: 11;
+}
+
+/* Tipografía de Mesa Real */
+.mesa-real-objeto-num {
+    font-size: 1.15rem;
+    font-weight: 900;
+    color: #ffffff;
+    letter-spacing: 0.3px;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+    z-index: 12;
+}
+
+/* Minibadge de Estado de la Mesa */
+.mesa-real-objeto-badge {
+    font-size: 0.62rem !important;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 8px;
+    margin-top: 2px;
+    letter-spacing: 0.3px;
+    z-index: 12;
+}
+
+.libre .mesa-real-objeto-badge {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+/* 4. Sillas Físicas Alrededor de la Mesa (Cenital) */
+.mesa-real-sillas {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    z-index: 5;
+}
+
+.silla-real-item {
+    position: absolute;
+    background: #475569;
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15), inset 0 1px 2px rgba(255, 255, 255, 0.15);
+    border: 1.5px solid #64748b;
+    z-index: 4;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.25);
+}
+
+/* Colores de Silla por Estado */
+.libre .silla-real-item {
+    background: #0f766e;
+    border-color: #14b8a6;
+}
+
+.ocupada .silla-real-item {
+    background: #64748b;
+    border-color: #94a3b8;
+}
+
+.reservada .silla-real-item {
+    background: #78350f;
+    border-color: #b45309;
+}
+
+/* Posiciones Geométricas de las Sillas en 2D Cenital */
+.silla-top {
+    width: 24px;
+    height: 15px;
+    top: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-radius: 7px 7px 3px 3px;
+}
+
+.silla-bottom {
+    width: 24px;
+    height: 15px;
+    bottom: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-radius: 3px 3px 7px 7px;
+}
+
+.silla-right {
+    width: 15px;
+    height: 24px;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    border-radius: 3px 7px 7px 3px;
+}
+
+.silla-left {
+    width: 15px;
+    height: 24px;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    border-radius: 7px 3px 3px 7px;
+}
+
+/* ============================================================
+   MICRO-INTERACCIONES Y EFECTOS EN HOVER (WOW factor)
+   ============================================================ */
+
+/* 1. La mesa se eleva sutilmente en hover y las sillas se "guardan" (se meten más adentro) */
+.mesa-real-card:hover .mesa-real-objeto-cuerpo {
+    transform: scale(1.04);
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.22);
+}
+
+.mesa-real-card:hover .silla-top {
+    top: 20px;
+}
+
+.mesa-real-card:hover .silla-bottom {
+    bottom: 20px;
+}
+
+.mesa-real-card:hover .silla-right {
+    right: 20px;
+}
+
+.mesa-real-card:hover .silla-left {
+    left: 20px;
+}
+
+/* Animación de pulso para mesa ocupada */
+@keyframes pulse-sombra-mesa-real {
+    0% {
+        box-shadow: 0 8px 20px rgba(239, 68, 68, 0.3);
+    }
+    50% {
+        box-shadow: 0 8px 28px rgba(239, 68, 68, 0.6);
+        border-color: #fca5a5;
+    }
+    100% {
+        box-shadow: 0 8px 20px rgba(239, 68, 68, 0.3);
+    }
+}
+
+/* Animación de pulso del badge activo */
+.animate-pulse {
+    animation: pulse-badge-active 2s infinite ease-in-out;
+}
+
+@keyframes pulse-badge-active {
+    0% { transform: scale(1); opacity: 0.95; }
+    50% { transform: scale(1.05); opacity: 1; }
+    100% { transform: scale(1); opacity: 0.95; }
+}
+
+/* ============================================================
+   DISEÑO DE BOTONERAS DE GAMA ALTA
+   ============================================================ */
+
+/* Botón de Acción Principal de comanda */
+.btn-premium-action {
+    border-radius: 12px !important;
+    font-weight: 700 !important;
+    padding: 0.6rem 1rem !important;
+    letter-spacing: 0.2px;
+    font-size: 0.88rem !important;
+    transition: all 0.25s ease !important;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+}
+
+.btn-premium-action.btn-success {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    border: none !important;
+}
+
+.btn-premium-action.btn-success:hover {
+    background: linear-gradient(135deg, #059669 0%, #047857 100%);
+    box-shadow: 0 6px 16px rgba(16, 185, 129, 0.3);
+    transform: translateY(-1px);
+}
+
+.btn-premium-action.btn-warning {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    border: none !important;
+}
+
+.btn-premium-action.btn-warning:hover {
+    background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+    box-shadow: 0 6px 16px rgba(245, 158, 11, 0.3);
+    transform: translateY(-1px);
+}
+
+/* Botones Secundarios (Ver, Liberar, Editar) */
+.btn-premium-secondary {
+    border-radius: 10px !important;
+    padding: 0.45rem 0.75rem !important;
+    font-size: 0.82rem !important;
+    font-weight: 600 !important;
+    transition: all 0.2s ease !important;
+}
+
+.btn-premium-secondary:hover {
+    transform: translateY(-1px);
+}
+
+/* Pill de Estado */
+.mesa-estado-pill {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 20px;
+    padding: 0.2rem 0.6rem;
+    font-size: 0.65rem;
+    font-weight: 800;
+    letter-spacing: 0.3px;
+}
+
+.pill-libre { background: #dcfce7; color: #166534; }
+.pill-ocupada { background: #fecaca; color: #991b1b; }
+.pill-reservada { background: #fef3c7; color: #92400e; }

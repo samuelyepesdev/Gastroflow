@@ -103,6 +103,21 @@ window.refreshMesas = async function() {
       card.classList.remove('libre', 'ocupada', 'reservada');
       card.classList.add(m.estado);
 
+      // Update badge for physical table if it exists
+      const physicalBadge = card.querySelector('.mesa-real-objeto-badge');
+      if (physicalBadge) {
+        if (m.estado === 'ocupada') {
+          physicalBadge.className = 'mesa-real-objeto-badge badge bg-danger border border-light animate-pulse';
+          physicalBadge.innerHTML = '<i class="bi bi-egg-fried me-1"></i>ACTIVA';
+        } else if (m.estado === 'reservada') {
+          physicalBadge.className = 'mesa-real-objeto-badge badge bg-warning text-dark border border-light';
+          physicalBadge.innerHTML = 'RES';
+        } else {
+          physicalBadge.className = 'mesa-real-objeto-badge text-white-50 fs-9';
+          physicalBadge.innerHTML = 'Libre';
+        }
+      }
+
       const pill = card.querySelector('.mesa-estado-pill');
       if (pill) {
         pill.classList.remove('pill-libre', 'pill-ocupada', 'pill-reservada');
@@ -113,12 +128,23 @@ window.refreshMesas = async function() {
 
       const btnCta = card.querySelector('.btnAbrirPedido');
       if (btnCta) {
+        const isVirtual = card.classList.contains('virtual');
         if (m.estado === 'libre') {
-          btnCta.className = 'btn btn-success btn-cta btnAbrirPedido';
-          btnCta.innerHTML = '<i class="bi bi-plus-circle me-1"></i>Abrir pedido';
+          if (isVirtual) {
+            btnCta.className = 'btn btn-success btn-cta btnAbrirPedido py-2 rounded-3 fw-bold';
+            btnCta.innerHTML = '<i class="bi bi-plus-circle me-1"></i>Abrir pedido';
+          } else {
+            btnCta.className = 'btn btn-success btn-cta btn-premium-action btnAbrirPedido w-100';
+            btnCta.innerHTML = '<i class="bi bi-plus-circle me-1"></i>Abrir comanda';
+          }
         } else {
-          btnCta.className = 'btn btn-warning btn-cta btnAbrirPedido';
-          btnCta.innerHTML = '<i class="bi bi-pencil-square me-1"></i>Editar pedido';
+          if (isVirtual) {
+            btnCta.className = 'btn btn-warning btn-cta btnAbrirPedido py-2 rounded-3 fw-bold';
+            btnCta.innerHTML = '<i class="bi bi-pencil-square me-1"></i>Editar pedido';
+          } else {
+            btnCta.className = 'btn btn-warning btn-cta btn-premium-action text-dark btnAbrirPedido w-100';
+            btnCta.innerHTML = '<i class="bi bi-pencil-square me-1"></i>Gestionar mesa';
+          }
         }
       }
 
@@ -128,10 +154,17 @@ window.refreshMesas = async function() {
       } else if (!btnLiberar) {
         const btnVer = card.querySelector('.btnVerPedido');
         if (btnVer) {
+          const isVirtual = card.classList.contains('virtual');
           const nuevoBtn = document.createElement('button');
-          nuevoBtn.className = 'btn btn-outline-secondary btn-sec flex-fill btnLiberarMesa';
-          nuevoBtn.title = 'Liberar mesa';
-          nuevoBtn.innerHTML = '<i class="bi bi-unlock me-1"></i>Liberar';
+          if (isVirtual) {
+            nuevoBtn.className = 'btn btn-outline-secondary btn-sec flex-fill btnLiberarMesa rounded-3 py-1_5';
+            nuevoBtn.title = 'Liberar mesa';
+            nuevoBtn.innerHTML = '<i class="bi bi-unlock me-1"></i>Liberar';
+          } else {
+            nuevoBtn.className = 'btn btn-outline-danger btn-sec btn-premium-secondary flex-fill btnLiberarMesa';
+            nuevoBtn.title = 'Liberar mesa inmediatamente';
+            nuevoBtn.innerHTML = '<i class="bi bi-unlock"></i>';
+          }
           btnVer.insertAdjacentElement('afterend', nuevoBtn);
         }
       }

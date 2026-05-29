@@ -45,12 +45,12 @@
     font-size: .82rem;
     font-weight: 600;
     color: rgba(255, 255, 255, .75) !important;
-    padding: .4rem .6rem !important;
+    padding: .4rem .45rem !important;
     border-radius: 7px;
     transition: background .15s, color .15s;
     display: flex;
     align-items: center;
-    gap: .3rem;
+    gap: .25rem;
 }
 
 .navbar .nav-link:hover,
@@ -175,5 +175,21 @@
 
     .navbar .nav-link {
         padding: .5rem .75rem !important;
+    }
+}
+
+/* Evitar que los enlaces del navbar se rompan en pantallas medianas/laptops */
+@media (min-width: 992px) and (max-width: 1280px) {
+    .navbar .nav-link {
+        font-size: .75rem;
+        padding: .35rem .35rem !important;
+        gap: .15rem;
+    }
+    .ndiv {
+        margin: auto .15rem;
+    }
+    .navbar-brand {
+        font-size: .88rem;
+        gap: .3rem;
     }
 }

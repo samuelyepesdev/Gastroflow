@@ -14,24 +14,24 @@
     <%- include('../partials/navbar', { user: typeof user !=='undefined' ? user : null, tenant: typeof tenant
         !=='undefined' ? tenant : null }) %>
 
-        <div class="container">
-            <div
-                class="d-flex flex-column flex-md-row justify-content-between align-items-stretch align-items-md-center gap-3 mb-3">
-                <h4 class="mb-0 fw-semibold"><i class="bi bi-grid me-2"></i>Mesas</h4>
+        <div class="container py-4">
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-stretch align-items-md-center gap-3 mb-4">
+                <h4 class="mb-0 fw-bold text-dark"><i class="bi bi-grid text-primary me-2"></i>Mesas</h4>
+                
                 <div class="d-flex flex-column flex-sm-row gap-2">
                     <% if (user.rol !=='mesero' && user.rol !=='cajero' ) { %>
-                        <button id="btnCrearMasivas" class="btn btn-success flex-grow-1">
+                        <button id="btnCrearMasivas" class="btn btn-success fw-semibold">
                             <i class="bi bi-plus-circle me-1"></i>Crear Múltiples Mesas
                         </button>
-                        <button id="btnNuevaMesa" class="btn btn-primary flex-grow-1">
+                        <button id="btnNuevaMesa" class="btn btn-primary fw-semibold">
                             <i class="bi bi-plus-lg me-1"></i>Nueva Mesa
                         </button>
                         <% if (user.rol === 'superadmin' || (user.permisos && user.permisos.includes('mesas.qr'))) { %>
-                        <div class="dropdown flex-grow-1">
-                            <button class="btn btn-outline-dark w-100 dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        <div class="dropdown">
+                            <button class="btn btn-outline-dark fw-semibold dropdown-toggle w-100" type="button" data-bs-toggle="dropdown">
                                 <i class="bi bi-qr-code-scan me-1"></i> Menú QR
                             </button>
-                            <ul class="dropdown-menu dropdown-menu-end">
+                            <ul class="dropdown-menu dropdown-menu-end shadow border-0">
                                 <li><a class="dropdown-item" href="#" id="btnGenerarQRs"><i class="bi bi-magic text-primary me-2"></i>Generar Tokens Faltantes</a></li>
                                 <li><hr class="dropdown-divider"></li>
                                 <li><a class="dropdown-item" href="/mesas/qrs/imprimir" target="_blank"><i class="bi bi-printer text-success me-2"></i>Imprimir QRs</a></li>
@@ -43,17 +43,19 @@
             </div>
 
             <!-- Sección de Mesas Virtuales (WhatsApp / Domicilios) -->
-            <% if (typeof mesasVirtuales !=='undefined' && mesasVirtuales.length> 0) { %>
+            <% if (typeof mesasVirtuales !=='undefined' && mesasVirtuales.length > 0) { %>
                 <div class="mb-5">
-                    <h5 class="mb-3 text-primary fw-bold"><i class="bi bi-whatsapp me-2"></i>Pedidos WhatsApp /
-                        Domicilios</h5>
+                    <h5 class="mb-3 text-primary fw-bold"><i class="bi bi-whatsapp me-2"></i>Pedidos WhatsApp / Domicilios</h5>
                     <%- include('_grid', { mesas: mesasVirtuales }) %>
-                        <hr class="my-4">
+                    <hr class="my-4">
                 </div>
-                <% } %>
+            <% } %>
 
-                    <h5 class="mb-3 fw-bold text-secondary">Atención en Salón</h5>
-                    <%- include('_grid', { mesas: mesas }) %>
+            <!-- Atención en Salón -->
+            <div class="mb-4">
+                <h5 class="mb-3 fw-bold text-secondary">Atención en Salón</h5>
+                <%- include('_grid', { mesas: mesas }) %>
+            </div>
         </div>
 
         <%- include('_modales') %>

@@ -22,6 +22,7 @@ router.put('/:mesaId', requirePermission('mesas.editar'), BaseRequest.validate(S
 router.delete('/:mesaId', requirePermission('mesas.eliminar'), Management.destroy);
 router.post('/crear-masivas', Management.storeMasivas);
 
+
 // --- CÓDIGOS QR ---
 router.post('/qrs/generar', requirePermission('mesas.qr'), QR.generar);
 router.get('/qrs/imprimir', requirePermission('mesas.qr'), QR.imprimir);
