@@ -63,6 +63,21 @@
                     border-top-color: <%=tenant.config.colores.mesaLibre %> !important;
                 }
 
+                .mesa-real-card.libre {
+                    border-top-color: <%=tenant.config.colores.mesaLibre %> !important;
+                }
+
+                .mesa-card.libre .mesa-real-objeto-cuerpo {
+                    background: linear-gradient(135deg, <%=tenant.config.colores.mesaLibre %> 0%, <%=tenant.config.colores.mesaLibre %>dd 100%) !important;
+                    border-color: <%=tenant.config.colores.mesaLibre %> !important;
+                    box-shadow: 0 8px 20px <%=tenant.config.colores.mesaLibre %>40, inset 0 2px 4px rgba(255, 255, 255, 0.2) !important;
+                }
+
+                .mesa-card.libre .silla-real-item {
+                    background: <%=tenant.config.colores.mesaLibre %>cc !important;
+                    border-color: <%=tenant.config.colores.mesaLibre %> !important;
+                }
+
                 .pill-libre {
                     background-color: <%=tenant.config.colores.mesaLibre %>33 !important;
                     color: <%=tenant.config.colores.mesaLibre %> !important;
@@ -73,9 +88,13 @@
                 }
 
                 .mesa-card.libre .btnAbrirPedido {
-                    background-color: <%=tenant.config.colores.mesaLibre %> !important;
-                    border-color: <%=tenant.config.colores.mesaLibre %> !important;
+                    background: linear-gradient(135deg, <%=tenant.config.colores.mesaLibre %> 0%, <%=tenant.config.colores.mesaLibre %>dd 100%) !important;
+                    border: none !important;
                     color: #fff !important;
+                }
+
+                .mesa-card.libre .btnAbrirPedido:hover {
+                    box-shadow: 0 6px 16px <%=tenant.config.colores.mesaLibre %>50 !important;
                 }
 
                 <%
@@ -84,6 +103,21 @@
             %><% if (tenant.config.colores.mesaOcupada) {
                 %>.mesa-card.ocupada {
                     border-top-color: <%=tenant.config.colores.mesaOcupada %> !important;
+                }
+
+                .mesa-real-card.ocupada {
+                    border-top-color: <%=tenant.config.colores.mesaOcupada %> !important;
+                }
+
+                .mesa-card.ocupada .mesa-real-objeto-cuerpo {
+                    background: linear-gradient(135deg, <%=tenant.config.colores.mesaOcupada %> 0%, <%=tenant.config.colores.mesaOcupada %>dd 100%) !important;
+                    border-color: <%=tenant.config.colores.mesaOcupada %> !important;
+                    box-shadow: 0 8px 24px <%=tenant.config.colores.mesaOcupada %>50, inset 0 2px 4px rgba(255, 255, 255, 0.2) !important;
+                }
+
+                .mesa-card.ocupada .silla-real-item {
+                    background: <%=tenant.config.colores.mesaOcupada %>88 !important;
+                    border-color: <%=tenant.config.colores.mesaOcupada %>bb !important;
                 }
 
                 .pill-ocupada {
@@ -96,9 +130,13 @@
                 }
 
                 .mesa-card.ocupada .btnAbrirPedido {
-                    background-color: <%=tenant.config.colores.mesaOcupada %> !important;
-                    border-color: <%=tenant.config.colores.mesaOcupada %> !important;
+                    background: linear-gradient(135deg, <%=tenant.config.colores.mesaOcupada %> 0%, <%=tenant.config.colores.mesaOcupada %>dd 100%) !important;
+                    border: none !important;
                     color: #fff !important;
+                }
+
+                .mesa-card.ocupada .btnAbrirPedido:hover {
+                    box-shadow: 0 6px 16px <%=tenant.config.colores.mesaOcupada %>50 !important;
                 }
 
                 <%

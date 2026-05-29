@@ -379,6 +379,7 @@ body {
     align-items: center;
     justify-content: center;
     background: transparent;
+    cursor: pointer;
 }
 
 /* 3. El Cuerpo Físico de la Mesa (Cenital) */

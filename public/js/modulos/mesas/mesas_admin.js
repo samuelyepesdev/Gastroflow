@@ -3,11 +3,12 @@
 $(function () {
   const mod = window.MesasModule;
 
-  // Clicks en tarjetas de mesa
-  $('.grid-mesas').on('click', '.btnAbrirPedido', function () {
+  // Clicks en tarjetas de mesa o representación física de la mesa
+  $('.grid-mesas').on('click', '.btnAbrirPedido, .mesa-real-layout-wrapper', function (e) {
+    if ($(e.target).closest('.btn-sec').length) return;
     const card = $(this).closest('.card');
     const mesaId = card.data('mesa-id');
-    const titulo = card.find('.text-primary').text().trim();
+    const titulo = card.data('mesa-titulo') || card.find('.text-primary').text().trim() || `Mesa ${card.find('.mesa-real-objeto-num').text().replace('Mesa', '').trim()}`;
     mod.currentMesaEstado = card.data('mesa-estado') || 'libre';
     mod.abrirPedido(mesaId, titulo);
   });
@@ -15,7 +16,7 @@ $(function () {
   $('.grid-mesas').on('click', '.btnVerPedido', function () {
     const card = $(this).closest('.card');
     const mesaId = card.data('mesa-id');
-    const titulo = card.find('.text-primary').text().trim();
+    const titulo = card.data('mesa-titulo') || card.find('.text-primary').text().trim();
     mod.currentMesaEstado = card.data('mesa-estado') || 'libre';
     mod.abrirPedido(mesaId, titulo);
   });
@@ -24,7 +25,7 @@ $(function () {
   $('.grid-mesas').on('click', '.btnLiberarMesa', async function () {
     const card = $(this).closest('.card');
     const mesaId = card.data('mesa-id');
-    const mesaNum = card.find('.text-primary').text().trim();
+    const mesaNum = card.data('mesa-titulo') || card.find('.text-primary').text().trim();
     mod.liberarMesa(mesaId, mesaNum);
   });
 
