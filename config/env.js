@@ -4,10 +4,13 @@ const REQUIRED_VARS = ['DB_HOST', 'DB_USER', 'DB_PASSWORD', 'DB_NAME', 'JWT_SECR
 const WEAK_JWT_PATTERNS = ['secret', 'password', 'change', 'example', '123', 'restaurante'];
 
 function validateEnv() {
-    const missing = REQUIRED_VARS.filter(key => !process.env[key]);
+    const missing = REQUIRED_VARS.filter(key => {
+        const value = process.env[key];
+        return value === undefined || (value === '' && key !== 'DB_PASSWORD');
+    });
     if (missing.length > 0) {
         throw new Error(
-            `[ENV] Variables de entorno requeridas no definidas: ${missing.join(', ')}\n` +
+            `[ENV] Variables de entorno requeridas no definidas o vacías: ${missing.join(', ')}\n` +
                 `Asegúrate de tener un archivo .env configurado correctamente.`
         );
     }
