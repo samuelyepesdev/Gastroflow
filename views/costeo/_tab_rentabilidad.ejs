@@ -1,0 +1,199 @@
+<div class="tab-pane fade" id="rentabilidad" role="tabpanel" aria-labelledby="rentabilidad-tab">
+    <div class="d-flex justify-content-between align-items-center mb-3 mt-2">
+        <h6 class="mb-0 fw-semibold"><i class="bi bi-bar-chart-line me-2 text-primary"></i>Resumen de Rentabilidad</h6>
+        <button class="btn btn-sm btn-outline-primary" id="btnRefreshRentabilidad">
+            <i class="bi bi-arrow-clockwise me-1"></i>Actualizar
+        </button>
+    </div>
+
+    <div id="rentabilidadLoading" class="text-center py-5">
+        <div class="spinner-border text-primary" role="status"></div>
+        <p class="mt-2 text-muted small">Calculando márgenes...</p>
+    </div>
+
+    <div id="rentabilidadContent" style="display:none;">
+        <!-- KPIs superiores -->
+        <div class="row g-3 mb-4" id="rentabilidadKpis"></div>
+
+        <!-- Gráfica de márgenes por producto -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body">
+                <h6 class="fw-semibold mb-3"><i class="bi bi-pie-chart me-2"></i>Margen de contribución por producto</h6>
+                <div style="position:relative;height:280px;">
+                    <canvas id="chartRentabilidad"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabla detalle productos -->
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0" id="tablaRentabilidad">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Producto</th>
+                                <th class="text-end">Precio venta</th>
+                                <th class="text-end">Costo variable</th>
+                                <th class="text-end">Margen contrib.</th>
+                                <th class="text-center">Margen %</th>
+                                <th class="text-center">Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbodyRentabilidad"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="rentabilidadEmpty" style="display:none;" class="text-center py-5 text-muted">
+        <i class="bi bi-clipboard-x fs-2 d-block mb-2"></i>
+        No hay recetas con costeo configurado. Agrega recetas en la pestaña <strong>Recetas</strong>.
+    </div>
+</div>
+
+<script>
+(function () {
+    const fmtCOP = v => Number(v || 0).toLocaleString('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
+    const fmtPct = v => (v == null ? 'N/A' : Number(v).toFixed(1) + '%');
+    let chartInstance = null;
+    let loaded = false;
+
+    function estadoBadge(pct) {
+        if (pct == null) return '<span class="badge bg-secondary">Sin precio</span>';
+        if (pct < 0) return '<span class="badge bg-danger"><i class="bi bi-exclamation-triangle-fill me-1"></i>Pérdida</span>';
+        if (pct < 30) return '<span class="badge bg-warning text-dark"><i class="bi bi-exclamation-circle me-1"></i>Bajo</span>';
+        if (pct < 60) return '<span class="badge bg-info text-dark"><i class="bi bi-check-circle me-1"></i>Medio</span>';
+        return '<span class="badge bg-success"><i class="bi bi-check-circle-fill me-1"></i>Bueno</span>';
+    }
+
+    function colorBarra(pct) {
+        if (pct == null || pct < 0) return 'rgba(220,53,69,0.75)';
+        if (pct < 30) return 'rgba(255,193,7,0.75)';
+        if (pct < 60) return 'rgba(13,202,240,0.75)';
+        return 'rgba(25,135,84,0.75)';
+    }
+
+    function renderRentabilidad(data) {
+        const productos = data.productos || [];
+        if (!productos.length) {
+            document.getElementById('rentabilidadEmpty').style.display = '';
+            return;
+        }
+
+        // KPIs
+        const kpisEl = document.getElementById('rentabilidadKpis');
+        const mcPct = data.margen_contribucion_pct_negocio;
+        const vEqui = data.ventas_equilibrio;
+        const vMeta = data.ventas_para_meta;
+        kpisEl.innerHTML = `
+            <div class="col-md-4">
+                <div class="card border-0 bg-light h-100">
+                    <div class="card-body text-center">
+                        <div class="fs-4 fw-bold text-primary">${fmtPct(mcPct)}</div>
+                        <div class="small text-muted">Margen contribución promedio</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card border-0 bg-light h-100">
+                    <div class="card-body text-center">
+                        <div class="fs-4 fw-bold text-warning">${vEqui != null ? fmtCOP(vEqui) : 'N/A'}</div>
+                        <div class="small text-muted">Ventas para punto de equilibrio</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card border-0 bg-light h-100">
+                    <div class="card-body text-center">
+                        <div class="fs-4 fw-bold text-success">${vMeta != null ? fmtCOP(vMeta) : 'N/A'}</div>
+                        <div class="small text-muted">Ventas para alcanzar meta</div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Tabla
+        const tbody = document.getElementById('tbodyRentabilidad');
+        tbody.innerHTML = productos.map(p => `
+            <tr>
+                <td><span class="fw-medium">${p.producto_nombre || '—'}</span>
+                    ${p.producto_codigo ? '<small class="text-muted d-block">' + p.producto_codigo + '</small>' : ''}
+                </td>
+                <td class="text-end">${fmtCOP(p.precio_venta)}</td>
+                <td class="text-end">${fmtCOP(p.cvu_porcion)}</td>
+                <td class="text-end fw-semibold">${fmtCOP(p.margen_contribucion_porcion)}</td>
+                <td class="text-center">${fmtPct(p.margen_contribucion_pct)}</td>
+                <td class="text-center">${estadoBadge(p.margen_contribucion_pct)}</td>
+            </tr>
+        `).join('');
+
+        // Gráfica
+        const labels = productos.map(p => p.producto_nombre || '—');
+        const valores = productos.map(p => p.margen_contribucion_pct || 0);
+        const colores = productos.map(p => colorBarra(p.margen_contribucion_pct));
+
+        if (chartInstance) chartInstance.destroy();
+        chartInstance = new Chart(document.getElementById('chartRentabilidad'), {
+            type: 'bar',
+            data: {
+                labels,
+                datasets: [{
+                    label: 'Margen contribución %',
+                    data: valores,
+                    backgroundColor: colores,
+                    borderRadius: 5
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                indexAxis: productos.length > 6 ? 'y' : 'x',
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { callbacks: { label: ctx => ' ' + fmtPct(ctx.parsed.y ?? ctx.parsed.x) } }
+                },
+                scales: {
+                    x: { ticks: { callback: v => typeof v === 'number' ? fmtPct(v) : v } },
+                    y: { ticks: { callback: v => typeof v === 'number' ? fmtPct(v) : v } }
+                }
+            }
+        });
+
+        document.getElementById('rentabilidadContent').style.display = '';
+    }
+
+    async function loadRentabilidad() {
+        document.getElementById('rentabilidadLoading').style.display = '';
+        document.getElementById('rentabilidadContent').style.display = 'none';
+        document.getElementById('rentabilidadEmpty').style.display = 'none';
+        try {
+            const tenantId = window.COSTEO_TENANT_ID;
+            const url = tenantId ? `/costeo/api/costeo/resumen-financiero?tenant_id=${tenantId}` : '/costeo/api/costeo/resumen-financiero';
+            const res = await fetch(url, { credentials: 'same-origin' });
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            const data = await res.json();
+            renderRentabilidad(data);
+        } catch (e) {
+            document.getElementById('rentabilidadEmpty').style.display = '';
+            document.getElementById('rentabilidadEmpty').innerHTML = '<i class="bi bi-x-circle fs-2 d-block mb-2 text-danger"></i><span class="text-danger">Error al cargar datos de rentabilidad.</span>';
+        } finally {
+            document.getElementById('rentabilidadLoading').style.display = 'none';
+        }
+    }
+
+    // Carga lazy al activar la pestaña
+    document.addEventListener('shown.bs.tab', function (e) {
+        if (e.target.id === 'rentabilidad-tab' && !loaded) {
+            loaded = true;
+            loadRentabilidad();
+        }
+    });
+
+    document.getElementById('btnRefreshRentabilidad').addEventListener('click', function () {
+        loaded = true;
+        loadRentabilidad();
+    });
+})();
+</script>

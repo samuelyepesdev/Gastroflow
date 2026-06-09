@@ -7,6 +7,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
         <link rel="stylesheet" href="/css/modulos/analitica.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
 <%- include('../partials/navbar', { user: typeof user !== 'undefined' ? user : null, tenant: typeof tenant !== 'undefined' ? tenant : null, allowedByPlan: typeof allowedByPlan !== 'undefined' ? allowedByPlan : {} }) %>
@@ -54,6 +55,11 @@
                             </div>
                         </div>
                     </div>
+                    <% if (typeof resumen !== 'undefined' && resumen && resumen.meses && resumen.meses.length) { %>
+                    <div class="mb-4" style="position:relative;height:240px;">
+                        <canvas id="chartMensual"></canvas>
+                    </div>
+                    <% } %>
                     <div class="table-responsive">
                         <table class="table table-meses table-hover">
                             <thead><tr><th>Mes</th><th>Total ventas</th><th>Facturas</th></tr></thead>
@@ -86,7 +92,7 @@
                     <p class="text-muted"><%= prediccion.mensaje %></p>
                     <% } else { %>
                     <p class="small text-muted mb-4"><%= typeof prediccion !== 'undefined' && prediccion && prediccion.mensaje ? prediccion.mensaje : '' %></p>
-                    <div class="row g-4">
+                    <div class="row g-4 mb-4">
                         <div class="col-md-4">
                             <div class="prediccion-destacado">
                                 <div class="label">Ventas estimadas (próximo mes)</div>
@@ -107,6 +113,11 @@
                             </div>
                         </div>
                     </div>
+                    <% if (typeof prediccion !== 'undefined' && prediccion && prediccion.mesesUsados && prediccion.mesesUsados.length > 0) { %>
+                    <div style="position:relative;height:200px;">
+                        <canvas id="chartPrediccion"></canvas>
+                    </div>
+                    <% } %>
                     <% } %>
                 </div>
             </div>
@@ -116,5 +127,123 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+(function () {
+    const fmtCOP = v => Number(v || 0).toLocaleString('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
+
+    // --- Gráfica de ventas mensuales (últimos 3 meses) ---
+    const mesesData = <%- JSON.stringify((typeof resumen !== 'undefined' && resumen && resumen.meses) ? resumen.meses : []) %>;
+    if (mesesData.length && document.getElementById('chartMensual')) {
+        new Chart(document.getElementById('chartMensual'), {
+            type: 'bar',
+            data: {
+                labels: mesesData.map(m => m.nombreMes + ' ' + m.year),
+                datasets: [
+                    {
+                        label: 'Ventas',
+                        data: mesesData.map(m => parseFloat(m.total_ventas) || 0),
+                        backgroundColor: 'rgba(99,102,241,0.75)',
+                        borderColor: 'rgba(99,102,241,1)',
+                        borderWidth: 1,
+                        borderRadius: 6,
+                        yAxisID: 'y'
+                    },
+                    {
+                        label: 'Facturas',
+                        data: mesesData.map(m => parseInt(m.cantidad_facturas, 10) || 0),
+                        type: 'line',
+                        borderColor: 'rgba(16,185,129,1)',
+                        backgroundColor: 'rgba(16,185,129,0.1)',
+                        borderWidth: 2,
+                        pointRadius: 4,
+                        fill: false,
+                        tension: 0.3,
+                        yAxisID: 'y2'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'top' },
+                    tooltip: {
+                        callbacks: {
+                            label: ctx => ctx.datasetIndex === 0
+                                ? ' ' + fmtCOP(ctx.parsed.y)
+                                : ' ' + ctx.parsed.y + ' facturas'
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        type: 'linear',
+                        position: 'left',
+                        ticks: { callback: v => fmtCOP(v) },
+                        grid: { color: 'rgba(0,0,0,0.05)' }
+                    },
+                    y2: {
+                        type: 'linear',
+                        position: 'right',
+                        grid: { drawOnChartArea: false }
+                    }
+                }
+            }
+        });
+    }
+
+    // --- Gráfica de predicción (barras de historial + barra estimada) ---
+    const predData = <%- JSON.stringify((typeof prediccion !== 'undefined' && prediccion && prediccion.mesesUsados) ? prediccion.mesesUsados : []) %>;
+    const predValor = <%= (typeof prediccion !== 'undefined' && prediccion && typeof prediccion.ventasProximoMes === 'number') ? prediccion.ventasProximoMes : 0 %>;
+    const predMin = <%= (typeof prediccion !== 'undefined' && prediccion && typeof prediccion.rangoMin === 'number') ? prediccion.rangoMin : 0 %>;
+    const predMax = <%= (typeof prediccion !== 'undefined' && prediccion && typeof prediccion.rangoMax === 'number') ? prediccion.rangoMax : 0 %>;
+
+    if (predData.length && document.getElementById('chartPrediccion')) {
+        const labels = predData.map(m => m.nombreMes + ' ' + m.year);
+        labels.push('Estimado');
+        const valores = predData.map(m => parseFloat(m.total_ventas) || 0);
+        valores.push(predValor);
+        const colores = predData.map(() => 'rgba(99,102,241,0.65)');
+        colores.push('rgba(245,158,11,0.8)');
+
+        new Chart(document.getElementById('chartPrediccion'), {
+            type: 'bar',
+            data: {
+                labels,
+                datasets: [{
+                    label: 'Ventas / Estimado',
+                    data: valores,
+                    backgroundColor: colores,
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: ctx => {
+                                const isLast = ctx.dataIndex === valores.length - 1;
+                                if (isLast) {
+                                    return [
+                                        ' Estimado: ' + fmtCOP(predValor),
+                                        ' Rango: ' + fmtCOP(predMin) + ' – ' + fmtCOP(predMax)
+                                    ];
+                                }
+                                return ' ' + fmtCOP(ctx.parsed.y);
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: { ticks: { callback: v => fmtCOP(v) }, grid: { color: 'rgba(0,0,0,0.05)' } }
+                }
+            }
+        });
+    }
+})();
+</script>
 </body>
 </html>

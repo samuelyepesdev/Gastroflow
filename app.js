@@ -99,7 +99,8 @@ app.use((req, res, next) => {
     res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
     res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
 
-    // Content-Security-Policy — unsafe-inline requerido mientras existan scripts inline en layout.ejs
+    // Content-Security-Policy — unsafe-inline requerido mientras 26 vistas tengan scripts inline.
+    // layout.ejs ya fue migrado a /js/alerts.js. Pendiente: migrar el resto de vistas para poder eliminarlo.
     const cspDirectives = [
         "default-src 'self'",
         "script-src 'self' 'unsafe-inline' https://code.jquery.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com",
