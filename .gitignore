@@ -6,6 +6,8 @@ public/uploads/
 # Archivos de entorno
 .env
 .env.*
+!.env.example
+!.env.test
 
 # Cobertura de tests
 coverage/

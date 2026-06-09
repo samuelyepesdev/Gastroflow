@@ -26,5 +26,14 @@ module.exports = [
             curly: ['error', 'all'],
             'no-throw-literal': 'error'
         }
+    },
+    {
+        files: ['tests/**/*.js', '**/*.test.js', '**/*.spec.js'],
+        languageOptions: {
+            globals: {
+                ...globals.node,
+                ...globals.jest
+            }
+        }
     }
 ];
