@@ -27,7 +27,6 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 const idempotency = require('./middleware/idempotency');
 app.use(idempotency);
 
-
 // Route specifically for sitemap.xml
 app.get('/sitemap.xml', (req, res) => {
     const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'https';
@@ -54,11 +53,10 @@ app.get('/sitemap.xml', (req, res) => {
     res.send(sitemap);
 });
 
-
 // Seguridad: Rate Limit General
 const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000, 
-    max: 1000, 
+    windowMs: 15 * 60 * 1000,
+    max: 1000,
     message: { error: 'Demasiadas peticiones desde esta IP, por favor intente más tarde.' },
     standardHeaders: true,
     legacyHeaders: false
@@ -166,7 +164,13 @@ app.use((req, res, next) => {
 
 // Manejo de Errores Global (500)
 app.use((err, req, res, next) => {
-    console.error('Error en la aplicación:', err);
+    const logger = require('./utils/logger');
+    logger.error('Error en la aplicación', {
+        error: err.message,
+        stack: err.stack,
+        url: req.originalUrl,
+        method: req.method
+    });
 
     if (req.xhr || (req.headers.accept && req.headers.accept.indexOf('json') > -1)) {
         res.status(500).json({

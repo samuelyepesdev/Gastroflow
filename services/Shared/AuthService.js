@@ -1,7 +1,8 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const db = require('../../config/database');
-const { JWT_CONFIG, ROLES } = require('../../utils/constants');
+const { JWT_CONFIG } = require('../../utils/constants');
+const logger = require('../../utils/logger');
 
 // Authentication service
 // Handles user authentication, token generation and password management
@@ -15,7 +16,8 @@ const { JWT_CONFIG, ROLES } = require('../../utils/constants');
 async function authenticateUser(username, password) {
     try {
         // Get user with role and permissions (incl. tenant_id for multi-tenancy)
-        const [users] = await db.query(`
+        const [users] = await db.query(
+            `
             SELECT u.*, r.nombre AS rol_nombre, r.descripcion AS rol_descripcion,
                    pl.slug AS plan_slug
             FROM usuarios u
@@ -23,7 +25,9 @@ async function authenticateUser(username, password) {
             LEFT JOIN tenants t ON u.tenant_id = t.id
             LEFT JOIN planes pl ON t.plan_id = pl.id
             WHERE u.username = ? AND u.activo = TRUE
-        `, [username]);
+        `,
+            [username]
+        );
 
         if (users.length === 0) {
             return { success: false, message: 'Usuario o contraseña incorrectos' };
@@ -39,27 +43,34 @@ async function authenticateUser(username, password) {
 
         // Permisos efectivos: si el Superadmin asignó user_permisos (aunque sea para quitar), solo esos; si no, los del rol
         let userPermissions = [];
-        const isPremium = user.rol_nombre === 'admin' && (user.plan_slug === 'premium' || user.plan_slug === 'definitivo');
-        
+        const isPremium =
+            user.rol_nombre === 'admin' && (user.plan_slug === 'premium' || user.plan_slug === 'definitivo');
+
         if (isPremium) {
             const { PERMISSION_TO_MODULE } = require('../../utils/planPermissions');
             userPermissions = Object.keys(PERMISSION_TO_MODULE);
         } else {
-            const [rolePerms] = await db.query(`
+            const [rolePerms] = await db.query(
+                `
                 SELECT p.nombre FROM permisos p
                 INNER JOIN rol_permisos rp ON p.id = rp.permiso_id
                 WHERE rp.rol_id = ?
-            `, [user.rol_id]);
-            const [userPermsRows] = await db.query(`
+            `,
+                [user.rol_id]
+            );
+            const [userPermsRows] = await db
+                .query(
+                    `
                 SELECT p.nombre FROM permisos p
                 INNER JOIN user_permisos up ON p.id = up.permiso_id
                 WHERE up.user_id = ?
-            `, [user.id]).catch(() => [[]]);
-            
+            `,
+                    [user.id]
+                )
+                .catch(() => [[]]);
+
             const userPerms = (userPermsRows || []).map(p => p.nombre);
-            userPermissions = userPerms.length > 0
-                ? userPerms
-                : (rolePerms || []).map(p => p.nombre);
+            userPermissions = userPerms.length > 0 ? userPerms : (rolePerms || []).map(p => p.nombre);
         }
 
         // Generate JWT token (include tenant_id for multi-tenancy)
@@ -86,8 +97,8 @@ async function authenticateUser(username, password) {
             token
         };
     } catch (error) {
-        console.error('Error in authenticateUser:', error);
-        throw new Error('Error al autenticar usuario');
+        logger.error('Error in authenticateUser', { error: error.message, stack: error.stack });
+        throw new Error('Error al autenticar usuario', { cause: error });
     }
 }
 
@@ -110,7 +121,7 @@ function generateToken(payload) {
 function verifyToken(token) {
     try {
         return jwt.verify(token, JWT_CONFIG.SECRET);
-    } catch (error) {
+    } catch (_error) {
         return null;
     }
 }
@@ -122,7 +133,8 @@ function verifyToken(token) {
  */
 async function getUserById(userId) {
     try {
-        const [users] = await db.query(`
+        const [users] = await db.query(
+            `
             SELECT u.id, u.username, u.email, u.nombre_completo, u.rol_id, u.tenant_id,
                    r.nombre AS rol_nombre, r.descripcion AS rol_descripcion,
                    pl.slug AS plan_slug
@@ -131,7 +143,9 @@ async function getUserById(userId) {
             LEFT JOIN tenants t ON u.tenant_id = t.id
             LEFT JOIN planes pl ON t.plan_id = pl.id
             WHERE u.id = ? AND u.activo = TRUE
-        `, [userId]);
+        `,
+            [userId]
+        );
 
         if (users.length === 0) {
             return null;
@@ -140,23 +154,32 @@ async function getUserById(userId) {
         const user = users[0];
 
         let permisos = [];
-        const isPremium = user.rol_nombre === 'admin' && (user.plan_slug === 'premium' || user.plan_slug === 'definitivo');
+        const isPremium =
+            user.rol_nombre === 'admin' && (user.plan_slug === 'premium' || user.plan_slug === 'definitivo');
 
         if (isPremium) {
             const { PERMISSION_TO_MODULE } = require('../../utils/planPermissions');
             permisos = Object.keys(PERMISSION_TO_MODULE);
         } else {
-            const [rolePerms] = await db.query(`
+            const [rolePerms] = await db.query(
+                `
                 SELECT p.nombre FROM permisos p
                 INNER JOIN rol_permisos rp ON p.id = rp.permiso_id
                 WHERE rp.rol_id = ?
-            `, [user.rol_id]);
-            const [userPermsRows] = await db.query(`
+            `,
+                [user.rol_id]
+            );
+            const [userPermsRows] = await db
+                .query(
+                    `
                 SELECT p.nombre FROM permisos p
                 INNER JOIN user_permisos up ON p.id = up.permiso_id
                 WHERE up.user_id = ?
-            `, [user.id]).catch(() => [[]]);
-            
+            `,
+                    [user.id]
+                )
+                .catch(() => [[]]);
+
             const userPerms = (userPermsRows || []).map(p => p.nombre);
             permisos = userPerms.length > 0 ? userPerms : (rolePerms || []).map(p => p.nombre);
         }
@@ -171,7 +194,7 @@ async function getUserById(userId) {
             tenant_id: user.tenant_id
         };
     } catch (error) {
-        console.error('Error in getUserById:', error);
+        logger.error('Error in getUserById', { error: error.message, userId });
         return null;
     }
 }
@@ -224,14 +247,13 @@ async function changePassword(userId, currentPassword, newPassword) {
     if (!userId || !currentPassword || !newPassword) {
         return { success: false, message: 'Contraseña actual y nueva son requeridas.' };
     }
-    if (newPassword.length < 6) {
-        return { success: false, message: 'La nueva contraseña debe tener al menos 6 caracteres.' };
+    if (newPassword.length < 8) {
+        return { success: false, message: 'La nueva contraseña debe tener al menos 8 caracteres.' };
     }
     try {
-        const [users] = await db.query(
-            'SELECT id, password_hash FROM usuarios WHERE id = ? AND activo = TRUE',
-            [userId]
-        );
+        const [users] = await db.query('SELECT id, password_hash FROM usuarios WHERE id = ? AND activo = TRUE', [
+            userId
+        ]);
         if (users.length === 0) {
             return { success: false, message: 'Usuario no encontrado.' };
         }
@@ -244,7 +266,7 @@ async function changePassword(userId, currentPassword, newPassword) {
         await db.query('UPDATE usuarios SET password_hash = ? WHERE id = ?', [newHash, userId]);
         return { success: true };
     } catch (error) {
-        console.error('Error in changePassword:', error);
+        logger.error('Error in changePassword', { error: error.message, userId });
         return { success: false, message: 'Error al cambiar la contraseña.' };
     }
 }
@@ -259,4 +281,3 @@ module.exports = {
     hasRole,
     changePassword
 };
-

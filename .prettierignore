@@ -1,3 +1,7 @@
 # Excluir archivos EJS del formateo automático
 # (el formateador rompe los bloques <% %> al indentarlos)
 views/**/*.ejs
+node_modules/
+public/
+dist/
+*.sql

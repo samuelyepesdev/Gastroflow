@@ -1,10 +1,5 @@
-const REQUIRED_VARS = [
-    'DB_HOST',
-    'DB_USER',
-    'DB_PASSWORD',
-    'DB_NAME',
-    'JWT_SECRET'
-];
+/* eslint-disable no-console */
+const REQUIRED_VARS = ['DB_HOST', 'DB_USER', 'DB_PASSWORD', 'DB_NAME', 'JWT_SECRET'];
 
 const WEAK_JWT_PATTERNS = ['secret', 'password', 'change', 'example', '123', 'restaurante'];
 
@@ -13,7 +8,7 @@ function validateEnv() {
     if (missing.length > 0) {
         throw new Error(
             `[ENV] Variables de entorno requeridas no definidas: ${missing.join(', ')}\n` +
-            `Asegúrate de tener un archivo .env configurado correctamente.`
+                `Asegúrate de tener un archivo .env configurado correctamente.`
         );
     }
 
@@ -21,7 +16,7 @@ function validateEnv() {
     if (jwtSecret.length < 32) {
         throw new Error(
             `[ENV] JWT_SECRET debe tener al menos 32 caracteres.\n` +
-            `Genera uno seguro con: node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"`
+                `Genera uno seguro con: node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"`
         );
     }
 
@@ -29,7 +24,7 @@ function validateEnv() {
     if (isWeak) {
         console.warn(
             `[SECURITY] JWT_SECRET parece débil o usa el valor por defecto.\n` +
-            `Genera uno seguro con: node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"`
+                `Genera uno seguro con: node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"`
         );
     }
 }
