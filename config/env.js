@@ -1,10 +1,13 @@
 /* eslint-disable no-console */
-const REQUIRED_VARS = ['DB_HOST', 'DB_USER', 'DB_PASSWORD', 'DB_NAME', 'JWT_SECRET'];
+const REQUIRED_VARS = ['JWT_SECRET'];
+const DB_INDIVIDUAL_VARS = ['DB_HOST', 'DB_USER', 'DB_PASSWORD', 'DB_NAME'];
 
 const WEAK_JWT_PATTERNS = ['secret', 'password', 'change', 'example', '123', 'restaurante'];
 
 function validateEnv() {
-    const missing = REQUIRED_VARS.filter(key => {
+    const hasDbUrl = process.env.MYSQL_URL || process.env.DATABASE_URL;
+    const dbVarsToCheck = hasDbUrl ? [] : DB_INDIVIDUAL_VARS;
+    const missing = [...REQUIRED_VARS, ...dbVarsToCheck].filter(key => {
         const value = process.env[key];
         return value === undefined || (value === '' && key !== 'DB_PASSWORD');
     });
