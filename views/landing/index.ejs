@@ -1,487 +1,374 @@
 <!DOCTYPE html>
-<html class="dark" lang="es">
-<head>
-    <meta charset="utf-8"/>
-    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-    <title>GastroFlow — Sistema de Gestión y Control de Costos para Restaurantes</title>
-    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-    <script id="tailwind-config">
-      tailwind.config = {
-        darkMode: "class",
-        theme: {
-          extend: {
-            "colors": {
-              "tertiary-fixed": "#6bff8f",
-              "tertiary-container": "#00a74b",
-              "surface": "#13131b",
-              "on-primary-fixed": "#07006c",
-              "inverse-surface": "#e4e1ed",
-              "background": "#0B0F19",
-              "on-secondary-fixed-variant": "#3323cc",
-              "surface-container-high": "#292932",
-              "secondary": "#c3c0ff",
-              "on-tertiary-fixed-variant": "#005321",
-              "primary": "#6366f1",
-              "on-secondary": "#1d00a5",
-              "on-primary": "#1000a9",
-              "surface-tint": "#c0c1ff",
-              "primary-fixed": "#e1e0ff",
-              "surface-container-low": "#1b1b23",
-              "on-background": "#e4e1ed",
-              "primary-fixed-dim": "#c0c1ff",
-              "surface-container-lowest": "#0d0d15",
-              "surface-bright": "#393841",
-              "secondary-fixed": "#e2dfff",
-              "on-tertiary": "#003915",
-              "secondary-fixed-dim": "#c3c0ff",
-              "on-tertiary-container": "#003111",
-              "inverse-on-surface": "#303038",
-              "surface-container": "#1f1f27",
-              "tertiary-fixed-dim": "#4ae176",
-              "inverse-primary": "#494bd6",
-              "surface-variant": "#34343d",
-              "error-container": "#93000a",
-              "tertiary": "#4ae176",
-              "on-secondary-fixed": "#0f0069",
-              "on-primary-container": "#0d0096",
-              "error": "#ffb4ab",
-              "surface-container-highest": "#34343d",
-              "on-secondary-container": "#b3b1ff",
-              "on-primary-fixed-variant": "#2f2ebe",
-              "on-error-container": "#ffdad6",
-              "outline-variant": "#464554",
-              "surface-dim": "#13131b",
-              "primary-container": "#8083ff",
-              "on-tertiary-fixed": "#002109",
-              "outline": "#908fa0",
-              "secondary-container": "#3626ce",
-              "on-surface-variant": "#c7c4d7",
-              "on-error": "#690005",
-              "on-surface": "#e4e1ed"
-            },
-            "borderRadius": {
-              "DEFAULT": "0.25rem",
-              "lg": "0.5rem",
-              "xl": "0.75rem",
-              "full": "9999px"
-            },
-            "spacing": {
-              "sm": "12px",
-              "md": "16px",
-              "xl": "32px",
-              "margin-tablet": "24px",
-              "gutter": "16px",
-              "xs": "8px",
-              "margin-mobile": "16px",
-              "base": "4px",
-              "lg": "24px"
-            },
-            "fontFamily": {
-              "display-lg": ["Inter", "sans-serif"],
-              "headline-md": ["Inter", "sans-serif"],
-              "headline-sm": ["Inter", "sans-serif"],
-              "body-lg": ["Inter", "sans-serif"],
-              "body-md": ["Inter", "sans-serif"],
-              "label-md": ["Inter", "sans-serif"],
-              "label-sm": ["Inter", "sans-serif"],
-              "price-display": ["Inter", "sans-serif"]
-            }
-          }
-        }
-      }
-    </script>
-    <style>
+
+<html class="dark" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>GastroFlow | Gestión Inteligente para Restaurantes</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="/js/tailwind-landing.js"></script>
+<style>
         body { font-family: 'Inter', sans-serif; }
-        .glass { background: rgba(22, 30, 49, 0.45); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.06); }
-        .violet-glow { box-shadow: 0 0 25px rgba(99, 102, 241, 0.25); }
+        .glass { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); }
+        .violet-glow { box-shadow: 0 0 25px rgba(54, 38, 206, 0.3); }
         .green-glow { box-shadow: 0 0 25px rgba(74, 225, 118, 0.2); }
         .error-glow { box-shadow: 0 0 15px rgba(255, 180, 171, 0.1); }
-        .gradient-primary { background: linear-gradient(135deg, #3626ce 0%, #6366f1 100%); }
+        .gradient-primary { background: linear-gradient(135deg, #3626ce 0%, #8083ff 100%); }
         .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
     </style>
-</head>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
 <body class="bg-background text-on-background selection:bg-primary selection:text-on-primary">
-
 <!-- Header -->
 <header class="sticky top-0 z-[100] w-full bg-surface/80 backdrop-blur-md border-b border-outline-variant h-16 flex items-center justify-between px-margin-mobile md:px-xl">
-    <a href="/" class="flex items-center gap-xs select-none">
-        <!-- Nuevo Logotipo Premium de Stitch -->
-        <div style="width: 36px; height: 36px; background: linear-gradient(135deg, #6366f1, #4f46e5); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; color: #fff; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);">
-            <span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">storefront</span>
-        </div>
-        <span class="font-display-lg text-headline-sm font-bold text-white tracking-tight">GastroFlow</span>
-    </a>
-    
-    <div class="flex items-center gap-sm md:gap-md">
-        <!-- Iniciar Sesión móvil inteligente -->
-        <a href="/auth/login" class="text-on-surface-variant hover:text-primary font-label-md transition-all text-sm md:text-[14px] whitespace-nowrap">
-            Iniciar Sesión
-        </a>
-    </div>
+<div class="flex items-center gap-xs">
+<span class="material-symbols-outlined text-primary text-3xl" style="font-variation-settings: 'FILL' 1;">local_fire_department</span>
+<span class="font-display-lg text-headline-sm font-bold text-primary tracking-tight">GastroFlow</span>
+</div>
+<button class="bg-secondary-container text-on-secondary-container px-lg py-sm rounded-xl font-label-md transition-all active:scale-95 hover:shadow-lg hover:shadow-primary/20">
+            Agendar Demo
+        </button>
 </header>
-
 <main class="w-full max-w-7xl mx-auto px-margin-mobile md:px-xl py-lg space-y-32">
-    <!-- Hero Section -->
-    <section class="relative pt-lg pb-xl overflow-hidden">
-        <div class="absolute -top-32 -right-32 w-96 h-96 bg-primary/20 blur-[120px] rounded-full"></div>
-        <div class="absolute -bottom-32 -left-32 w-96 h-96 bg-secondary/10 blur-[120px] rounded-full"></div>
-        <div class="flex flex-col items-center text-center space-y-lg relative z-10">
-            <span class="inline-flex items-center gap-xs bg-tertiary-container/20 text-tertiary px-md py-base rounded-full font-label-md border border-tertiary/30">
-                <span class="material-symbols-outlined text-[16px]">trending_up</span>
-                Rentabilidad Instantánea
-            </span>
-            <h1 class="font-display-lg text-[40px] md:text-[64px] leading-tight font-extrabold max-w-4xl tracking-tight text-white">
-                El Sistema de Control que <span class="text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary">Detiene las Fugas de Dinero</span>
-            </h1>
-            <p class="font-body-lg text-on-surface-variant max-w-2xl text-slate-400">
-                Deja de calcular costos a ojo y sufrir por mermas en bodega. GastroFlow integra <strong>fichas técnicas de costeo al gramo</strong>, pantallas digitales de cocina (KDS) y arqueos de caja blindados.
-            </p>
-            <div class="flex flex-col sm:flex-row gap-md pt-md w-full sm:w-auto px-6">
-                <a href="https://wa.me/573173994234?text=Hola,%20vi%20la%20página%20de%20GastroFlow%20y%20quiero%20agendar%20una%20demostración%20para%20mi%20restaurante" target="_blank" class="gradient-primary text-white px-xl py-md rounded-xl font-headline-sm flex items-center justify-center gap-xs shadow-xl violet-glow active:scale-95 transition-all">
-                    <span class="material-symbols-outlined">chat</span>
-                    Agendar Demo Personalizada
-                </a>
-                <a href="#problema" class="bg-surface-container-high text-on-surface px-xl py-md rounded-xl font-headline-sm border border-outline-variant hover:bg-surface-bright transition-all flex items-center justify-center">
-                    Ver funciones
-                </a>
-            </div>
-        </div>
-        
-        <!-- Dashboard Preview Placeholder -->
-        <div class="mt-xl relative rounded-xl border border-outline-variant glass overflow-hidden shadow-2xl">
-            <img alt="Dashboard Preview" class="w-full h-auto opacity-85" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCWlDP6AapHXC6sKk9oYWgQSpKMcZEmVJVQvTGCO0XCQvypujATH-aSIplXoRpk76d_BSNrJHnc7rGvyYiHXnZqffZQr3UOB6REPoqWjh9kerkTITs26HlMnKaGiOlOBYDVrk86bqH6tbVcCqRrTnZdzQ1bpgxW2qTtpGYBFiwyV0NZ1iUcle2LWmotMvtAIKH3LT4n8qwQzR8uMCFyH0ZOD49UZU18vauAfniGBcPCPaElSurua5LJuouMagsG8jqzJM8Q6Q7NQtz7"/>
-            <div class="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent"></div>
-        </div>
-    </section>
-
-    <!-- Sección de Problemas -->
-    <section class="space-y-xl" id="problema">
-        <div class="text-center space-y-xs">
-            <h2 class="font-headline-md text-white text-3xl">¿Tu restaurante está perdiendo ganancias?</h2>
-            <p class="font-body-md text-on-surface-variant text-slate-400">La mayoría de los restaurantes cierran antes de los 2 años por descontrol financiero y operativo.</p>
-        </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-gutter">
-            <!-- Problema 1 -->
-            <div class="p-lg rounded-xl glass border-error/20 bg-error-container/5 space-y-md error-glow">
-                <span class="material-symbols-outlined text-error text-3xl">trending_down</span>
-                <h3 class="font-headline-sm text-red-400 text-lg font-bold">Mermas Silenciosas</h3>
-                <p class="font-body-md text-on-surface-variant text-slate-400 text-sm">Insumos que desaparecen sin registro, destruyendo un 10% a 15% de tu inventario mensual.</p>
-            </div>
-            <!-- Problema 2 -->
-            <div class="p-lg rounded-xl glass border-error/20 bg-error-container/5 space-y-md error-glow">
-                <span class="material-symbols-outlined text-error text-3xl">calculate</span>
-                <h3 class="font-headline-sm text-red-400 text-lg font-bold">Costeos Desactualizados</h3>
-                <p class="font-body-md text-on-surface-variant text-slate-400 text-sm">Vender platos sin recalcular costos al gramo, vendiendo tus platos estrella a pérdida silenciosa.</p>
-            </div>
-            <!-- Problema 3 -->
-            <div class="p-lg rounded-xl glass border-error/20 bg-error-container/5 space-y-md error-glow">
-                <span class="material-symbols-outlined text-error text-3xl">soup_kitchen</span>
-                <h3 class="font-headline-sm text-red-400 text-lg font-bold">Caos en Cocina</h3>
-                <p class="font-body-md text-on-surface-variant text-slate-400 text-sm">Comandas en papel mojadas o perdidas causan demoras, quejas y pérdidas drásticas de rotación.</p>
-            </div>
-            <!-- Problema 4 -->
-            <div class="p-lg rounded-xl glass border-error/20 bg-error-container/5 space-y-md error-glow">
-                <span class="material-symbols-outlined text-error text-3xl">account_balance_wallet</span>
-                <h3 class="font-headline-sm text-red-400 text-lg font-bold">Descuadres e Inseguridad</h3>
-                <p class="font-body-md text-on-surface-variant text-slate-400 text-sm">Anulaciones de cuentas sin autorización, robos hormiga y faltantes inexplicables de dinero.</p>
-            </div>
-        </div>
-    </section>
-
-    <!-- Sección de Soluciones -->
-    <section class="space-y-xl" id="solucion">
-        <div class="text-center space-y-xs">
-            <h2 class="font-headline-md text-primary text-3xl">GastroFlow: El blindaje operativo de tu restaurante</h2>
-            <p class="font-body-md text-on-surface-variant text-slate-400">Convertimos el caos diario en procesos automatizados y reportes contables claros.</p>
-        </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-lg">
-            <!-- Beneficio 1 -->
-            <div class="p-lg rounded-xl glass border-primary/10 hover:border-primary/40 transition-all group">
-                <div class="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-md group-hover:bg-primary group-hover:text-on-primary transition-all text-primary">
-                    <span class="material-symbols-outlined">calculate</span>
-                </div>
-                <h3 class="font-headline-sm text-white mb-xs text-lg font-bold">Fichas Técnicas al Gramo</h3>
-                <p class="font-body-md text-on-surface-variant text-slate-400 text-sm">Estructura tus platos ingrediente por ingrediente. El sistema calcula costos y mermas en tiempo real.</p>
-            </div>
-            <!-- Beneficio 2 -->
-            <div class="p-lg rounded-xl glass border-primary/10 hover:border-primary/40 transition-all group">
-                <div class="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-md group-hover:bg-primary group-hover:text-on-primary transition-all text-primary">
-                    <span class="material-symbols-outlined">restaurant</span>
-                </div>
-                <h3 class="font-headline-sm text-white mb-xs text-lg font-bold">KDS Digital Inteligente</h3>
-                <p class="font-body-md text-on-surface-variant text-slate-400 text-sm">Pantallas de cocina que eliminan el papel mojado y optimizan drásticamente los tiempos de servicio.</p>
-            </div>
-            <!-- Beneficio 3 -->
-            <div class="p-lg rounded-xl glass border-primary/10 hover:border-primary/40 transition-all group">
-                <div class="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-md group-hover:bg-primary group-hover:text-on-primary transition-all text-primary">
-                    <span class="material-symbols-outlined">inventory_2</span>
-                </div>
-                <h3 class="font-headline-sm text-white mb-xs text-lg font-bold">Kardex e Inventario Real</h3>
-                <p class="font-body-md text-on-surface-variant text-slate-400 text-sm">Descuento automático de gramos y mililitros exactos de bodega por cada venta en el POS.</p>
-            </div>
-            <!-- Beneficio 4 -->
-            <div class="p-lg rounded-xl glass border-primary/10 hover:border-primary/40 transition-all group">
-                <div class="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-md group-hover:bg-primary group-hover:text-on-primary transition-all text-primary">
-                    <span class="material-symbols-outlined">point_of_sale</span>
-                </div>
-                <h3 class="font-headline-sm text-white mb-xs text-lg font-bold">Caja Chica y Auditorías</h3>
-                <p class="font-body-md text-on-surface-variant text-slate-400 text-sm">Concilia ingresos automáticos por ventas y egresos rápidos de caja chica por compras de emergencia.</p>
-            </div>
-            <!-- Beneficio 5 -->
-            <div class="p-lg rounded-xl glass border-primary/10 hover:border-primary/40 transition-all group">
-                <div class="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-md group-hover:bg-primary group-hover:text-on-primary transition-all text-primary">
-                    <span class="material-symbols-outlined">event_seat</span>
-                </div>
-                <h3 class="font-headline-sm text-white mb-xs text-lg font-bold">Módulo de Reservas y Eventos</h3>
-                <p class="font-body-md text-on-surface-variant text-slate-400 text-sm">Planifica banquetes, genera cotizaciones formales en PDF con tu logo y gestiona abonos de clientes.</p>
-            </div>
-            <!-- Beneficio 6 -->
-            <div class="p-lg rounded-xl glass border-primary/10 hover:border-primary/40 transition-all group">
-                <div class="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-md group-hover:bg-primary group-hover:text-on-primary transition-all text-primary">
-                    <span class="material-symbols-outlined">shield</span>
-                </div>
-                <h3 class="font-headline-sm text-white mb-xs text-lg font-bold">Permisos Antifraude</h3>
-                <p class="font-body-md text-on-surface-variant text-slate-400 text-sm">Controla y limita a través de roles quién puede aplicar descuentos o anular facturas.</p>
-            </div>
-        </div>
-    </section>
-
-    <!-- ROI / Prueba Social -->
-    <section>
-        <div class="rounded-2xl p-xl bg-gradient-to-br from-tertiary-container/30 to-tertiary-container/10 border border-tertiary-container/30 relative overflow-hidden green-glow">
-            <div class="absolute top-0 right-0 p-lg opacity-10">
-                <span class="material-symbols-outlined text-[120px]">insights</span>
-            </div>
-            <div class="relative z-10 flex flex-col md:flex-row items-center justify-between gap-xl">
-                <div class="max-w-md space-y-md">
-                    <h2 class="font-headline-md text-emerald-400 text-2xl font-bold">Resultados que puedes medir</h2>
-                    <p class="font-body-lg text-on-surface text-slate-200">Al reducir tan solo un 4% de tus mermas mensuales, la inversión se paga sola en las primeras semanas.</p>
-                </div>
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-lg w-full md:w-auto">
-                    <div class="text-center p-md bg-surface/40 rounded-xl border border-white/5">
-                        <p class="text-price-display font-price-display text-emerald-400 text-3xl font-extrabold">-12%</p>
-                        <p class="font-label-md text-on-surface-variant text-slate-400">Mermas de Alimentos</p>
-                    </div>
-                    <div class="text-center p-md bg-surface/40 rounded-xl border border-white/5">
-                        <p class="text-price-display font-price-display text-emerald-400 text-3xl font-extrabold">+18%</p>
-                        <p class="font-label-md text-on-surface-variant text-slate-400">Velocidad de Cocina</p>
-                    </div>
-                    <div class="text-center p-md bg-surface/40 rounded-xl border border-white/5">
-                        <p class="text-price-display font-price-display text-emerald-400 text-3xl font-extrabold">100%</p>
-                        <p class="font-label-md text-on-surface-variant text-slate-400">Control Caja Chica</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Planes de Precios -->
-    <section class="space-y-xl" id="precios">
-        <div class="text-center space-y-xs">
-            <h2 class="font-headline-md text-white text-3xl">Escalamos con tu negocio</h2>
-            <p class="font-body-md text-on-surface-variant text-slate-400">Planes dinámicos diseñados para cada etapa y tamaño de tu restaurante.</p>
-        </div>
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-lg items-end">
-            <!-- Plan Operativo -->
-            <div class="p-lg rounded-xl glass border-outline-variant space-y-lg flex flex-col">
-                <div class="space-y-xs">
-                    <h3 class="font-headline-sm text-white text-xl font-bold">Plan Operativo</h3>
-                    <p class="font-body-md text-on-surface-variant text-slate-400 text-sm">Ideal para dark kitchens y pequeños locales de comida rápida.</p>
-                </div>
-                <ul class="space-y-sm flex-grow text-slate-300">
-                    <li class="flex items-center gap-xs font-body-md"><span class="material-symbols-outlined text-primary text-[18px]">check_circle</span> POS Punto de venta y mesas</li>
-                    <li class="flex items-center gap-xs font-body-md"><span class="material-symbols-outlined text-primary text-[18px]">check_circle</span> Ventas y Facturación</li>
-                    <li class="flex items-center gap-xs font-body-md"><span class="material-symbols-outlined text-primary text-[18px]">check_circle</span> Mapa visual de mesas físicas</li>
-                    <li class="flex items-center gap-xs font-body-md"><span class="material-symbols-outlined text-primary text-[18px]">check_circle</span> Cuadres de caja sencillos</li>
-                </ul>
-                <a href="https://wa.me/573173994234?text=Hola,%20me%20gustaría%20agendar%20una%20demostración%20del%20Plan%20Operativo%20de%20GastroFlow" target="_blank" class="w-full py-md rounded-xl border border-primary text-primary font-label-md hover:bg-primary/5 transition-all text-center block">Seleccionar Plan</a>
-            </div>
-            <!-- Plan Control Pro (Destacado) -->
-            <div class="p-lg rounded-2xl bg-surface-container border-2 border-primary space-y-lg flex flex-col relative scale-105 shadow-2xl violet-glow z-20">
-                <div class="absolute -top-4 left-1/2 -translate-x-1/2 bg-primary text-white px-lg py-base rounded-full font-label-md font-bold uppercase tracking-widest text-[10px]">RECOMENDADO</div>
-                <div class="space-y-xs">
-                    <h3 class="font-headline-sm text-white text-xl font-bold">Plan Control Pro</h3>
-                    <p class="font-body-md text-on-surface-variant text-slate-400 text-sm">El balance definitivo entre salón y costeo riguroso.</p>
-                </div>
-                <ul class="space-y-sm flex-grow text-slate-300">
-                    <li class="flex items-center gap-xs font-body-md"><span class="material-symbols-outlined text-primary text-[18px]">check_circle</span> Todo lo del Operativo</li>
-                    <li class="flex items-center gap-xs font-body-md font-bold text-white"><span class="material-symbols-outlined text-primary text-[18px]">check_circle</span> Fichas Técnicas Pro</li>
-                    <li class="flex items-center gap-xs font-body-md font-bold text-white"><span class="material-symbols-outlined text-primary text-[18px]">check_circle</span> Inventario Descontable</li>
-                    <li class="flex items-center gap-xs font-body-md font-bold text-white"><span class="material-symbols-outlined text-primary text-[18px]">check_circle</span> KDS Pantalla de Cocina</li>
-                </ul>
-                <a href="https://wa.me/573173994234?text=Hola,%20me%20gustaría%20agendar%20una%20demostración%20del%20Plan%20Control%20Pro%20de%20GastroFlow" target="_blank" class="w-full py-md rounded-xl gradient-primary text-white font-headline-sm shadow-lg active:scale-95 transition-all text-center block">Probar Plan Pro</a>
-            </div>
-            <!-- Plan Premium -->
-            <div class="p-lg rounded-xl glass border-outline-variant space-y-lg flex flex-col">
-                <div class="space-y-xs">
-                    <h3 class="font-headline-sm text-white text-xl font-bold">Plan Premium</h3>
-                    <p class="font-body-md text-on-surface-variant text-slate-400 text-sm">Poder analítico superior y control logístico avanzado.</p>
-                </div>
-                <ul class="space-y-sm flex-grow text-slate-300">
-                    <li class="flex items-center gap-xs font-body-md"><span class="material-symbols-outlined text-primary text-[18px]">check_circle</span> Todo lo del Pro</li>
-                    <li class="flex items-center gap-xs font-body-md"><span class="material-symbols-outlined text-primary text-[18px]">check_circle</span> Módulo de Eventos</li>
-                    <li class="flex items-center gap-xs font-body-md"><span class="material-symbols-outlined text-primary text-[18px]">check_circle</span> Permisos ultra-granurales</li>
-                    <li class="flex items-center gap-xs font-body-md"><span class="material-symbols-outlined text-primary text-[18px]">check_circle</span> Soporte VIP 24/7</li>
-                </ul>
-                <a href="https://wa.me/573173994234?text=Hola,%20me%20gustaría%20agendar%20una%20demostración%20del%20Plan%20Premium%20de%20GastroFlow" target="_blank" class="w-full py-md rounded-xl border border-outline-variant text-on-surface-variant font-label-md hover:bg-surface-bright transition-all text-center block">Contactar Ventas</a>
-            </div>
-        </div>
-    </section>
-
-    <!-- Testimonios -->
-    <section class="space-y-xl" id="clientes">
-        <div class="text-center space-y-xs">
-            <h2 class="font-headline-md text-white text-3xl">Lo que dicen los restauranteros</h2>
-        </div>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-lg">
-            <!-- Testimonio 1 -->
-            <div class="p-lg rounded-xl glass border-white/5 space-y-md relative">
-                <span class="material-symbols-outlined text-primary/30 absolute top-4 right-4 text-4xl">format_quote</span>
-                <p class="font-body-md italic text-on-surface text-slate-300">"GastroFlow nos permitió entender por dónde se nos iba el dinero. Bajamos el desperdicio un 15% en solo dos meses."</p>
-                <div class="flex items-center gap-md pt-md border-t border-white/10">
-                    <div class="w-10 h-10 rounded-full bg-surface-container-high overflow-hidden">
-                        <img alt="Cliente 1" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDlPmUcwBvbIZff9OLqXOwcZ5R-UiuXdlA6Lb5NYMkxLMbi-j-bUZwzGxH6A6PfFEqGyOKLuEoqgm6z6R974R5HOpEmTHViF-i4NVmA34Ioo2OXSiJlMq2TqnCmafbDLDxAdHvxFTjZLrjhD6JZxykIawmSPK_oSN-nfwElowe3xXGAjyJUlyPmaaU89dMvzq-Wx8knf5wWGIPqDH66GUntoBn83az7cGpx2lbRk2LE9yYp8AyLuYWFCEozkAjZlDkT1ckMSM6_Fk15"/>
-                    </div>
-                    <div>
-                        <p class="font-label-md text-white font-bold text-sm">Claudia Moreno</p>
-                        <p class="font-label-sm text-on-surface-variant text-slate-400 text-xs">El Fogón Paisa, Medellín</p>
-                    </div>
-                </div>
-            </div>
-            <!-- Testimonio 2 -->
-            <div class="p-lg rounded-xl glass border-white/5 space-y-md relative">
-                <span class="material-symbols-outlined text-primary/30 absolute top-4 right-4 text-4xl">format_quote</span>
-                <p class="font-body-md italic text-on-surface text-slate-300">"El KDS cambió la dinámica en cocina. Antes era un caos de papeles, ahora todo fluye con una precisión increíble."</p>
-                <div class="flex items-center gap-md pt-md border-t border-white/10">
-                    <div class="w-10 h-10 rounded-full bg-surface-container-high overflow-hidden">
-                        <img alt="Cliente 2" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBXYHWXBZspuFHz2xSg1AFJSiaoMapvujNt6RmoIWzXbt58c0m9RR8_YO2O00n9JAxuz2u-iIuZdOr148VYm_lsQvG3EzDYNLlE2p_zSUELwMth2sTHxrPgo8h8tN089590UVavyQ5a5R7jJHSIdmBXrwO-f1iHvk6Vrw4ProhaT2PywvVLmVAP8SrdiG9zjtjhNxpkWMWpBULC7v-8-tm1X8OndA8oei_1uPSp0HKTIttVjfEUX1yB0MfbyRM3i5iWyOuyJVFExHmR"/>
-                    </div>
-                    <div>
-                        <p class="font-label-md text-white font-bold text-sm">Andrés Felipe</p>
-                        <p class="font-label-sm text-on-surface-variant text-slate-400 text-xs">Bar La Terraza 360, Bogotá</p>
-                    </div>
-                </div>
-            </div>
-            <!-- Testimonio 3 -->
-            <div class="p-lg rounded-xl glass border-white/5 space-y-md relative">
-                <span class="material-symbols-outlined text-primary/30 absolute top-4 right-4 text-4xl">format_quote</span>
-                <p class="font-body-md italic text-on-surface text-slate-300">"Por fin tengo paz mental al cerrar caja. Sé exactamente qué se vendió y qué hay en stock desde mi celular."</p>
-                <div class="flex items-center gap-md pt-md border-t border-white/10">
-                    <div class="w-10 h-10 rounded-full bg-surface-container-high overflow-hidden">
-                        <img alt="Cliente 3" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA02oXdUgxyIZVBs4dyYHK4_CF-8wH2Hw_6fyRUW0fJXK2SRxYZQRu0S9X4qEd6Suk-PrTjUdmFl81lR10NCMc8HDSq34rYGtRKGTw1-SbDbOTnX6MjWBUN-nO8C90t4-k1Cd7Nw4Msi1RynPAhhNkOncL3cL2EmhaMMg4O6ezuijgib2wqoQP-FSXTI5hRF3o15iantMHnHAPLUzyC0QCreMqSAWg1K5Gget04R9o24T748rmI2pyFGhsOlv9r6sAOIk9zecjBgTR9"/>
-                    </div>
-                    <div>
-                        <p class="font-label-md text-white font-bold text-sm">Isabel Castillo</p>
-                        <p class="font-label-sm text-on-surface-variant text-slate-400 text-xs">Cafetería Casa Blanca, Cali</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Final CTA -->
-    <section class="py-xl">
-        <div class="relative rounded-3xl p-xl overflow-hidden text-center space-y-lg violet-glow">
-            <div class="absolute inset-0 gradient-primary opacity-95"></div>
-            <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-from)_0%,_transparent_70%)] from-white/10"></div>
-            <div class="relative z-10 space-y-md max-w-2xl mx-auto">
-                <h2 class="font-display-lg text-white text-[32px] md:text-[48px] font-extrabold leading-tight">
-                    ¿Listo para tomar el control de tu rentabilidad?
-                </h2>
-                <p class="font-body-lg text-white/80 text-slate-100">
-                    Únete a los restaurantes que ya operan con éxito con GastroFlow. Agenda tu demo virtual personalizada.
+<!-- Hero Section -->
+<section class="relative pt-lg pb-xl overflow-hidden">
+<div class="absolute -top-32 -right-32 w-96 h-96 bg-primary/20 blur-[120px] rounded-full"></div>
+<div class="absolute -bottom-32 -left-32 w-96 h-96 bg-secondary/10 blur-[120px] rounded-full"></div>
+<div class="flex flex-col items-center text-center space-y-lg relative z-10">
+<span class="inline-flex items-center gap-xs bg-tertiary-container/20 text-tertiary px-md py-base rounded-full font-label-md border border-tertiary/30">
+<span class="material-symbols-outlined text-[16px]">trending_up</span>
+                    Rentabilidad Instantánea
+                </span>
+<h1 class="font-display-lg text-[40px] md:text-[64px] leading-tight font-extrabold max-w-4xl tracking-tight">
+                    Detén las <span class="text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary">fugas de dinero</span> de tu restaurante hoy.
+                </h1>
+<p class="font-body-lg text-on-surface-variant max-w-2xl">
+                    Control absoluto con fichas técnicas automatizadas y KDS en tiempo real. La tecnología POS diseñada para maximizar el margen de cada plato.
                 </p>
-                <div class="flex flex-col sm:flex-row gap-md justify-center pt-md w-full sm:w-auto px-6">
-                    <a href="https://wa.me/573173994234?text=Hola,%20vi%20la%20página%20de%20GastroFlow%20y%20quiero%20agendar%20una%20demostración%20para%20mi%20restaurante" target="_blank" class="bg-white text-[#3626ce] px-xl py-md rounded-xl font-headline-sm hover:bg-slate-100 transition-all active:scale-95 shadow-xl flex items-center justify-center gap-xs">
-                        Solicitar Demo Gratis
-                    </a>
-                    <a href="#precios" class="bg-primary-container/20 text-white border border-white/30 px-xl py-md rounded-xl font-headline-sm hover:bg-white/10 transition-all flex items-center justify-center">
-                        Ver Planes
-                    </a>
-                </div>
-            </div>
-        </div>
-    </section>
+<div class="flex flex-col sm:flex-row gap-md pt-md">
+<button class="gradient-primary text-white px-xl py-md rounded-xl font-headline-sm flex items-center justify-center gap-xs shadow-xl violet-glow active:scale-95 transition-all">
+<span class="material-symbols-outlined">chat</span>
+                        Hablar por WhatsApp
+                    </button>
+<button class="bg-surface-container-high text-on-surface px-xl py-md rounded-xl font-headline-sm border border-outline-variant hover:bg-surface-bright transition-all">
+                        Ver funciones
+                    </button>
+</div>
+</div>
+<!-- Dashboard Preview Placeholder -->
+<div class="mt-xl relative rounded-xl border border-outline-variant glass overflow-hidden shadow-2xl">
+<img alt="Dashboard Preview" class="w-full h-auto opacity-80" data-alt="A modern dark-mode restaurant management dashboard interface showing colorful financial line charts and analytical data. The design uses deep slate backgrounds with vibrant indigo and violet accent glows, featuring a clean layout with glassmorphism cards and high-contrast typography. The atmosphere is professional, tech-focused, and premium, representing a command center for culinary business operations." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCWlDP6AapHXC6sKk9oYWgQSpKMcZEmVJVQvTGCO0XCQvypujATH-aSIplXoRpk76d_BSNrJHnc7rGvyYiHXnZqffZQr3UOB6REPoqWjh9kerkTITs26HlMnKaGiOlOBYDVrk86bqH6tbVcCqRrTnZdzQ1bpgxW2qTtpGYBFiwyV0NZ1iUcle2LWmotMvtAIKH3LT4n8qwQzR8uMCFyH0ZOD49UZU18vauAfniGBcPCPaElSurua5LJuouMagsG8jqzJM8Q6Q7NQtz7"/>
+<div class="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent"></div>
+</div>
+</section>
+<!-- Sección de Problemas -->
+<section class="space-y-xl">
+<div class="text-center space-y-xs">
+<h2 class="font-headline-md text-on-surface">¿Tu restaurante está perdiendo ganancias?</h2>
+<p class="font-body-md text-on-surface-variant">Identifica los síntomas del caos operativo antes de que sea tarde.</p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-gutter">
+<!-- Problema 1 -->
+<div class="p-lg rounded-xl glass border-error/20 bg-error-container/5 space-y-md error-glow">
+<span class="material-symbols-outlined text-error text-3xl">trending_down</span>
+<h3 class="font-headline-sm text-error">Mermas Ocultas</h3>
+<p class="font-body-md text-on-surface-variant">Insumos que desaparecen sin registro, destruyendo tu margen de utilidad mes tras mes.</p>
+</div>
+<!-- Problema 2 -->
+<div class="p-lg rounded-xl glass border-error/20 bg-error-container/5 space-y-md error-glow">
+<span class="material-symbols-outlined text-error text-3xl">calculate</span>
+<h3 class="font-headline-sm text-error">Costeos Ciegos</h3>
+<p class="font-body-md text-on-surface-variant">Vender platos sin saber cuánto te cuestan realmente. El error #1 en la industria.</p>
+</div>
+<!-- Problema 3 -->
+<div class="p-lg rounded-xl glass border-error/20 bg-error-container/5 space-y-md error-glow">
+<span class="material-symbols-outlined text-error text-3xl">soup_kitchen</span>
+<h3 class="font-headline-sm text-error">Caos en Cocina</h3>
+<p class="font-body-md text-on-surface-variant">Comandas perdidas y retrasos que resultan en clientes insatisfechos y devoluciones.</p>
+</div>
+<!-- Problema 4 -->
+<div class="p-lg rounded-xl glass border-error/20 bg-error-container/5 space-y-md error-glow">
+<span class="material-symbols-outlined text-error text-3xl">account_balance_wallet</span>
+<h3 class="font-headline-sm text-error">Descuadres</h3>
+<p class="font-body-md text-on-surface-variant">Diferencias en caja al final del día que nadie puede explicar. Falta de trazabilidad.</p>
+</div>
+</div>
+</section>
+<!-- Sección de Soluciones -->
+<section class="space-y-xl">
+<div class="text-center space-y-xs">
+<h2 class="font-headline-md text-primary">La Solución Todo-en-Uno</h2>
+<p class="font-body-md text-on-surface-variant">Diseñado por expertos en gastronomía para la era digital.</p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-lg">
+<!-- Beneficio 1 -->
+<div class="p-lg rounded-xl glass border-primary/10 hover:border-primary/40 transition-all group">
+<div class="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-md group-hover:bg-primary group-hover:text-on-primary transition-all">
+<span class="material-symbols-outlined">calculate</span>
+</div>
+<h3 class="font-headline-sm text-on-surface mb-xs">Recetas Estándar</h3>
+<p class="font-body-md text-on-surface-variant">Fichas técnicas dinámicas que se actualizan con los precios de tus proveedores.</p>
+</div>
+<!-- Beneficio 2 -->
+<div class="p-lg rounded-xl glass border-primary/10 hover:border-primary/40 transition-all group">
+<div class="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-md group-hover:bg-primary group-hover:text-on-primary transition-all">
+<span class="material-symbols-outlined">restaurant</span>
+</div>
+<h3 class="font-headline-sm text-on-surface mb-xs">KDS Inteligente</h3>
+<p class="font-body-md text-on-surface-variant">Pantallas de cocina que eliminan el papel y optimizan los tiempos de servicio.</p>
+</div>
+<!-- Beneficio 3 -->
+<div class="p-lg rounded-xl glass border-primary/10 hover:border-primary/40 transition-all group">
+<div class="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-md group-hover:bg-primary group-hover:text-on-primary transition-all">
+<span class="material-symbols-outlined">inventory_2</span>
+</div>
+<h3 class="font-headline-sm text-on-surface mb-xs">Inventario Real</h3>
+<p class="font-body-md text-on-surface-variant">Descuento automático de stock por cada venta. Alertas de inventario bajo.</p>
+</div>
+<!-- Beneficio 4 -->
+<div class="p-lg rounded-xl glass border-primary/10 hover:border-primary/40 transition-all group">
+<div class="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-md group-hover:bg-primary group-hover:text-on-primary transition-all">
+<span class="material-symbols-outlined">point_of_sale</span>
+</div>
+<h3 class="font-headline-sm text-on-surface mb-xs">Caja Blindada</h3>
+<p class="font-body-md text-on-surface-variant">Control de arqueos y flujos de efectivo con auditoría detallada.</p>
+</div>
+<!-- Beneficio 5 -->
+<div class="p-lg rounded-xl glass border-primary/10 hover:border-primary/40 transition-all group">
+<div class="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-md group-hover:bg-primary group-hover:text-on-primary transition-all">
+<span class="material-symbols-outlined">event_seat</span>
+</div>
+<h3 class="font-headline-sm text-on-surface mb-xs">Mapas de Mesa</h3>
+<p class="font-body-md text-on-surface-variant">Gestión visual de salones para una rotación de mesas más eficiente.</p>
+</div>
+<!-- Beneficio 6 -->
+<div class="p-lg rounded-xl glass border-primary/10 hover:border-primary/40 transition-all group">
+<div class="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-md group-hover:bg-primary group-hover:text-on-primary transition-all">
+<span class="material-symbols-outlined">shield</span>
+</div>
+<h3 class="font-headline-sm text-on-surface mb-xs">Sistema Antifraude</h3>
+<p class="font-body-md text-on-surface-variant">Autorizaciones remotas para anulaciones y descuentos especiales.</p>
+</div>
+</div>
+</section>
+<!-- ROI / Prueba Social -->
+<section>
+<div class="rounded-2xl p-xl bg-gradient-to-br from-tertiary-container/30 to-tertiary-container/10 border border-tertiary-container/30 relative overflow-hidden green-glow">
+<div class="absolute top-0 right-0 p-lg opacity-10">
+<span class="material-symbols-outlined text-[120px]">insights</span>
+</div>
+<div class="relative z-10 flex flex-col md:flex-row items-center justify-between gap-xl">
+<div class="max-w-md space-y-md">
+<h2 class="font-headline-md text-tertiary">Resultados que puedes medir</h2>
+<p class="font-body-lg text-on-surface">Nuestros clientes transforman su operación en los primeros 30 días de uso.</p>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-lg w-full md:w-auto">
+<div class="text-center p-md bg-surface/40 rounded-xl border border-white/5">
+<p class="text-price-display font-price-display text-tertiary">-12%</p>
+<p class="font-label-md text-on-surface-variant">Mermas</p>
+</div>
+<div class="text-center p-md bg-surface/40 rounded-xl border border-white/5">
+<p class="text-price-display font-price-display text-tertiary">+18%</p>
+<p class="font-label-md text-on-surface-variant">Velocidad</p>
+</div>
+<div class="text-center p-md bg-surface/40 rounded-xl border border-white/5">
+<p class="text-price-display font-price-display text-tertiary">100%</p>
+<p class="font-label-md text-on-surface-variant">Control</p>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Planes de Precios -->
+<section class="space-y-xl">
+<div class="text-center space-y-xs">
+<h2 class="font-headline-md text-on-surface">Escalamos con tu negocio</h2>
+<p class="font-body-md text-on-surface-variant">Planes diseñados para cada etapa de tu restaurante.</p>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-lg items-end">
+<!-- Plan Operativo -->
+<div class="p-lg rounded-xl glass border-outline-variant space-y-lg flex flex-col">
+<div class="space-y-xs">
+<h3 class="font-headline-sm text-on-surface">Operativo</h3>
+<div class="flex items-baseline gap-xs">
+<span class="text-price-display font-price-display">$49</span>
+<span class="font-label-md text-on-surface-variant">/mes</span>
+</div>
+<p class="font-body-md text-on-surface-variant">Ideal para dark kitchens y pequeños locales.</p>
+</div>
+<ul class="space-y-sm flex-grow">
+<li class="flex items-center gap-xs font-body-md"><span class="material-symbols-outlined text-primary text-[18px]">check_circle</span> POS Punto de venta</li>
+<li class="flex items-center gap-xs font-body-md"><span class="material-symbols-outlined text-primary text-[18px]">check_circle</span> Ventas y Facturación</li>
+<li class="flex items-center gap-xs font-body-md"><span class="material-symbols-outlined text-primary text-[18px]">check_circle</span> App Meseros (1)</li>
+<li class="flex items-center gap-xs font-body-md"><span class="material-symbols-outlined text-primary text-[18px]">check_circle</span> Reportes Básicos</li>
+</ul>
+<button class="w-full py-md rounded-xl border border-primary text-primary font-label-md hover:bg-primary/5 transition-all">Seleccionar Plan</button>
+</div>
+<!-- Plan Control Pro (Destacado) -->
+<div class="p-lg rounded-2xl bg-surface-container border-2 border-primary space-y-lg flex flex-col relative scale-105 shadow-2xl violet-glow z-20">
+<div class="absolute -top-4 left-1/2 -translate-x-1/2 bg-primary text-on-primary px-lg py-base rounded-full font-label-md font-bold uppercase tracking-widest text-[10px]">RECOMENDADO</div>
+<div class="space-y-xs">
+<h3 class="font-headline-sm text-on-surface">Control Pro</h3>
+<div class="flex items-baseline gap-xs">
+<span class="text-price-display font-price-display text-primary">$89</span>
+<span class="font-label-md text-on-surface-variant">/mes</span>
+</div>
+<p class="font-body-md text-on-surface-variant">Perfecto para restaurantes de servicio completo.</p>
+</div>
+<ul class="space-y-sm flex-grow">
+<li class="flex items-center gap-xs font-body-md"><span class="material-symbols-outlined text-primary text-[18px]">check_circle</span> Todo lo del Operativo</li>
+<li class="flex items-center gap-xs font-body-md font-bold"><span class="material-symbols-outlined text-primary text-[18px]">check_circle</span> Fichas Técnicas Pro</li>
+<li class="flex items-center gap-xs font-body-md font-bold"><span class="material-symbols-outlined text-primary text-[18px]">check_circle</span> Gestión de Inventarios</li>
+<li class="flex items-center gap-xs font-body-md font-bold"><span class="material-symbols-outlined text-primary text-[18px]">check_circle</span> KDS Pantalla de Cocina</li>
+<li class="flex items-center gap-xs font-body-md"><span class="material-symbols-outlined text-primary text-[18px]">check_circle</span> App Meseros Ilimitada</li>
+</ul>
+<button class="w-full py-md rounded-xl gradient-primary text-white font-headline-sm shadow-lg active:scale-95 transition-all">Agendar Demo Pro</button>
+</div>
+<!-- Plan Premium -->
+<div class="p-lg rounded-xl glass border-outline-variant space-y-lg flex flex-col">
+<div class="space-y-xs">
+<h3 class="font-headline-sm text-on-surface">Premium</h3>
+<div class="flex items-baseline gap-xs">
+<span class="text-price-display font-price-display">$149</span>
+<span class="font-label-md text-on-surface-variant">/mes</span>
+</div>
+<p class="font-body-md text-on-surface-variant">Para cadenas y multilocales.</p>
+</div>
+<ul class="space-y-sm flex-grow">
+<li class="flex items-center gap-xs font-body-md"><span class="material-symbols-outlined text-primary text-[18px]">check_circle</span> Todo lo del Pro</li>
+<li class="flex items-center gap-xs font-body-md"><span class="material-symbols-outlined text-primary text-[18px]">check_circle</span> Dashboard Multi-sede</li>
+<li class="flex items-center gap-xs font-body-md"><span class="material-symbols-outlined text-primary text-[18px]">check_circle</span> API Personalizada</li>
+<li class="flex items-center gap-xs font-body-md"><span class="material-symbols-outlined text-primary text-[18px]">check_circle</span> Soporte 24/7 VIP</li>
+</ul>
+<button class="w-full py-md rounded-xl border border-outline-variant text-on-surface-variant font-label-md hover:bg-surface-bright transition-all">Contactar Ventas</button>
+</div>
+</div>
+</section>
+<!-- Testimonios -->
+<section class="space-y-xl">
+<div class="text-center space-y-xs">
+<h2 class="font-headline-md text-on-surface">Lo que dicen los restauranteros</h2>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-lg">
+<!-- Testimonio 1 -->
+<div class="p-lg rounded-xl glass border-white/5 space-y-md relative">
+<span class="material-symbols-outlined text-primary/30 absolute top-4 right-4 text-4xl">format_quote</span>
+<p class="font-body-md italic text-on-surface">"GastroFlow nos permitió entender por dónde se nos iba el dinero. Bajamos el desperdicio un 15% en solo dos meses."</p>
+<div class="flex items-center gap-md pt-md border-t border-white/10">
+<div class="w-10 h-10 rounded-full bg-surface-container-high overflow-hidden">
+<img alt="Cliente 1" data-alt="A portrait of a professional chef in a clean white uniform smiling in a blurred restaurant kitchen setting. The lighting is warm and natural, reflecting a high-end culinary environment. The aesthetic is clean and modern, integrated into the dark-mode UI with subtle border glows." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDlPmUcwBvbIZff9OLqXOwcZ5R-UiuXdlA6Lb5NYMkxLMbi-j-bUZwzGxH6A6PfFEqGyOKLuEoqgm6z6R974R5HOpEmTHViF-i4NVmA34Ioo2OXSiJlMq2TqnCmafbDLDxAdHvxFTjZLrjhD6JZxykIawmSPK_oSN-nfwElowe3xXGAjyJUlyPmaaU89dMvzq-Wx8knf5wWGIPqDH66GUntoBn83az7cGpx2lbRk2LE9yYp8AyLuYWFCEozkAjZlDkT1ckMSM6_Fk15"/>
+</div>
+<div>
+<p class="font-label-md text-on-surface">Carlos Méndez</p>
+<p class="font-label-sm text-on-surface-variant">La Parilla del Sol</p>
+</div>
+</div>
+</div>
+<!-- Testimonio 2 -->
+<div class="p-lg rounded-xl glass border-white/5 space-y-md relative">
+<span class="material-symbols-outlined text-primary/30 absolute top-4 right-4 text-4xl">format_quote</span>
+<p class="font-body-md italic text-on-surface">"El KDS cambió la dinámica en cocina. Antes era un caos de papeles, ahora todo fluye con una precisión increíble."</p>
+<div class="flex items-center gap-md pt-md border-t border-white/10">
+<div class="w-10 h-10 rounded-full bg-surface-container-high overflow-hidden">
+<img alt="Cliente 2" data-alt="Close up portrait of a restaurant manager with a professional and friendly expression. The background is a soft-focus elegant dining room. The image uses sophisticated lighting and a palette that matches the modern slate and indigo theme of the website." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBXYHWXBZspuFHz2xSg1AFJSiaoMapvujNt6RmoIWzXbt58c0m9RR8_YO2O00n9JAxuz2u-iIuZdOr148VYm_lsQvG3EzDYNLlE2p_zSUELwMth2sTHxrPgo8h8tN089590UVavyQ5a5R7jJHSIdmBXrwO-f1iHvk6Vrw4ProhaT2PywvVLmVAP8SrdiG9zjtjhNxpkWMWpBULC7v-8-tm1X8OndA8oei_1uPSp0HKTIttVjfEUX1yB0MfbyRM3i5iWyOuyJVFExHmR"/>
+</div>
+<div>
+<p class="font-label-md text-on-surface">Lucía Rivera</p>
+<p class="font-label-sm text-on-surface-variant">Bistro Urbano</p>
+</div>
+</div>
+</div>
+<!-- Testimonio 3 -->
+<div class="p-lg rounded-xl glass border-white/5 space-y-md relative">
+<span class="material-symbols-outlined text-primary/30 absolute top-4 right-4 text-4xl">format_quote</span>
+<p class="font-body-md italic text-on-surface">"Por fin tengo paz mental al cerrar caja. Sé exactamente qué se vendió y qué hay en stock desde mi celular."</p>
+<div class="flex items-center gap-md pt-md border-t border-white/10">
+<div class="w-10 h-10 rounded-full bg-surface-container-high overflow-hidden">
+<img alt="Cliente 3" data-alt="A portrait of a male entrepreneur and restaurant owner looking confident. The lighting highlights sharp features and a high-tech modern aesthetic. The background is minimalist and dark, perfectly complementing the brand's premium dark mode identity." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA02oXdUgxyIZVBs4dyYHK4_CF-8wH2Hw_6fyRUW0fJXK2SRxYZQRu0S9X4qEd6Suk-PrTjUdmFl81lR10NCMc8HDSq34rYGtRKGTw1-SbDbOTnX6MjWBUN-nO8C90t4-k1Cd7Nw4Msi1RynPAhhNkOncL3cL2EmhaMMg4O6ezuijgib2wqoQP-FSXTI5hRF3o15iantMHnHAPLUzyC0QCreMqSAWg1K5Gget04R9o24T748rmI2pyFGhsOlv9r6sAOIk9zecjBgTR9"/>
+</div>
+<div>
+<p class="font-label-md text-on-surface">Roberto G.</p>
+<p class="font-label-sm text-on-surface-variant">Burger Loft</p>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Final CTA -->
+<section class="py-xl">
+<div class="relative rounded-3xl p-xl overflow-hidden text-center space-y-lg violet-glow">
+<div class="absolute inset-0 gradient-primary opacity-90"></div>
+<div class="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-from)_0%,_transparent_70%)] from-white/10"></div>
+<div class="relative z-10 space-y-md max-w-2xl mx-auto">
+<h2 class="font-display-lg text-white text-[32px] md:text-[48px] font-extrabold leading-tight">
+                        ¿Listo para tomar el control de tu rentabilidad?
+                    </h2>
+<p class="font-body-lg text-white/80">
+                        Únete a los más de 500 restaurantes que ya operan con GastroFlow. Empieza tu demo gratuita hoy.
+                    </p>
+<div class="flex flex-col sm:flex-row gap-md justify-center pt-md">
+<button class="bg-white text-primary px-xl py-md rounded-xl font-headline-sm hover:bg-on-primary-container transition-all active:scale-95 shadow-xl">
+                            Solicitar Demo Gratis
+                        </button>
+<button class="bg-primary-container/20 text-white border border-white/30 px-xl py-md rounded-xl font-headline-sm hover:bg-white/10 transition-all">
+                            Ver Planes
+                        </button>
+</div>
+</div>
+</div>
+</section>
 </main>
-
 <!-- Footer -->
 <footer class="bg-surface-container-lowest pt-xl pb-lg border-t border-outline-variant">
-    <div class="max-w-7xl mx-auto px-margin-mobile md:px-xl grid grid-cols-1 md:grid-cols-4 gap-xl">
-        <div class="space-y-md">
-            <div class="flex items-center gap-xs">
-                <!-- Nuevo Logotipo Premium de Stitch -->
-                <div style="width: 30px; height: 30px; background: linear-gradient(135deg, #6366f1, #4f46e5); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; color: #fff; box-shadow: 0 4px 10px rgba(99, 102, 241, 0.25);">
-                    <span class="material-symbols-outlined text-[16px]" style="font-variation-settings: 'FILL' 1;">storefront</span>
-                </div>
-                <span class="font-display-lg text-headline-sm font-bold text-white">GastroFlow</span>
-            </div>
-            <p class="font-body-md text-on-surface-variant text-slate-400 text-sm">El sistema operativo para el éxito de tu restaurante. Control, velocidad y rentabilidad en una sola plataforma.</p>
-            <div class="flex gap-md">
-                <a class="text-on-surface-variant hover:text-primary transition-colors text-slate-400" href="https://wa.me/573173994234" target="_blank"><span class="material-symbols-outlined">chat</span></a>
-                <a class="text-on-surface-variant hover:text-primary transition-colors text-slate-400" href="mailto:rene28609@gmail.com"><span class="material-symbols-outlined">alternate_email</span></a>
-            </div>
-        </div>
-        <div class="space-y-md">
-            <h4 class="font-label-md text-on-surface uppercase tracking-widest text-white text-sm font-bold">Producto</h4>
-            <ul class="space-y-sm text-on-surface-variant font-body-md text-slate-400 text-sm">
-                <li><a class="hover:text-primary transition-colors" href="#solucion">Funciones</a></li>
-                <li><a class="hover:text-primary transition-colors" href="#solucion">KDS Cocina</a></li>
-                <li><a class="hover:text-primary transition-colors" href="#solucion">Inventarios</a></li>
-            </ul>
-        </div>
-        <div class="space-y-md">
-            <h4 class="font-label-md text-on-surface uppercase tracking-widest text-white text-sm font-bold">Recursos</h4>
-            <ul class="space-y-sm text-on-surface-variant font-body-md text-slate-400 text-sm">
-                <li><a class="hover:text-primary transition-colors" href="#clientes">Casos de Éxito</a></li>
-                <li><a class="hover:text-primary transition-colors" href="/sitemap.xml">Sitemap</a></li>
-            </ul>
-        </div>
-        <div class="space-y-md">
-            <h4 class="font-label-md text-on-surface uppercase tracking-widest text-white text-sm font-bold">Soporte</h4>
-            <ul class="space-y-sm text-on-surface-variant font-body-md text-slate-400 text-sm">
-                <li><a class="hover:text-primary transition-colors" href="mailto:rene28609@gmail.com">Contacto</a></li>
-                <li><a class="hover:text-primary transition-colors" href="#">Términos y Privacidad</a></li>
-            </ul>
-        </div>
-    </div>
-    <div class="max-w-7xl mx-auto px-margin-mobile md:px-xl mt-xl pt-lg border-t border-outline-variant text-center">
-        <p class="font-label-sm text-on-surface-variant text-slate-400 text-xs">© <%= new Date().getFullYear() %> GastroFlow Technologies. Todos los derechos reservados.</p>
-    </div>
+<div class="max-w-7xl mx-auto px-margin-mobile md:px-xl grid grid-cols-1 md:grid-cols-4 gap-xl">
+<div class="space-y-md">
+<div class="flex items-center gap-xs">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">local_fire_department</span>
+<span class="font-display-lg text-headline-sm font-bold text-primary">GastroFlow</span>
+</div>
+<p class="font-body-md text-on-surface-variant">El sistema operativo para el éxito de tu restaurante. Control, velocidad y rentabilidad en una sola plataforma.</p>
+<div class="flex gap-md">
+<a class="text-on-surface-variant hover:text-primary transition-colors" href="#"><span class="material-symbols-outlined">public</span></a>
+<a class="text-on-surface-variant hover:text-primary transition-colors" href="#"><span class="material-symbols-outlined">alternate_email</span></a>
+</div>
+</div>
+<div class="space-y-md">
+<h4 class="font-label-md text-on-surface uppercase tracking-widest">Producto</h4>
+<ul class="space-y-sm text-on-surface-variant font-body-md">
+<li><a class="hover:text-primary transition-colors" href="#">Funciones</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">KDS</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">App Meseros</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">Inventarios</a></li>
+</ul>
+</div>
+<div class="space-y-md">
+<h4 class="font-label-md text-on-surface uppercase tracking-widest">Empresa</h4>
+<ul class="space-y-sm text-on-surface-variant font-body-md">
+<li><a class="hover:text-primary transition-colors" href="#">Sobre nosotros</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">Blog Gastronómico</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">Carreras</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">Prensa</a></li>
+</ul>
+</div>
+<div class="space-y-md">
+<h4 class="font-label-md text-on-surface uppercase tracking-widest">Soporte</h4>
+<ul class="space-y-sm text-on-surface-variant font-body-md">
+<li><a class="hover:text-primary transition-colors" href="#">Centro de Ayuda</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">Contacto</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">Privacidad</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">Términos</a></li>
+</ul>
+</div>
+</div>
+<div class="max-w-7xl mx-auto px-margin-mobile md:px-xl mt-xl pt-lg border-t border-outline-variant text-center">
+<p class="font-label-sm text-on-surface-variant">© 2024 GastroFlow Technologies. Todos los derechos reservados.</p>
+</div>
 </footer>
-
-<script>
-    // Micro-interactions and atmospheric effects
-    document.querySelectorAll('button, a').forEach(btn => {
-        btn.addEventListener('mouseenter', () => {
-            if(btn.classList.contains('gradient-primary')) {
-                btn.style.filter = 'brightness(1.1)';
-            }
-        });
-        btn.addEventListener('mouseleave', () => {
-            btn.style.filter = 'brightness(1)';
-        });
-    });
-
-    // Simple scroll reveal for cards
-    const observerOptions = {
-        threshold: 0.1
-    };
-
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                entry.target.classList.add('opacity-100', 'translate-y-0');
-                entry.target.classList.remove('opacity-0', 'translate-y-8');
-            }
-        });
-    }, observerOptions);
-
-    document.querySelectorAll('.glass').forEach(el => {
-        el.classList.add('transition-all', 'duration-700', 'opacity-0', 'translate-y-8');
-        observer.observe(el);
-    });
-</script>
-</body>
-</html>
+<script src="/js/landing-interactions.js"></script>
+</body></html>
