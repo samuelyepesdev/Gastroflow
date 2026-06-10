@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const InventarioController = require('../../app/Http/Controllers/Tenant/InventarioController');
 const { requirePermission } = require('../../middleware/auth');
+const BaseRequest = require('../../app/Http/Requests/BaseRequest');
+const StoreInsumoRequest = require('../../app/Http/Requests/Tenant/StoreInsumoRequest');
 
 // GET /inventario - Vista principal
 router.get('/', InventarioController.index);
@@ -9,8 +11,18 @@ router.get('/', InventarioController.index);
 // API Insumos
 router.get('/api/insumos', InventarioController.listInsumos);
 router.get('/api/insumos/:id', InventarioController.getInsumo);
-router.post('/api/insumos', requirePermission('inventario.editar'), InventarioController.storeInsumo);
-router.put('/api/insumos/:id', requirePermission('inventario.editar'), InventarioController.updateInsumo);
+router.post(
+    '/api/insumos',
+    requirePermission('inventario.editar'),
+    BaseRequest.validate(StoreInsumoRequest),
+    InventarioController.storeInsumo
+);
+router.put(
+    '/api/insumos/:id',
+    requirePermission('inventario.editar'),
+    BaseRequest.validate(StoreInsumoRequest),
+    InventarioController.updateInsumo
+);
 router.delete('/api/insumos/:id', requirePermission('inventario.editar'), InventarioController.deleteInsumo);
 
 // API Stats & Helpers

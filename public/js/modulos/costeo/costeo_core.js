@@ -1,5 +1,17 @@
 // Shared states, utility methods and API wrapper for the Costeo module
 
+(function () {
+    var el = document.getElementById('costeo-data');
+    if (el) {
+        var d = JSON.parse(el.textContent);
+        window.USER_PERMISOS = d.userPermisos;
+        window.USER_ROL = d.userRol;
+        window.COSTEO_TENANT_ID = d.tenantId;
+        window.COSTEO_SHOW_TENANT_SELECTOR = d.showTenantSelector;
+        window.COSTEO_PLANTILLA_REPOSTERIA = d.plantillaReposteria;
+    }
+})();
+
 window.CosteoModule = {
   base: '/costeo',
   permisos: (function () {

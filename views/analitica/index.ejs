@@ -7,6 +7,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
         <link rel="stylesheet" href="/css/modulos/analitica.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
 <%- include('../partials/navbar', { user: typeof user !== 'undefined' ? user : null, tenant: typeof tenant !== 'undefined' ? tenant : null, allowedByPlan: typeof allowedByPlan !== 'undefined' ? allowedByPlan : {} }) %>
@@ -54,6 +55,11 @@
                             </div>
                         </div>
                     </div>
+                    <% if (typeof resumen !== 'undefined' && resumen && resumen.meses && resumen.meses.length) { %>
+                    <div class="mb-4" style="position:relative;height:240px;">
+                        <canvas id="chartMensual"></canvas>
+                    </div>
+                    <% } %>
                     <div class="table-responsive">
                         <table class="table table-meses table-hover">
                             <thead><tr><th>Mes</th><th>Total ventas</th><th>Facturas</th></tr></thead>
@@ -86,7 +92,7 @@
                     <p class="text-muted"><%= prediccion.mensaje %></p>
                     <% } else { %>
                     <p class="small text-muted mb-4"><%= typeof prediccion !== 'undefined' && prediccion && prediccion.mensaje ? prediccion.mensaje : '' %></p>
-                    <div class="row g-4">
+                    <div class="row g-4 mb-4">
                         <div class="col-md-4">
                             <div class="prediccion-destacado">
                                 <div class="label">Ventas estimadas (próximo mes)</div>
@@ -107,6 +113,11 @@
                             </div>
                         </div>
                     </div>
+                    <% if (typeof prediccion !== 'undefined' && prediccion && prediccion.mesesUsados && prediccion.mesesUsados.length > 0) { %>
+                    <div style="position:relative;height:200px;">
+                        <canvas id="chartPrediccion"></canvas>
+                    </div>
+                    <% } %>
                     <% } %>
                 </div>
             </div>
@@ -115,6 +126,9 @@
     </div>
 </div>
 
+<script type="application/json" id="analitica-data"><%- JSON.stringify({ meses: (typeof resumen !== 'undefined' && resumen && resumen.meses) ? resumen.meses : [], predMesesUsados: (typeof prediccion !== 'undefined' && prediccion && prediccion.mesesUsados) ? prediccion.mesesUsados : [], predValor: (typeof prediccion !== 'undefined' && prediccion && typeof prediccion.ventasProximoMes === 'number') ? prediccion.ventasProximoMes : 0, predMin: (typeof prediccion !== 'undefined' && prediccion && typeof prediccion.rangoMin === 'number') ? prediccion.rangoMin : 0, predMax: (typeof prediccion !== 'undefined' && prediccion && typeof prediccion.rangoMax === 'number') ? prediccion.rangoMax : 0 }) %></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/js/modulos/analitica.js"></script>
+
 </body>
 </html>

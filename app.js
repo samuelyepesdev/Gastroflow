@@ -1,6 +1,7 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
+const compression = require('compression');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
 const fs = require('fs');
@@ -19,14 +20,16 @@ app.set('trust proxy', 1);
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
+// Compresión gzip/brotli para todas las respuestas
+app.use(compression());
+
 // Middlewares Base
 app.use(cookieParser());
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 const idempotency = require('./middleware/idempotency');
 app.use(idempotency);
-
 
 // Route specifically for sitemap.xml
 app.get('/sitemap.xml', (req, res) => {
@@ -54,11 +57,10 @@ app.get('/sitemap.xml', (req, res) => {
     res.send(sitemap);
 });
 
-
 // Seguridad: Rate Limit General
 const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000, 
-    max: 1000, 
+    windowMs: 15 * 60 * 1000,
+    max: 1000,
     message: { error: 'Demasiadas peticiones desde esta IP, por favor intente más tarde.' },
     standardHeaders: true,
     legacyHeaders: false
@@ -98,16 +100,34 @@ app.use((req, res, next) => {
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('X-Frame-Options', 'SAMEORIGIN');
     res.setHeader('X-XSS-Protection', '1; mode=block');
-    
+    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+    res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
+    if (process.env.NODE_ENV === 'production') {
+        res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+    }
+
+    const cspDirectives = [
+        "default-src 'self'",
+        "script-src 'self' https://code.jquery.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com",
+        "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com",
+        "font-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com",
+        "img-src 'self' data: blob: https:",
+        "connect-src 'self'",
+        "frame-src 'none'",
+        "object-src 'none'",
+        "base-uri 'self'",
+        "form-action 'self'"
+    ];
+    res.setHeader('Content-Security-Policy', cspDirectives.join('; '));
+
     const allowedOrigin = process.env.APP_URL || process.env.FRONTEND_URL || '';
     if (allowedOrigin && req.headers.origin === allowedOrigin) {
         res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
     }
-    
+
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, idempotency-key, Idempotency-Key');
     next();
-
 });
 
 // Middleware Condicional para Dropdown Navbar
@@ -123,8 +143,13 @@ app.use(async (req, res, next) => {
 app.use(navbarLocals);
 
 // Archivos estáticos
-app.use('/static', express.static(path.join(__dirname, 'public')));
-app.use(express.static(path.join(__dirname, 'public')));
+const staticOpts = {
+    etag: true,
+    lastModified: true,
+    maxAge: process.env.NODE_ENV === 'production' ? '1d' : 0
+};
+app.use('/static', express.static(path.join(__dirname, 'public'), staticOpts));
+app.use(express.static(path.join(__dirname, 'public'), staticOpts));
 
 // Favicon
 const faviconPath = path.join(__dirname, 'public', 'logo.png');
@@ -148,9 +173,21 @@ app.use((req, res, next) => {
     }
 });
 
+// Sentry — captura errores antes del handler personalizado
+if (process.env.SENTRY_DSN) {
+    const Sentry = require('@sentry/node');
+    Sentry.setupExpressErrorHandler(app);
+}
+
 // Manejo de Errores Global (500)
 app.use((err, req, res, next) => {
-    console.error('Error en la aplicación:', err);
+    const logger = require('./utils/logger');
+    logger.error('Error en la aplicación', {
+        error: err.message,
+        stack: err.stack,
+        url: req.originalUrl,
+        method: req.method
+    });
 
     if (req.xhr || (req.headers.accept && req.headers.accept.indexOf('json') > -1)) {
         res.status(500).json({

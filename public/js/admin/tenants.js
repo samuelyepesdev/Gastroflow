@@ -1,0 +1,382 @@
+// Búsqueda en sidebar
+const searchInput = document.getElementById('searchTenants');
+const tenantItems = document.querySelectorAll('.tenant-item');
+if (searchInput) {
+    searchInput.addEventListener('input', (e) => {
+        const term = e.target.value.toLowerCase();
+        tenantItems.forEach(item => {
+            const name = item.getAttribute('data-name');
+            item.style.display = name.includes(term) ? 'flex' : 'none';
+        });
+    });
+}
+
+// Manejo de Colores
+const colorInput = document.getElementById('editConfigColor');
+const colorPreview = document.getElementById('colorPreview');
+const presetDots = document.querySelectorAll('.preset-color-dot');
+
+if (colorInput) {
+    colorInput.addEventListener('input', (e) => {
+        colorPreview.style.background = e.target.value;
+    });
+}
+
+presetDots.forEach(dot => {
+    dot.addEventListener('click', () => {
+        const color = dot.getAttribute('data-color');
+        colorInput.value = color;
+        colorPreview.style.background = color;
+    });
+});
+
+async function saveAppearance(tenantId) {
+    const color = colorInput.value;
+    const tipoNegocioElement = document.getElementById('editTipoNegocio');
+    const config = {
+        colors: { primary: color },
+        tipo_negocio: tipoNegocioElement ? tipoNegocioElement.value : 'restaurante'
+    };
+
+    try {
+        const resp = await fetch(`/admin/tenants/${tenantId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ config: JSON.stringify(config) })
+        });
+        if (resp.ok) {
+            Swal.fire({ icon: 'success', title: 'Diseño Actualizado', timer: 1500, showConfirmButton: false })
+                .then(() => window.location.reload());
+        } else {
+            Swal.fire({ icon: 'error', title: 'Error al servidor' });
+        }
+    } catch (e) {
+        Swal.fire({ icon: 'error', title: 'Error de red' });
+    }
+}
+
+async function handleFormSubmit(event, tenantId, type) {
+    event.preventDefault();
+    const formData = new FormData(event.target);
+    const data = Object.fromEntries(formData.entries());
+
+    if (type === 'general') {
+        const colorInputGeneral = document.getElementById('editConfigColorGeneral');
+        const colorValue = colorInputGeneral ? colorInputGeneral.value : '#6366f1';
+
+        data.config = JSON.stringify({
+            colors: { primary: colorValue },
+            tipo_negocio: data.tipo_negocio
+        });
+    }
+
+    try {
+        const resp = await fetch('/admin/tenants/' + tenantId, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        if (resp.ok) {
+            Swal.fire({ icon: 'success', title: 'Datos Guardados', timer: 1500, showConfirmButton: false })
+                .then(() => { if (type === 'general') window.location.reload(); });
+        } else {
+            let errText = 'Error en el servidor';
+            const textResp = await resp.text();
+            try {
+                const parsed = JSON.parse(textResp);
+                errText = parsed.error || parsed.message || JSON.stringify(parsed);
+            } catch (e) {
+                errText = textResp;
+            }
+            Swal.fire({ icon: 'error', title: 'Error', text: errText || 'Error al actualizar datos' });
+        }
+    } catch (e) {
+        Swal.fire({ icon: 'error', title: 'Error Capturado', text: e.message });
+    }
+}
+
+async function confirmToggleStatus(id, activo) {
+    const result = await Swal.fire({
+        title: activo ? '¿Reactivar suscripción?' : '¿Deshabilitar acceso?',
+        text: activo ? 'El restaurante podrá operar de nuevo.' : 'El personal no podrá iniciar sesión y las funciones se bloquearán.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, confirmar',
+        cancelButtonText: 'Cancelar'
+    });
+
+    if (result.isConfirmed) {
+        toggleTenantStatus(id, activo);
+    }
+}
+
+async function toggleTenantStatus(id, activo) {
+    const resp = await fetch(`/admin/tenants/${id}/status`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ activo })
+    });
+    if (resp.ok) window.location.reload();
+}
+
+async function confirmDeleteTenant(id, name) {
+    if (id == 1) {
+        return Swal.fire('Acción Denedaga', 'No se permite eliminar el restaurante principal.', 'error');
+    }
+    const result = await Swal.fire({
+        title: '¿Estás completamente seguro?',
+        html: `Esta acción es <b>irreversible</b>.<br>Se borrarán todos los menús, ventas, usuarios y mesas de <b>${name}</b>.<br><br>Escribe el nombre del restaurante para confirmar:`,
+        input: 'text',
+        icon: 'error',
+        inputPlaceholder: name,
+        showCancelButton: true,
+        confirmButtonText: 'Sí, eliminar restaurante',
+        confirmButtonColor: '#dc3545',
+        cancelButtonText: 'Cancelar',
+        inputValidator: (value) => {
+            if (value.trim().toLowerCase() !== name.trim().toLowerCase()) {
+                return 'El nombre no coincide. Operación cancelada.';
+            }
+        }
+    });
+
+    if (result.isConfirmed) {
+        try {
+            const resp = await fetch(`/admin/tenants/${id}`, { method: 'DELETE' });
+            if (resp.ok) {
+                Swal.fire('Eliminado', 'El restaurante ha sido borrado.', 'success')
+                    .then(() => window.location.href = '/admin/tenants');
+            } else {
+                Swal.fire('Error', 'No se pudo eliminar el restaurante.', 'error');
+            }
+        } catch (e) {
+            Swal.fire('Error', 'Error de conexión.', 'error');
+        }
+    }
+}
+
+async function saveAllRoles(tenantId) {
+    const selects = document.querySelectorAll('.user-role-select');
+    const changes = [];
+
+    selects.forEach(select => {
+        const userId = select.getAttribute('data-user-id');
+        const newRole = select.value;
+        const originalRole = select.getAttribute('data-original-role');
+
+        if (newRole !== originalRole) {
+            changes.push({ userId, rol_nombre: newRole });
+        }
+    });
+
+    if (changes.length === 0) {
+        return Swal.fire({
+            icon: 'info',
+            title: 'No hay cambios',
+            text: 'No has modificado ningún rol.',
+            timer: 1500,
+            showConfirmButton: false
+        });
+    }
+
+    try {
+        Swal.fire({
+            title: 'Guardando cambios...',
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
+        const resp = await fetch(`/admin/tenants/${tenantId}/users/batch-roles`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ changes })
+        });
+
+        const data = await resp.json();
+
+        if (resp.ok && data.success) {
+            Swal.fire({
+                icon: 'success',
+                title: '¡Éxito!',
+                text: data.message,
+                timer: 1500,
+                showConfirmButton: false
+            }).then(() => window.location.reload());
+        } else {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: data.error || 'No se pudieron actualizar los roles.'
+            });
+        }
+    } catch (e) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Error de red al intentar guardar los cambios.'
+        });
+    }
+}
+
+async function toggleUserStatus(userId, tenantId, activo) {
+    try {
+        const resp = await fetch(`/admin/tenants/${tenantId}/users/${userId}/status`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ activo })
+        });
+        if (resp.ok) window.location.reload();
+    } catch (e) {
+        Swal.fire({ icon: 'error', title: 'Error de red' });
+    }
+}
+
+async function deleteUser(userId, username, tenantId) {
+    const result = await Swal.fire({
+        title: '¿Eliminar usuario?',
+        text: `¿Estás seguro de que deseas eliminar permanentemente a "${username}"? Esta acción no se puede deshacer.`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar'
+    });
+
+    if (result.isConfirmed) {
+        try {
+            const resp = await fetch(`/admin/tenants/${tenantId}/users/${userId}`, {
+                method: 'DELETE'
+            });
+
+            const data = await resp.json();
+
+            if (resp.ok && data.success) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Eliminado',
+                    text: 'El usuario ha sido eliminado correctamente.',
+                    timer: 1500,
+                    showConfirmButton: false
+                }).then(() => window.location.reload());
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: data.error || 'No se pudo eliminar el usuario.'
+                });
+            }
+        } catch (e) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Error de red al intentar eliminar el usuario.'
+            });
+        }
+    }
+}
+
+function openModalPassword(userId, username, tenantId) {
+    document.getElementById('modalPasswordUserId').value = userId;
+    document.getElementById('modalPasswordUsername').innerText = username;
+    document.getElementById('modalPasswordTenantId').value = tenantId;
+    document.getElementById('modalPasswordNew').value = '';
+    document.getElementById('modalPasswordConfirm').value = '';
+    new bootstrap.Modal(document.getElementById('modalCambiarPassword')).show();
+}
+
+document.getElementById('btnGuardarPassword').addEventListener('click', async () => {
+    const userId = document.getElementById('modalPasswordUserId').value;
+    const tenantId = document.getElementById('modalPasswordTenantId').value;
+    const pass1 = document.getElementById('modalPasswordNew').value;
+    const pass2 = document.getElementById('modalPasswordConfirm').value;
+
+    if (pass1 !== pass2) return Swal.fire('Error', 'Las contraseñas no coinciden', 'error');
+    if (pass1.length < 6) return Swal.fire('Error', 'Mínimo 6 caracteres', 'error');
+
+    try {
+        const resp = await fetch(`/admin/tenants/${tenantId}/users/${userId}/password`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ newPassword: pass1, newPasswordConfirm: pass2 })
+        });
+
+        const data = await resp.json();
+
+        if (resp.ok && data.success) {
+            Swal.fire('Éxito', data.message || 'Contraseña actualizada correctamente', 'success')
+                .then(() => bootstrap.Modal.getInstance(document.getElementById('modalCambiarPassword')).hide());
+        } else {
+            Swal.fire('Error', data.error || 'No se pudo actualizar la contraseña', 'error');
+        }
+    } catch (e) {
+        Swal.fire('Error', 'Error de red', 'error');
+    }
+});
+
+function openModalCorreo(userId, username, currentEmail, tenantId) {
+    document.getElementById('modalCorreoUserId').value = userId;
+    document.getElementById('modalCorreoUsername').innerText = username;
+    document.getElementById('modalCorreoInput').value = currentEmail;
+    document.getElementById('modalCorreoTenantId').value = tenantId;
+    new bootstrap.Modal(document.getElementById('modalEditarCorreo')).show();
+}
+
+document.getElementById('btnGuardarCorreo').addEventListener('click', async () => {
+    const userId = document.getElementById('modalCorreoUserId').value;
+    const tenantId = document.getElementById('modalCorreoTenantId').value;
+    const email = document.getElementById('modalCorreoInput').value;
+
+    try {
+        const resp = await fetch(`/admin/tenants/${tenantId}/users/${userId}/email`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email })
+        });
+
+        const data = await resp.json();
+
+        if (resp.ok && data.success) {
+            Swal.fire('Éxito', data.message || 'Correo actualizado correctamente', 'success')
+                .then(() => {
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('modalEditarCorreo'));
+                    if (modal) modal.hide();
+                    window.location.reload();
+                });
+        } else {
+            Swal.fire('Error', data.error || 'No se pudo actualizar el correo', 'error');
+        }
+    } catch (e) {
+        Swal.fire('Error', 'Error de red', 'error');
+    }
+});
+
+const btnSeed = document.getElementById('btnSeedCategorias');
+if (btnSeed) {
+    btnSeed.addEventListener('click', async () => {
+        const tenantId = btnSeed.getAttribute('data-tenant-id');
+        const result = await Swal.fire({
+            title: '¿Cargar configuración sugerida?',
+            text: 'Esto creará categorías y productos base según el tipo de negocio seleccionado.',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, configurar'
+        });
+
+        if (result.isConfirmed) {
+            Swal.fire({ title: 'Configurando...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+            try {
+                const resp = await fetch(`/admin/tenants/${tenantId}/seed-initial`, { method: 'POST' });
+                if (resp.ok) {
+                    Swal.fire('¡Listo!', 'El restaurante ha sido configurado.', 'success').then(() => window.location.reload());
+                } else {
+                    Swal.fire('Error', 'No se pudo realizar la configuración.', 'error');
+                }
+            } catch (e) {
+                Swal.fire('Error', 'Error de comunicación.', 'error');
+            }
+        }
+    });
+}

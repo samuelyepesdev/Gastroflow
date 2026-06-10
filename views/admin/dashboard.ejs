@@ -35,14 +35,7 @@
         </div>
 
         <!-- Datos para los gráficos (Safe inject) -->
-        <script>
-            const chartData = {
-                ventasDiarias: <%- JSON.stringify((stats && stats.ventasDiariasMes) || []) %>,
-                ventasDiariasAnt: <%- JSON.stringify((stats && stats.ventasDiariasMesAnterior) || []) %>,
-                ventasPorTenant: <%- JSON.stringify((stats && stats.ventasDiariasPorTenant) || []) %>,
-                ventasEventos: <%- JSON.stringify((stats && stats.ventasEventosDiariasMes) || []) %>
-            };
-        </script>
+        <script type="application/json" id="chartData"><%- JSON.stringify({ ventasDiarias: (stats && stats.ventasDiariasMes) || [], ventasDiariasAnt: (stats && stats.ventasDiariasMesAnterior) || [], ventasPorTenant: (stats && stats.ventasDiariasPorTenant) || [], ventasEventos: (stats && stats.ventasEventosDiariasMes) || [] }) %></script>
 
         <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>

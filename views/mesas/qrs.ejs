@@ -81,23 +81,6 @@
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
-    <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            const canvases = document.querySelectorAll('.qr-canvas');
-            canvases.forEach(canvas => {
-                const url = canvas.getAttribute('data-url');
-                if(url) {
-                    new QRious({
-                        element: canvas,
-                        value: url,
-                        size: 300,
-                        level: 'H',
-                        background: 'white',
-                        foreground: 'black'
-                    });
-                }
-            });
-        });
-    </script>
+    <script src="/js/modulos/mesas-qrs.js"></script>
 </body>
 </html>

@@ -72,7 +72,8 @@
         <%- include('planes/_modal_gestionar', { ...locals, addons, plans }) %>
 
             <!-- Scripts -->
-            <%- include('planes/_scripts', { ...locals, serverData }) %>
+            <script type="application/json" id="SD"><%- serverData %></script>
+            <script src="/js/admin/planes.js"></script>
 </body>
 
 </html>

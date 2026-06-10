@@ -6,9 +6,16 @@ public/uploads/
 # Archivos de entorno
 .env
 .env.*
+!.env.example
+!.env.test
 
 # Cobertura de tests
 coverage/
+
+# E2E Playwright
+tests/e2e/.auth/
+tests/e2e/reports/
+playwright-report/
 
 # Pruebas de estrés (credenciales e informes generados)
 stress-tests/env-stress.yml
@@ -18,7 +25,11 @@ report.html
 *.report.json
 *.report.html
 coverage/
-# Logs
+# Logs de la aplicación
+logs/
+*.log
+
+# Logs de npm
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*

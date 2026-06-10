@@ -164,7 +164,9 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // ─── Inicializar gráficas ──────────────────────────────────────────────────
-    if (typeof chartData !== 'undefined') {
+    const chartDataEl = document.getElementById('chartData');
+    const chartData = chartDataEl ? JSON.parse(chartDataEl.textContent) : null;
+    if (chartData) {
         const ctxTenants = document.getElementById('chartVentasTenants');
         if (ctxTenants) createMultiLineChart(ctxTenants, chartData.ventasPorTenant);
 

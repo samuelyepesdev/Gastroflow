@@ -1,6 +1,51 @@
-let cart = {}; 
+var _qrPageData = (function () {
+    var el = document.getElementById('qr-page-data');
+    return el ? JSON.parse(el.textContent) : {};
+})();
+window.QR_TOKEN = _qrPageData.qrToken || '';
+
+let cart = {};
 
 function formatPrice(val) { return '$' + Number(val).toLocaleString('es-CO'); }
+
+function showProductDetails(card, event) {
+    if (event && (event.target.closest('.add-btn') || event.target.closest('.qty-controls'))) {
+        return;
+    }
+
+    const id = card.getAttribute('data-id');
+    const nombre = card.getAttribute('data-nombre');
+    const precio = card.getAttribute('data-precio');
+    const descripcion = card.getAttribute('data-descripcion') || 'No hay descripción disponible para este producto.';
+    const imagen = card.getAttribute('data-imagen');
+
+    document.getElementById('modalProductName').textContent = nombre;
+    document.getElementById('modalProductPrice').textContent = '$' + Number(precio).toLocaleString('es-CO');
+    document.getElementById('modalProductDesc').textContent = descripcion;
+
+    const imgEl = document.getElementById('modalProductImg');
+    const placeholderEl = document.getElementById('modalProductImgPlaceholder');
+
+    if (imagen && imagen.trim() !== '') {
+        imgEl.src = imagen;
+        imgEl.classList.remove('d-none');
+        placeholderEl.classList.add('d-none');
+    } else {
+        imgEl.src = '';
+        imgEl.classList.add('d-none');
+        placeholderEl.classList.remove('d-none');
+    }
+
+    const addBtn = document.getElementById('modalAddBtn');
+    addBtn.onclick = function () {
+        addToCart(id);
+        bootstrap.Modal.getInstance(document.getElementById('productDetailModal'))?.hide();
+    };
+
+    const modal = new bootstrap.Modal(document.getElementById('productDetailModal'));
+    modal.show();
+}
+window.showProductDetails = showProductDetails;
 
 function addToCart(id) {
     const card = document.querySelector(`.product-card[data-id="${id}"]`);

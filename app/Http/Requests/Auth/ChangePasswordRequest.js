@@ -8,15 +8,21 @@ class ChangePasswordRequest extends BaseRequest {
      */
     static rules() {
         return [
-            body('currentPassword')
-                .notEmpty().withMessage('La contraseña actual es requerida'),
+            body('currentPassword').notEmpty().withMessage('La contraseña actual es requerida'),
 
             body('newPassword')
-                .notEmpty().withMessage('La nueva contraseña es requerida')
-                .isLength({ min: 6 }).withMessage('La nueva contraseña debe tener al menos 6 caracteres'),
+                .notEmpty()
+                .withMessage('La nueva contraseña es requerida')
+                .isLength({ min: 8 })
+                .withMessage('La nueva contraseña debe tener al menos 8 caracteres')
+                .matches(/[A-Z]/)
+                .withMessage('La nueva contraseña debe contener al menos una letra mayúscula')
+                .matches(/[0-9]/)
+                .withMessage('La nueva contraseña debe contener al menos un número'),
 
             body('newPasswordConfirm')
-                .notEmpty().withMessage('Debe confirmar la nueva contraseña')
+                .notEmpty()
+                .withMessage('Debe confirmar la nueva contraseña')
                 .custom((value, { req }) => {
                     if (value !== req.body.newPassword) {
                         throw new Error('La confirmación no coincide con la nueva contraseña');
