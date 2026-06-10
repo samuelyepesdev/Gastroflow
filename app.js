@@ -1,6 +1,7 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
+const compression = require('compression');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
 const fs = require('fs');
@@ -18,6 +19,9 @@ app.set('trust proxy', 1);
 // Configuración de Vistas
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
+
+// Compresión gzip/brotli para todas las respuestas
+app.use(compression());
 
 // Middlewares Base
 app.use(cookieParser());
@@ -98,6 +102,9 @@ app.use((req, res, next) => {
     res.setHeader('X-XSS-Protection', '1; mode=block');
     res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
     res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
+    if (process.env.NODE_ENV === 'production') {
+        res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+    }
 
     const cspDirectives = [
         "default-src 'self'",
@@ -136,8 +143,13 @@ app.use(async (req, res, next) => {
 app.use(navbarLocals);
 
 // Archivos estáticos
-app.use('/static', express.static(path.join(__dirname, 'public')));
-app.use(express.static(path.join(__dirname, 'public')));
+const staticOpts = {
+    etag: true,
+    lastModified: true,
+    maxAge: process.env.NODE_ENV === 'production' ? '1d' : 0
+};
+app.use('/static', express.static(path.join(__dirname, 'public'), staticOpts));
+app.use(express.static(path.join(__dirname, 'public'), staticOpts));
 
 // Favicon
 const faviconPath = path.join(__dirname, 'public', 'logo.png');
@@ -160,6 +172,12 @@ app.use((req, res, next) => {
         res.status(404).render('errors/404');
     }
 });
+
+// Sentry — captura errores antes del handler personalizado
+if (process.env.SENTRY_DSN) {
+    const Sentry = require('@sentry/node');
+    Sentry.setupExpressErrorHandler(app);
+}
 
 // Manejo de Errores Global (500)
 app.use((err, req, res, next) => {

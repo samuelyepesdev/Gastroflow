@@ -4,6 +4,16 @@ require('dns').setDefaultResultOrder('ipv4first'); // FUERZA IPv4 A NIVEL GLOBAL
 const { validateEnv } = require('./config/env');
 validateEnv();
 
+// Sentry — debe inicializarse antes que cualquier otro require de la app
+if (process.env.SENTRY_DSN) {
+    const Sentry = require('@sentry/node');
+    Sentry.init({
+        dsn: process.env.SENTRY_DSN,
+        environment: process.env.NODE_ENV || 'development',
+        tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 0
+    });
+}
+
 const app = require('./app');
 const db = require('./config/database');
 const { createRequiredDirectories } = require('./config/setup');

@@ -1,27 +1,40 @@
 const db = require('../../../../config/database');
 const MailerService = require('../../../../services/Shared/MailerService');
+const logger = require('../../../../utils/logger');
+
+function escapeHtml(str) {
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#x27;');
+}
 
 class SoporteController {
     static async index(req, res) {
         try {
             const tenantId = req.tenant.id;
             const usuarioId = req.user.id;
-            
+
             // Get user's previous tickets
-            const [tickets] = await db.query(`
+            const [tickets] = await db.query(
+                `
                 SELECT * FROM soporte_tickets 
                 WHERE tenant_id = ? AND usuario_id = ? 
                 ORDER BY created_at DESC
-            `, [tenantId, usuarioId]);
+            `,
+                [tenantId, usuarioId]
+            );
 
-            res.render('soporte/index', { 
-                tenant: req.tenant, 
+            res.render('soporte/index', {
+                tenant: req.tenant,
                 user: req.user,
                 tickets,
                 path: '/soporte'
             });
         } catch (error) {
-            console.error('Error cargando soporte:', error);
+            logger.error('Error cargando soporte', { error: error.message });
             res.status(500).render('errors/internal', { error: { message: 'Error cargando soporte' } });
         }
     }
@@ -33,10 +46,13 @@ class SoporteController {
             const { tipo, descripcion } = req.body;
 
             // Save to DB
-            const [result] = await db.query(`
+            const [result] = await db.query(
+                `
                 INSERT INTO soporte_tickets (tenant_id, usuario_id, tipo, descripcion, estado)
                 VALUES (?, ?, ?, ?, 'abierto')
-            `, [tenantId, usuarioId, tipo, descripcion]);
+            `,
+                [tenantId, usuarioId, tipo, descripcion]
+            );
 
             // Try to get superadmin emails or configuration. For now we use env variable or default email
             const adminEmail = process.env.ADMIN_EMAIL || process.env.SMTP_USER || 'admin@sistema-restaurante.com';
@@ -44,11 +60,11 @@ class SoporteController {
             // Send Email
             const htmlEmail = `
                 <h2>Nuevo Ticket de Soporte</h2>
-                <p><strong>Tenant:</strong> ${req.tenant.nombre} (ID: ${tenantId})</p>
-                <p><strong>Usuario:</strong> ${req.user.nombre_completo || req.user.username} (ID: ${usuarioId})</p>
-                <p><strong>Tipo:</strong> ${tipo}</p>
+                <p><strong>Tenant:</strong> ${escapeHtml(req.tenant.nombre)} (ID: ${tenantId})</p>
+                <p><strong>Usuario:</strong> ${escapeHtml(req.user.nombre_completo || req.user.username)} (ID: ${usuarioId})</p>
+                <p><strong>Tipo:</strong> ${escapeHtml(tipo)}</p>
                 <p><strong>Descripción:</strong></p>
-                <blockquote style="background: #f9f9f9; padding: 15px; border-left: 5px solid #007bff;">${descripcion}</blockquote>
+                <blockquote style="background: #f9f9f9; padding: 15px; border-left: 5px solid #007bff;">${escapeHtml(descripcion)}</blockquote>
                 <p>Inicia sesión en el panel SuperAdmin para responder.</p>
             `;
 
@@ -59,13 +75,13 @@ class SoporteController {
                     html: htmlEmail
                 });
             } catch (mailError) {
-                console.error("Error enviando email de soporte (el ticket se guardó):", mailError);
+                logger.warn('Error enviando email de soporte (el ticket se guardó)', { error: mailError.message });
             }
 
             res.json({ success: true, message: 'Ticket de soporte enviado correctamente. Te contactaremos pronto.' });
         } catch (error) {
-            console.error('Error enviando ticket de soporte:', error);
-            res.status(500).json({ success: false, message: error.message });
+            logger.error('Error enviando ticket de soporte', { error: error.message });
+            res.status(500).json({ success: false, message: 'Error al enviar el ticket' });
         }
     }
 }
