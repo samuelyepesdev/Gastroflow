@@ -29,9 +29,19 @@ class StoreServicioRequest extends BaseRequest {
                     return true;
                 }),
 
-            body('es_externo').optional().isBoolean().withMessage('Campo es_externo inválido'),
+            body('es_externo')
+                .optional()
+                .custom(v => {
+                    return ['on', 'off', '1', '0', 'true', 'false', true, false].includes(v);
+                })
+                .withMessage('Campo es_externo inválido'),
 
-            body('activo').optional().isBoolean().withMessage('Campo activo inválido')
+            body('activo')
+                .optional()
+                .custom(v => {
+                    return ['on', 'off', '1', '0', 'true', 'false', true, false].includes(v);
+                })
+                .withMessage('Campo activo inválido')
         ];
     }
 }

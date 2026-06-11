@@ -1,3 +1,4 @@
+require('./utils/patchExcelJS');
 const express = require('express');
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
@@ -6,6 +7,7 @@ const rateLimit = require('express-rate-limit');
 const path = require('path');
 const fs = require('fs');
 
+const packageJson = require('./package.json');
 const { optionalAuth } = require('./middleware/auth');
 const PlanService = require('./services/Admin/PlanService');
 const navbarLocals = require('./middleware/navbarLocals');
@@ -108,12 +110,12 @@ app.use((req, res, next) => {
 
     const cspDirectives = [
         "default-src 'self'",
-        "script-src 'self' https://code.jquery.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://cdn.tailwindcss.com",
+        "script-src 'self' 'unsafe-inline' https://code.jquery.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://cdn.tailwindcss.com",
         "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://fonts.googleapis.com",
         "font-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://fonts.gstatic.com",
         "img-src 'self' data: blob: https:",
-        "connect-src 'self'",
-        "frame-src 'none'",
+        "connect-src 'self' https://cdn.jsdelivr.net",
+        "frame-src 'self'",
         "object-src 'none'",
         "base-uri 'self'",
         "form-action 'self'"
@@ -142,11 +144,26 @@ app.use(async (req, res, next) => {
 });
 app.use(navbarLocals);
 
-// Archivos estáticos
+// Registrar versión global en vistas para cache-busting opcional
+app.use((req, res, next) => {
+    res.locals.version = packageJson.version || '1.0.0';
+    next();
+});
+
+// Archivos estáticos con revalidación forzada mediante ETags
 const staticOpts = {
     etag: true,
     lastModified: true,
-    maxAge: process.env.NODE_ENV === 'production' ? '1d' : 0
+    maxAge: 0,
+    setHeaders: (res, path) => {
+        if (process.env.NODE_ENV === 'production') {
+            // El navegador almacena en caché pero DEBE revalidar con el servidor (ETag) antes de usar el archivo.
+            // Si el archivo cambió en producción (nuevo despliegue), se sirve el nuevo. Si no, devuelve 304 rápido.
+            res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
+        } else {
+            res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+        }
+    }
 };
 app.use('/static', express.static(path.join(__dirname, 'public'), staticOpts));
 app.use(express.static(path.join(__dirname, 'public'), staticOpts));
