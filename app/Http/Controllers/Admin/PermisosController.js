@@ -9,12 +9,22 @@ class PermisosController {
             const secciones = await PermisoRepository.getPermisosAgrupadosPorSeccion();
             const activeTenantId = Number(req.query.tenantId) || (tenants[0] && tenants[0].id) || null;
             const usuarios = activeTenantId ? await PermisoRepository.getUsuariosByTenantId(activeTenantId) : [];
+
+            const roles = await PermisoRepository.getAllRoles();
+            const rolePresets = {};
+            for (const r of roles) {
+                if (r.nombre !== 'superadmin') {
+                    rolePresets[r.nombre] = await PermisoRepository.getPermisoIdsByRol(r.id);
+                }
+            }
+
             res.render('admin/permisos', {
                 user: req.user,
                 tenants,
                 secciones,
                 usuarios,
-                activeTenantId
+                activeTenantId,
+                rolePresets
             });
         } catch (error) {
             console.error('Error al cargar permisos:', error);

@@ -5,29 +5,77 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Eliminar ventas - Superadmin</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
     <link rel="stylesheet" href="/css/admin/ventas.css">
 </head>
 
 <body>
     <%- include('../partials/navbar', { user, tenant: null, currentAdminPage: 'ventas' }) %>
 
-        <div class="container-fluid py-4">
+        <div style="max-width: 1340px; margin: 0 auto; padding: 0 26px 60px;">
             <div class="admin-page-header">
-                <h1><i class="bi bi-trash me-2"></i>Eliminar ventas</h1>
-                <p class="mb-0">Solo superadmin. Selecciona el restaurante y elimina una venta (factura) si es
-                    necesario. Esta acción no se puede deshacer.</p>
+                <h1><i class="bi bi-trash3 me-2" style="color: #dc2626;"></i>Eliminar ventas</h1>
+                <p class="mb-0">Acción exclusiva de superadmin. Filtra por restaurante y elimina una factura solo si es necesario. <span style="color: #dc2626; font-weight: 700;">Esta acción no se puede deshacer.</span></p>
             </div>
 
-            <!-- Selector de Restaurante -->
+            <!-- Stats Grid -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-card-header">
+                        <span class="stat-icon"><i class="bi bi-receipt"></i></span>
+                        <span class="stat-title">Facturas mostradas</span>
+                    </div>
+                    <div class="stat-val" id="shownInvoicesCount"><%= (ventas || []).length %></div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-card-header">
+                        <span class="stat-icon"><i class="bi bi-cash-stack"></i></span>
+                        <span class="stat-title">Monto mostrado</span>
+                    </div>
+                    <% 
+                    let totalVal = (ventas || []).reduce((acc, curr) => acc + Number(curr.total || 0), 0);
+                    %>
+                    <div class="stat-val" id="shownTotalAmount">$<%= Math.round(totalVal).toLocaleString('es-CO') %></div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-card-header">
+                        <span class="stat-icon"><i class="bi bi-shop"></i></span>
+                        <span class="stat-title">Restaurante</span>
+                    </div>
+                    <%
+                    let activeTenantName = 'Todos';
+                    if (activeTenantId !== 'all') {
+                        let selectedTenant = (tenants || []).find(t => Number(t.id) === Number(activeTenantId));
+                        if (selectedTenant) activeTenantName = selectedTenant.nombre;
+                    }
+                    %>
+                    <div class="stat-val" style="font-size: 18px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-top: 5px;">
+                        <%= activeTenantName %>
+                    </div>
+                </div>
+                <div class="stat-card danger-stat">
+                    <div class="stat-card-header">
+                        <span class="stat-icon"><i class="bi bi-trash3"></i></span>
+                        <span class="stat-title">Eliminadas (sesión)</span>
+                    </div>
+                    <div class="stat-val" id="deletedSessionCount">0</div>
+                </div>
+            </div>
+
+            <!-- Selector de Restaurante y Filtros -->
             <%- include('ventas/_selector', { ...locals, tenants, activeTenantId }) %>
 
-                <!-- Tabla de Ventas -->
-                <%- include('ventas/_table', { ...locals, ventas }) %>
+            <!-- Tabla de Ventas -->
+            <%- include('ventas/_table', { ...locals, ventas }) %>
         </div>
 
         <!-- Scripts -->
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
         <script src="/js/admin/ventas.js"></script>
 </body>
 

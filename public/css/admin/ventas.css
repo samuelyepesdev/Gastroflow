@@ -1,11 +1,381 @@
-/* ========================================
-   admin-ventas.css — extraído de admin/ventas.ejs
-   ======================================== */
+/* ==========================================================================
+   admin-ventas.css — Rediseño Premium GastroFlow Superadmin
+   ========================================================================== */
 
-body { background: linear-gradient(180deg, #f0f4f8 0%, #e2e8f0 100%); min-height: 100vh; }
-        .navbar { background: linear-gradient(135deg, #1e3a5f 0%, #0f172a 100%) !important; }
-        .admin-page-header { background: #fff; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.06); padding: 1.5rem 2rem; margin-bottom: 1.5rem; border-left: 4px solid #dc3545; }
-        .selector-card { border: none; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.06); margin-bottom: 1.5rem; }
-        .selector-card .card-header { background: #f8fafc; border-bottom: 1px solid #e2e8f0; font-weight: 600; padding: 1rem 1.25rem; }
-        .table-ventas thead th { background: #f8fafc; font-weight: 600; }
-        .btn-eliminar-venta { padding: 0.25rem 0.5rem; }
+:root {
+    --accent: #5b5bd6;
+    --accent-dark: #3a3ab0;
+    --accent-soft: #f0f0fd;
+    
+    --bg-main: #eef0f4;
+    --card-bg: #ffffff;
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --text-muted: #8a94a6;
+    --border-color: #e9ebef;
+    
+    --font-primary: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+}
+
+body {
+    background-color: var(--bg-main);
+    font-family: var(--font-primary);
+    color: var(--text-primary);
+    min-height: 100vh;
+}
+
+/* Header */
+.admin-page-header {
+    background: var(--card-bg);
+    border-radius: 16px;
+    box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+    padding: 1.5rem 2rem;
+    margin-bottom: 1.5rem;
+    border-left: 4px solid var(--accent);
+}
+
+.admin-page-header h1 {
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--text-primary);
+    font-size: 25px;
+    margin: 0;
+}
+
+.admin-page-header p {
+    font-size: 13.5px;
+    color: var(--text-muted);
+    font-weight: 500;
+    margin-top: 6px;
+}
+
+/* Grid de Estadísticas */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(1, 1fr);
+    gap: 16px;
+    margin-bottom: 1.5rem;
+}
+
+@media (min-width: 576px) {
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (min-width: 992px) {
+    .stats-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+.stat-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 18px 20px;
+    box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+    display: flex;
+    flex-direction: column;
+}
+
+.stat-card-header {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    margin-bottom: 9px;
+}
+
+.stat-icon {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+}
+
+.stat-title {
+    font-size: 11.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--text-muted);
+}
+
+.stat-val {
+    font-size: 24px;
+    font-weight: 800;
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+}
+
+/* Tarjeta estadística especial de facturas eliminadas */
+.stat-card.danger-stat {
+    background: #fdf0f0;
+    border-color: #f6d4d4;
+}
+
+.stat-card.danger-stat .stat-icon {
+    background: #fbdcdc;
+    color: #dc2626;
+}
+
+.stat-card.danger-stat .stat-title {
+    color: #b91c1c;
+}
+
+.stat-card.danger-stat .stat-val {
+    color: #b91c1c;
+}
+
+/* Barra de Filtros */
+.filter-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 16px 18px;
+    box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+    margin-bottom: 1.5rem;
+}
+
+.filter-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    flex-wrap: wrap;
+}
+
+/* Chips de Restaurante */
+.chips-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.btn-chip {
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 12.5px;
+    font-weight: 700;
+    padding: 7px 13px;
+    border-radius: 9px;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    border: 1px solid #e2e5ea;
+    background: #fff;
+    color: #5b6573;
+    transition: all 0.15s ease;
+    text-decoration: none;
+}
+
+.btn-chip:hover {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+    color: #334155;
+}
+
+.btn-chip.active {
+    background: var(--accent);
+    color: #fff;
+    border-color: transparent;
+    box-shadow: 0 4px 10px -6px var(--accent);
+}
+
+.btn-chip .dot-indicator {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #cbd5e1;
+    display: inline-block;
+}
+
+.btn-chip.active .dot-indicator {
+    background: #fff !important;
+}
+
+/* Segmentador de pago */
+.segmented-control {
+    display: inline-flex;
+    gap: 3px;
+    padding: 4px;
+    background: #eceff2;
+    border-radius: 11px;
+    border: none;
+}
+
+.segmented-control button {
+    border: none;
+    cursor: pointer;
+    padding: 7px 13px;
+    border-radius: 8px;
+    font-size: 12.5px;
+    font-weight: 700;
+    font-family: inherit;
+    background: transparent;
+    color: #5b6573;
+    transition: all 0.1s ease;
+}
+
+.segmented-control button:hover {
+    color: var(--text-primary);
+}
+
+.segmented-control button.active {
+    background: #fff;
+    color: var(--accent);
+    box-shadow: 0 1px 3px rgba(16, 24, 40, 0.14);
+}
+
+/* Buscador */
+.search-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    border: 1px solid #e2e5ea;
+    border-radius: 10px;
+    padding: 9px 13px;
+    background: #fff;
+    width: 230px;
+}
+
+.search-wrapper input {
+    border: none;
+    outline: none;
+    font-family: inherit;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #1e2733;
+    background: transparent;
+    width: 100%;
+}
+
+/* Contenedor de la Tabla */
+.table-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+    overflow: hidden;
+}
+
+.table-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 15px 22px;
+    border-bottom: 1px solid #eceef1;
+}
+
+.table-card-header h3 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 9px;
+}
+
+.table-card-header h3 i {
+    color: var(--accent);
+}
+
+.table-card-header span {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--text-muted);
+}
+
+/* Tabla de Facturas */
+.table-ventas {
+    margin: 0;
+}
+
+.table-ventas thead th {
+    background: #f8f9fb;
+    border-bottom: 1px solid #eceef1;
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    padding: 12px 22px;
+}
+
+.table-ventas tbody td {
+    padding: 14px 22px;
+    vertical-align: middle;
+    border-bottom: 1px solid #f2f4f7;
+    font-size: 13.5px;
+    color: var(--text-secondary);
+}
+
+.table-ventas tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.table-ventas tbody tr:hover td {
+    background-color: #fafbfc;
+}
+
+/* Badges de Pago */
+.pay-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12.5px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 7px;
+}
+
+/* Botón de Eliminar */
+.btn-eliminar-venta-row {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border: 1px solid #f6d4d4;
+    background: #fff;
+    color: #dc2626;
+    border-radius: 9px;
+    padding: 7px 13px;
+    font-size: 12.5px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.btn-eliminar-venta-row:hover {
+    background: #fdecec;
+}
+
+.restaurant-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    display: inline-block;
+    flex-shrink: 0;
+}
+
+.no-results-card {
+    padding: 52px 20px;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.no-results-card i {
+    font-size: 28px;
+    display: block;
+    margin-bottom: 10px;
+    opacity: 0.5;
+}

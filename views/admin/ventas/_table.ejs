@@ -1,64 +1,96 @@
-<div class="card selector-card">
-    <div class="card-header"><i class="bi bi-list-ul me-2"></i>Ventas del restaurante</div>
-    <div class="card-body p-0">
-        <div class="table-responsive">
-            <table class="table table-hover table-ventas mb-0">
-                <thead class="table-light">
-                    <tr>
-                        <th>#</th>
-                        <% if (activeTenantId === 'all') { %>
-                        <th>Restaurante</th>
-                        <% } %>
-                        <th>Fecha</th>
-                        <th>Cliente</th>
-                        <th>Forma pago</th>
-                        <th>Tipo</th>
-                        <th class="text-end">Total</th>
-                        <th class="text-center">Acción</th>
+<%
+const getTenantColor = function(name) {
+    const colors = {
+        'principal': '#6366f1',
+        'ichiban': '#10b981',
+        'rollito cinnamon': '#f59e0b',
+        'gelatto & arte': '#8b5cf6',
+        'carreteritos': '#0ea5e9',
+        'callejero': '#f43f5e'
+    };
+    return colors[name.toLowerCase()] || '#94a3b8';
+}
+
+const getPaymentBadge = function(method) {
+    const isEfectivo = (method || '').toLowerCase() === 'efectivo';
+    const bg = isEfectivo ? '#eefdf4' : '#eef2fb';
+    const fg = isEfectivo ? '#15803d' : '#3257b0';
+    const icon = isEfectivo ? 'bi-cash' : 'bi-bank';
+    const label = isEfectivo ? 'Efectivo' : 'Transf.';
+    return `<span class="pay-badge" style="background:${bg}; color:${fg};"><i class="bi ${icon} me-1"></i>${label}</span>`;
+}
+%>
+
+<div class="table-card mt-3">
+    <div class="table-card-header">
+        <h3><i class="bi bi-list-ul"></i>Ventas del restaurante</h3>
+        <span>Ordenadas por fecha, más recientes primero</span>
+    </div>
+    
+    <div class="table-responsive">
+        <table class="table table-ventas align-middle mb-0">
+            <thead>
+                <tr>
+                    <th style="width: 80px;">#</th>
+                    <th>Restaurante</th>
+                    <th>Fecha</th>
+                    <th>Cliente</th>
+                    <th>Forma pago</th>
+                    <th class="text-end" style="width: 140px;">Total</th>
+                    <th class="text-center" style="width: 132px;">Acción</th>
+                </tr>
+            </thead>
+            <tbody id="tbodyVentas">
+                <% (ventas || []).forEach(function(v) { %>
+                    <% 
+                    let num = typeof v.numero !== 'undefined' && v.numero != null ? v.numero : v.id;
+                    let restColor = getTenantColor(v.tenant_nombre || 'Principal');
+                    %>
+                    <tr class="venta-row" 
+                        data-factura-id="<%= v.id %>" 
+                        data-numero="<%= num %>" 
+                        data-cliente="<%= (v.cliente_nombre || '').toLowerCase() %>" 
+                        data-forma-pago="<%= (v.forma_pago || '').toLowerCase() %>" 
+                        data-total="<%= v.total %>" 
+                        data-tenant="<%= (v.tenant_nombre || '').toLowerCase() %>">
+                        
+                        <td class="fw-bold text-dark">#<%= num %></td>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="restaurant-dot" style="background: <%= restColor %>;"></span>
+                                <span class="fw-bold" style="color: <%= restColor %>;"><%= v.tenant_nombre || 'Principal' %></span>
+                            </div>
+                        </td>
+                        <td class="text-muted fw-semibold">
+                            <%= new Date(v.fecha).toLocaleString('es-CO', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) %>
+                        </td>
+                        <td class="fw-semibold text-dark">
+                            <%= v.cliente_nombre %>
+                        </td>
+                        <td>
+                            <%- getPaymentBadge(v.forma_pago) %>
+                        </td>
+                        <td class="text-end fw-extrabold text-dark" style="font-variant-numeric: tabular-nums;">
+                            $<%= Math.round(Number(v.total || 0)).toLocaleString('es-CO') %>
+                        </td>
+                        <td class="text-center">
+                            <button type="button" class="btn-eliminar-venta-row"
+                                data-id="<%= v.id %>"
+                                data-numero="<%= num %>"
+                                data-cliente="<%= v.cliente_nombre %>"
+                                data-total="<%= v.total %>"
+                                data-tenant="<%= v.tenant_nombre || 'Principal' %>">
+                                <i class="bi bi-trash3"></i> Eliminar
+                            </button>
+                        </td>
                     </tr>
-                </thead>
-                <tbody id="tbodyVentas">
-                    <% (ventas || []).forEach(function(v) { %>
-                        <tr data-factura-id="<%= v.id %>">
-                            <td>
-                                <%= typeof v.numero !=='undefined' && v.numero !=null ? v.numero : v.id %>
-                            </td>
-                            <% if (activeTenantId === 'all') { %>
-                            <td class="fw-semibold text-primary">
-                                <%= v.tenant_nombre %>
-                            </td>
-                            <% } %>
-                            <td>
-                                <%= new Date(v.fecha).toLocaleString() %>
-                            </td>
-                            <td>
-                                <%= v.cliente_nombre %>
-                            </td>
-                            <td>
-                                <%= (v.forma_pago || '' ).charAt(0).toUpperCase() + (v.forma_pago || '' ).slice(1) %>
-                            </td>
-                            <td><span class="badge bg-<%= v.evento_id ? 'info' : 'secondary' %>">
-                                    <%= v.tipo_venta || (v.evento_id ? 'Evento' : 'Venta diaria' ) %>
-                                </span></td>
-                            <td class="text-end">$<%= Number(v.total || 0).toFixed(2) %>
-                            </td>
-                            <td class="text-center">
-                                <button type="button" class="btn btn-sm btn-outline-danger btn-eliminar-venta"
-                                    data-id="<%= v.id %>"
-                                    data-numero="<%= typeof v.numero !== 'undefined' && v.numero != null ? v.numero : v.id %>"
-                                    data-cliente="<%= (v.cliente_nombre || '').replace(/" /g, '' ) %>" data-total="<%=
-                                        v.total %>">
-                                        <i class="bi bi-trash"></i> Eliminar
-                                </button>
-                            </td>
-                        </tr>
-                        <% }); %>
-                </tbody>
-            </table>
-        </div>
-        <% if (!ventas || ventas.length===0) { %>
-            <div class="p-4 text-center text-muted">Selecciona un restaurante y pulsa "Ver ventas" para listar las
-                facturas.</div>
-            <% } %>
+                <% }); %>
+            </tbody>
+        </table>
+    </div>
+    
+    <div id="noVentasMsg" class="no-results-card" style="display: <%= (!ventas || ventas.length === 0) ? 'block' : 'none' %>;">
+        <i class="bi bi-inbox" style="font-size: 32px; color: var(--text-muted);"></i>
+        <span>No hay ventas registradas para este restaurante.</span>
     </div>
 </div>

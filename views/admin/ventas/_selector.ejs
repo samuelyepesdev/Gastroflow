@@ -1,20 +1,47 @@
-<div class="card selector-card">
-    <div class="card-header"><i class="bi bi-building me-2"></i>Restaurante</div>
-    <div class="card-body">
-        <div class="row g-3 align-items-end">
-            <div class="col-md-4">
-                <label class="form-label fw-semibold">Restaurante</label>
-                <select id="selectTenant" class="form-select">
-                    <option value="all" <%= activeTenantId === 'all' ? 'selected' : '' %>>--- Todos los restaurantes ---</option>
-                    <% (tenants || []).forEach(function(t) { %>
-                        <option value="<%= t.id %>" <%= activeTenantId !== 'all' && Number(activeTenantId)===Number(t.id) ? 'selected' : '' %>><%=
-                                t.nombre %>
-                        </option>
-                        <% }); %>
-                </select>
+<%
+const getTenantColor = function(name) {
+    const colors = {
+        'principal': '#6366f1',
+        'ichiban': '#10b981',
+        'rollito cinnamon': '#f59e0b',
+        'gelatto & arte': '#8b5cf6',
+        'carreteritos': '#0ea5e9',
+        'callejero': '#f43f5e'
+    };
+    return colors[name.toLowerCase()] || '#94a3b8';
+}
+%>
+
+<div class="filter-card">
+    <div class="filter-row">
+        <!-- Chips de Restaurante -->
+        <div class="chips-container">
+            <span class="fs-12 fw-bold text-uppercase text-muted me-2" style="letter-spacing: .03em;">Restaurante</span>
+            
+            <a href="/admin/ventas?tenantId=all" class="btn-chip <%= activeTenantId === 'all' ? 'active' : '' %>">
+                <i class="bi bi-grid-fill me-1"></i>Todos
+            </a>
+            
+            <% (tenants || []).forEach(function(t) { %>
+                <% let col = getTenantColor(t.nombre); %>
+                <a href="/admin/ventas?tenantId=<%= t.id %>" class="btn-chip <%= activeTenantId !== 'all' && Number(activeTenantId) === Number(t.id) ? 'active' : '' %>">
+                    <span class="dot-indicator" style="background: <%= col %>;"></span>
+                    <%= t.nombre %>
+                </a>
+            <% }); %>
+        </div>
+
+        <!-- Segmentador de Pago y Buscador -->
+        <div class="d-flex align-items-center gap-3 flex-wrap">
+            <div class="segmented-control">
+                <button type="button" class="active" data-pay-filter="todos">Todas</button>
+                <button type="button" data-pay-filter="efectivo">Efectivo</button>
+                <button type="button" data-pay-filter="transferencia">Transf.</button>
             </div>
-            <div class="col-md-2">
-                <button type="button" class="btn btn-primary w-100" id="btnCargar">Ver ventas</button>
+            
+            <div class="search-wrapper">
+                <i class="bi bi-search text-muted fs-14"></i>
+                <input type="text" id="searchFactura" placeholder="# factura o cliente...">
             </div>
         </div>
     </div>

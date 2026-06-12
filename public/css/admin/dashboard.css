@@ -55,7 +55,12 @@ body {
     font-size: 13.5px;
     color: var(--text-muted);
     font-weight: 500;
-    margin: 7px 0 0 51px;
+    margin: 4px 0 0 0;
+}
+@media (min-width: 768px) {
+    .dashboard-header p {
+        margin: 7px 0 0 51px;
+    }
 }
 .header-icon-box {
     width: 40px;
@@ -223,6 +228,16 @@ body {
     font-weight: 600;
     margin-top: 2px;
 }
+.leaderboard-info {
+    flex-grow: 1;
+    min-width: 0;
+}
+@media (min-width: 768px) {
+    .leaderboard-info {
+        flex: 0 0 180px;
+        width: 180px;
+    }
+}
 .leaderboard-progress-bg {
     height: 8px;
     background: #f0f2f5;
@@ -234,13 +249,19 @@ body {
     border-radius: 6px;
 }
 .leaderboard-sales-val {
-    width: 120px;
-    flex: 0 0 120px;
+    flex: 0 0 auto;
     text-align: right;
-    font-size: 15px;
+    font-size: 14px;
     font-weight: 800;
     color: var(--text-primary);
     font-variant-numeric: tabular-nums;
+}
+@media (min-width: 768px) {
+    .leaderboard-sales-val {
+        flex: 0 0 120px;
+        width: 120px;
+        font-size: 15px;
+    }
 }
 
 /* Event List Card */

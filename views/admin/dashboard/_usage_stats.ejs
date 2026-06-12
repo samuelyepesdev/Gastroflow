@@ -31,7 +31,7 @@
                 <div class="progress-bar bg-accent" style="width: <%= pctEfectivo %>%;"></div>
                 <div class="progress-bar bg-neutral-dark" style="width: <%= pctTransf %>%;"></div>
             </div>
-            <div class="d-flex justify-content-between text-muted" style="font-size: 10px; font-weight: 600;">
+            <div class="d-flex justify-content-between text-muted flex-wrap gap-2" style="font-size: 10px; font-weight: 600;">
                 <div class="d-flex align-items-center gap-1">
                     <span class="dot bg-accent" style="width: 7px; height: 7px;"></span>
                     <span>Efectivo: <strong>$<%= (Number(stats.totalEfectivo) || 0).toLocaleString('es-CO', { maximumFractionDigits: 0 }) %></strong></span>

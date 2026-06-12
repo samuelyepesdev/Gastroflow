@@ -247,7 +247,7 @@ document.addEventListener('DOMContentLoaded', function () {
         return `
             <span class="leaderboard-rank ${rankClass}">${idx + 1}</span>
             <span class="leaderboard-dot" style="background: ${color}"></span>
-            <div class="flex-grow-1 min-width-0" style="width: 180px; flex: 0 0 180px;">
+            <div class="leaderboard-info">
                 <div class="leaderboard-tenant-name text-truncate" title="${v.nombre}">${v.nombre}</div>
                 <div class="leaderboard-tenant-subtext">${factText}</div>
             </div>

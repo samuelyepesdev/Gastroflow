@@ -1,32 +1,64 @@
 <div class="row">
     <div class="col-12">
         <div class="card selector-card">
-            <div class="card-header"><i class="bi bi-building me-2"></i>Restaurante y usuario</div>
+            <div class="card-header"><i class="bi bi-shield-check me-2"></i>Restaurante y usuario</div>
             <div class="card-body">
                 <div class="row g-3">
-                    <div class="col-md-4">
-                        <label class="form-label fw-semibold">Restaurante</label>
-                        <select id="selectTenant" class="form-select">
-                            <% (tenants || []).forEach(function(t) { %>
-                                <option value="<%= t.id %>" <%=Number(activeTenantId)===Number(t.id) ? 'selected' : ''
-                                    %>><%= t.nombre %>
-                                </option>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold fs-13 text-secondary mb-2">Restaurante</label>
+                        <div class="form-select-wrapper">
+                            <select id="selectTenant">
+                                <% (tenants || []).forEach(function(t) { %>
+                                    <option value="<%= t.id %>" <%= Number(activeTenantId) === Number(t.id) ? 'selected' : '' %>><%= t.nombre %></option>
                                 <% }); %>
-                        </select>
+                            </select>
+                            <i class="bi bi-chevron-down"></i>
+                        </div>
                     </div>
-                    <div class="col-md-4">
-                        <label class="form-label fw-semibold">Usuario</label>
-                        <select id="selectUsuario" class="form-select">
-                            <option value="">-- Seleccione un usuario --</option>
-                            <% (usuarios || []).forEach(function(u) { %>
-                                <option value="<%= u.id %>">
-                                    <%= (u.nombre_completo || u.username) %> (<%= u.rol_nombre %>)
-                                </option>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold fs-13 text-secondary mb-2">Usuario</label>
+                        <div class="form-select-wrapper">
+                            <select id="selectUsuario">
+                                <option value="">-- Seleccione un usuario --</option>
+                                <% (usuarios || []).forEach(function(u) { %>
+                                    <option value="<%= u.id %>">
+                                        <%= (u.nombre_completo || u.username) %> (<%= u.rol_nombre %>)
+                                    </option>
                                 <% }); %>
-                        </select>
+                            </select>
+                            <i class="bi bi-chevron-down"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mt-3 pt-3 border-top">
+                    <div class="col-12 d-flex flex-wrap align-items-center justify-content-between gap-3">
+                        <div class="presets-container" id="presetsContainer" style="display: none;">
+                            <span class="fs-11 fw-extrabold text-uppercase text-muted" style="letter-spacing: .04em; margin-right: 4px;">Aplicar rol</span>
+                            <button type="button" class="preset-btn" data-preset-role="admin">
+                                <i class="bi bi-person-gear"></i>Administrador
+                            </button>
+                            <button type="button" class="preset-btn" data-preset-role="cajero">
+                                <i class="bi bi-cash-register"></i>Cajero
+                            </button>
+                            <button type="button" class="preset-btn" data-preset-role="mesero">
+                                <i class="bi bi-person-walking"></i>Mesero
+                            </button>
+                            <button type="button" class="preset-btn" data-preset-role="cocinero">
+                                <i class="bi bi-fire"></i>Cocinero
+                            </button>
+                        </div>
+                        <div class="search-wrapper ms-auto" id="searchWrapper" style="display: none;">
+                            <i class="bi bi-search text-muted" style="font-size: 13.5px;"></i>
+                            <input type="text" id="searchPermiso" placeholder="Buscar permiso por descripción o sección...">
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<script>
+    window.GastroFlowRolePresets = <%- JSON.stringify(rolePresets || {}) %>;
+</script>

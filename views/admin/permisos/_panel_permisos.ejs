@@ -1,53 +1,83 @@
-<div id="panelPermisos" class="row" style="display: none;">
-    <div class="col-12">
-        <div class="card selector-card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <span><i class="bi bi-person-badge me-2"></i>Permisos del usuario</span>
-                <button type="button" class="btn btn-primary btn-save-user" id="btnGuardarUsuario">Guardar
-                    permisos</button>
-            </div>
-            <div class="card-body">
-                <p class="text-muted small mb-3">Los permisos marcados son los que tendrá el usuario. Si desmarcas
-                    alguno (ej. Inventario, Recetas) y guardas, ese usuario ya no tendrá acceso. Al abrir un usuario se
-                    muestran sus permisos actuales (del rol o los que ya guardaste).</p>
-                <div class="permisos-container">
-                    <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-3">
-                        <% (secciones || []).forEach(function(sec) { %>
-                            <div class="col">
-                                <div class="card section-card h-100 mb-0">
-                                    <div class="card-header d-flex align-items-center gap-2">
-                                        <label class="mb-0 d-flex align-items-center gap-2 cursor-pointer flex-grow-1">
-                                            <input type="checkbox" class="form-check-input section-check"
-                                                title="Marcar todos los permisos de esta sección">
-                                            <span>
-                                                <%= sec.seccion %>
-                                            </span>
-                                        </label>
-                                    </div>
-                                    <div class="card-body py-2">
-                                        <div class="permiso-list">
-                                            <% (sec.permisos || []).forEach(function(p) { %>
-                                                <label class="permiso-item mb-0 cursor-pointer d-block">
-                                                    <input type="checkbox" class="form-check-input permiso-check"
-                                                        value="<%= p.id %>" data-permiso-id="<%= p.id %>">
-                                                    <span>
-                                                        <%= (p.descripcion && p.descripcion.trim()) ? p.descripcion :
-                                                            p.nombre %>
-                                                    </span>
-                                                </label>
-                                                <% }); %>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <% }); %>
+<%
+const getSectionIcon = function(secName) {
+    const icons = {
+        'productos': 'bi-box-seam',
+        'clientes': 'bi-people',
+        'mesas': 'bi-grid-3x3-gap',
+        'cocina': 'bi-fire',
+        'facturas': 'bi-receipt',
+        'ventas': 'bi-cash-stack',
+        'configuracion': 'bi-gear',
+        'usuarios': 'bi-person-badge'
+    };
+    return icons[secName.toLowerCase()] || 'bi-shield-check';
+}
+%>
+
+<div id="panelPermisos" style="display: none;">
+    <div class="permisos-grid">
+        <% (secciones || []).forEach(function(sec) { %>
+            <div class="section-card" data-section-name="<%= sec.seccion %>">
+                <div class="section-card-header">
+                    <label class="mb-0 d-flex align-items-center gap-3 cursor-pointer flex-grow-1">
+                        <input type="checkbox" class="section-check hidden-checkbox">
+                        <span class="custom-checkbox">
+                            <i class="bi bi-check-lg"></i>
+                        </span>
+                        <span class="section-icon-container">
+                            <i class="bi <%= getSectionIcon(sec.seccion) %>"></i>
+                        </span>
+                        <div>
+                            <div class="section-header-title"><%= sec.seccion %></div>
+                            <div class="section-header-subtitle">0 de 0 activos</div>
+                        </div>
+                    </label>
+                </div>
+                <div class="section-card-body">
+                    <div class="d-flex flex-column gap-1">
+                        <% (sec.permisos || []).forEach(function(p) { %>
+                            <label class="permiso-item-row">
+                                <input type="checkbox" class="permiso-check hidden-checkbox" value="<%= p.id %>" data-permiso-id="<%= p.id %>">
+                                <span class="custom-checkbox">
+                                    <i class="bi bi-check-lg"></i>
+                                </span>
+                                <span><%= (p.descripcion && p.descripcion.trim()) ? p.descripcion : p.nombre %></span>
+                            </label>
+                        <% }); %>
                     </div>
                 </div>
+            </div>
+        <% }); %>
+    </div>
+
+    <!-- Barra fija inferior de guardado -->
+    <div class="save-bar-fixed" id="saveBarFixed">
+        <div class="save-bar-container">
+            <div class="save-bar-info">
+                <div class="save-bar-icon">
+                    <i class="bi bi-shield-check"></i>
+                </div>
+                <div>
+                    <div class="save-bar-title"><span id="saveBarActiveCount">0</span> permisos activos</div>
+                    <div class="save-bar-subtitle">Asignando a <span id="saveBarUsername" class="fw-bold text-dark">...</span></div>
+                </div>
+                <div class="status-badge saved ms-3" id="saveBarStatus">
+                    <i class="bi bi-check-circle-fill me-1"></i>Guardado
+                </div>
+            </div>
+            <div class="d-flex gap-2">
+                <button type="button" class="btn-reset-bar" id="btnRestablecer">
+                    <i class="bi bi-arrow-counterclockwise me-1"></i>Restablecer
+                </button>
+                <button type="button" class="btn-save-bar" id="btnGuardarUsuario">
+                    <i class="bi bi-save me-1"></i>Guardar permisos
+                </button>
             </div>
         </div>
     </div>
 </div>
 
-<div id="sinUsuario" class="alert alert-info mt-2" style="display: none;">
-    <i class="bi bi-info-circle me-2"></i>Selecciona un usuario para asignar permisos.
+<div id="sinUsuario" class="no-results-card mt-2">
+    <i class="bi bi-person-bounding-box" style="font-size: 32px; color: var(--text-muted);"></i>
+    Selecciona un usuario en la parte superior para configurar sus permisos de acceso.
 </div>
