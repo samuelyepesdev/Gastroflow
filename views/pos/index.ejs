@@ -6,42 +6,52 @@
     <title>Terminal POS</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/core/index.css">
     <link rel="stylesheet" href="/css/modulos/pos.css">
 </head>
-<body class="pos-terminal-body">
+<body class="pos-terminal-body" style="--pos-accent:<%- nav.primaryColor || '#6366f1' %>;--pos-dark:<%- nav.bgStart || '#1e293b' %>">
 
 <%- include('../partials/navbar', { user: typeof user !== 'undefined' ? user : null, tenant: typeof tenant !== 'undefined' ? tenant : null }) %>
 
-<!-- Data island: productos y categorías del servidor -->
 <script type="application/json" id="posInitData"><%- JSON.stringify({ productos: productos || [], categorias: categorias || [] }) %></script>
 
 <div class="pos-wrapper">
 
-    <!-- Barra de estadísticas -->
-    <div class="pos-stats-bar">
-        <div class="pos-stats-left">
-            <i class="bi bi-lightning-charge-fill text-warning me-2"></i>
-            <span class="fw-semibold">Terminal POS</span>
+    <!-- Sub-header POS -->
+    <div class="pos-subheader">
+        <div class="pos-subheader-left">
+            <span class="pos-subheader-icon"><i class="bi bi-lightning-charge-fill"></i></span>
+            <span class="pos-subheader-title">Terminal POS</span>
         </div>
-        <div class="pos-stats-center">
-            <span class="pos-stat-chip">
-                <i class="bi bi-receipt me-1"></i>
-                <span id="posStatsOrdenes">—</span> ventas hoy
+        <div class="pos-subheader-center">
+            <span class="pos-stat-item">
+                <i class="bi bi-receipt me-2"></i><strong id="posStatsOrdenes">—</strong>&nbsp;ventas hoy
             </span>
-            <span class="pos-stat-divider">|</span>
-            <span class="pos-stat-chip">
-                <i class="bi bi-cash-stack me-1"></i>
-                <span id="posStatsTotal">$0</span>
+            <span class="pos-stat-sep"></span>
+            <span class="pos-stat-item">
+                <i class="bi bi-cash-coin me-2"></i><strong id="posStatsTotal">$ 0</strong>
             </span>
         </div>
-        <div class="pos-stats-right">
-            <button class="btn btn-sm btn-outline-light" id="posBtnBorradores">
-                <i class="bi bi-layers me-1"></i>
-                Guardadas
-                <span class="badge bg-warning text-dark ms-1" id="posBorradoresCount">0</span>
+        <div class="pos-subheader-right">
+            <button class="pos-saved-btn" id="posBtnBorradores">
+                <i class="bi bi-bookmark me-1"></i>Guardadas
+                <span class="pos-saved-badge" id="posBorradoresCount">0</span>
             </button>
         </div>
+    </div>
+
+    <!-- Tabs móviles (solo visibles en pantallas pequeñas) -->
+    <div class="pos-mobile-tabs">
+        <button class="pos-mobile-tab active" data-panel="catalog">
+            <i class="bi bi-grid-3x3-gap"></i>Catálogo
+        </button>
+        <button class="pos-mobile-tab" data-panel="cart">
+            <i class="bi bi-cart3"></i>Carrito
+            <span class="pos-mobile-cart-badge" id="posMobileCartBadge" style="display:none">0</span>
+        </button>
     </div>
 
     <!-- Área principal -->
@@ -49,32 +59,26 @@
 
         <!-- Panel izquierdo: Catálogo -->
         <div class="pos-catalog">
-            <div class="pos-search-wrap">
-                <div class="input-group pos-search-input">
-                    <span class="input-group-text bg-white border-0">
-                        <i class="bi bi-search text-muted"></i>
-                    </span>
-                    <input type="text" id="posSearch" class="form-control border-0 shadow-none"
+            <div class="pos-search-area">
+                <div class="pos-search-box">
+                    <i class="bi bi-search pos-search-icon"></i>
+                    <input type="text" id="posSearch" class="pos-search-input"
                         placeholder="Buscar producto o código..." autocomplete="off">
-                    <button class="btn btn-link text-muted pe-2" id="posClearSearch" style="display:none;" title="Limpiar">
-                        <i class="bi bi-x-circle"></i>
+                    <button class="pos-search-clear" id="posClearSearch" style="display:none" title="Limpiar">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+                <div class="pos-cat-chips" id="posCatsBar">
+                    <button class="pos-cat-chip active" data-cat="all">
+                        <i class="bi bi-grid-fill me-1"></i>Todos
                     </button>
                 </div>
             </div>
-
-            <div class="pos-cats-wrap">
-                <div class="pos-cats-scroll" id="posCatsBar">
-                    <button class="pos-cat-pill active" data-cat="all">
-                        <i class="bi bi-grid-3x3 me-1"></i>Todos
-                    </button>
-                    <!-- Categorías inyectadas por JS -->
-                </div>
-            </div>
-
-            <div class="pos-product-grid" id="posProductGrid">
-                <!-- Productos inyectados por JS -->
-                <div class="pos-catalog-loading">
-                    <div class="spinner-border text-primary" role="status"></div>
+            <div class="pos-product-area">
+                <div class="pos-product-grid" id="posProductGrid">
+                    <div class="pos-catalog-loading">
+                        <div class="spinner-border text-secondary" role="status"></div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -84,52 +88,40 @@
 
             <!-- Cliente -->
             <div class="pos-cart-customer">
-                <div class="pos-customer-row">
-                    <i class="bi bi-person-fill pos-customer-icon"></i>
-                    <div class="pos-customer-input-wrap">
-                        <input type="text" id="posClienteInput" class="form-control form-control-sm border-0 shadow-none"
-                            placeholder="Consumidor final" autocomplete="off">
-                        <input type="hidden" id="posClienteId">
-                        <div id="posClienteSugerencias" class="pos-customer-dropdown"></div>
-                    </div>
-                    <button class="btn btn-sm btn-outline-secondary pos-customer-new"
-                        data-bs-toggle="modal" data-bs-target="#posNuevoClienteModal" title="Nuevo cliente">
-                        <i class="bi bi-person-plus"></i>
-                    </button>
+                <div class="pos-customer-avatar"><i class="bi bi-person-fill"></i></div>
+                <div class="pos-customer-info">
+                    <input type="text" id="posClienteInput" class="pos-customer-text"
+                        placeholder="Consumidor final" autocomplete="off">
+                    <input type="hidden" id="posClienteId">
+                    <div id="posClienteSugerencias" class="pos-customer-dropdown"></div>
+                    <div class="pos-customer-label">Cliente de la venta</div>
                 </div>
+                <button class="pos-customer-add-btn"
+                    data-bs-toggle="modal" data-bs-target="#posNuevoClienteModal" title="Nuevo cliente">
+                    <i class="bi bi-person-plus"></i>
+                </button>
             </div>
 
             <!-- Items del carrito -->
-            <div class="pos-cart-items" id="posCartItems">
-                <div class="pos-cart-empty" id="posCartEmpty">
-                    <i class="bi bi-cart-x"></i>
-                    <p>Carrito vacío</p>
-                    <small>Selecciona productos del catálogo</small>
-                </div>
-            </div>
+            <div class="pos-cart-body" id="posCartItems"></div>
 
             <!-- Footer del carrito -->
             <div class="pos-cart-footer">
-                <div class="pos-totals">
-                    <div class="pos-total-row pos-total-main">
-                        <span class="fw-semibold">Total</span>
-                        <span class="pos-total-amount" id="posCartTotal">$0</span>
-                    </div>
-                </div>
-
-                <div class="pos-cart-actions">
-                    <button class="btn btn-outline-secondary" id="posBtnAparcar" title="Guardar orden para después">
+                <div class="pos-totals" id="posTotales"></div>
+                <div class="pos-cart-btns">
+                    <button class="pos-btn-save" id="posBtnAparcar">
                         <i class="bi bi-bookmark me-1"></i>Guardar
                     </button>
-                    <button class="btn btn-success pos-btn-cobrar" id="posBtnCobrar" disabled>
-                        <i class="bi bi-lightning-charge me-1"></i>
-                        Cobrar <span id="posCobrarTotal">$0</span>
+                    <button class="pos-btn-charge" id="posBtnCobrar" disabled>
+                        <i class="bi bi-lightning-charge-fill me-1"></i>
+                        Cobrar <span id="posCobrarTotal">$ 0</span>
                     </button>
                 </div>
-
-                <button class="btn btn-link btn-sm text-muted w-100 pos-btn-limpiar" id="posBtnLimpiar">
-                    <i class="bi bi-x-circle me-1"></i>Limpiar orden
-                </button>
+                <div class="pos-cart-clear-wrap">
+                    <button class="pos-btn-clear" id="posBtnLimpiar">
+                        <i class="bi bi-x-circle me-1"></i>Limpiar orden
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -141,20 +133,16 @@
 <div class="modal fade" id="posPagoModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg">
-            <div class="modal-header bg-success text-white py-3">
-                <h5 class="modal-title fw-semibold">
+            <div class="modal-header py-3">
+                <h5 class="modal-title fw-bold">
                     <i class="bi bi-cash-stack me-2"></i>Cobrar venta
                 </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body p-4">
-
-                <!-- Resumen de items -->
+            <div class="modal-body px-4 py-3">
                 <div class="pos-pago-items mb-3" id="posPagoItems"></div>
-
-                <!-- Métodos de pago -->
                 <div class="mb-3">
-                    <label class="form-label fw-semibold small text-muted text-uppercase">Forma de pago</label>
+                    <label class="form-label fw-semibold small text-muted text-uppercase ls-wider">Forma de pago</label>
                     <div class="pos-pago-methods">
                         <button class="pos-method-btn active" data-method="efectivo">
                             <i class="bi bi-cash me-2"></i>Efectivo
@@ -165,10 +153,8 @@
                     </div>
                     <input type="hidden" id="posPagoMetodo" value="efectivo">
                 </div>
-
-                <!-- Calculadora de vuelto (solo efectivo) -->
                 <div id="posEfectivoSection">
-                    <div class="mb-3">
+                    <div class="mb-2">
                         <label class="form-label fw-semibold small text-muted text-uppercase">Recibido</label>
                         <div class="input-group input-group-lg">
                             <span class="input-group-text fw-bold">$</span>
@@ -177,21 +163,19 @@
                         </div>
                         <div class="pos-quick-amounts mt-2" id="posQuickAmounts"></div>
                     </div>
-                    <div class="pos-vuelto-box" id="posVueltoBox">
+                    <div class="pos-vuelto-box">
                         <span class="pos-vuelto-label">Vuelto</span>
-                        <span class="pos-vuelto-amount" id="posVueltoAmount">$0</span>
+                        <span class="pos-vuelto-val" id="posVueltoAmount">$ 0</span>
                     </div>
                 </div>
-
-                <!-- Total -->
                 <div class="pos-pago-total-box">
                     <span>Total a cobrar</span>
-                    <span class="pos-pago-total-amount" id="posPagoTotal">$0</span>
+                    <span class="pos-pago-total-val" id="posPagoTotal">$ 0</span>
                 </div>
             </div>
             <div class="modal-footer border-0 pt-0">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-success btn-lg px-4" id="posConfirmarPagoBtn">
+                <button type="button" class="btn btn-lg px-4 pos-btn-confirmar-pago" id="posConfirmarPagoBtn">
                     <i class="bi bi-check-circle me-1"></i>Confirmar Pago
                 </button>
             </div>
@@ -234,7 +218,6 @@
             <div class="modal-body p-3">
                 <p class="fw-semibold small mb-1" id="posDescNombre"></p>
                 <p class="text-muted small mb-3">Precio unitario: <span id="posDescPrecio"></span></p>
-
                 <div class="d-flex flex-wrap gap-1 mb-3">
                     <button class="btn btn-outline-primary btn-sm pos-desc-quick" data-pct="5">5%</button>
                     <button class="btn btn-outline-primary btn-sm pos-desc-quick" data-pct="10">10%</button>
@@ -242,7 +225,6 @@
                     <button class="btn btn-outline-primary btn-sm pos-desc-quick" data-pct="20">20%</button>
                     <button class="btn btn-outline-primary btn-sm pos-desc-quick" data-pct="50">50%</button>
                 </div>
-
                 <div class="input-group input-group-sm mb-2">
                     <input type="number" id="posDescPct" class="form-control" placeholder="Otro %" min="0" max="100">
                     <button class="btn btn-primary" type="button" id="posDescAplicar">Aplicar</button>
@@ -262,7 +244,7 @@
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title"><i class="bi bi-layers me-2"></i>Órdenes guardadas</h5>
+                <h5 class="modal-title"><i class="bi bi-bookmark me-2"></i>Órdenes guardadas</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body p-0">
@@ -271,7 +253,7 @@
                         <thead class="table-light">
                             <tr>
                                 <th>Cliente</th>
-                                <th>Productos</th>
+                                <th>Ítems</th>
                                 <th>Total</th>
                                 <th>Guardada</th>
                                 <th></th>

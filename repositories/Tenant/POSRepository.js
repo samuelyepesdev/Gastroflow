@@ -59,6 +59,21 @@ class POSRepository {
         );
         return rows[0] || { num_ordenes: 0, total_hoy: 0 };
     }
+
+    static async findOrCreateCliente(tenantId, nombre) {
+        const [existing] = await db.query(
+            'SELECT id FROM clientes WHERE tenant_id = ? AND LOWER(nombre) = LOWER(?) LIMIT 1',
+            [tenantId, nombre.trim()]
+        );
+        if (existing.length) {
+            return existing[0].id;
+        }
+        const [result] = await db.query('INSERT INTO clientes (tenant_id, nombre) VALUES (?, ?)', [
+            tenantId,
+            nombre.trim()
+        ]);
+        return result.insertId;
+    }
 }
 
 module.exports = POSRepository;

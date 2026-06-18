@@ -34,8 +34,9 @@ window.POS_API = {
         return r.ok;
     },
 
+    // Ruta propia del POS — no requiere facturas.ver
     async crearFactura(payload) {
-        const r = await fetch('/api/facturas', {
+        const r = await fetch('/pos/vender', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -60,10 +61,9 @@ window.POS_API = {
         return r.json();
     },
 
+    // Ruta propia del POS — no requiere clientes.ver
     async getOrCreateConsumidorFinal() {
-        const lista = await this.buscarCliente('consumidor final').catch(() => []);
-        const cf = lista.find(c => c.nombre.toLowerCase() === 'consumidor final');
-        if (cf) return cf;
-        return this.crearCliente({ nombre: 'Consumidor final' }).catch(() => null);
+        const r = await fetch('/pos/consumidor-final');
+        return r.ok ? r.json() : { id: null, nombre: 'Consumidor final' };
     }
 };

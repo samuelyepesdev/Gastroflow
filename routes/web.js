@@ -99,7 +99,7 @@ router.use(
 );
 router.use('/caja', requireAuthWithTenant, requirePermission('caja.ver'), cajaRoutes);
 router.use('/soporte', requireAuthWithTenant, soporteTenantRoutes);
-router.use('/pos', requireAuthWithTenant, requirePermission('pos.ver'), posRoutes);
+router.use('/pos', requireAuthWithTenant, requirePlanFeature('ventas'), requirePermission('pos.ver'), posRoutes);
 
 // --- RUTAS API ---
 router.use(

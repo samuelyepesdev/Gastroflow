@@ -36,6 +36,10 @@ class POSService {
     static async getStatsHoy(tenantId) {
         return POSRepository.getStatsHoy(tenantId);
     }
+
+    static async findOrCreateCliente(tenantId, nombre) {
+        return POSRepository.findOrCreateCliente(tenantId, nombre.trim() || 'Consumidor final');
+    }
 }
 
 module.exports = POSService;

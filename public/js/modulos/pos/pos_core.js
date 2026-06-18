@@ -14,6 +14,8 @@ window.POS = {
 
     // ─── Inicialización ────────────────────────────────────────────
     async init() {
+        this._setupColors();
+
         const dataEl = document.getElementById('posInitData');
         if (dataEl) {
             try {
@@ -21,7 +23,6 @@ window.POS = {
                 this.state.productos = productos || [];
                 this.state.categorias = categorias || [];
                 this.state.filtrados = [...this.state.productos];
-                // Mapa para acceso rápido por ID (evita pasar JSON en onclick)
                 this.state.productosMap = new Map(this.state.productos.map(p => [p.id, p]));
             } catch (_) {}
         }
@@ -32,14 +33,31 @@ window.POS = {
 
         // Consumidor final por defecto
         POS_API.getOrCreateConsumidorFinal().then(cf => {
-            if (cf && !this.state.cliente) {
+            if (cf && cf.id && !this.state.cliente) {
                 this.setCliente(cf);
             }
-        });
+        }).catch(() => {});
 
         await Promise.all([this.recargarBorradores(), this.recargarStats()]);
 
         this._bindEvents();
+    },
+
+    // Calcula variantes oscura/suave del color de acento y las aplica como CSS vars
+    _setupColors() {
+        const accent = document.body.style.getPropertyValue('--pos-accent').trim() || '#6366f1';
+
+        const hx = h => {
+            h = h.replace('#', '').trim();
+            if (h.length === 3) h = h.split('').map(c => c + c).join('');
+            return [parseInt(h.slice(0,2),16), parseInt(h.slice(2,4),16), parseInt(h.slice(4,6),16)];
+        };
+        const toHex = a => '#' + a.map(v => Math.round(Math.max(0, Math.min(255, v))).toString(16).padStart(2,'0')).join('');
+        const mix = (a, b, t) => { const A = hx(a), B = hx(b); return toHex([0,1,2].map(i => A[i] + (B[i] - A[i]) * t)); };
+
+        document.documentElement.style.setProperty('--pos-accent-soft', mix(accent, '#ffffff', 0.88));
+        document.documentElement.style.setProperty('--pos-accent-softer', mix(accent, '#ffffff', 0.95));
+        this._accentColor = accent;
     },
 
     // ─── Carrito ──────────────────────────────────────────────────
@@ -59,6 +77,7 @@ window.POS = {
                 precio_original: precio,
                 cantidad: 1,
                 descuento_porcentaje: 0,
+                categoria_id: producto.categoria_id,
                 unidad: 'UND'
             });
         }
@@ -93,7 +112,14 @@ window.POS = {
         this.state.cart = [];
         this.state.cliente = null;
         POS_UI.renderCart();
-        POS_API.getOrCreateConsumidorFinal().then(cf => cf && this.setCliente(cf));
+        // Restaurar cliente por defecto
+        const inputEl = document.getElementById('posClienteInput');
+        const idEl = document.getElementById('posClienteId');
+        if (inputEl) inputEl.value = '';
+        if (idEl) idEl.value = '';
+        POS_API.getOrCreateConsumidorFinal().then(cf => {
+            if (cf && cf.id) this.setCliente(cf);
+        }).catch(() => {});
     },
 
     // ─── Totales ──────────────────────────────────────────────────
@@ -144,26 +170,32 @@ window.POS = {
 
     // ─── Borradores (órdenes guardadas) ──────────────────────────
     async recargarBorradores() {
-        this.state.borradores = await POS_API.getBorradores();
+        try {
+            this.state.borradores = await POS_API.getBorradores();
+        } catch (_) {
+            this.state.borradores = [];
+        }
         POS_UI.updateBorradoresCount();
     },
 
     async guardarOrden() {
         if (!this.state.cart.length) return;
-        const clienteNombre = document.getElementById('posClienteInput')?.value || 'Consumidor final';
+        const clienteNombre = document.getElementById('posClienteInput')?.value?.trim() || 'Consumidor final';
         const clienteId = this.state.cliente?.id || null;
 
-        await POS_API.saveBorrador({
-            cliente_id: clienteId,
-            nombre_cliente: clienteNombre,
-            items: this.state.cart,
-            total: this.getTotal()
-        });
-
-        this.clearCart();
-        await this.recargarBorradores();
-
-        Swal.fire({ icon: 'success', title: 'Orden guardada', timer: 1300, showConfirmButton: false });
+        try {
+            await POS_API.saveBorrador({
+                cliente_id: clienteId,
+                nombre_cliente: clienteNombre,
+                items: this.state.cart,
+                total: this.getTotal()
+            });
+            this.clearCart();
+            await this.recargarBorradores();
+            Swal.fire({ icon: 'success', title: 'Orden guardada', timer: 1300, showConfirmButton: false });
+        } catch (err) {
+            Swal.fire('Error', err.message || 'No se pudo guardar la orden', 'error');
+        }
     },
 
     async cargarBorrador(borrador) {
@@ -179,34 +211,35 @@ window.POS = {
 
     // ─── Stats ───────────────────────────────────────────────────
     async recargarStats() {
-        this.state.stats = await POS_API.getStats();
+        try {
+            this.state.stats = await POS_API.getStats();
+        } catch (_) {}
         POS_UI.renderStats();
     },
 
     // ─── Eventos del DOM ─────────────────────────────────────────
     _bindEvents() {
-        // Búsqueda
         let searchTimer;
         document.getElementById('posSearch')?.addEventListener('input', e => {
             const val = e.target.value;
-            document.getElementById('posClearSearch').style.display = val ? '' : 'none';
+            const clearBtn = document.getElementById('posClearSearch');
+            if (clearBtn) clearBtn.style.display = val ? '' : 'none';
             clearTimeout(searchTimer);
             searchTimer = setTimeout(() => POS.buscar(val), 200);
         });
 
         document.getElementById('posClearSearch')?.addEventListener('click', () => {
-            document.getElementById('posSearch').value = '';
+            const inp = document.getElementById('posSearch');
+            if (inp) inp.value = '';
             document.getElementById('posClearSearch').style.display = 'none';
             POS.buscar('');
         });
 
-        // Botón Cobrar
         document.getElementById('posBtnCobrar')?.addEventListener('click', () => {
             if (!POS.state.cart.length) return;
             POS_PAGO.abrirModal();
         });
 
-        // Botón Guardar orden (aparcar)
         document.getElementById('posBtnAparcar')?.addEventListener('click', () => {
             if (!POS.state.cart.length) {
                 Swal.fire({ icon: 'info', title: 'El carrito está vacío', timer: 1200, showConfirmButton: false });
@@ -215,7 +248,6 @@ window.POS = {
             POS.guardarOrden();
         });
 
-        // Botón Limpiar
         document.getElementById('posBtnLimpiar')?.addEventListener('click', () => {
             if (!POS.state.cart.length) return;
             Swal.fire({
@@ -225,37 +257,39 @@ window.POS = {
                 confirmButtonText: 'Sí, limpiar',
                 cancelButtonText: 'Cancelar',
                 confirmButtonColor: '#dc3545'
-            }).then(r => r.isConfirmed && POS.clearCart());
+            }).then(r => { if (r.isConfirmed) POS.clearCart(); });
         });
 
-        // Botón Órdenes guardadas
         document.getElementById('posBtnBorradores')?.addEventListener('click', () => {
             POS_UI.renderBorradoresModal();
             new bootstrap.Modal(document.getElementById('posBorradoresModal')).show();
         });
 
-        // Búsqueda de cliente
         let clienteTimer;
         document.getElementById('posClienteInput')?.addEventListener('input', e => {
             const val = e.target.value.trim();
+            // Limpiar ID si el usuario escribe manualmente
+            const idEl = document.getElementById('posClienteId');
+            if (idEl) idEl.value = '';
             clearTimeout(clienteTimer);
             if (val.length < 2) {
-                document.getElementById('posClienteSugerencias').style.display = 'none';
+                const sug = document.getElementById('posClienteSugerencias');
+                if (sug) sug.style.display = 'none';
                 return;
             }
             clienteTimer = setTimeout(async () => {
-                const lista = await POS_API.buscarCliente(val);
+                const lista = await POS_API.buscarCliente(val).catch(() => []);
                 POS_UI.renderClienteSugerencias(lista);
             }, 300);
         });
 
         document.addEventListener('click', e => {
-            if (!e.target.closest('.pos-customer-input-wrap')) {
-                document.getElementById('posClienteSugerencias').style.display = 'none';
+            if (!e.target.closest('.pos-customer-info')) {
+                const sug = document.getElementById('posClienteSugerencias');
+                if (sug) sug.style.display = 'none';
             }
         });
 
-        // Guardar nuevo cliente
         document.getElementById('posGuardarClienteBtn')?.addEventListener('click', async () => {
             const nombre = document.getElementById('posNuevoClienteNombre')?.value.trim();
             if (!nombre) return Swal.fire('Atención', 'El nombre es obligatorio', 'warning');
@@ -279,13 +313,33 @@ window.POS = {
             }
         });
 
-        // Nueva venta desde modal recibo
         document.getElementById('posReceiptNuevaVenta')?.addEventListener('click', () => {
             POS.clearCart();
             POS.recargarStats();
+            POS._goToCatalogTab();
         });
+
+        // Tabs móviles
+        document.querySelectorAll('.pos-mobile-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.pos-mobile-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                const posMain = document.querySelector('.pos-main');
+                if (tab.dataset.panel === 'cart') {
+                    posMain?.classList.add('pos-mobile-show-cart');
+                } else {
+                    posMain?.classList.remove('pos-mobile-show-cart');
+                }
+            });
+        });
+    },
+
+    // Vuelve al tab catálogo en móvil (se llama tras cobrar o nueva venta)
+    _goToCatalogTab() {
+        document.querySelectorAll('.pos-mobile-tab').forEach(t => t.classList.remove('active'));
+        document.querySelector('.pos-mobile-tab[data-panel="catalog"]')?.classList.add('active');
+        document.querySelector('.pos-main')?.classList.remove('pos-mobile-show-cart');
     }
 };
 
-// Auto-init al cargar la página
 document.addEventListener('DOMContentLoaded', () => POS.init());

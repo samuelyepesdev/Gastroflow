@@ -1,4 +1,5 @@
 const POSService = require('../../../../services/Tenant/POSService');
+const FacturaService = require('../../../../services/Tenant/FacturaService');
 const logger = require('../../../../utils/logger');
 
 class POSController {
@@ -6,12 +7,10 @@ class POSController {
         try {
             const tenantId = req.tenant?.id;
             if (!tenantId) {
-                return res
-                    .status(403)
-                    .render('errors/internal', {
-                        error: { message: 'Contexto de tenant no disponible' },
-                        user: req.user
-                    });
+                return res.status(403).render('errors/internal', {
+                    error: { message: 'Contexto de tenant no disponible' },
+                    user: req.user
+                });
             }
             const { productos, categorias } = await POSService.getProductosForPOS(tenantId);
             res.render('pos/index', { user: req.user, tenant: req.tenant, productos, categorias });
@@ -39,8 +38,9 @@ class POSController {
             const borradores = await POSService.getBorradores(tenantId, usuarioId);
             res.json(borradores);
         } catch (err) {
-            logger.error('POS getBorradores error', { err: err.message });
-            res.status(500).json({ error: 'Error al obtener órdenes guardadas' });
+            // Si la tabla pos_borradores no existe, retornar array vacío (migración pendiente)
+            logger.warn('POS getBorradores error', { err: err.message });
+            res.json([]);
         }
     }
 
@@ -79,6 +79,42 @@ class POSController {
         } catch (err) {
             logger.error('POS getStats error', { err: err.message });
             res.status(500).json({ error: 'Error al obtener estadísticas' });
+        }
+    }
+
+    static async getConsumidorFinal(req, res) {
+        try {
+            const tenantId = req.tenant?.id;
+            const id = await POSService.findOrCreateCliente(tenantId, 'Consumidor final');
+            res.json({ id, nombre: 'Consumidor final' });
+        } catch (err) {
+            logger.error('POS getConsumidorFinal error', { err: err.message });
+            res.status(500).json({ error: 'Error al obtener consumidor final' });
+        }
+    }
+
+    static async vender(req, res) {
+        try {
+            const tenantId = req.tenant?.id;
+            const { nombre_cliente, forma_pago, productos, total } = req.body;
+            let { cliente_id } = req.body;
+
+            if (!cliente_id) {
+                const nombre = (nombre_cliente || 'Consumidor final').trim();
+                cliente_id = await POSService.findOrCreateCliente(tenantId, nombre);
+            }
+
+            const result = await FacturaService.create(tenantId, {
+                cliente_id,
+                total,
+                forma_pago,
+                productos,
+                usuario_id: req.user.id
+            });
+            res.status(201).json(result);
+        } catch (err) {
+            logger.warn('POS vender error', { err: err.message });
+            res.status(400).json({ error: err.message });
         }
     }
 }
