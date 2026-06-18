@@ -39,6 +39,7 @@ const finanzasRoutes = require('./tenant/finanzas');
 const cajaRoutes = require('./tenant/caja');
 const serviciosRoutes = require('./tenant/servicios');
 const soporteTenantRoutes = require('./tenant/soporte');
+const posRoutes = require('./tenant/pos');
 const NotificationController = require('../app/Http/Controllers/Tenant/NotificationController');
 
 // ...
@@ -56,7 +57,13 @@ router.get('/', optionalAuth, HomeController.index);
 // --- RUTAS DE TENANT (RESTAURANTE) ---
 router.use('/productos', requireAuthWithTenant, requirePlanFeature('productos'), productosRoutes);
 router.use('/perfil', requireAuthWithTenant, perfilRoutes);
-router.use('/clientes', requireAuthWithTenant, requirePlanFeature('clientes'), requirePermission('clientes.ver'), clientesRoutes);
+router.use(
+    '/clientes',
+    requireAuthWithTenant,
+    requirePlanFeature('clientes'),
+    requirePermission('clientes.ver'),
+    clientesRoutes
+);
 router.use('/facturas', requireAuthWithTenant, requirePlanFeature('ventas'), facturasRoutes);
 router.use('/mesas', requireAuthWithTenant, requirePlanFeature('mesas'), requirePermission('mesas.ver'), mesasRoutes);
 router.use('/cocina', requireAuthWithTenant, requirePlanFeature('cocina'), cocinaRoutes);
@@ -65,21 +72,71 @@ router.use('/ventas', requireAuthWithTenant, requirePlanFeature('ventas'), venta
 router.use('/eventos', requireAuthWithTenant, requirePlanFeature('eventos'), eventosRoutes);
 router.use('/inventario', requireAuthWithTenant, requirePlanFeature('inventario'), inventarioRoutes);
 router.use('/finanzas', requireAuthWithTenant, requirePermission('finanzas.ver'), finanzasRoutes);
-router.use('/proveedores', requireAuthWithTenant, requirePlanFeature('inventario'), requirePermission('proveedores.ver'), proveedoresRoutes);
+router.use(
+    '/proveedores',
+    requireAuthWithTenant,
+    requirePlanFeature('inventario'),
+    requirePermission('proveedores.ver'),
+    proveedoresRoutes
+);
 router.use('/recetas', requireAuthWithTenant, requirePlanFeature('recetas'), recetasRoutes);
 router.use('/dashboard', requireAuthWithTenant, requirePlanFeature('dashboard'), dashboardRoutes);
 router.use('/analitica', requireAuthWithTenant, requirePlanFeature('analitica'), analiticaRoutes);
-router.use('/whatsapp', requireAuthWithTenant, requirePlanFeature('configuracion'), requirePermission('whatsapp.ver'), whatsappRoutes);
-router.use('/costeo', requireAuth, restrictSuperadminToAdmin, costeoTenantContext, requirePlanFeature('costeo'), costeoRoutes);
+router.use(
+    '/whatsapp',
+    requireAuthWithTenant,
+    requirePlanFeature('configuracion'),
+    requirePermission('whatsapp.ver'),
+    whatsappRoutes
+);
+router.use(
+    '/costeo',
+    requireAuth,
+    restrictSuperadminToAdmin,
+    costeoTenantContext,
+    requirePlanFeature('costeo'),
+    costeoRoutes
+);
 router.use('/caja', requireAuthWithTenant, requirePermission('caja.ver'), cajaRoutes);
 router.use('/soporte', requireAuthWithTenant, soporteTenantRoutes);
+router.use('/pos', requireAuthWithTenant, requirePermission('pos.ver'), posRoutes);
 
 // --- RUTAS API ---
-router.use('/api/productos', requireAuthWithTenant, requirePlanFeature('productos'), requirePermission('productos.ver'), productosRoutes);
-router.use('/api/clientes', requireAuthWithTenant, requirePlanFeature('clientes'), requirePermission('clientes.ver'), clientesRoutes);
-router.use('/api/facturas', requireAuthWithTenant, requirePlanFeature('ventas'), requirePermission('facturas.ver'), facturasRoutes);
-router.use('/api/mesas', requireAuthWithTenant, requirePlanFeature('mesas'), requirePermission('mesas.ver'), mesasRoutes);
-router.use('/api/cocina', requireAuthWithTenant, requirePlanFeature('cocina'), requirePermission('cocina.ver'), cocinaRoutes);
+router.use(
+    '/api/productos',
+    requireAuthWithTenant,
+    requirePlanFeature('productos'),
+    requirePermission('productos.ver'),
+    productosRoutes
+);
+router.use(
+    '/api/clientes',
+    requireAuthWithTenant,
+    requirePlanFeature('clientes'),
+    requirePermission('clientes.ver'),
+    clientesRoutes
+);
+router.use(
+    '/api/facturas',
+    requireAuthWithTenant,
+    requirePlanFeature('ventas'),
+    requirePermission('facturas.ver'),
+    facturasRoutes
+);
+router.use(
+    '/api/mesas',
+    requireAuthWithTenant,
+    requirePlanFeature('mesas'),
+    requirePermission('mesas.ver'),
+    mesasRoutes
+);
+router.use(
+    '/api/cocina',
+    requireAuthWithTenant,
+    requirePlanFeature('cocina'),
+    requirePermission('cocina.ver'),
+    cocinaRoutes
+);
 router.use('/api/dashboard', requireAuthWithTenant, requirePlanFeature('dashboard'), dashboardRoutes);
 
 // --- RUTA DE NOTIFICACIONES (SSE) ---

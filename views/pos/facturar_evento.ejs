@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Facturación</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css"
+        rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="/css/core/index.css">
+    <link rel="stylesheet" href="/css/modulos/pos-eventos.css">
+</head>
+
+<body>
+    <%- include('../partials/navbar', { user: typeof user !=='undefined' ? user : null, tenant: typeof tenant
+        !=='undefined' ? tenant : null }) %>
+        <input type="hidden" id="eventoId"
+            value="<%= typeof eventoFiltro !== 'undefined' && eventoFiltro && eventoFiltro.id ? eventoFiltro.id : '' %>">
+
+        <div class="container py-5 max-w-5xl mx-auto">
+            <!-- Header -->
+            <div class="flow-header">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div>
+                        <h1 class="flow-title">Venta para Evento</h1>
+                        <p class="flow-subtitle">
+                            <% if (typeof eventoFiltro !=='undefined' && eventoFiltro) { %>
+                                <i class="bi bi-calendar-event me-1"></i><%= eventoFiltro.nombre %>
+                            <% } else { %>
+                                Comidas
+                            <% } %>
+                        </p>
+                    </div>
+                    <a href="/ventas" class="btn btn-flow-back">
+                        <i class="bi bi-list-ul me-2"></i>Ver Ventas
+                    </a>
+                </div>
+
+                <!-- Modern Stepper -->
+                <div class="stepper-container justify-content-center">
+                    <div class="step-item active" id="step1-btn" data-step="1">
+                        <div class="step-circle"><i class="bi bi-person"></i></div>
+                        <span class="step-label">Cliente</span>
+                    </div>
+                    <div class="step-divider"></div>
+                    <div class="step-item" id="step2-btn" data-step="2">
+                        <div class="step-circle"><i class="bi bi-box-seam"></i></div>
+                        <span class="step-label">Productos</span>
+                    </div>
+                    <div class="step-divider"></div>
+                    <div class="step-item" id="step3-btn" data-step="3">
+                        <div class="step-circle"><i class="bi bi-credit-card"></i></div>
+                        <span class="step-label">Pago</span>
+                    </div>
+                    <div class="step-divider"></div>
+                    <div class="step-item" id="step4-btn" data-step="4">
+                        <div class="step-circle"><i class="bi bi-file-earmark-text"></i></div>
+                        <span class="step-label">Facturar</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Content Card -->
+            <div class="flow-card">
+                <div class="flow-card-body">
+                    <!-- Step 1: Cliente -->
+                    <div class="step-content active" id="content-step-1">
+                        <div class="mb-4">
+                            <h2 class="h5 fw-bold mb-1">Paso 1: Seleccionar Cliente</h2>
+                            <p class="text-muted small">Busca o crea un nuevo cliente para la venta</p>
+                        </div>
+
+                        <div class="row g-3 mb-4">
+                            <div class="col-sm-9">
+                                <div class="search-container">
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-white border-end-0">
+                                            <i class="bi bi-search text-muted"></i>
+                                        </span>
+                                        <input type="text" id="cliente" class="form-control flow-input border-start-0"
+                                            placeholder="Consumidor final">
+                                        <input type="hidden" id="cliente_id">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-sm-3">
+                                <button class="btn btn-outline-primary w-100 py-2" data-bs-toggle="modal"
+                                    data-bs-target="#nuevoClienteModal">
+                                    <i class="bi bi-person-plus me-1"></i>Nuevo
+                                </button>
+                            </div>
+                        </div>
+
+                        <div id="infoCliente" class="info-box" style="display: none;">
+                            <div class="row">
+                                <div class="col-6">
+                                    <p class="text-uppercase fw-bold text-muted mb-1" style="font-size: 0.65rem;">Dirección</p>
+                                    <p id="direccionCliente" class="small mb-0 text-dark">—</p>
+                                </div>
+                                <div class="col-6">
+                                    <p class="text-uppercase fw-bold text-muted mb-1" style="font-size: 0.65rem;">Teléfono</p>
+                                    <p id="telefonoCliente" class="small mb-0 text-dark">—</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 2: Productos -->
+                    <div class="step-content" id="content-step-2">
+                        <div class="mb-4">
+                            <h2 class="h5 fw-bold mb-1">Paso 2: Agregar Productos</h2>
+                            <p class="text-muted small">Selecciona los productos solicitados para el evento</p>
+                        </div>
+
+                        <div class="search-container mb-4 position-relative">
+                            <div class="input-group">
+                                <span class="input-group-text bg-white border-end-0">
+                                    <i class="bi bi-search text-muted"></i>
+                                </span>
+                                <input type="text" id="producto" class="form-control flow-input border-start-0"
+                                    placeholder="Buscar por nombre o código..." autocomplete="off">
+                                <input type="hidden" id="producto_id">
+                            </div>
+                            <div id="resultadosProductos" class="search-results shadow-lg" style="display: none;"></div>
+                        </div>
+
+                        <div id="productosListaMobile" class="d-block d-md-none productos-mobile-list"></div>
+                        <div class="table-responsive d-none d-md-block">
+                            <table class="table table-pos align-middle">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Producto</th>
+                                        <th class="text-center">Cantidad</th>
+                                        <th class="text-end">Precio</th>
+                                        <th class="text-end">Subtotal</th>
+                                        <th class="text-center">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="productosTabla">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Step 3: Pago -->
+                    <div class="step-content" id="content-step-3">
+                        <div class="mb-4">
+                            <h2 class="h5 fw-bold mb-1">Paso 3: Forma de Pago</h2>
+                            <p class="text-muted small">Selecciona cómo se realizará el pago</p>
+                        </div>
+
+                        <div class="row g-4">
+                            <div class="col-md-7">
+                                <div class="list-group list-group-flush border rounded-3 overflow-hidden">
+                                    <label class="list-group-item d-flex align-items-center p-3 cursor-pointer">
+                                        <input class="form-check-input me-3" type="radio" name="forma_pago_radio" value="efectivo" checked>
+                                        <div class="flex-grow-1">
+                                            <span class="fw-medium">💵 Efectivo</span>
+                                        </div>
+                                    </label>
+                                    <label class="list-group-item d-flex align-items-center p-3 cursor-pointer">
+                                        <input class="form-check-input me-3" type="radio" name="forma_pago_radio" value="transferencia">
+                                        <div class="flex-grow-1">
+                                            <span class="fw-medium">💳 Transferencia / Bancos</span>
+                                        </div>
+                                    </label>
+                                </div>
+                                <select id="formaPago" class="d-none">
+                                    <option value="efectivo">efectivo</option>
+                                    <option value="transferencia">transferencia</option>
+                                </select>
+                            </div>
+                            <div class="col-md-5">
+                                <div class="info-box py-4 text-center">
+                                    <p class="text-uppercase fw-bold text-muted mb-2" style="font-size: 0.7rem; letter-spacing: 0.1em;">TOTAL A PAGAR</p>
+                                    <h3 class="display-6 fw-bold text-dark mb-0">$<span id="totalFactura">0.00</span></h3>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 4: Facturar -->
+                    <div class="step-content" id="content-step-4">
+                        <div class="mb-4">
+                            <h2 class="h5 fw-bold mb-1">Paso 4: Facturación</h2>
+                            <p class="text-muted small">Generar el comprobante de venta final</p>
+                        </div>
+
+                        <div class="alert alert-success border-0 bg-green-50 text-success d-flex align-items-center mb-4">
+                            <i class="bi bi-check-circle-fill me-2 h4 mb-0"></i>
+                            <span class="fw-medium">Listo para facturar. Verifique los montos.</span>
+                        </div>
+
+                        <div class="summary-card mb-4 border-0" style="background: #f8fafc;">
+                            <div class="d-flex justify-content-between py-2 border-bottom border-slate-200">
+                                <span class="text-muted">Subtotal</span>
+                                <span class="fw-bold" id="resumenSubtotal">$0.00</span>
+                            </div>
+                            <div class="d-flex justify-content-between py-2 border-bottom border-slate-200">
+                                <span class="text-muted">Descuentos</span>
+                                <span class="text-success fw-bold" id="resumenDescuento">$0.00</span>
+                            </div>
+                            <div class="d-flex justify-content-between py-3">
+                                <span class="h5 fw-bold mb-0">Total Final</span>
+                                <span class="h4 fw-bold text-primary mb-0">$<span id="resumenTotal">0.00</span></span>
+                            </div>
+                        </div>
+
+                        <div class="d-flex gap-2">
+                             <button type="button" class="btn btn-outline-secondary py-3 flex-grow-1" id="guardarPedido">
+                                <i class="bi bi-save me-2"></i>Guardar Borrador
+                            </button>
+                            <button class="btn btn-success btn-lg py-3 flex-grow-2" style="width: 60%" id="generarFactura">
+                                <i class="bi bi-receipt me-2"></i>Generar Factura
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Flow Navigation Buttons -->
+            <div class="d-flex justify-content-between mt-4">
+                <button class="btn btn-flow-back px-4" id="btnStepBack" style="visibility: hidden;">
+                    <i class="bi bi-arrow-left me-2"></i>Atrás
+                </button>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-outline-secondary px-4" id="nuevaVenta">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                    <button class="btn btn-flow-next px-4" id="btnStepNext">
+                        Siguiente<i class="bi bi-arrow-right ms-2"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <%- include('../partials/_version') %>
+        <%- include('_modales') %>
+
+        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@4.1.1/animate.min.css">
+        <script src="/js/modulos/facturas/facturas_core.js"></script>
+        <script src="/js/modulos/facturas/facturas_ui.js"></script>
+</body>
+
+</html>

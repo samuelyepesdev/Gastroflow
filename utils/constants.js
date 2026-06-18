@@ -69,7 +69,11 @@ const PERMISSIONS = {
     PERFIL_VER: 'perfil.ver',
     PERFIL_EDITAR: 'perfil.editar',
     // Reportes
-    REPORTE_MENSUAL_TEST: 'reporte_mensual.test'
+    REPORTE_MENSUAL_TEST: 'reporte_mensual.test',
+
+    // POS
+    POS_VER: 'pos.ver',
+    POS_VENDER: 'pos.vender'
 };
 
 // Secciones para agrupar permisos en el panel (clave = título, valor = prefijo o permisos)
@@ -92,7 +96,8 @@ const PERMISSION_SECTIONS = {
     Perfil: ['perfil.ver', 'perfil.editar'],
     Reportes: ['reporte_mensual.test'],
     WhatsApp: ['whatsapp.ver', 'whatsapp.ajustes'],
-    Proveedores: ['proveedores.ver', 'proveedores.editar']
+    Proveedores: ['proveedores.ver', 'proveedores.editar'],
+    POS: ['pos.ver', 'pos.vender']
 };
 
 // Table states
@@ -153,4 +158,3 @@ module.exports = {
     UNIDAD_MEDIDA,
     JWT_CONFIG
 };
-

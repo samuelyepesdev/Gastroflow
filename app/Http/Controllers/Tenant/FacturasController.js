@@ -20,7 +20,11 @@ class FacturasController {
                     eventoFiltro = { id: ev.id, nombre: ev.nombre };
                 }
             }
-            res.render('pos/index', { user: req.user, tenant: req.tenant, eventoFiltro: eventoFiltro || null });
+            res.render('pos/facturar_evento', {
+                user: req.user,
+                tenant: req.tenant,
+                eventoFiltro: eventoFiltro || null
+            });
         } catch (error) {
             console.error('Error al cargar pantalla de facturación:', error);
             res.status(500).render('errors/internal', { error, user: req.user });

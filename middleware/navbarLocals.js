@@ -53,7 +53,8 @@ module.exports = function navbarLocals(req, res, next) {
                 proveedores: hp('proveedores.ver') && cs('proveedores'),
                 caja: hp('caja.ver') && cs('caja'),
                 finanzas: hp('finanzas.ver'),
-                servicios: hp('servicios.ver') && cs('servicios')
+                servicios: hp('servicios.ver') && cs('servicios'),
+                pos: hp('pos.ver') && cs('ventas')
             };
 
             const hasMas =

@@ -42,6 +42,11 @@
                                                 class="bi bi-grid-3x3-gap"></i>Mesas</a></li>
                                     <% } %>
 
+                                        <% if (nav.can.pos) { %>
+                                            <li class="nav-item"><a class="nav-link" href="/pos"><i
+                                                        class="bi bi-lightning-charge"></i>POS</a></li>
+                                            <% } %>
+
                                         <% if (nav.can.ventas) { %>
                                             <li class="nav-item"><a class="nav-link" href="/ventas"><i
                                                         class="bi bi-receipt"></i>Ventas</a></li>

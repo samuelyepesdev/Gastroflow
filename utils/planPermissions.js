@@ -57,7 +57,9 @@ const PERMISSION_TO_MODULE = {
     'perfil.editar': 'configuracion',
     'reporte_mensual.test': 'configuracion',
     'cocina.ver_todo': 'cocina',
-    'cocina.ver_listos': 'cocina'
+    'cocina.ver_listos': 'cocina',
+    'pos.ver': 'ventas',
+    'pos.vender': 'ventas'
 };
 
 // Módulos que se usan en navbar / rutas (para allowedByPlan)
