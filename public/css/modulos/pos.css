@@ -23,6 +23,15 @@ body.pos-terminal-body .navbar {
     margin-bottom: 0 !important;
 }
 
+/* Navbar expandido en móvil/tablet: scroll interno propio para que el
+   usuario pueda llegar al perfil/cerrar sesión aunque body tenga overflow:hidden */
+body.pos-terminal-body .navbar-collapse.show,
+body.pos-terminal-body .navbar-collapse.collapsing {
+    max-height: calc(100vh - 56px);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
 .pos-wrapper {
     flex: 1;
     min-height: 0;
