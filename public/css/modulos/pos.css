@@ -11,6 +11,7 @@ body.pos-terminal-body {
     display: flex;
     flex-direction: column;
     height: 100vh;
+    height: 100dvh; /* Descuenta barras del navegador móvil (Brave, Chrome, Safari) */
     overflow: hidden;
     background: #f3f4f6;
     font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
@@ -636,7 +637,7 @@ body.pos-terminal-body .system-version-footer { display: none; }
     .pci-action-btn { font-size: 11px; padding: 1px 5px; border-radius: 5px; }
 
     /* ── Footer compacto ── */
-    .pos-cart-footer { padding: 8px 14px 10px; }
+    .pos-cart-footer { padding: 8px 14px calc(10px + env(safe-area-inset-bottom, 0px)); }
     .pos-totals { gap: 3px; margin-bottom: 8px; }
     .pos-total-row { font-size: 12.5px; }
     .pos-total-divider { margin: 1px 0; }
