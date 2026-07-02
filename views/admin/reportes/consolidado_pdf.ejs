@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Reporte Consolidado - <%= mes %></title>
+    <style>
+        @page {
+            size: A4;
+            margin: 15mm;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            color: #1e293b;
+            margin: 0;
+            padding: 0;
+            background-color: #ffffff;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        h1, h2, h3, h4 {
+            color: #0f172a;
+            margin-top: 0;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .text-right {
+            text-align: right;
+        }
+
+        .fw-bold {
+            font-weight: bold;
+        }
+
+        /* Utilidades de salto de página */
+        .page-break {
+            page-break-after: always;
+            break-after: page;
+        }
+
+        /* Estilo de la Portada / Resumen */
+        .cover-container {
+            padding: 20px 10px;
+        }
+
+        .cover-header {
+            text-align: center;
+            border-bottom: 3px solid #4f46e5;
+            padding-bottom: 25px;
+            margin-bottom: 40px;
+        }
+
+        .cover-header h1 {
+            font-size: 28px;
+            color: #4f46e5;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 5px;
+        }
+
+        .cover-header p {
+            font-size: 16px;
+            color: #64748b;
+            margin: 0;
+        }
+
+        /* Tarjetas de Resumen Global */
+        .stats-grid {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 40px;
+            gap: 15px;
+        }
+
+        .stat-card {
+            flex: 1;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+
+        .stat-card h3 {
+            font-size: 14px;
+            color: #64748b;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-card .value {
+            font-size: 26px;
+            font-weight: 800;
+            color: #4f46e5;
+        }
+
+        .stat-card.sales .value {
+            color: #10b981;
+        }
+
+        /* Tablas */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+            font-size: 12px;
+        }
+
+        th, td {
+            border: 1px solid #e2e8f0;
+            padding: 10px 12px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f1f5f9;
+            color: #334155;
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 11px;
+            letter-spacing: 0.5px;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f8fafc;
+        }
+
+        /* Estilo de los Reportes Individuales */
+        .report-section {
+            padding-top: 10px;
+        }
+
+        .report-header {
+            border-bottom: 2px solid #10b981;
+            padding-bottom: 15px;
+            margin-bottom: 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+
+        .report-header-left h2 {
+            font-size: 22px;
+            color: #10b981;
+            margin: 0;
+        }
+
+        .report-header-left p {
+            font-size: 13px;
+            color: #64748b;
+            margin: 5px 0 0 0;
+        }
+
+        .report-header-right {
+            text-align: right;
+            color: #94a3b8;
+            font-size: 11px;
+        }
+
+        .report-grid {
+            display: flex;
+            margin-bottom: 25px;
+            gap: 15px;
+        }
+
+        .report-card {
+            flex: 1;
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+        }
+
+        .report-card h3 {
+            font-size: 12px;
+            color: #166534;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+        }
+
+        .report-card .value {
+            font-size: 22px;
+            font-weight: 700;
+            color: #15803d;
+        }
+
+        .section-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: #1e293b;
+            border-left: 3px solid #10b981;
+            padding-left: 8px;
+            margin-bottom: 12px;
+            margin-top: 25px;
+        }
+
+        .footer {
+            text-align: center;
+            font-size: 11px;
+            color: #94a3b8;
+            margin-top: 40px;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 15px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- PÁGINA 1: Portada y Resumen Consolidado -->
+    <div class="cover-container page-break">
+        <div class="cover-header">
+            <h1>Reporte Consolidado de Ventas</h1>
+            <p>Resumen Mensual de Operaciones · <%= mes %></p>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card sales">
+                <h3>Total Ventas Consolidadas</h3>
+                <div class="value"><%= formatMoney(totals.totalSales) %></div>
+            </div>
+            <div class="stat-card">
+                <h3>Total Facturas / Pedidos</h3>
+                <div class="value"><%= totals.totalInvoices %></div>
+            </div>
+            <div class="stat-card">
+                <h3>Restaurantes Evaluados</h3>
+                <div class="value"><%= activeTenantsData.length %></div>
+            </div>
+        </div>
+
+        <h2>Resumen de Rendimiento por Restaurante</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Restaurante</th>
+                    <th>Slug</th>
+                    <th>Plan Contratado</th>
+                    <th class="text-right">Total Facturas</th>
+                    <th class="text-right">Ventas Totales (Bruto)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% if (activeTenantsData && activeTenantsData.length > 0) { %>
+                    <% activeTenantsData.forEach(d => { %>
+                        <tr>
+                            <td class="fw-bold"><%= d.tenant.nombre %></td>
+                            <td><%= d.tenant.slug %></td>
+                            <td><%= d.tenant.plan_nombre || 'Sin Plan' %></td>
+                            <td class="text-right"><%= d.facturasMes %></td>
+                            <td class="text-right fw-bold"><%= formatMoney(d.totalMes) %></td>
+                        </tr>
+                    <% }) %>
+                <% } else { %>
+                    <tr>
+                        <td colspan="5" class="text-center">No hay restaurantes registrados o activos.</td>
+                    </tr>
+                <% } %>
+            </tbody>
+        </table>
+
+        <div class="footer">
+            Este reporte consolidado fue generado de forma automática por el panel de administración.
+            <br><strong>Sistema GastroFlow</strong>
+        </div>
+    </div>
+
+    <!-- PÁGINAS SIGUIENTES: Reportes detallados por Restaurante -->
+    <% if (activeTenantsData && activeTenantsData.length > 0) { %>
+        <% activeTenantsData.forEach((d, index) => { %>
+            <div class="report-section <%= index < activeTenantsData.length - 1 ? 'page-break' : '' %>">
+                <div class="report-header">
+                    <div class="report-header-left">
+                        <h2><%= d.tenant.nombre %></h2>
+                        <p>Reporte Detallado Mensual · <%= mes %></p>
+                    </div>
+                    <div class="report-header-right">
+                        <span>Slug: <%= d.tenant.slug %></span><br>
+                        <span>Plan: <%= d.tenant.plan_nombre || 'Sin Plan' %></span>
+                    </div>
+                </div>
+
+                <% if (d.error) { %>
+                    <div style="background-color: #fef2f2; border: 1px solid #fca5a5; color: #991b1b; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                        <strong>Error al recuperar datos:</strong> <%= d.error %>
+                    </div>
+                <% } else { %>
+                    <div class="report-grid">
+                        <div class="report-card">
+                            <h3>Total Ingresos Brutos</h3>
+                            <div class="value"><%= formatMoney(d.totalMes) %></div>
+                        </div>
+                        <div class="report-card">
+                            <h3>Total Facturas/Pedidos</h3>
+                            <div class="value"><%= d.facturasMes %></div>
+                        </div>
+                    </div>
+
+                    <div class="section-title">Top 5 Productos más Vendidos</div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Producto</th>
+                                <th>Categoría</th>
+                                <th class="text-right">Cant. Vendida</th>
+                                <th class="text-right">Total Ventas</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% if (d.topProductos && d.topProductos.length > 0) { %>
+                                <% d.topProductos.forEach(p => { %>
+                                    <tr>
+                                        <td><%= p.nombre %></td>
+                                        <td><%= p.categoria_nombre %></td>
+                                        <td class="text-right"><%= p.total_cantidad %></td>
+                                        <td class="text-right"><%= formatMoney(p.total_ventas) %></td>
+                                    </tr>
+                                <% }) %>
+                            <% } else { %>
+                                <tr>
+                                    <td colspan="4" class="text-center">No hay datos de productos para este periodo.</td>
+                                </tr>
+                            <% } %>
+                        </tbody>
+                    </table>
+
+                    <div class="section-title">Ventas por Categoría</div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Categoría</th>
+                                <th class="text-right">Facturas</th>
+                                <th class="text-right">Total Ventas</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% if (d.porCategoria && d.porCategoria.length > 0) { %>
+                                <% d.porCategoria.forEach(c => { %>
+                                    <tr>
+                                        <td><%= c.categoria_nombre %></td>
+                                        <td class="text-right"><%= c.facturas_count %></td>
+                                        <td class="text-right"><%= formatMoney(c.total_ventas) %></td>
+                                    </tr>
+                                <% }) %>
+                            <% } else { %>
+                                <tr>
+                                    <td colspan="3" class="text-center">No hay datos de categorías para este periodo.</td>
+                                </tr>
+                            <% } %>
+                        </tbody>
+                    </table>
+                <% } %>
+
+                <div class="footer">
+                    Reporte mensual de rendimiento para <strong><%= d.tenant.nombre %></strong>.
+                    <br><strong>Sistema GastroFlow</strong>
+                </div>
+            </div>
+        <% }) %>
+    <% } %>
+
+</body>
+
+</html>

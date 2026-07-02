@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reportes Consolidados - Superadmin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/admin/reportes.css">
+</head>
+
+<body>
+    <%- include('../partials/navbar', { user, tenant: null, currentAdminPage: 'reportes' }) %>
+
+    <div class="container py-4">
+        <!-- Encabezado de la Página -->
+        <div class="admin-page-header d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+            <div class="d-flex align-items-center gap-3">
+                <div class="header-icon-box">
+                    <i class="bi bi-file-earmark-bar-graph-fill"></i>
+                </div>
+                <div>
+                    <h1>Exportar Reportes Consolidados</h1>
+                    <p class="text-muted mb-0 small">Genera y descarga un único PDF detallado con el resumen de ventas y rendimiento de todos los restaurantes.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <!-- Columna Izquierda: Configuración de Exportación -->
+            <div class="col-md-5">
+                <div class="card card-premium mb-4">
+                    <div class="card-header-premium">
+                        <i class="bi bi-sliders me-2"></i>Parámetros de Exportación
+                    </div>
+                    <div class="card-body p-4">
+                        <form id="exportForm" action="/admin/reportes/exportar-pdf" method="GET" target="_blank">
+                            <div class="mb-3">
+                                <label for="mes" class="form-label fw-bold text-secondary">Seleccionar Mes</label>
+                                <select class="form-select form-select-lg shadow-sm" id="mes" name="mes" required>
+                                    <% 
+                                    const meses = [
+                                        'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 
+                                        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+                                    ];
+                                    const currentMonth = new Date().getMonth(); // 0-11
+                                    // Seleccionar por defecto el mes anterior (o diciembre si estamos en enero)
+                                    const defaultMonthIndex = currentMonth === 0 ? 11 : currentMonth - 1;
+                                    meses.forEach((m, index) => { 
+                                    %>
+                                        <option value="<%= index + 1 %>" <%= index === defaultMonthIndex ? 'selected' : '' %>>
+                                            <%= m %>
+                                        </option>
+                                    <% }); %>
+                                </select>
+                            </div>
+
+                            <div class="mb-4">
+                                <label for="anio" class="form-label fw-bold text-secondary">Seleccionar Año</label>
+                                <select class="form-select form-select-lg shadow-sm" id="anio" name="anio" required>
+                                    <% 
+                                    const currentYear = new Date().getFullYear();
+                                    for (let y = currentYear; y >= currentYear - 3; y--) { 
+                                    %>
+                                        <option value="<%= y %>" <%= y === currentYear ? 'selected' : '' %>>
+                                            <%= y %>
+                                        </option>
+                                    <% } %>
+                                </select>
+                            </div>
+
+                            <button type="submit" class="btn btn-premium w-100 py-3 shadow-lg">
+                                <i class="bi bi-file-earmark-pdf-fill me-2 fs-5"></i>
+                                Generar y Descargar PDF
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Columna Derecha: Restaurantes Incluidos -->
+            <div class="col-md-7">
+                <div class="card card-premium">
+                    <div class="card-header-premium d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-building me-2"></i>Restaurantes Activos a Exportar</span>
+                        <span class="badge bg-light text-primary rounded-pill"><%= tenants.length %> activos</span>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="list-group list-group-flush list-group-premium">
+                            <% if (tenants && tenants.length > 0) { %>
+                                <% tenants.forEach(t => { %>
+                                    <div class="list-group-item d-flex align-items-center justify-content-between p-3">
+                                        <div class="d-flex align-items-center gap-3">
+                                            <div class="restaurant-avatar">
+                                                <i class="bi bi-shop fs-5"></i>
+                                            </div>
+                                            <div>
+                                                <h6 class="mb-0 fw-bold"><%= t.nombre %></h6>
+                                                <span class="text-muted small"><%= t.slug %> · <%= t.plan_nombre || 'Sin Plan' %></span>
+                                            </div>
+                                        </div>
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 rounded-pill">
+                                            <i class="bi bi-check-circle-fill me-1"></i>Activo
+                                        </span>
+                                    </div>
+                                <% }); %>
+                            <% } else { %>
+                                <div class="p-4 text-center text-muted">
+                                    <i class="bi bi-exclamation-triangle fs-3 text-warning d-block mb-2"></i>
+                                    No hay restaurantes activos registrados en el sistema.
+                                </div>
+                            <% } %>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>

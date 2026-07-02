@@ -21,6 +21,9 @@
                 class="nav-link <%= (typeof currentAdminPage!=='undefined'&&currentAdminPage==='ventas')?'active':'' %>"
                 href="/admin/ventas"><i class="bi bi-trash"></i>Ventas</a></li>
         <li class="nav-item"><a
+                class="nav-link <%= (typeof currentAdminPage!=='undefined'&&currentAdminPage==='reportes')?'active':'' %>"
+                href="/admin/reportes"><i class="bi bi-file-earmark-bar-graph"></i>Reportes</a></li>
+        <li class="nav-item"><a
                 class="nav-link <%= (typeof currentAdminPage!=='undefined'&&currentAdminPage==='soporte')?'active':'' %>"
                 href="/admin/soporte"><i class="bi bi-headset"></i>Soporte</a></li>
         <% if (nav.can.whatsapp) { %>

@@ -1,0 +1,125 @@
+/* ==========================================================================
+   admin-reportes.css — Estilos Premium para Exportación de Reportes Consolidados
+   ========================================================================== */
+
+body {
+    background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+    min-height: 100vh;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+.navbar {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Encabezado Principal */
+.admin-page-header {
+    background: #ffffff;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
+    padding: 1.5rem 2rem;
+    border-left: 5px solid #4f46e5;
+    margin-bottom: 2rem;
+}
+
+.admin-page-header h1 {
+    font-weight: 800;
+    color: #0f172a;
+    font-size: 1.85rem;
+    margin-bottom: 0.25rem;
+}
+
+.header-icon-box {
+    width: 48px;
+    height: 48px;
+    background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    font-size: 1.5rem;
+    box-shadow: 0 4px 15px rgba(79, 70, 229, 0.35);
+}
+
+/* Tarjetas Premium */
+.card-premium {
+    border: none;
+    border-radius: 20px;
+    box-shadow: 0 10px 35px rgba(0, 0, 0, 0.05);
+    background: #ffffff;
+    overflow: hidden;
+}
+
+.card-header-premium {
+    background: linear-gradient(90deg, #1e293b 0%, #334155 100%);
+    color: #ffffff;
+    font-weight: 700;
+    padding: 1.25rem 1.5rem;
+    font-size: 1.1rem;
+    border-bottom: none;
+}
+
+/* Botón Premium */
+.btn-premium {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: #ffffff;
+    font-weight: 700;
+    border: none;
+    border-radius: 14px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 20px rgba(220, 38, 38, 0.25);
+}
+
+.btn-premium:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 25px rgba(220, 38, 38, 0.4);
+    background: linear-gradient(135deg, #f87171 0%, #b91c1c 100%);
+    color: #ffffff;
+}
+
+.btn-premium:active {
+    transform: translateY(1px);
+}
+
+/* Inputs y Selects */
+.form-select {
+    border-radius: 12px;
+    border: 1.5px solid #cbd5e1;
+    font-weight: 500;
+    color: #1e293b;
+    padding: 0.75rem 1.2rem;
+    transition: all 0.2s ease;
+}
+
+.form-select:focus {
+    border-color: #6366f1;
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
+}
+
+/* Listado de Restaurantes */
+.list-group-premium .list-group-item {
+    border-color: #f1f5f9;
+    transition: all 0.2s ease;
+}
+
+.list-group-premium .list-group-item:hover {
+    background-color: #f8fafc;
+}
+
+.restaurant-avatar {
+    width: 42px;
+    height: 42px;
+    background: #e0f2fe;
+    color: #0284c7;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.badge.bg-success-subtle {
+    background-color: #dcfce7 !important;
+    color: #166534 !important;
+}

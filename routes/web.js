@@ -29,6 +29,7 @@ const adminPermisosRoutes = require('./admin/permisos');
 const adminVentasRoutes = require('./admin/ventas');
 const adminSoporteRoutes = require('./admin/soporte');
 const adminDashboardRoutes = require('./admin/dashboard');
+const adminReportesRoutes = require('./admin/reportes');
 const eventosRoutes = require('./tenant/eventos');
 const inventarioRoutes = require('./tenant/inventario');
 const recetasRoutes = require('./tenant/recetas');
@@ -154,5 +155,6 @@ router.use('/admin/planes', requireAuth, adminPlanesRoutes);
 router.use('/admin/permisos', requireAuth, adminPermisosRoutes);
 router.use('/admin/ventas', requireAuth, adminVentasRoutes);
 router.use('/admin/soporte', requireAuth, adminSoporteRoutes);
+router.use('/admin/reportes', requireAuth, adminReportesRoutes);
 
 module.exports = router;
