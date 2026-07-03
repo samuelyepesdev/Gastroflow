@@ -89,10 +89,10 @@ $(document).ready(function () {
                     } else {
                         const Toast = Swal.mixin({
                             toast: true,
-                            position: 'top-end',
+                            position: 'bottom-end',
                             showConfirmButton: false,
-                            timer: 4000,
-                            timerProgressBar: true
+                            timer: 2000,
+                            timerProgressBar: false
                         });
 
                         Toast.fire({

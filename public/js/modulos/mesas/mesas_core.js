@@ -156,10 +156,10 @@ window.refreshMesaIfOpen = async function(mesaId, action) {
     }
     const Toast = Swal.mixin({
       toast: true,
-      position: 'top-end',
+      position: 'bottom-end',
       showConfirmButton: false,
-      timer: 3000,
-      timerProgressBar: true
+      timer: 1500,
+      timerProgressBar: false
     });
     Toast.fire({
       icon: 'info',

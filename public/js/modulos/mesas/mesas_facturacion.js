@@ -186,22 +186,22 @@ $(function () {
 
                 rowsHtml += `
                   <tr class="item-row" data-id="${it.id}" data-precio="${precio}" style="cursor: pointer; transition: background-color 0.2s;">
-                    <td style="padding: 10px 8px;">
+                    <td style="padding: 10px 8px; width: 35px; min-width: 35px;">
                       <input type="checkbox" class="form-check-input check-item" data-id="${it.id}" style="transform: scale(1.1);">
                     </td>
-                    <td style="text-align: left; padding: 10px 8px;">
-                      <div class="fw-bold text-dark text-truncate" style="max-width: 220px;" title="${nombre}">${nombre}</div>
-                      <small class="text-muted fs-7">${mod.formatear(precio)} c/u</small>
+                    <td style="text-align: left; padding: 10px 8px; min-width: 140px;">
+                      <div class="fw-bold text-dark text-truncate" style="max-width: 160px;" title="${nombre}">${nombre}</div>
+                      <small class="text-muted fs-7" style="white-space: nowrap;">${mod.formatear(precio)} c/u</small>
                     </td>
-                    <td class="text-center" style="padding: 10px 8px;">
+                    <td class="text-center" style="padding: 10px 8px; width: 85px; min-width: 85px; white-space: nowrap;">
                       ${cantidad > 1
                         ? `<input type="number" class="form-control form-control-sm input-cantidad-item text-center mx-auto px-1" 
-                             value="${cantidad}" min="1" max="${cantidad}" disabled style="width: 70px; height: 32px; font-weight: 600;">`
+                             value="${cantidad}" min="1" max="${cantidad}" style="width: 70px; height: 32px; font-weight: 600;">`
                         : `<span class="badge bg-light text-secondary border border-secondary-subtle px-2 py-1" style="font-weight: 500;">1</span>
                            <input type="hidden" class="input-cantidad-item" value="1">`
                       }
                     </td>
-                    <td class="text-end fw-bold item-subtotal-display text-success" data-original-subtotal="${subtotal}" style="padding: 10px 8px;">
+                    <td class="text-end fw-bold item-subtotal-display text-success" data-original-subtotal="${subtotal}" style="padding: 10px 8px; min-width: 100px; white-space: nowrap;">
                       ${mod.formatear(subtotal)}
                     </td>
                   </tr>
@@ -216,15 +216,15 @@ $(function () {
 
             const tableHtml = `
               <div class="container-fluid p-0" style="font-family: inherit;">
-                <p class="text-muted small mb-3 text-start"><i class="bi bi-info-circle me-1"></i> Seleccione los productos a facturar y defina la cantidad en caso de ser múltiple:</p>
+                <p class="text-muted small mb-3 text-start"><i class="bi bi-info-circle me-1"></i> Seleccione los productos y ajuste la cantidad a facturar de cada uno (puede editar la cantidad directamente):</p>
                 <div class="table-responsive rounded border shadow-sm mb-2" style="max-height: 320px;">
                   <table class="table table-sm table-hover align-middle mb-0" id="tabla-pago-masivo" style="font-size: 0.9rem;">
                      <thead class="table-light sticky-top border-bottom bg-white">
                        <tr>
-                         <th width="35" style="padding: 10px 8px;"><input type="checkbox" id="check-todos-items" class="form-check-input" style="transform: scale(1.1);"></th>
-                         <th class="text-start" style="padding: 10px 8px;">Producto</th>
-                         <th width="80" class="text-center" style="padding: 10px 8px;">Cant</th>
-                         <th class="text-end" style="padding: 10px 8px;">Subtotal</th>
+                         <th width="35" style="padding: 10px 8px; min-width: 35px;"><input type="checkbox" id="check-todos-items" class="form-check-input" style="transform: scale(1.1);"></th>
+                         <th class="text-start" style="padding: 10px 8px; min-width: 140px; white-space: nowrap;">Producto</th>
+                         <th width="85" class="text-center" style="padding: 10px 8px; min-width: 85px; white-space: nowrap;">Cant</th>
+                         <th class="text-end" style="padding: 10px 8px; min-width: 100px; white-space: nowrap;">Subtotal</th>
                        </tr>
                      </thead>
                      <tbody class="bg-white">
@@ -282,10 +282,8 @@ $(function () {
                 table.on('change', '.check-item', function(e) {
                   e.stopPropagation();
                   const row = $(this).closest('tr');
-                  const inputCant = row.find('.input-cantidad-item[type="number"]');
                   const isChecked = $(this).is(':checked');
                   
-                  inputCant.prop('disabled', !isChecked);
                   if (isChecked) {
                     row.css('background-color', 'rgba(13, 110, 253, 0.075)');
                   } else {
@@ -300,11 +298,27 @@ $(function () {
 
                 table.on('input change', '.input-cantidad-item', function(e) {
                   e.stopPropagation();
+                  const row = $(this).closest('tr');
+                  const check = row.find('.check-item');
                   const max = Number($(this).attr('max'));
                   let val = Number($(this).val()) || 1;
                   
-                  if (val > max) $(this).val(max);
-                  if (val < 1) $(this).val(1);
+                  if (val > max) {
+                    val = max;
+                    $(this).val(max);
+                  }
+                  if (val < 1) {
+                    val = 1;
+                    $(this).val(1);
+                  }
+
+                  // Si cambian la cantidad, seleccionamos automáticamente el checkbox
+                  if (!check.is(':checked')) {
+                    check.prop('checked', true);
+                    row.css('background-color', 'rgba(13, 110, 253, 0.075)');
+                    const allChecked = table.find('.check-item').length === table.find('.check-item:checked').length;
+                    checkTodos.prop('checked', allChecked);
+                  }
 
                   actualizarTotal();
                 });
