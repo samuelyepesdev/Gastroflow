@@ -93,6 +93,53 @@ window.refreshMesas = async function() {
     const resp = await fetch('/api/mesas/listar');
     const mesas = await resp.json();
     if (!Array.isArray(mesas)) return;
+
+    // --- FALLBACK DE SINCRO: Si el panel de pedido está abierto, verificar si sigue abierto en el backend ---
+    if (window.MesasModule.pedidoActual) {
+      const openMesaId = window.MesasModule.pedidoActual.mesa_id;
+      const mesaData = mesas.find(m => Number(m.id) === Number(openMesaId));
+
+      // Si la mesa física ahora está libre, o si no está en la lista (para mesas virtuales que al estar libres se omiten),
+      // o si tiene 0 pedidos abiertos, significa que el pedido actual fue cerrado, facturado o cancelado.
+      if (!mesaData || mesaData.estado === 'libre' || Number(mesaData.pedidos_abiertos || 0) === 0) {
+        console.log(`[Polling] Detectado cierre/facturación de mesa abierta ${openMesaId}. Limpiando interfaz...`);
+
+        // Cerramos todos los modales Bootstrap abiertos
+        $('.modal').each(function() {
+          const modalInstance = bootstrap.Modal.getInstance(this);
+          if (modalInstance) {
+            modalInstance.hide();
+          }
+        });
+
+        // Cerrar cualquier SweetAlert abierto
+        if (typeof Swal !== 'undefined' && typeof Swal.close === 'function') {
+          Swal.close();
+        }
+
+        // Ocultar panel lateral (offcanvas)
+        const canvasEl = document.getElementById('canvasPedido');
+        if (canvasEl && window.MesasModule.canvas) {
+          window.MesasModule.canvas.hide();
+        }
+
+        // Limpiar datos del módulo
+        window.MesasModule.pedidoActual = null;
+        window.MesasModule.items = [];
+        window.MesasModule.propinaPedido = 0;
+        if (typeof window.MesasModule.renderItems === 'function') {
+          window.MesasModule.renderItems();
+        }
+
+        Swal.fire({
+          icon: 'info',
+          title: 'Mesa Facturada',
+          text: 'Esta mesa ha sido facturada por otro usuario o dispositivo.',
+          timer: 3000
+        });
+      }
+    }
+
     mesas.forEach(m => {
       const card = document.querySelector(`.mesa-card[data-mesa-id="${m.id}"]`);
       if (!card) return;

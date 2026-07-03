@@ -29,9 +29,34 @@ class PagarMultiplesItemsService {
                 tenantId,
                 itemId,
                 forma_pago,
-                cantidad: Number(cantidad)
+                cantidad: Number(cantidad),
+                skipEvent: true
             });
             resultados.push({ itemId, result });
+        }
+
+        // Emitir un solo evento SSE para todos los ítems procesados
+        if (items.length > 0 && items[0].itemId) {
+            try {
+                const db = require('../../../config/database');
+                const [rows] = await db.query(
+                    'SELECT pi.pedido_id, p.mesa_id FROM pedido_items pi INNER JOIN pedidos p ON pi.pedido_id = p.id WHERE pi.id = ? AND p.tenant_id = ?',
+                    [items[0].itemId, tenantId]
+                );
+                if (rows.length > 0) {
+                    const { pedido_id, mesa_id } = rows[0];
+                    const WhatsAppService = require('../WhatsAppService');
+                    WhatsAppService.events.emit('orderCreated', {
+                        tenantId,
+                        pedidoId: pedido_id,
+                        mesaId: mesa_id,
+                        action: 'items_updated'
+                    });
+                }
+            } catch (err) {
+                // eslint-disable-next-line no-console
+                console.error('Error al emitir evento SSE en PagarMultiplesItemsService:', err);
+            }
         }
 
         return {

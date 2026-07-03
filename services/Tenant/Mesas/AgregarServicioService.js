@@ -27,6 +27,20 @@ class AgregarServicioService {
             await db.query("UPDATE mesas SET estado = 'ocupada' WHERE id = ? AND tenant_id = ?", [mesaId, tenantId]);
         }
 
+        // Emitir evento SSE
+        try {
+            const WhatsAppService = require('../WhatsAppService');
+            WhatsAppService.events.emit('orderCreated', {
+                tenantId,
+                pedidoId,
+                mesaId,
+                action: 'items_updated'
+            });
+        } catch (err) {
+            // eslint-disable-next-line no-console
+            console.error('Error al emitir evento SSE en AgregarServicioService:', err);
+        }
+
         return { id: result.insertId };
     }
 }

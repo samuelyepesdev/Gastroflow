@@ -27,6 +27,41 @@ $(function () {
         return;
       }
 
+      // --- VERIFICAR ESTADO DEL PEDIDO ANTES DE CONTINUAR ---
+      try {
+        const checkResp = await fetch(`/api/mesas/pedidos/${mod.pedidoActual.id}`);
+        if (checkResp.ok) {
+          const checkData = await checkResp.json();
+          if (checkData.pedido?.estado === 'cerrado' || checkData.pedido?.estado === 'cancelado') {
+            $('.modal').each(function() {
+              const modalInstance = bootstrap.Modal.getInstance(this);
+              if (modalInstance) modalInstance.hide();
+            });
+            if (typeof Swal !== 'undefined' && typeof Swal.close === 'function') {
+              Swal.close();
+            }
+            if (mod.canvas) {
+              mod.canvas.hide();
+            }
+            mod.pedidoActual = null;
+            mod.items = [];
+            mod.propinaPedido = 0;
+            mod.renderItems();
+
+            Swal.fire({
+              icon: 'info',
+              title: 'Mesa Facturada',
+              text: 'Esta mesa ya ha sido facturada por otro usuario o dispositivo.',
+              confirmButtonText: 'Entendido'
+            });
+            if (typeof refreshMesas === 'function') refreshMesas();
+            return;
+          }
+        }
+      } catch (errCheck) {
+        console.error('Error al verificar estado del pedido:', errCheck);
+      }
+
       if (mod.items.length === 0) {
         Swal.fire({ icon: 'warning', title: 'El pedido no tiene items' });
         return;

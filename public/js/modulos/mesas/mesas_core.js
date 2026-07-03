@@ -82,6 +82,11 @@ window.refreshMesaIfOpen = async function(mesaId, action) {
         }
       });
 
+      // Cerrar cualquier SweetAlert abierto
+      if (typeof Swal !== 'undefined' && typeof Swal.close === 'function') {
+        Swal.close();
+      }
+
       // Ocultar panel lateral (offcanvas)
       const canvasEl = document.getElementById('canvasPedido');
       if (canvasEl && window.MesasModule.canvas) {
@@ -115,6 +120,11 @@ window.refreshMesaIfOpen = async function(mesaId, action) {
           modalInstance.hide();
         }
       });
+
+      // Cerrar cualquier SweetAlert abierto
+      if (typeof Swal !== 'undefined' && typeof Swal.close === 'function') {
+        Swal.close();
+      }
 
       // Ocultar offcanvas
       const canvasEl = document.getElementById('canvasPedido');

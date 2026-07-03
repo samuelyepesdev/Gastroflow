@@ -22,9 +22,13 @@ class NotificationController {
         // Callback para cuando se crea un pedido
         const onOrderCreated = data => {
             // Solo enviar si el pedido pertenece al tenant del cliente suscrito
-            if (data.tenantId === tenantId) {
+            if (String(data.tenantId) === String(tenantId)) {
+                // eslint-disable-next-line no-console
                 console.log(`[SSE] Notificando pedido ${data.pedidoId} a Tenant ${tenantId}`);
                 res.write(`data: ${JSON.stringify({ event: 'orderCreated', ...data })}\n\n`);
+                if (typeof res.flush === 'function') {
+                    res.flush();
+                }
             }
         };
 
@@ -39,10 +43,16 @@ class NotificationController {
 
         // Enviar un mensaje inicial para confirmar conexión
         res.write(`data: ${JSON.stringify({ event: 'connected', tenantId })}\n\n`);
+        if (typeof res.flush === 'function') {
+            res.flush();
+        }
 
         // Mantener la conexión enviando keep-alive cada 30 segundos
         const keepAlive = setInterval(() => {
             res.write(': keepalive\n\n');
+            if (typeof res.flush === 'function') {
+                res.flush();
+            }
         }, 30000);
 
         req.on('close', () => {

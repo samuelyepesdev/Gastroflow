@@ -34,6 +34,7 @@ class AgregarItemService {
             const msg = (check.faltantes || [])
                 .map(f => `${f.insumo_nombre}: requiere ${f.requerido} ${f.unidad_base}, disponible ${f.disponible}`)
                 .join('; ');
+            // eslint-disable-next-line no-console
             console.warn('[Inventario] Vendiendo sin stock suficiente: ' + msg);
         }
 
@@ -48,6 +49,20 @@ class AgregarItemService {
 
         if (mesaId) {
             await db.query("UPDATE mesas SET estado = 'ocupada' WHERE id = ? AND tenant_id = ?", [mesaId, tenantId]);
+        }
+
+        // Emitir evento SSE
+        try {
+            const WhatsAppService = require('../WhatsAppService');
+            WhatsAppService.events.emit('orderCreated', {
+                tenantId,
+                pedidoId,
+                mesaId,
+                action: 'items_updated'
+            });
+        } catch (err) {
+            // eslint-disable-next-line no-console
+            console.error('Error al emitir evento SSE en AgregarItemService:', err);
         }
 
         return { id: result.insertId };

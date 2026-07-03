@@ -4,13 +4,13 @@ class PagarItemIndividualService {
     /**
      * @description Marca un item individual como pagado o parcialmente pagado.
      */
-    static async execute({ tenantId, itemId, forma_pago, cantidad }) {
+    static async execute({ tenantId, itemId, forma_pago, cantidad, skipEvent }) {
         if (!forma_pago || !['efectivo', 'transferencia'].includes(forma_pago)) {
             throw new Error('Forma de pago requerida y debe ser efectivo o transferencia');
         }
 
         const [rows] = await db.query(
-            `SELECT pi.id, pi.cantidad, pi.precio_unitario, pi.pedido_id, pi.producto_id, pi.unidad_medida, pi.estado, pi.nota, pi.enviado_at, pi.preparado_at, pi.listo_at, pi.servido_at, pi.subtotal 
+            `SELECT pi.id, pi.cantidad, pi.precio_unitario, pi.pedido_id, pi.producto_id, pi.unidad_medida, pi.estado, pi.nota, pi.enviado_at, pi.preparado_at, pi.listo_at, pi.servido_at, pi.subtotal, p.mesa_id 
              FROM pedido_items pi 
              INNER JOIN pedidos p ON pi.pedido_id = p.id 
              WHERE pi.id = ? AND p.tenant_id = ?`,
@@ -98,6 +98,22 @@ class PagarItemIndividualService {
                 );
             } else {
                 await db.query(`UPDATE pedido_items SET pagado = 1, forma_pago = ? WHERE id = ?`, [forma_pago, itemId]);
+            }
+        }
+
+        if (!skipEvent) {
+            // Emitir evento SSE
+            try {
+                const WhatsAppService = require('../WhatsAppService');
+                WhatsAppService.events.emit('orderCreated', {
+                    tenantId,
+                    pedidoId: item.pedido_id,
+                    mesaId: item.mesa_id,
+                    action: 'items_updated'
+                });
+            } catch (err) {
+                // eslint-disable-next-line no-console
+                console.error('Error al emitir evento SSE en PagarItemIndividualService:', err);
             }
         }
 
