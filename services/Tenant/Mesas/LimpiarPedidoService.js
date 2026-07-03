@@ -35,6 +35,20 @@ class LimpiarPedidoService {
             await connection.query("UPDATE mesas SET estado = 'libre' WHERE id = ?", [mesaId]);
 
             await connection.commit();
+
+            // Emitir evento SSE para notificar en tiempo real que se limpió/canceló el pedido
+            try {
+                const WhatsAppService = require('../WhatsAppService');
+                WhatsAppService.events.emit('orderCreated', {
+                    tenantId,
+                    pedidoId,
+                    mesaId,
+                    action: 'cancelled'
+                });
+            } catch (err) {
+                console.error('Error al emitir evento de limpieza SSE:', err);
+            }
+
             return { message: 'Pedido limpiado y mesa liberada correctamente', mesaId };
         } catch (error) {
             await connection.rollback();

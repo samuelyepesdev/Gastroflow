@@ -22,6 +22,13 @@ class FacturarPedidoService {
             }
             const pedido = pedidos[0];
 
+            if (pedido.estado === 'cerrado') {
+                throw new Error('El pedido ya ha sido cerrado y facturado');
+            }
+            if (pedido.estado === 'cancelado') {
+                throw new Error('El pedido ha sido cancelado');
+            }
+
             const [items] = await connection.query(
                 `SELECT * FROM pedido_items WHERE pedido_id = ? AND estado <> 'cancelado'`,
                 [pedidoId]
@@ -168,6 +175,19 @@ class FacturarPedidoService {
             );
 
             await connection.commit();
+
+            // Emitir evento SSE para notificar en tiempo real que se facturó el pedido
+            try {
+                const WhatsAppService = require('../WhatsAppService');
+                WhatsAppService.events.emit('orderCreated', {
+                    tenantId,
+                    pedidoId,
+                    mesaId: pedido.mesa_id,
+                    action: 'billed'
+                });
+            } catch (err) {
+                console.error('Error al emitir evento de facturación SSE:', err);
+            }
 
             // --- INTEGRACIÓN CON FINANZAS ---
             // Se ejecuta DESPUÉS del commit para no bloquear la transacción principal.

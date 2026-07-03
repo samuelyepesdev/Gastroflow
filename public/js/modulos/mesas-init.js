@@ -85,7 +85,7 @@ $(document).ready(function () {
                     const isQR = data.origen === 'qr';
 
                     if (typeof window.refreshMesaIfOpen === 'function' && data.mesaId) {
-                        window.refreshMesaIfOpen(data.mesaId);
+                        window.refreshMesaIfOpen(data.mesaId, data.action);
                     } else {
                         const Toast = Swal.mixin({
                             toast: true,
