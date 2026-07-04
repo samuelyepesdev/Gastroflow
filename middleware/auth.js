@@ -104,10 +104,21 @@ function restrictSuperadminToAdmin(req, res, next) {
     const rol = req.user && String(req.user.rol || '').toLowerCase();
     if (rol === 'superadmin') {
         const path = (req.baseUrl || '') + (req.path || '');
-        const allowed = path.startsWith('/admin/tenants') || path.startsWith('/admin/dashboard') || path.startsWith('/admin/sistema') || path.startsWith('/admin/planes') || path.startsWith('/admin/permisos') || path.startsWith('/admin/ventas') || path.startsWith('/costeo') || path === '/auth/logout';
+        const allowed =
+            path.startsWith('/admin/tenants') ||
+            path.startsWith('/admin/dashboard') ||
+            path.startsWith('/admin/sistema') ||
+            path.startsWith('/admin/planes') ||
+            path.startsWith('/admin/permisos') ||
+            path.startsWith('/admin/ventas') ||
+            path.startsWith('/admin/landing') ||
+            path.startsWith('/costeo') ||
+            path === '/auth/logout';
         if (!allowed) {
             if (req.xhr || req.headers.accept?.indexOf('json') > -1) {
-                return res.status(403).json({ error: 'Acceso restringido. Solo gestión de restaurantes y costeo.' });
+                return res
+                    .status(403)
+                    .json({ error: 'Acceso restringido. Solo gestión de restaurantes, landing page y costeo.' });
             }
             return res.redirect('/admin/dashboard');
         }
@@ -147,4 +158,3 @@ module.exports = {
     restrictSuperadminToAdmin,
     optionalAuth
 };
-

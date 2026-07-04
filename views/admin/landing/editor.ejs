@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editor de Landing Page - GastroFlow</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Quill Rich Text Editor CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css" rel="stylesheet" />
+
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #0f172a;
+            color: #f8fafc;
+            min-height: 100vh;
+        }
+
+        .editor-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem 1.5rem;
+        }
+
+        .header-icon-box {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, #3fc46d 0%, #2e7d46 100%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.5rem;
+            box-shadow: 0 4px 15px rgba(63, 196, 109, 0.25);
+        }
+
+        .glass-card {
+            background: rgba(30, 41, 59, 0.35);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .inner-card {
+            background: rgba(15, 23, 42, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        /* Vertical Tabs Styling */
+        .nav-pills .nav-link {
+            color: #94a3b8;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            padding: 0.9rem 1.2rem;
+            font-weight: 500;
+            border-radius: 10px;
+            transition: all 0.25s ease;
+            margin-bottom: 0.5rem;
+            text-align: left;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .nav-pills .nav-link:hover {
+            color: #3fc46d;
+            background: rgba(63, 196, 109, 0.05);
+            border-color: rgba(63, 196, 109, 0.15);
+        }
+
+        .nav-pills .nav-link.active {
+            color: #fff;
+            background: linear-gradient(135deg, #3fc46d 0%, #2e7d46 100%);
+            border-color: transparent;
+            font-weight: 600;
+            box-shadow: 0 4px 15px rgba(63, 196, 109, 0.2);
+        }
+
+        @media (max-width: 767.98px) {
+            .nav-pills {
+                flex-direction: row !important;
+                overflow-x: auto;
+                flex-wrap: nowrap;
+                white-space: nowrap;
+                padding-bottom: 0.75rem;
+                margin-bottom: 1rem;
+                -webkit-overflow-scrolling: touch;
+            }
+            .nav-pills .nav-link {
+                margin-right: 0.5rem;
+                margin-bottom: 0 !important;
+                display: inline-flex;
+            }
+        }
+
+        .form-label {
+            font-weight: 600;
+            color: #cbd5e1;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .form-control, .form-select {
+            background-color: rgba(15, 23, 42, 0.55);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: #f8fafc;
+            border-radius: 10px;
+            padding: 0.75rem 1rem;
+            transition: all 0.2s ease;
+        }
+
+        .form-control:focus, .form-select:focus {
+            background-color: rgba(15, 23, 42, 0.75);
+            border-color: #3fc46d;
+            color: #f8fafc;
+            box-shadow: 0 0 0 4px rgba(63, 196, 109, 0.15);
+        }
+
+        .form-control::placeholder {
+            color: #64748b;
+        }
+
+        .color-picker-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            background: rgba(15, 23, 42, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 10px;
+            padding: 0.5rem 1rem;
+        }
+
+        .color-picker-input {
+            width: 42px;
+            height: 42px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            background: none;
+        }
+
+        .color-picker-value {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.95rem;
+            color: #cbd5e1;
+            font-weight: 600;
+        }
+
+        /* Mock Landing Preview */
+        .preview-mockup {
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            background: var(--preview-bg, #080b09);
+            padding: 1.5rem;
+            position: relative;
+            overflow: hidden;
+            min-height: 200px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+
+        .preview-btn {
+            background: linear-gradient(135deg, var(--preview-primary-hover, #2e7d46) 0%, var(--preview-primary, #3fc46d) 100%);
+            color: #fff;
+            border: none;
+            padding: 0.6rem 1.5rem;
+            font-weight: 700;
+            border-radius: 8px;
+            margin-top: 1rem;
+            font-size: 0.9rem;
+        }
+
+        .preview-accent-text {
+            color: var(--preview-accent, #c2604f);
+            font-weight: 800;
+        }
+
+        /* Quill Custom Dark Theme */
+        .ql-toolbar.ql-snow {
+            border-color: rgba(255, 255, 255, 0.08) !important;
+            background: rgba(30, 41, 59, 0.5) !important;
+            border-top-left-radius: 10px;
+            border-top-right-radius: 10px;
+        }
+
+        .ql-container.ql-snow {
+            border-color: rgba(255, 255, 255, 0.08) !important;
+            background: rgba(15, 23, 42, 0.45) !important;
+            border-bottom-left-radius: 10px;
+            border-bottom-right-radius: 10px;
+            color: #f8fafc !important;
+            font-family: inherit;
+            font-size: 0.95rem;
+        }
+
+        .ql-editor {
+            min-height: 280px;
+        }
+
+        .ql-snow .ql-stroke {
+            stroke: #cbd5e1 !important;
+        }
+
+        .ql-snow .ql-fill {
+            fill: #cbd5e1 !important;
+        }
+
+        .ql-snow .ql-picker {
+            color: #cbd5e1 !important;
+        }
+
+        .ql-snow .ql-picker-options {
+            background-color: #1e293b !important;
+            border-color: rgba(255, 255, 255, 0.08) !important;
+        }
+
+        .btn-save {
+            background: linear-gradient(135deg, #3fc46d 0%, #2e7d46 100%);
+            border: none;
+            color: white;
+            padding: 0.85rem 3rem;
+            font-weight: 700;
+            border-radius: 10px;
+            transition: all 0.25s ease;
+            box-shadow: 0 4px 15px rgba(63, 196, 109, 0.2);
+        }
+
+        .btn-save:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(63, 196, 109, 0.3);
+            color: #fff;
+        }
+
+        /* Sticky Action Footer */
+        .editor-footer {
+            position: sticky;
+            bottom: 0;
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(12px);
+            margin: 2rem -2rem -2rem;
+            padding: 1.5rem 2rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            border-bottom-left-radius: 20px;
+            border-bottom-right-radius: 20px;
+            z-index: 10;
+        }
+    </style>
+</head>
+
+<body>
+    <%- include('../../partials/navbar', { user, tenant: null, currentAdminPage: 'landing' }) %>
+
+    <div class="editor-container">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 mb-4">
+            <div class="d-flex align-items-center gap-3">
+                <div class="header-icon-box">
+                    <i class="bi bi-grid-1x2-fill"></i>
+                </div>
+                <div>
+                    <h1 class="h3 mb-1">Editor de Landing Page</h1>
+                    <p class="text-muted mb-0">Modifica el diseño, textos, métricas, planes y contenido legal de tu landing page.</p>
+                </div>
+            </div>
+            <a href="/" target="_blank" class="btn btn-outline-light btn-sm d-flex align-items-center gap-2 px-3 py-2" style="border-radius: 8px;">
+                <i class="bi bi-eye"></i> Ver Landing Page <i class="bi bi-box-arrow-up-right ms-1" style="font-size: 11px;"></i>
+            </a>
+        </div>
+
+        <% if (success) { %>
+            <div class="alert alert-success alert-dismissible fade show border-0 bg-success bg-opacity-25 text-success mb-4" role="alert" style="border-radius: 12px;">
+                <i class="bi bi-check-circle-fill me-2"></i>¡Configuración guardada exitosamente! Los cambios ya están en vivo.
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        <% } %>
+
+        <% if (error) { %>
+            <div class="alert alert-danger alert-dismissible fade show border-0 bg-danger bg-opacity-25 text-danger mb-4" role="alert" style="border-radius: 12px;">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i><%= error %>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        <% } %>
+
+        <form action="/admin/landing" method="POST" class="glass-card">
+            <!-- CSRF protection if applicable, or we use dynamic body update -->
+            
+            <div class="row g-4">
+                <!-- Navigation Column -->
+                <div class="col-md-3">
+                    <div class="nav flex-column nav-pills" id="editorTabs" role="tablist" aria-orientation="vertical">
+                        <button class="nav-link active" id="design-tab" data-bs-toggle="pill" data-bs-target="#design" type="button" role="tab" aria-controls="design" aria-selected="true">
+                            <i class="bi bi-brush"></i> Diseño y Colores
+                        </button>
+                        <button class="nav-link" id="hero-tab" data-bs-toggle="pill" data-bs-target="#hero" type="button" role="tab" aria-controls="hero" aria-selected="false">
+                            <i class="bi bi-window-sidebar"></i> Cabecera Hero
+                        </button>
+                        <button class="nav-link" id="problems-tab" data-bs-toggle="pill" data-bs-target="#problems" type="button" role="tab" aria-controls="problems" aria-selected="false">
+                            <i class="bi bi-exclamation-octagon"></i> Problemas
+                        </button>
+                        <button class="nav-link" id="features-tab" data-bs-toggle="pill" data-bs-target="#features" type="button" role="tab" aria-controls="features" aria-selected="false">
+                            <i class="bi bi-stars"></i> Funciones
+                        </button>
+                        <button class="nav-link" id="results-tab" data-bs-toggle="pill" data-bs-target="#results" type="button" role="tab" aria-controls="results" aria-selected="false">
+                            <i class="bi bi-graph-up-arrow"></i> Resultados / ROI
+                        </button>
+                        <button class="nav-link" id="plans-tab" data-bs-toggle="pill" data-bs-target="#plans" type="button" role="tab" aria-controls="plans" aria-selected="false">
+                            <i class="bi bi-tags"></i> Planes de Precios
+                        </button>
+                        <button class="nav-link" id="testimonials-tab" data-bs-toggle="pill" data-bs-target="#testimonials" type="button" role="tab" aria-controls="testimonials" aria-selected="false">
+                            <i class="bi bi-chat-square-quote"></i> Testimonios
+                        </button>
+                        <button class="nav-link" id="cta-tab" data-bs-toggle="pill" data-bs-target="#cta" type="button" role="tab" aria-controls="cta" aria-selected="false">
+                            <i class="bi bi-phone-vibrate"></i> Contacto y CTA
+                        </button>
+                        <button class="nav-link" id="legal-tab" data-bs-toggle="pill" data-bs-target="#legal" type="button" role="tab" aria-controls="legal" aria-selected="false">
+                            <i class="bi bi-shield-lock"></i> Textos Legales
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Forms Column -->
+                <div class="col-md-9">
+                    <div class="tab-content" id="editorTabsContent">
+                        
+                        <!-- 1. DESIGN AND COLORS -->
+                        <div class="tab-pane fade show active" id="design" role="tabpanel" aria-labelledby="design-tab">
+                            <h4 class="mb-3">Diseño y Paleta de Colores</h4>
+                            <p class="text-muted small mb-4">Modifica los colores principales para adaptarlos a la marca de tu restaurante.</p>
+                            
+                            <div class="row g-4">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Color Primario</label>
+                                        <div class="color-picker-wrapper">
+                                            <input type="color" class="color-picker-input" id="color_primary" name="color_primary" value="<%= settings.color_primary %>">
+                                            <span class="color-picker-value" id="val_color_primary"><%= settings.color_primary %></span>
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Color Primario (Hover)</label>
+                                        <div class="color-picker-wrapper">
+                                            <input type="color" class="color-picker-input" id="color_primary_hover" name="color_primary_hover" value="<%= settings.color_primary_hover %>">
+                                            <span class="color-picker-value" id="val_color_primary_hover"><%= settings.color_primary_hover %></span>
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Color de Acento</label>
+                                        <div class="color-picker-wrapper">
+                                            <input type="color" class="color-picker-input" id="color_accent" name="color_accent" value="<%= settings.color_accent %>">
+                                            <span class="color-picker-value" id="val_color_accent"><%= settings.color_accent %></span>
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Color de Fondo General</label>
+                                        <div class="color-picker-wrapper">
+                                            <input type="color" class="color-picker-input" id="color_background" name="color_background" value="<%= settings.color_background %>">
+                                            <span class="color-picker-value" id="val_color_background"><%= settings.color_background %></span>
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Color del Texto</label>
+                                        <div class="color-picker-wrapper">
+                                            <input type="color" class="color-picker-input" id="color_text" name="color_text" value="<%= settings.color_text %>">
+                                            <span class="color-picker-value" id="val_color_text"><%= settings.color_text %></span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Vista Previa en Tiempo Real</label>
+                                    <div class="preview-mockup" id="live-preview-mockup">
+                                        <h5 style="color: var(--preview-text, #e9efea); font-weight: 800; font-size: 1.1rem; margin-bottom: 0.2rem;">
+                                            Gastro<span style="color: var(--preview-primary, #3fc46d);">Flow</span>
+                                        </h5>
+                                        <p style="color: var(--preview-text, #e9efea); font-size: 0.85rem; max-width: 25ch; margin-bottom: 0.5rem; opacity: 0.85;">
+                                            Una plataforma para <span class="preview-accent-text">controlar el margen</span>.
+                                        </p>
+                                        <button class="preview-btn">Solicitar demo</button>
+                                    </div>
+                                    <small class="text-muted d-block mt-2">La vista previa refleja el color de fondo, primario, acento y texto de la landing page.</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 2. HERO -->
+                        <div class="tab-pane fade" id="hero" role="tabpanel" aria-labelledby="hero-tab">
+                            <h4 class="mb-3">Sección Héroe (Pantalla Principal)</h4>
+                            <p class="text-muted small mb-4">Es el primer mensaje que verá el visitante al ingresar a la landing page.</p>
+
+                            <div class="mb-3">
+                                <label class="form-label" for="hero_title">Título Principal</label>
+                                <input type="text" class="form-control" id="hero_title" name="hero_title" value="<%= settings.hero_title %>" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label" for="hero_highlight">Frase Destacada del Título</label>
+                                <input type="text" class="form-control" id="hero_highlight" name="hero_highlight" value="<%= settings.hero_highlight %>" required>
+                                <small class="text-muted">Esta frase tendrá el degradado y color de acento/primario.</small>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label" for="hero_subtitle">Subtítulo / Introducción</label>
+                                <textarea class="form-control" id="hero_subtitle" name="hero_subtitle" rows="4" required><%= settings.hero_subtitle %></textarea>
+                            </div>
+                        </div>
+
+                        <!-- 3. PROBLEMS -->
+                        <div class="tab-pane fade" id="problems" role="tabpanel" aria-labelledby="problems-tab">
+                            <h4 class="mb-3">Sección de Problemas</h4>
+                            <p class="text-muted small mb-4">Identifica los puntos de dolor comunes de los restauranteros.</p>
+
+                            <div class="row g-3 mb-4">
+                                <div class="col-md-6">
+                                    <label class="form-label" for="problems_title">Título de la Sección</label>
+                                    <input type="text" class="form-control" id="problems_title" name="problems_title" value="<%= settings.problems_title %>" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label" for="problems_subtitle">Subtítulo</label>
+                                    <input type="text" class="form-control" id="problems_subtitle" name="problems_subtitle" value="<%= settings.problems_subtitle %>" required>
+                                </div>
+                            </div>
+
+                            <div class="inner-card">
+                                <h6 class="mb-3 text-success"><i class="bi bi-1-circle-fill me-2"></i>Problema 1</h6>
+                                <div class="mb-2">
+                                    <label class="form-label" for="problem1_title">Título del Problema</label>
+                                    <input type="text" class="form-control form-control-sm" id="problem1_title" name="problem1_title" value="<%= settings.problem1_title %>" required>
+                                </div>
+                                <div>
+                                    <label class="form-label" for="problem1_desc">Descripción corta</label>
+                                    <textarea class="form-control form-control-sm" id="problem1_desc" name="problem1_desc" rows="2" required><%= settings.problem1_desc %></textarea>
+                                </div>
+                            </div>
+
+                            <div class="inner-card">
+                                <h6 class="mb-3 text-success"><i class="bi bi-2-circle-fill me-2"></i>Problema 2</h6>
+                                <div class="mb-2">
+                                    <label class="form-label" for="problem2_title">Título del Problema</label>
+                                    <input type="text" class="form-control form-control-sm" id="problem2_title" name="problem2_title" value="<%= settings.problem2_title %>" required>
+                                </div>
+                                <div>
+                                    <label class="form-label" for="problem2_desc">Descripción corta</label>
+                                    <textarea class="form-control form-control-sm" id="problem2_desc" name="problem2_desc" rows="2" required><%= settings.problem2_desc %></textarea>
+                                </div>
+                            </div>
+
+                            <div class="inner-card">
+                                <h6 class="mb-3 text-success"><i class="bi bi-3-circle-fill me-2"></i>Problema 3</h6>
+                                <div class="mb-2">
+                                    <label class="form-label" for="problem3_title">Título del Problema</label>
+                                    <input type="text" class="form-control form-control-sm" id="problem3_title" name="problem3_title" value="<%= settings.problem3_title %>" required>
+                                </div>
+                                <div>
+                                    <label class="form-label" for="problem3_desc">Descripción corta</label>
+                                    <textarea class="form-control form-control-sm" id="problem3_desc" name="problem3_desc" rows="2" required><%= settings.problem3_desc %></textarea>
+                                </div>
+                            </div>
+
+                            <div class="inner-card">
+                                <h6 class="mb-3 text-success"><i class="bi bi-4-circle-fill me-2"></i>Problema 4</h6>
+                                <div class="mb-2">
+                                    <label class="form-label" for="problem4_title">Título del Problema</label>
+                                    <input type="text" class="form-control form-control-sm" id="problem4_title" name="problem4_title" value="<%= settings.problem4_title %>" required>
+                                </div>
+                                <div>
+                                    <label class="form-label" for="problem4_desc">Descripción corta</label>
+                                    <textarea class="form-control form-control-sm" id="problem4_desc" name="problem4_desc" rows="2" required><%= settings.problem4_desc %></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 4. FEATURES -->
+                        <div class="tab-pane fade" id="features" role="tabpanel" aria-labelledby="features-tab">
+                            <h4 class="mb-3">Sección de Funcionalidades (Grid)</h4>
+                            <p class="text-muted small mb-4">Muestra los 6 módulos integrados más importantes de GastroFlow.</p>
+
+                            <div class="row g-3 mb-4">
+                                <div class="col-md-6">
+                                    <label class="form-label" for="features_title">Título de la Sección</label>
+                                    <input type="text" class="form-control" id="features_title" name="features_title" value="<%= settings.features_title %>" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label" for="features_subtitle">Subtítulo</label>
+                                    <input type="text" class="form-control" id="features_subtitle" name="features_subtitle" value="<%= settings.features_subtitle %>" required>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="inner-card">
+                                        <h6 class="mb-3 text-primary"><i class="bi bi-check-circle-fill me-2"></i>Función 1</h6>
+                                        <div class="mb-2">
+                                            <input type="text" class="form-control form-control-sm" name="feature1_title" value="<%= settings.feature1_title %>" placeholder="Título" required>
+                                        </div>
+                                        <textarea class="form-control form-control-sm" name="feature1_desc" rows="2" placeholder="Descripción" required><%= settings.feature1_desc %></textarea>
+                                    </div>
+                                    <div class="inner-card">
+                                        <h6 class="mb-3 text-primary"><i class="bi bi-check-circle-fill me-2"></i>Función 2</h6>
+                                        <div class="mb-2">
+                                            <input type="text" class="form-control form-control-sm" name="feature2_title" value="<%= settings.feature2_title %>" placeholder="Título" required>
+                                        </div>
+                                        <textarea class="form-control form-control-sm" name="feature2_desc" rows="2" placeholder="Descripción" required><%= settings.feature2_desc %></textarea>
+                                    </div>
+                                    <div class="inner-card">
+                                        <h6 class="mb-3 text-primary"><i class="bi bi-check-circle-fill me-2"></i>Función 3</h6>
+                                        <div class="mb-2">
+                                            <input type="text" class="form-control form-control-sm" name="feature3_title" value="<%= settings.feature3_title %>" placeholder="Título" required>
+                                        </div>
+                                        <textarea class="form-control form-control-sm" name="feature3_desc" rows="2" placeholder="Descripción" required><%= settings.feature3_desc %></textarea>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="inner-card">
+                                        <h6 class="mb-3 text-primary"><i class="bi bi-check-circle-fill me-2"></i>Función 4</h6>
+                                        <div class="mb-2">
+                                            <input type="text" class="form-control form-control-sm" name="feature4_title" value="<%= settings.feature4_title %>" placeholder="Título" required>
+                                        </div>
+                                        <textarea class="form-control form-control-sm" name="feature4_desc" rows="2" placeholder="Descripción" required><%= settings.feature4_desc %></textarea>
+                                    </div>
+                                    <div class="inner-card">
+                                        <h6 class="mb-3 text-primary"><i class="bi bi-check-circle-fill me-2"></i>Función 5</h6>
+                                        <div class="mb-2">
+                                            <input type="text" class="form-control form-control-sm" name="feature5_title" value="<%= settings.feature5_title %>" placeholder="Título" required>
+                                        </div>
+                                        <textarea class="form-control form-control-sm" name="feature5_desc" rows="2" placeholder="Descripción" required><%= settings.feature5_desc %></textarea>
+                                    </div>
+                                    <div class="inner-card">
+                                        <h6 class="mb-3 text-primary"><i class="bi bi-check-circle-fill me-2"></i>Función 6</h6>
+                                        <div class="mb-2">
+                                            <input type="text" class="form-control form-control-sm" name="feature6_title" value="<%= settings.feature6_title %>" placeholder="Título" required>
+                                        </div>
+                                        <textarea class="form-control form-control-sm" name="feature6_desc" rows="2" placeholder="Descripción" required><%= settings.feature6_desc %></textarea>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 5. RESULTS -->
+                        <div class="tab-pane fade" id="results" role="tabpanel" aria-labelledby="results-tab">
+                            <h4 class="mb-3">Sección de Resultados / ROI</h4>
+                            <p class="text-muted small mb-4">Destaca las métricas reales y el impacto numérico de la herramienta.</p>
+
+                            <div class="mb-4">
+                                <label class="form-label" for="results_title">Título Principal</label>
+                                <input type="text" class="form-control" id="results_title" name="results_title" value="<%= settings.results_title %>" required>
+                            </div>
+                            <div class="mb-4">
+                                <label class="form-label" for="results_subtitle">Descripción / Subtítulo</label>
+                                <input type="text" class="form-control" id="results_subtitle" name="results_subtitle" value="<%= settings.results_subtitle %>" required>
+                            </div>
+
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <div class="inner-card text-center">
+                                        <h6 class="text-success mb-3">Métrica 1</h6>
+                                        <input type="text" class="form-control text-center font-monospace mb-2" name="result1_metric" value="<%= settings.result1_metric %>" placeholder="Ej: -12%" required>
+                                        <input type="text" class="form-control text-center" name="result1_label" value="<%= settings.result1_label %>" placeholder="Ej: en mermas" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="inner-card text-center">
+                                        <h6 class="text-success mb-3">Métrica 2</h6>
+                                        <input type="text" class="form-control text-center font-monospace mb-2" name="result2_metric" value="<%= settings.result2_metric %>" placeholder="Ej: +18%" required>
+                                        <input type="text" class="form-control text-center" name="result2_label" value="<%= settings.result2_label %>" placeholder="Ej: velocidad" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="inner-card text-center">
+                                        <h6 class="text-success mb-3">Métrica 3</h6>
+                                        <input type="text" class="form-control text-center font-monospace mb-2" name="result3_metric" value="<%= settings.result3_metric %>" placeholder="Ej: 100%" required>
+                                        <input type="text" class="form-control text-center" name="result3_label" value="<%= settings.result3_label %>" placeholder="Ej: trazabilidad" required>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 6. PLANS -->
+                        <div class="tab-pane fade" id="plans" role="tabpanel" aria-labelledby="plans-tab">
+                            <h4 class="mb-3">Planes y Precios</h4>
+                            <p class="text-muted small mb-4">Gestiona la información de los planes comerciales.</p>
+
+                            <div class="row g-3 mb-4">
+                                <div class="col-md-6">
+                                    <label class="form-label" for="plans_title">Título de la Sección</label>
+                                    <input type="text" class="form-control" id="plans_title" name="plans_title" value="<%= settings.plans_title %>" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label" for="plans_subtitle">Subtítulo o Resumen</label>
+                                    <input type="text" class="form-control" id="plans_subtitle" name="plans_subtitle" value="<%= settings.plans_subtitle %>" required>
+                                </div>
+                            </div>
+
+                            <!-- Plan 1 -->
+                            <div class="inner-card">
+                                <h6 class="mb-3 text-info"><i class="bi bi-tag-fill me-2"></i>Plan 1: Básico</h6>
+                                <div class="row g-3 mb-2">
+                                    <div class="col-md-4">
+                                        <label class="form-label small">Nombre del Plan</label>
+                                        <input type="text" class="form-control form-control-sm" name="plan1_title" value="<%= settings.plan1_title %>" required>
+                                    </div>
+                                    <div class="col-md-8">
+                                        <label class="form-label small">Breve Descripción</label>
+                                        <input type="text" class="form-control form-control-sm" name="plan1_desc" value="<%= settings.plan1_desc %>" required>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="form-label small">Características del Plan (Una por línea)</label>
+                                    <textarea class="form-control form-control-sm font-monospace" name="plan1_features" rows="4" placeholder="Ej:&#10;Punto de Venta (POS)&#10;Ventas y Facturación" required><%= settings.plan1_features %></textarea>
+                                </div>
+                            </div>
+
+                            <!-- Plan 2 -->
+                            <div class="inner-card">
+                                <h6 class="mb-3 text-info"><i class="bi bi-tag-fill me-2"></i>Plan 2: Recomendado</h6>
+                                <div class="row g-3 mb-2">
+                                    <div class="col-md-4">
+                                        <label class="form-label small">Nombre del Plan</label>
+                                        <input type="text" class="form-control form-control-sm" name="plan2_title" value="<%= settings.plan2_title %>" required>
+                                    </div>
+                                    <div class="col-md-8">
+                                        <label class="form-label small">Breve Descripción</label>
+                                        <input type="text" class="form-control form-control-sm" name="plan2_desc" value="<%= settings.plan2_desc %>" required>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="form-label small">Características del Plan (Una por línea)</label>
+                                    <textarea class="form-control form-control-sm font-monospace" name="plan2_features" rows="4" placeholder="Ej:&#10;Todo lo del Plan Básico&#10;Fichas técnicas y Costeo" required><%= settings.plan2_features %></textarea>
+                                </div>
+                            </div>
+
+                            <!-- Plan 3 -->
+                            <div class="inner-card">
+                                <h6 class="mb-3 text-info"><i class="bi bi-tag-fill me-2"></i>Plan 3: Multisede / Enterprise</h6>
+                                <div class="row g-3 mb-2">
+                                    <div class="col-md-4">
+                                        <label class="form-label small">Nombre del Plan</label>
+                                        <input type="text" class="form-control form-control-sm" name="plan3_title" value="<%= settings.plan3_title %>" required>
+                                    </div>
+                                    <div class="col-md-8">
+                                        <label class="form-label small">Breve Descripción</label>
+                                        <input type="text" class="form-control form-control-sm" name="plan3_desc" value="<%= settings.plan3_desc %>" required>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="form-label small">Características del Plan (Una por línea)</label>
+                                    <textarea class="form-control form-control-sm font-monospace" name="plan3_features" rows="4" placeholder="Ej:&#10;Todo lo del Plan Pro&#10;Dashboard multi-sede" required><%= settings.plan3_features %></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 7. TESTIMONIALS -->
+                        <div class="tab-pane fade" id="testimonials" role="tabpanel" aria-labelledby="testimonials-tab">
+                            <h4 class="mb-3">Testimonios de Clientes</h4>
+                            <p class="text-muted small mb-4">Gestiona la sección de pruebas sociales e historias de éxito de restauranteros.</p>
+
+                            <div class="mb-4">
+                                <label class="form-label" for="testimonials_title">Título de la Sección</label>
+                                <input type="text" class="form-control" id="testimonials_title" name="testimonials_title" value="<%= settings.testimonials_title %>" required>
+                            </div>
+
+                            <div class="inner-card">
+                                <h6 class="mb-3 text-warning"><i class="bi bi-quote me-2"></i>Testimonio 1</h6>
+                                <div class="row g-3 mb-2">
+                                    <div class="col-md-6">
+                                        <label class="form-label small">Autor</label>
+                                        <input type="text" class="form-control form-control-sm" name="testimonial1_author" value="<%= settings.testimonial1_author %>" required>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label small">Rol / Restaurante</label>
+                                        <input type="text" class="form-control form-control-sm" name="testimonial1_role" value="<%= settings.testimonial1_role %>" required>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="form-label small">Cita o Comentario</label>
+                                    <textarea class="form-control form-control-sm" name="testimonial1_quote" rows="2" required><%= settings.testimonial1_quote %></textarea>
+                                </div>
+                            </div>
+
+                            <div class="inner-card">
+                                <h6 class="mb-3 text-warning"><i class="bi bi-quote me-2"></i>Testimonio 2</h6>
+                                <div class="row g-3 mb-2">
+                                    <div class="col-md-6">
+                                        <label class="form-label small">Autor</label>
+                                        <input type="text" class="form-control form-control-sm" name="testimonial2_author" value="<%= settings.testimonial2_author %>" required>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label small">Rol / Restaurante</label>
+                                        <input type="text" class="form-control form-control-sm" name="testimonial2_role" value="<%= settings.testimonial2_role %>" required>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="form-label small">Cita o Comentario</label>
+                                    <textarea class="form-control form-control-sm" name="testimonial2_quote" rows="2" required><%= settings.testimonial2_quote %></textarea>
+                                </div>
+                            </div>
+
+                            <div class="inner-card">
+                                <h6 class="mb-3 text-warning"><i class="bi bi-quote me-2"></i>Testimonio 3</h6>
+                                <div class="row g-3 mb-2">
+                                    <div class="col-md-6">
+                                        <label class="form-label small">Autor</label>
+                                        <input type="text" class="form-control form-control-sm" name="testimonial3_author" value="<%= settings.testimonial3_author %>" required>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label small">Rol / Restaurante</label>
+                                        <input type="text" class="form-control form-control-sm" name="testimonial3_role" value="<%= settings.testimonial3_role %>" required>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="form-label small">Cita o Comentario</label>
+                                    <textarea class="form-control form-control-sm" name="testimonial3_quote" rows="2" required><%= settings.testimonial3_quote %></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 8. CTA AND CONTACT -->
+                        <div class="tab-pane fade" id="cta" role="tabpanel" aria-labelledby="cta-tab">
+                            <h4 class="mb-3">Contacto de Ventas y CTA</h4>
+                            <p class="text-muted small mb-4">Configura los números de contacto del equipo de ventas y los mensajes de conversión.</p>
+
+                            <div class="inner-card">
+                                <h6 class="mb-3 text-success"><i class="bi bi-whatsapp me-2"></i>Canal de WhatsApp Directo</h6>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label" for="whatsapp_number">Número de Celular (con código de país)</label>
+                                        <input type="text" class="form-control font-monospace" id="whatsapp_number" name="whatsapp_number" value="<%= settings.whatsapp_number %>" placeholder="Ej: 573173994234" required>
+                                        <small class="text-muted">Solo números, sin signos + ni espacios.</small>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label" for="whatsapp_message">Mensaje Predeterminado al Hacer Clic</label>
+                                        <input type="text" class="form-control" id="whatsapp_message" name="whatsapp_message" value="<%= settings.whatsapp_message %>" required>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="inner-card">
+                                <h6 class="mb-3"><i class="bi bi-lightning-fill me-2"></i>Cierre y Conversión Final (CTA)</h6>
+                                <div class="mb-3">
+                                    <label class="form-label" for="cta_title">Título del Cierre</label>
+                                    <input type="text" class="form-control" id="cta_title" name="cta_title" value="<%= settings.cta_title %>" required>
+                                </div>
+                                <div>
+                                    <label class="form-label" for="cta_subtitle">Subtítulo de Cierre</label>
+                                    <textarea class="form-control" id="cta_subtitle" name="cta_subtitle" rows="3" required><%= settings.cta_subtitle %></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 9. LEGAL (WITH QUILL EDITOR) -->
+                        <div class="tab-pane fade" id="legal" role="tabpanel" aria-labelledby="legal-tab">
+                            <h4 class="mb-3">Políticas Legales y Términos</h4>
+                            <p class="text-muted small mb-4">Redacta el contenido legal con formato enriquecido WYSIWYG sin necesidad de escribir etiquetas HTML.</p>
+
+                            <!-- Hidden inputs to submit Quill HTML content -->
+                            <input type="hidden" name="privacy_policy" id="privacy_policy_input">
+                            <input type="hidden" name="terms_conditions" id="terms_conditions_input">
+
+                            <div class="mb-4">
+                                <label class="form-label d-block mb-2">Política de Privacidad</label>
+                                <div id="editor_privacy" style="min-height: 250px;"><%- settings.privacy_policy %></div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label d-block mb-2">Términos y Condiciones de Uso</label>
+                                <div id="editor_terms" style="min-height: 250px;"><%- settings.terms_conditions %></div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+            <!-- Botones de Envío -->
+            <div class="d-flex justify-content-end gap-3 editor-footer">
+                <button type="reset" class="btn btn-outline-secondary px-4 py-2" style="border-radius: 10px;">Descartar Cambios</button>
+                <button type="submit" class="btn btn-save px-5 py-2 d-flex align-items-center gap-2">
+                    <i class="bi bi-save"></i> Guardar Configuración
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Quill Library -->
+    <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
+    
+    <script>
+        // Initialize Quill editors
+        const quillPrivacy = new Quill('#editor_privacy', {
+            theme: 'snow',
+            modules: {
+                toolbar: [
+                    [{ 'header': [1, 2, 3, false] }],
+                    ['bold', 'italic', 'underline', 'strike'],
+                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                    ['link', 'clean']
+                ]
+            }
+        });
+
+        const quillTerms = new Quill('#editor_terms', {
+            theme: 'snow',
+            modules: {
+                toolbar: [
+                    [{ 'header': [1, 2, 3, false] }],
+                    ['bold', 'italic', 'underline', 'strike'],
+                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                    ['link', 'clean']
+                ]
+            }
+        });
+
+        // Set hidden fields values on submit
+        const form = document.querySelector('form');
+        form.addEventListener('submit', function(e) {
+            // Get Quill's internal HTML representation
+            const privacyHtml = quillPrivacy.root.innerHTML;
+            const termsHtml = quillTerms.root.innerHTML;
+
+            document.getElementById('privacy_policy_input').value = privacyHtml;
+            document.getElementById('terms_conditions_input').value = termsHtml;
+        });
+
+        // Live color preview logic
+        const mockup = document.getElementById('live-preview-mockup');
+        const colorPrimary = document.getElementById('color_primary');
+        const colorPrimaryHover = document.getElementById('color_primary_hover');
+        const colorAccent = document.getElementById('color_accent');
+        const colorBackground = document.getElementById('color_background');
+        const colorText = document.getElementById('color_text');
+
+        function updatePreview() {
+            mockup.style.setProperty('--preview-bg', colorBackground.value);
+            mockup.style.setProperty('--preview-text', colorText.value);
+            mockup.style.setProperty('--preview-primary', colorPrimary.value);
+            mockup.style.setProperty('--preview-primary-hover', colorPrimaryHover.value);
+            mockup.style.setProperty('--preview-accent', colorAccent.value);
+
+            // Update text representations
+            document.getElementById('val_color_primary').textContent = colorPrimary.value.toUpperCase();
+            document.getElementById('val_color_primary_hover').textContent = colorPrimaryHover.value.toUpperCase();
+            document.getElementById('val_color_accent').textContent = colorAccent.value.toUpperCase();
+            document.getElementById('val_color_background').textContent = colorBackground.value.toUpperCase();
+            document.getElementById('val_color_text').textContent = colorText.value.toUpperCase();
+        }
+
+        // Add listeners to picker inputs
+        [colorPrimary, colorPrimaryHover, colorAccent, colorBackground, colorText].forEach(input => {
+            input.addEventListener('input', updatePreview);
+        });
+
+        // Initial preview update
+        updatePreview();
+    </script>
+</body>
+
+</html>

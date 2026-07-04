@@ -30,6 +30,8 @@ const adminVentasRoutes = require('./admin/ventas');
 const adminSoporteRoutes = require('./admin/soporte');
 const adminDashboardRoutes = require('./admin/dashboard');
 const adminReportesRoutes = require('./admin/reportes');
+const adminLandingRoutes = require('./admin/landing');
+const LandingSettingsService = require('../services/Admin/LandingSettingsService');
 const eventosRoutes = require('./tenant/eventos');
 const inventarioRoutes = require('./tenant/inventario');
 const recetasRoutes = require('./tenant/recetas');
@@ -56,8 +58,24 @@ router.use('/api/qr', require('./qr_api'));
 router.get('/', optionalAuth, HomeController.index);
 
 // --- RUTAS LEGALES (públicas) ---
-router.get('/legal/privacidad', (req, res) => res.render('legal/privacidad'));
-router.get('/legal/terminos', (req, res) => res.render('legal/terminos'));
+router.get('/legal/privacidad', async (req, res) => {
+    try {
+        const settings = await LandingSettingsService.getAll();
+        res.render('legal/privacidad', { settings });
+    } catch (error) {
+        console.error('Error fetching landing settings for privacy policy:', error);
+        res.render('legal/privacidad', { settings: {} });
+    }
+});
+router.get('/legal/terminos', async (req, res) => {
+    try {
+        const settings = await LandingSettingsService.getAll();
+        res.render('legal/terminos', { settings });
+    } catch (error) {
+        console.error('Error fetching landing settings for terms:', error);
+        res.render('legal/terminos', { settings: {} });
+    }
+});
 
 // --- RUTAS DE TENANT (RESTAURANTE) ---
 router.use('/productos', requireAuthWithTenant, requirePlanFeature('productos'), productosRoutes);
@@ -156,5 +174,6 @@ router.use('/admin/permisos', requireAuth, adminPermisosRoutes);
 router.use('/admin/ventas', requireAuth, adminVentasRoutes);
 router.use('/admin/soporte', requireAuth, adminSoporteRoutes);
 router.use('/admin/reportes', requireAuth, adminReportesRoutes);
+router.use('/admin/landing', requireAuth, adminLandingRoutes);
 
 module.exports = router;

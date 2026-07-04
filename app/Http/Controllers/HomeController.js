@@ -1,3 +1,5 @@
+const LandingSettingsService = require('../../../services/Admin/LandingSettingsService');
+
 class HomeController {
     /**
      * GET /
@@ -5,11 +7,16 @@ class HomeController {
      */
     static async index(req, res) {
         if (!req.user) {
-            return res.render('landing/index');
+            try {
+                const settings = await LandingSettingsService.getAll();
+                return res.render('landing/index', { settings });
+            } catch (error) {
+                console.error('Error fetching landing settings in HomeController:', error);
+                return res.render('landing/index', { settings: {} });
+            }
         }
 
-
-        const rol = String((req.user.rol || '')).toLowerCase();
+        const rol = String(req.user.rol || '').toLowerCase();
 
         switch (rol) {
             case 'superadmin':
