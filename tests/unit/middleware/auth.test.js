@@ -230,7 +230,7 @@ describe('middleware/auth', () => {
             restrictSuperadminToAdmin(req, res, next);
             expect(res.status).toHaveBeenCalledWith(403);
             expect(res.json).toHaveBeenCalledWith({
-                error: 'Acceso restringido. Solo gestión de restaurantes y costeo.'
+                error: 'Acceso restringido. Solo gestión de restaurantes, landing page y costeo.'
             });
             expect(next).not.toHaveBeenCalled();
         });
