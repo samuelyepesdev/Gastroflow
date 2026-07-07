@@ -1,0 +1,2302 @@
+openapi: 3.0.3
+info:
+  title: GastroFlow API
+  description: |
+    API REST del sistema de gestión de restaurantes **GastroFlow** (multi-tenant).
+
+    ## Autenticación
+    La API usa **JWT (Bearer token)**. Obtén el token con `POST /auth/login` y envíalo en cada
+    petición protegida con el header `Authorization: Bearer <token>`.
+    (El sistema también acepta el token vía cookie `auth_token` — usado por la web — pero para
+    integraciones externas usa siempre el header.)
+
+    ## Multi-tenancy
+    El tenant (restaurante) se resuelve automáticamente a partir del usuario autenticado.
+    Todos los recursos (productos, clientes, facturas, mesas...) pertenecen al tenant del token.
+
+    ## Permisos y plan
+    Cada endpoint exige permisos específicos (se indican en la descripción como `Permiso: x.y`)
+    y que el plan del tenant incluya la feature del módulo. Respuestas `403` indican falta de
+    permiso, feature no incluida en el plan, o contexto de tenant no disponible.
+
+    ## Convenciones
+    - IDs de producto `>= 1000000` son **insumos virtuales**: `producto_id = id_insumo + 1000000`.
+    - Los errores siempre tienen la forma `{ "error": "mensaje" }`.
+    - Fechas en formato `YYYY-MM-DD HH:mm:ss` (hora del servidor) salvo que se indique ISO.
+
+    ## Alcance de este documento
+    Cubre los endpoints JSON de los módulos principales: Auth, Productos, Clientes, Facturas,
+    Mesas/Pedidos, Cocina, POS, Dashboard y Menú QR público. Las rutas que renderizan vistas
+    HTML (páginas EJS) no se documentan aquí.
+  version: 1.2.0
+  contact:
+    name: GastroFlow
+servers:
+  - url: 'http://localhost:3000'
+    description: Desarrollo local (Laragon)
+  - url: 'https://TU-DOMINIO-PRODUCCION'
+    description: Producción
+tags:
+  - name: Auth
+    description: Autenticación y sesión
+  - name: Productos
+    description: Catálogo de productos del restaurante
+  - name: Clientes
+    description: Clientes del restaurante
+  - name: Facturas
+    description: Facturación de ventas
+  - name: Mesas
+    description: 'Mesas, pedidos e items (ciclo de vida completo)'
+  - name: Cocina
+    description: Cola de cocina y estados de preparación
+  - name: POS
+    description: Terminal punto de venta
+  - name: Dashboard
+    description: Estadísticas del restaurante
+  - name: QR Público
+    description: 'Pedidos desde el menú QR (sin autenticación, rate-limited)'
+security:
+  - bearerAuth: []
+paths:
+  /auth/login:
+    post:
+      tags:
+        - Auth
+      summary: Iniciar sesión y obtener token JWT
+      description: 'Rate limit: máx. 5 intentos por minuto por IP. El token devuelto también se setea como cookie `auth_token`.'
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - username
+                - password
+              properties:
+                username:
+                  type: string
+                  example: admin
+                password:
+                  type: string
+                  format: password
+                  example: MiClave123
+      responses:
+        '200':
+          description: Login exitoso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  token:
+                    type: string
+                    description: JWT para usar en el header Authorization
+                    example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sIjoiYWRtaW4ifQ.abc123
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          description: Credenciales incorrectas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Cuenta bloqueada o tenant inactivo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Demasiados intentos de login
+      x-apidog-folder: Auth
+  /auth/logout:
+    post:
+      tags:
+        - Auth
+      summary: Cerrar sesión (limpia cookie)
+      security: []
+      responses:
+        '200':
+          description: Sesión cerrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessMessage'
+              example:
+                success: true
+                message: Sesión cerrada
+      x-apidog-folder: Auth
+  /auth/me:
+    get:
+      tags:
+        - Auth
+      summary: Perfil del usuario autenticado
+      responses:
+        '200':
+          description: Datos del usuario
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/Usuario'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      x-apidog-folder: Auth
+  /auth/cambiar-password:
+    post:
+      tags:
+        - Auth
+      summary: Cambiar contraseña del usuario autenticado
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - password_actual
+                - password_nueva
+              properties:
+                password_actual:
+                  type: string
+                  format: password
+                password_nueva:
+                  type: string
+                  format: password
+                  minLength: 8
+      responses:
+        '200':
+          description: Contraseña actualizada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessMessage'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+      x-apidog-folder: Auth
+  /api/productos/buscar:
+    get:
+      tags:
+        - Productos
+      summary: Buscar productos
+      description: 'Permiso: productos.ver'
+      parameters:
+        - name: q
+          in: query
+          schema:
+            type: string
+          description: Texto de búsqueda (nombre o código)
+          example: hamburguesa
+      responses:
+        '200':
+          description: Lista de productos que coinciden
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Producto'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      x-apidog-folder: Productos
+  /api/productos/categorias:
+    get:
+      tags:
+        - Productos
+      summary: Listar categorías activas del tenant
+      responses:
+        '200':
+          description: Categorías
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Categoria'
+      x-apidog-folder: Productos
+  '/api/productos/{id}':
+    get:
+      tags:
+        - Productos
+      summary: Obtener producto por ID
+      parameters:
+        - $ref: '#/components/parameters/idPath'
+      responses:
+        '200':
+          description: Producto
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Producto'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      x-apidog-folder: Productos
+    put:
+      tags:
+        - Productos
+      summary: Actualizar producto
+      description: 'Permiso: productos.editar'
+      parameters:
+        - $ref: '#/components/parameters/idPath'
+      requestBody:
+        $ref: '#/components/requestBodies/ProductoBody'
+      responses:
+        '200':
+          description: Producto actualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+              example:
+                message: Producto actualizado exitosamente
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      x-apidog-folder: Productos
+    delete:
+      tags:
+        - Productos
+      summary: Eliminar producto
+      description: 'Permiso: productos.eliminar'
+      parameters:
+        - $ref: '#/components/parameters/idPath'
+      responses:
+        '200':
+          description: Producto eliminado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      x-apidog-folder: Productos
+  /api/productos:
+    post:
+      tags:
+        - Productos
+      summary: Crear producto
+      description: 'Permiso: productos.crear. El código debe ser único dentro del tenant.'
+      requestBody:
+        $ref: '#/components/requestBodies/ProductoBody'
+      responses:
+        '201':
+          description: Producto creado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    example: 42
+                  message:
+                    type: string
+                    example: Producto creado exitosamente
+        '400':
+          description: Validación fallida o código duplicado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: Ya existe un producto con ese código
+      x-apidog-folder: Productos
+  '/api/productos/{id}/precio':
+    put:
+      tags:
+        - Productos
+      summary: Actualizar solo el precio
+      description: 'Permiso: productos.editar. Usado para aplicar el precio sugerido desde costeo.'
+      parameters:
+        - $ref: '#/components/parameters/idPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - precio_unidad
+              properties:
+                precio_unidad:
+                  type: number
+                  example: 25000
+      responses:
+        '200':
+          description: Precio actualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+              example:
+                message: Precio actualizado
+        '400':
+          description: precio_unidad es requerido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      x-apidog-folder: Productos
+  '/api/productos/{id}/favorito':
+    patch:
+      tags:
+        - Productos
+      summary: Marcar/desmarcar producto como favorito
+      description: 'Permiso: productos.editar. Los favoritos aparecen primero en la grilla del POS.'
+      parameters:
+        - $ref: '#/components/parameters/idPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - es_favorito
+              properties:
+                es_favorito:
+                  type: boolean
+                  example: true
+      responses:
+        '200':
+          description: Estado de favorito actualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+              example:
+                message: Estado de favorito actualizado
+      x-apidog-folder: Productos
+  /api/productos/importar:
+    post:
+      tags:
+        - Productos
+      summary: Importar productos desde Excel
+      description: |
+        'Permisos: plantillas.ver + feature plantillas del plan.'
+        El Excel debe tener una hoja "Productos" con columnas: codigo, nombre, categoria, precio_unidad.
+        Si un código ya existe, el producto se actualiza. Archivo máx. 5 MB.
+        Descarga la plantilla en GET /productos/plantilla.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - archivo
+              properties:
+                archivo:
+                  type: string
+                  format: binary
+                  description: Archivo .xlsx con la hoja "Productos"
+      responses:
+        '200':
+          description: Resumen de la importación (creados/actualizados por fila)
+          content:
+            application/json:
+              schema:
+                type: object
+                description: Resultado de ProductService.importFromExcel
+        '400':
+          description: Archivo faltante o sin hoja "Productos"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      x-apidog-folder: Productos
+  /api/productos/upload-image:
+    post:
+      tags:
+        - Productos
+      summary: Subir imagen de producto (Cloudflare R2)
+      description: 'Permiso: productos.crear. Imagen máx. 5 MB. Devuelve la URL pública para usar en imagen_url.'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - imagen
+              properties:
+                imagen:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Imagen subida
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  url:
+                    type: string
+                    example: 'https://r2.midominio.com/productos/hamburguesa-abc123.jpg'
+        '400':
+          description: No se recibió archivo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      x-apidog-folder: Productos
+  /api/clientes/buscar:
+    get:
+      tags:
+        - Clientes
+      summary: Buscar clientes
+      description: 'Permiso: clientes.ver'
+      parameters:
+        - name: q
+          in: query
+          schema:
+            type: string
+          description: 'Texto de búsqueda (nombre, teléfono o documento)'
+          example: juan
+      responses:
+        '200':
+          description: Clientes que coinciden
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Cliente'
+      x-apidog-folder: Clientes
+  /api/clientes:
+    post:
+      tags:
+        - Clientes
+      summary: Crear cliente
+      description: 'Permiso: clientes.crear'
+      requestBody:
+        $ref: '#/components/requestBodies/ClienteBody'
+      responses:
+        '201':
+          description: Cliente creado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    example: 15
+                  message:
+                    type: string
+                    example: Cliente creado exitosamente
+        '400':
+          $ref: '#/components/responses/ValidationError'
+      x-apidog-folder: Clientes
+  '/api/clientes/{id}':
+    get:
+      tags:
+        - Clientes
+      summary: Obtener cliente por ID
+      parameters:
+        - $ref: '#/components/parameters/idPath'
+      responses:
+        '200':
+          description: Cliente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cliente'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      x-apidog-folder: Clientes
+    put:
+      tags:
+        - Clientes
+      summary: Actualizar cliente
+      description: 'Permiso: clientes.editar'
+      parameters:
+        - $ref: '#/components/parameters/idPath'
+      requestBody:
+        $ref: '#/components/requestBodies/ClienteBody'
+      responses:
+        '200':
+          description: Cliente actualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+              example:
+                message: Cliente actualizado exitosamente
+        '404':
+          $ref: '#/components/responses/NotFound'
+      x-apidog-folder: Clientes
+    delete:
+      tags:
+        - Clientes
+      summary: Eliminar cliente
+      description: 'Permiso: clientes.eliminar. Falla si el cliente tiene facturas asociadas.'
+      parameters:
+        - $ref: '#/components/parameters/idPath'
+      responses:
+        '200':
+          description: Cliente eliminado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+              example:
+                message: Cliente eliminado exitosamente
+        '400':
+          description: El cliente tiene facturas asociadas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: No se puede eliminar el cliente porque tiene facturas asociadas
+        '404':
+          $ref: '#/components/responses/NotFound'
+      x-apidog-folder: Clientes
+  /api/facturas:
+    post:
+      tags:
+        - Facturas
+      summary: Crear factura
+      description: |
+        Crea la factura con sus detalles. Valida stock de productos con receta,
+        descuenta inventario, registra el ingreso en finanzas y la vincula a la
+        sesión de caja abierta si existe. 'Permiso: facturas.crear'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - cliente_id
+                - total
+                - forma_pago
+                - productos
+              properties:
+                cliente_id:
+                  type: integer
+                  example: 1
+                total:
+                  type: number
+                  example: 58000
+                forma_pago:
+                  type: string
+                  example: efectivo
+                evento_id:
+                  type: integer
+                  nullable: true
+                  description: ID del evento si la venta pertenece a uno
+                productos:
+                  type: array
+                  minItems: 1
+                  items:
+                    $ref: '#/components/schemas/FacturaItemInput'
+            example:
+              cliente_id: 1
+              total: 58000
+              forma_pago: efectivo
+              productos:
+                - producto_id: 12
+                  cantidad: 2
+                  precio: 25000
+                - producto_id: 7
+                  cantidad: 1
+                  precio: 8000
+      responses:
+        '201':
+          description: Factura creada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    description: ID interno de la factura
+                    example: 350
+                  numero:
+                    type: integer
+                    description: Consecutivo por tenant (Factura N°)
+                    example: 128
+        '400':
+          description: Datos incompletos o stock insuficiente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: 'No hay stock suficiente para realizar esta venta. Carne de res: requiere 300 g, disponible 150 g'
+      x-apidog-folder: Facturas
+  '/api/facturas/{id}/detalles':
+    get:
+      tags:
+        - Facturas
+      summary: Detalles de una factura
+      parameters:
+        - $ref: '#/components/parameters/idPath'
+      responses:
+        '200':
+          description: Factura con cliente y líneas de detalle
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FacturaDetalles'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      x-apidog-folder: Facturas
+  /api/mesas/listar:
+    get:
+      tags:
+        - Mesas
+      summary: Listar mesas con su estado actual
+      description: 'Permiso: mesas.ver. Devuelve mesas físicas y virtuales ocupadas, ordenadas por número.'
+      responses:
+        '200':
+          description: Mesas del tenant
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Mesa'
+      x-apidog-folder: Mesas/Gestión de Mesas
+  /api/mesas/crear:
+    post:
+      tags:
+        - Mesas
+      summary: Crear mesa
+      description: 'Permiso: mesas.gestionar'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MesaInput'
+      responses:
+        '201':
+          description: Mesa creada
+        '400':
+          $ref: '#/components/responses/ValidationError'
+      x-apidog-folder: Mesas/Gestión de Mesas
+  /api/mesas/crear-masivas:
+    post:
+      tags:
+        - Mesas
+      summary: Crear mesas en lote
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                cantidad:
+                  type: integer
+                  example: 10
+      responses:
+        '201':
+          description: Mesas creadas
+      x-apidog-folder: Mesas/Gestión de Mesas
+  '/api/mesas/{mesaId}':
+    put:
+      tags:
+        - Mesas
+      summary: Actualizar mesa
+      description: 'Permiso: mesas.editar'
+      parameters:
+        - $ref: '#/components/parameters/mesaIdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MesaInput'
+      responses:
+        '200':
+          description: Mesa actualizada
+        '400':
+          $ref: '#/components/responses/ValidationError'
+      x-apidog-folder: Mesas/Gestión de Mesas
+    delete:
+      tags:
+        - Mesas
+      summary: Eliminar mesa definitivamente
+      description: 'Permiso: mesas.eliminar'
+      parameters:
+        - $ref: '#/components/parameters/mesaIdPath'
+      responses:
+        '200':
+          description: Mesa eliminada
+      x-apidog-folder: Mesas/Gestión de Mesas
+  '/api/mesas/{mesaId}/liberar':
+    put:
+      tags:
+        - Mesas
+      summary: Liberar mesa (cerrar ocupación)
+      parameters:
+        - $ref: '#/components/parameters/mesaIdPath'
+      responses:
+        '200':
+          description: Mesa liberada
+      x-apidog-folder: Mesas/Acciones
+  /api/mesas/abrir:
+    post:
+      tags:
+        - Mesas
+      summary: Abrir pedido en una mesa
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - mesa_id
+              properties:
+                mesa_id:
+                  type: integer
+                  example: 5
+                cliente_id:
+                  type: integer
+                  nullable: true
+                notas:
+                  type: string
+                  nullable: true
+      responses:
+        '201':
+          description: Pedido abierto
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  pedido:
+                    $ref: '#/components/schemas/Pedido'
+        '404':
+          description: Mesa no encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      x-apidog-folder: Mesas/Pedidos
+  '/api/mesas/pedidos/{pedidoId}':
+    get:
+      tags:
+        - Mesas
+      summary: Ver pedido con sus items
+      parameters:
+        - $ref: '#/components/parameters/pedidoIdPath'
+      responses:
+        '200':
+          description: Pedido completo
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  pedido:
+                    $ref: '#/components/schemas/Pedido'
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PedidoItem'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      x-apidog-folder: Mesas/Pedidos
+  '/api/mesas/pedidos/{pedidoId}/propina':
+    patch:
+      tags:
+        - Mesas
+      summary: Actualizar propina del pedido
+      parameters:
+        - $ref: '#/components/parameters/pedidoIdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - propina
+              properties:
+                propina:
+                  type: number
+                  example: 5000
+      responses:
+        '200':
+          description: Propina actualizada
+        '404':
+          $ref: '#/components/responses/NotFound'
+      x-apidog-folder: Mesas/Pedidos
+  '/api/mesas/pedidos/{pedidoId}/cliente':
+    put:
+      tags:
+        - Mesas
+      summary: Asignar/cambiar cliente del pedido
+      parameters:
+        - $ref: '#/components/parameters/pedidoIdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - cliente_id
+              properties:
+                cliente_id:
+                  type: integer
+      responses:
+        '200':
+          description: Cliente asignado
+        '404':
+          description: Cliente no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      x-apidog-folder: Mesas/Pedidos
+  '/api/mesas/pedidos/{pedidoId}/facturar':
+    post:
+      tags:
+        - Mesas
+      summary: Facturar el pedido de la mesa
+      description: Genera la factura del pedido (con descuentos opcionales por item) y libera la mesa.
+      parameters:
+        - $ref: '#/components/parameters/pedidoIdPath'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                forma_pago:
+                  type: string
+                  example: efectivo
+                cliente_id:
+                  type: integer
+                  nullable: true
+                propina:
+                  type: number
+                  nullable: true
+                descuentos:
+                  type: object
+                  description: 'Mapa de descuentos por item: { "itemId": porcentaje }'
+                  additionalProperties:
+                    type: number
+                  example:
+                    '101': 10
+      responses:
+        '201':
+          description: Factura generada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  factura_id:
+                    type: integer
+                    example: 351
+                  numero:
+                    type: integer
+                    example: 129
+      x-apidog-folder: Mesas/Pedidos
+  '/api/mesas/pedidos/{pedidoId}/limpiar':
+    delete:
+      tags:
+        - Mesas
+      summary: Limpiar/cancelar pedido sin facturar
+      parameters:
+        - $ref: '#/components/parameters/pedidoIdPath'
+      responses:
+        '200':
+          description: Pedido limpiado
+      x-apidog-folder: Mesas/Pedidos
+  '/api/mesas/pedidos/{pedidoId}/items':
+    post:
+      tags:
+        - Mesas
+      summary: Agregar item al pedido
+      description: |
+        Acepta productos normales e insumos con ID virtual (`>= 1000000`).
+        Si se envía `precio`, sobreescribe el precio de lista para ese item.
+      parameters:
+        - $ref: '#/components/parameters/pedidoIdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - producto_id
+                - cantidad
+              properties:
+                producto_id:
+                  type: integer
+                  example: 12
+                cantidad:
+                  type: number
+                  example: 2
+                unidad:
+                  type: string
+                  nullable: true
+                  example: UND
+                precio:
+                  type: number
+                  nullable: true
+                  description: Precio unitario override (opcional)
+                nota:
+                  type: string
+                  nullable: true
+                  example: Sin cebolla
+      responses:
+        '201':
+          description: Item agregado al pedido
+        '400':
+          $ref: '#/components/responses/ValidationError'
+      x-apidog-folder: Mesas/Items del Pedido
+  '/api/mesas/pedidos/{pedidoId}/servicios':
+    post:
+      tags:
+        - Mesas
+      summary: Agregar servicio al pedido
+      parameters:
+        - $ref: '#/components/parameters/pedidoIdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - servicio_id
+              properties:
+                servicio_id:
+                  type: integer
+                precio:
+                  type: number
+                  nullable: true
+      responses:
+        '201':
+          description: Servicio agregado
+      x-apidog-folder: Mesas/Items del Pedido
+  '/api/mesas/items/{itemId}/cantidad':
+    put:
+      tags:
+        - Mesas
+      summary: Cambiar cantidad de un item
+      parameters:
+        - $ref: '#/components/parameters/itemIdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - cantidad
+              properties:
+                cantidad:
+                  type: number
+                  example: 3
+      responses:
+        '200':
+          description: Cantidad actualizada
+      x-apidog-folder: Mesas/Items del Pedido
+  '/api/mesas/items/{itemId}/enviar':
+    put:
+      tags:
+        - Mesas
+      summary: Enviar item a cocina
+      description: Cambia el estado del item a `enviado` y lo hace visible en la cola de cocina.
+      parameters:
+        - $ref: '#/components/parameters/itemIdPath'
+      responses:
+        '200':
+          description: Item enviado a cocina
+      x-apidog-folder: Mesas/Items del Pedido
+  '/api/mesas/items/{itemId}/estado':
+    put:
+      tags:
+        - Mesas
+      summary: Cambiar estado de un item
+      parameters:
+        - $ref: '#/components/parameters/itemIdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - estado
+              properties:
+                estado:
+                  type: string
+                  enum:
+                    - pendiente
+                    - enviado
+                    - preparando
+                    - listo
+                    - entregado
+                  example: entregado
+      responses:
+        '200':
+          description: Estado actualizado
+      x-apidog-folder: Mesas/Items del Pedido
+  '/api/mesas/items/{itemId}/pagar':
+    put:
+      tags:
+        - Mesas
+      summary: Pagar un item individual (cuentas separadas)
+      parameters:
+        - $ref: '#/components/parameters/itemIdPath'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                forma_pago:
+                  type: string
+                  example: efectivo
+      responses:
+        '200':
+          description: Item pagado
+      x-apidog-folder: Mesas/Items del Pedido
+  /api/mesas/items/pagar-multiples:
+    post:
+      tags:
+        - Mesas
+      summary: Pagar varios items a la vez (cuentas separadas)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - item_ids
+              properties:
+                item_ids:
+                  type: array
+                  items:
+                    type: integer
+                  example:
+                    - 101
+                    - 102
+                    - 105
+                forma_pago:
+                  type: string
+                  example: efectivo
+      responses:
+        '200':
+          description: Items pagados
+      x-apidog-folder: Mesas/Items del Pedido
+  '/api/mesas/items/{itemId}':
+    delete:
+      tags:
+        - Mesas
+      summary: Eliminar item del pedido
+      parameters:
+        - $ref: '#/components/parameters/itemIdPath'
+      responses:
+        '200':
+          description: Item eliminado
+      x-apidog-folder: Mesas/Items del Pedido
+  '/api/mesas/pedidos/{pedidoId}/mover':
+    put:
+      tags:
+        - Mesas
+      summary: Mover pedido completo a otra mesa
+      parameters:
+        - $ref: '#/components/parameters/pedidoIdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - mesa_destino_id
+              properties:
+                mesa_destino_id:
+                  type: integer
+                  example: 8
+      responses:
+        '200':
+          description: Pedido movido
+      x-apidog-folder: Mesas/Acciones
+  '/api/mesas/pedidos/{pedidoId}/mover-items':
+    post:
+      tags:
+        - Mesas
+      summary: Mover items seleccionados a otra mesa
+      parameters:
+        - $ref: '#/components/parameters/pedidoIdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - item_ids
+                - mesa_destino_id
+              properties:
+                item_ids:
+                  type: array
+                  items:
+                    type: integer
+                mesa_destino_id:
+                  type: integer
+      responses:
+        '200':
+          description: Items movidos
+      x-apidog-folder: Mesas/Acciones
+  /api/mesas/qrs/generar:
+    post:
+      tags:
+        - Mesas
+      summary: Generar códigos QR de las mesas
+      description: 'Permiso: mesas.qr. Genera/regenera los tokens QR para el menú de autopedido.'
+      responses:
+        '200':
+          description: QRs generados
+      x-apidog-folder: Mesas/Códigos QR
+  /api/cocina/cola:
+    get:
+      tags:
+        - Cocina
+      summary: Cola de items en cocina
+      description: |
+        'Permiso: cocina.ver.'
+        Devuelve items con estado `enviado`, `preparando` o `listo` de pedidos abiertos.
+        Usuarios sin permiso `cocina.ver_todo` solo ven los items en estado `listo`.
+      responses:
+        '200':
+          description: Items en cola
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ItemCocina'
+      x-apidog-folder: Cocina
+  '/api/cocina/item/{id}/estado':
+    put:
+      tags:
+        - Cocina
+      summary: Cambiar estado de un item en cocina
+      description: Solo acepta los estados `preparando` y `listo`.
+      parameters:
+        - $ref: '#/components/parameters/idPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - estado
+              properties:
+                estado:
+                  type: string
+                  enum:
+                    - preparando
+                    - listo
+      responses:
+        '200':
+          description: Estado actualizado
+        '400':
+          description: Estado inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      x-apidog-folder: Cocina
+  /api/cocina/preparar-lote:
+    put:
+      tags:
+        - Cocina
+      summary: Cambiar estado de un grupo de items iguales (lote)
+      description: |
+        Actualiza en bloque todos los items del mismo producto (y misma nota) en la cola.
+        Útil cuando cocina prepara varias unidades del mismo plato a la vez.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - productoNombre
+                - estado
+              properties:
+                productoNombre:
+                  type: string
+                  example: Bandeja Paisa
+                nota:
+                  type: string
+                  nullable: true
+                  description: Nota del grupo (los items se agrupan por producto + nota)
+                estado:
+                  type: string
+                  enum:
+                    - preparando
+                    - listo
+      responses:
+        '200':
+          description: Lote actualizado
+        '400':
+          description: productoNombre y estado son requeridos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      x-apidog-folder: Cocina
+  /pos/productos:
+    get:
+      tags:
+        - POS
+      summary: Productos y categorías para la grilla del POS
+      description: 'Permiso: pos.ver. Solo productos activos, favoritos primero.'
+      responses:
+        '200':
+          description: Productos activos con sus categorías
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  productos:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ProductoPOS'
+                  categorias:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Categoria'
+      x-apidog-folder: POS
+  /pos/stats:
+    get:
+      tags:
+        - POS
+      summary: Estadísticas de venta del día
+      responses:
+        '200':
+          description: Total vendido y número de órdenes de hoy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  num_ordenes:
+                    type: integer
+                    example: 23
+                  total_hoy:
+                    type: number
+                    example: 845000
+      x-apidog-folder: POS
+  /pos/consumidor-final:
+    get:
+      tags:
+        - POS
+      summary: Obtener/crear el cliente "Consumidor final" del tenant
+      responses:
+        '200':
+          description: Cliente consumidor final (se crea si no existe)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    example: 1
+                  nombre:
+                    type: string
+                    example: Consumidor final
+      x-apidog-folder: POS
+  /pos/vender:
+    post:
+      tags:
+        - POS
+      summary: Registrar venta desde el POS
+      description: |
+        'Permiso: pos.vender.'
+        Si no se envía `cliente_id`, se busca o crea un cliente con `nombre_cliente`
+        (o "Consumidor final" si tampoco se envía). Crea la factura completa:
+        valida stock, descuenta inventario y registra en finanzas.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - forma_pago
+                - productos
+                - total
+              properties:
+                cliente_id:
+                  type: integer
+                  nullable: true
+                nombre_cliente:
+                  type: string
+                  nullable: true
+                  example: Consumidor final
+                forma_pago:
+                  type: string
+                  example: efectivo
+                total:
+                  type: number
+                  example: 33000
+                productos:
+                  type: array
+                  minItems: 1
+                  items:
+                    $ref: '#/components/schemas/FacturaItemInput'
+            example:
+              nombre_cliente: Consumidor final
+              forma_pago: efectivo
+              total: 33000
+              productos:
+                - producto_id: 12
+                  cantidad: 1
+                  precio: 25000
+                - producto_id: 3
+                  cantidad: 2
+                  precio: 4000
+      responses:
+        '201':
+          description: Venta registrada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    example: 352
+                  numero:
+                    type: integer
+                    example: 130
+        '400':
+          description: Datos incompletos o stock insuficiente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      x-apidog-folder: POS
+  /pos/borradores:
+    get:
+      tags:
+        - POS
+      summary: Listar órdenes guardadas (borradores) del usuario
+      responses:
+        '200':
+          description: 'Borradores del usuario actual, más recientes primero'
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Borrador'
+      x-apidog-folder: POS
+    post:
+      tags:
+        - POS
+      summary: Guardar orden como borrador
+      description: 'Permiso: pos.vender'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - items
+              properties:
+                cliente_id:
+                  type: integer
+                  nullable: true
+                nombre_cliente:
+                  type: string
+                  nullable: true
+                  example: Mesa terraza
+                items:
+                  type: array
+                  minItems: 1
+                  description: Items de la orden (estructura libre del carrito POS)
+                  items:
+                    type: object
+                total:
+                  type: number
+                  example: 45000
+                notas:
+                  type: string
+                  nullable: true
+      responses:
+        '201':
+          description: Borrador guardado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    example: 8
+        '400':
+          description: La orden no tiene productos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      x-apidog-folder: POS
+  '/pos/borradores/{id}':
+    delete:
+      tags:
+        - POS
+      summary: Eliminar borrador
+      parameters:
+        - $ref: '#/components/parameters/idPath'
+      responses:
+        '200':
+          description: Borrador eliminado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: true
+        '404':
+          $ref: '#/components/responses/NotFound'
+      x-apidog-folder: POS
+  /api/dashboard/stats:
+    get:
+      tags:
+        - Dashboard
+      summary: Estadísticas del dashboard
+      description: 'Rol requerido: admin. Respuesta cacheada por 2 minutos.'
+      parameters:
+        - name: desde
+          in: query
+          schema:
+            type: string
+            format: date
+          description: Fecha inicial del rango (YYYY-MM-DD)
+        - name: hasta
+          in: query
+          schema:
+            type: string
+            format: date
+          description: Fecha final del rango (YYYY-MM-DD)
+      responses:
+        '200':
+          description: KPIs del restaurante
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardStats'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      x-apidog-folder: Dashboard
+  /api/dashboard/eventos-calendario:
+    get:
+      tags:
+        - Dashboard
+      summary: Eventos para el calendario del dashboard
+      description: 'Rol requerido: admin'
+      responses:
+        '200':
+          description: Eventos del tenant
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  eventosCalendario:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        nombre:
+                          type: string
+                        fecha:
+                          type: string
+      x-apidog-folder: Dashboard
+  /api/qr/pedidos:
+    post:
+      tags:
+        - QR Público
+      summary: Crear pedido desde el menú QR (cliente en mesa)
+      description: |
+        Endpoint público (sin token). 'Rate limit: máx. 3 pedidos cada 10 minutos por IP.'
+        El `qr_token` identifica la mesa y el restaurante (viene en la URL del QR).
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - qr_token
+                - items
+              properties:
+                qr_token:
+                  type: string
+                  description: Token del QR de la mesa
+                  example: a1b2c3d4e5f6
+                items:
+                  type: array
+                  minItems: 1
+                  items:
+                    type: object
+                    required:
+                      - producto_id
+                      - cantidad
+                    properties:
+                      producto_id:
+                        type: integer
+                        example: 12
+                      cantidad:
+                        type: number
+                        example: 2
+                notas:
+                  type: string
+                  nullable: true
+                  example: Sin picante por favor
+      responses:
+        '200':
+          description: Pedido procesado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Pedido procesado correctamente.
+                  data:
+                    type: object
+                    description: Datos del pedido creado
+        '404':
+          description: QR inválido o mesa no encontrada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  error:
+                    type: string
+        '429':
+          description: Demasiados pedidos desde esta IP
+      x-apidog-folder: QR Público
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Token obtenido en POST /auth/login
+  parameters:
+    idPath:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+      example: 1
+    mesaIdPath:
+      name: mesaId
+      in: path
+      required: true
+      schema:
+        type: integer
+      example: 5
+    pedidoIdPath:
+      name: pedidoId
+      in: path
+      required: true
+      schema:
+        type: integer
+      example: 40
+    itemIdPath:
+      name: itemId
+      in: path
+      required: true
+      schema:
+        type: integer
+      example: 101
+  requestBodies:
+    ProductoBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - codigo
+              - nombre
+              - precio_unidad
+              - categoria_id
+            properties:
+              codigo:
+                type: string
+                maxLength: 50
+                example: HAMB-01
+              nombre:
+                type: string
+                maxLength: 100
+                example: Hamburguesa clásica
+              precio_unidad:
+                type: number
+                minimum: 0
+                example: 25000
+              categoria_id:
+                type: integer
+                example: 3
+              descripcion:
+                type: string
+                maxLength: 1000
+                nullable: true
+                example: 'Carne 150g, queso, lechuga y tomate'
+              imagen_url:
+                type: string
+                nullable: true
+                example: 'https://r2.midominio.com/productos/hamb-01.jpg'
+          example:
+            codigo: HAMB-01
+            nombre: Hamburguesa clásica
+            precio_unidad: 25000
+            categoria_id: 3
+            descripcion: 'Carne 150g, queso, lechuga y tomate'
+    ClienteBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - nombre
+            properties:
+              nombre:
+                type: string
+                maxLength: 255
+                example: Juan Pérez
+              telefono:
+                type: string
+                nullable: true
+                example: '3001234567'
+              email:
+                type: string
+                format: email
+                nullable: true
+                example: juan@example.com
+              tipo_documento:
+                type: string
+                enum:
+                  - CC
+                  - NIT
+                  - CE
+                  - PA
+                  - TI
+                  - PEP
+                default: CC
+              numero_documento:
+                type: string
+                maxLength: 20
+                nullable: true
+                example: '1020304050'
+          example:
+            nombre: Juan Pérez
+            telefono: '3001234567'
+            email: juan@example.com
+            tipo_documento: CC
+            numero_documento: '1020304050'
+  responses:
+    Unauthorized:
+      description: 'Token ausente, inválido o expirado'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: No autorizado. Token requerido
+    Forbidden:
+      description: 'Sin permiso, feature no incluida en el plan, o contexto de tenant no disponible'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: No tiene permisos para acceder a este recurso
+    NotFound:
+      description: Recurso no encontrado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: Recurso no encontrado
+    ValidationError:
+      description: Error de validación de datos
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              errors:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    msg:
+                      type: string
+                      example: El nombre del producto es obligatorio
+                    path:
+                      type: string
+                      example: nombre
+                    location:
+                      type: string
+                      example: body
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          example: Mensaje de error
+    Message:
+      type: object
+      properties:
+        message:
+          type: string
+    SuccessMessage:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+    Usuario:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        username:
+          type: string
+          example: admin
+        nombre:
+          type: string
+          example: Administrador
+        rol:
+          type: string
+          example: admin
+        tenant_id:
+          type: integer
+          example: 2
+    Categoria:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 3
+        nombre:
+          type: string
+          example: Comidas
+    Producto:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 12
+        codigo:
+          type: string
+          example: HAMB-01
+        nombre:
+          type: string
+          example: Hamburguesa clásica
+        descripcion:
+          type: string
+          nullable: true
+        precio_unidad:
+          type: number
+          example: 25000
+        categoria_id:
+          type: integer
+          example: 3
+        categoria_nombre:
+          type: string
+          example: Comidas
+        imagen_url:
+          type: string
+          nullable: true
+        es_favorito:
+          type: boolean
+          example: false
+        activo:
+          type: boolean
+          example: true
+    ProductoPOS:
+      type: object
+      description: Producto simplificado para la grilla del POS
+      properties:
+        id:
+          type: integer
+          example: 12
+        nombre:
+          type: string
+          example: Hamburguesa clásica
+        precio_unidad:
+          type: number
+          example: 25000
+        codigo:
+          type: string
+          example: HAMB-01
+        es_favorito:
+          type: boolean
+          example: true
+        categoria_id:
+          type: integer
+          example: 3
+        categoria_nombre:
+          type: string
+          example: Comidas
+    Cliente:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 15
+        nombre:
+          type: string
+          example: Juan Pérez
+        telefono:
+          type: string
+          nullable: true
+          example: '3001234567'
+        email:
+          type: string
+          nullable: true
+          example: juan@example.com
+        tipo_documento:
+          type: string
+          example: CC
+        numero_documento:
+          type: string
+          nullable: true
+          example: '1020304050'
+        direccion:
+          type: string
+          nullable: true
+    FacturaItemInput:
+      type: object
+      required:
+        - producto_id
+        - cantidad
+        - precio
+      properties:
+        producto_id:
+          type: integer
+          description: ID de producto. IDs >= 1000000 son insumos virtuales (id_insumo + 1000000).
+          example: 12
+        cantidad:
+          type: number
+          example: 2
+        precio:
+          type: number
+          description: Precio unitario
+          example: 25000
+        nombre:
+          type: string
+          nullable: true
+        es_servicio:
+          type: boolean
+          default: false
+    FacturaDetalles:
+      type: object
+      description: 'Respuesta de GET /api/facturas/{id}/detalles'
+      properties:
+        factura:
+          type: object
+          properties:
+            id:
+              type: integer
+              example: 350
+            numero:
+              type: integer
+              description: Consecutivo por tenant
+              example: 128
+            fecha:
+              type: string
+              example: '2026-07-06 19:32:10'
+            fechaISO:
+              type: string
+              format: date-time
+              example: '2026-07-06T19:32:10.000Z'
+            total:
+              type: number
+              example: 58000
+            forma_pago:
+              type: string
+              example: efectivo
+            propina:
+              type: number
+              example: 5000
+        cliente:
+          type: object
+          properties:
+            nombre:
+              type: string
+              example: Juan Pérez
+            direccion:
+              type: string
+              example: 'Calle 10 # 5-23'
+            telefono:
+              type: string
+              example: '3001234567'
+        productos:
+          type: array
+          items:
+            type: object
+            properties:
+              nombre:
+                type: string
+                example: Hamburguesa clásica
+              cantidad:
+                type: number
+                example: 2
+              precio_unitario:
+                type: number
+                example: 25000
+              unidad_medida:
+                type: string
+                example: UND
+              subtotal:
+                type: number
+                example: 50000
+              es_servicio:
+                type: boolean
+                example: false
+    Mesa:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 5
+        tenant_id:
+          type: integer
+        numero:
+          type: string
+          example: '5'
+        descripcion:
+          type: string
+          nullable: true
+          example: Terraza
+        capacidad:
+          type: integer
+          nullable: true
+          example: 4
+        estado:
+          type: string
+          description: Estado actual de la mesa
+          example: libre
+        tipo:
+          type: string
+          enum:
+            - fisica
+            - virtual
+          example: fisica
+        pedidos_abiertos:
+          type: integer
+          description: Número de pedidos abiertos en la mesa
+          example: 0
+    MesaInput:
+      type: object
+      required:
+        - numero
+      properties:
+        numero:
+          type: string
+          maxLength: 10
+          example: '5'
+        descripcion:
+          type: string
+          maxLength: 100
+          nullable: true
+          example: Terraza
+        capacidad:
+          type: integer
+          minimum: 1
+          nullable: true
+          example: 4
+    Pedido:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 40
+        numero:
+          type: integer
+          nullable: true
+        mesa_id:
+          type: integer
+          example: 5
+        cliente_id:
+          type: integer
+          nullable: true
+        cliente_nombre:
+          type: string
+          nullable: true
+        estado:
+          type: string
+          example: abierto
+        propina:
+          type: number
+          example: 0
+        notas:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+    PedidoItem:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 101
+        pedido_id:
+          type: integer
+          example: 40
+        producto_id:
+          type: integer
+          nullable: true
+          example: 12
+        servicio_id:
+          type: integer
+          nullable: true
+        producto_nombre:
+          type: string
+          example: Hamburguesa clásica
+        cantidad:
+          type: number
+          example: 2
+        precio_unitario:
+          type: number
+          example: 25000
+        unidad_medida:
+          type: string
+          example: UND
+        estado:
+          type: string
+          enum:
+            - pendiente
+            - enviado
+            - preparando
+            - listo
+            - entregado
+          example: pendiente
+        es_servicio:
+          type: boolean
+          example: false
+        nota:
+          type: string
+          nullable: true
+        pagado:
+          type: boolean
+          example: false
+        created_at:
+          type: string
+          format: date-time
+    ItemCocina:
+      type: object
+      description: Item de la cola de cocina (pedido_items + datos de mesa y producto)
+      properties:
+        id:
+          type: integer
+          example: 101
+        pedido_id:
+          type: integer
+          example: 40
+        pedido_numero:
+          type: integer
+          nullable: true
+        mesa_id:
+          type: integer
+          example: 5
+        mesa_numero:
+          type: string
+          example: '5'
+        producto_nombre:
+          type: string
+          example: Bandeja Paisa
+        cantidad:
+          type: number
+          example: 2
+        nota:
+          type: string
+          nullable: true
+          example: Sin frijoles
+        estado:
+          type: string
+          enum:
+            - enviado
+            - preparando
+            - listo
+          example: enviado
+        created_at:
+          type: string
+          format: date-time
+    Borrador:
+      type: object
+      description: Orden guardada del POS
+      properties:
+        id:
+          type: integer
+          example: 8
+        cliente_id:
+          type: integer
+          nullable: true
+        nombre_cliente:
+          type: string
+          nullable: true
+          example: Mesa terraza
+        items:
+          type: array
+          description: Items de la orden tal como se guardaron
+          items:
+            type: object
+        total:
+          type: number
+          example: 45000
+        notas:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+    DashboardStats:
+      type: object
+      description: KPIs devueltos por GET /api/dashboard/stats
+      properties:
+        ventasHoyTotal:
+          type: number
+          example: 845000
+        ventasHoyCantidad:
+          type: integer
+          example: 23
+        ventasMesTotal:
+          type: number
+          example: 15400000
+        ventasMesCantidad:
+          type: integer
+          example: 412
+        totalSales:
+          type: number
+          description: Total vendido en el rango consultado
+        totalInvoices:
+          type: integer
+          description: Facturas en el rango consultado
+        totalSalesAllTime:
+          type: number
+        totalInvoicesAllTime:
+          type: integer
+        topProducts:
+          type: array
+          items:
+            type: object
+        salesByCategory:
+          type: array
+          items:
+            type: object
+        topProductsByCategory:
+          type: array
+          items:
+            type: object
+        dailySales:
+          type: array
+          description: Serie diaria de ventas para gráficos
+          items:
+            type: object
+        eventos_count:
+          type: integer
+        ventas_eventos_total:
+          type: number
+        ventas_eventos_cantidad:
+          type: integer
+        ventasPorEvento:
+          type: array
+          items:
+            type: object
+        eventosEnRango:
+          type: array
+          items:
+            type: object
+        eventosCalendario:
+          type: array
+          items:
+            type: object
+        insumosBajoStock:
+          type: integer
+        insumosBajoStockLista:
+          type: array
+          items:
+            type: object
+        totalEfectivo:
+          type: number
+        totalTransferencia:
+          type: number
+        totalServiciosExternos:
+          type: number
+        ventaNeta:
+          type: number
+        totalEfectivoAllTime:
+          type: number
+        totalTransferenciaAllTime:
+          type: number
+        totalServiciosExternosAllTime:
+          type: number
+        ventaNetaAllTime:
+          type: number
+        totalEfectivoMes:
+          type: number
+        totalTransferenciaMes:
+          type: number
+        totalServiciosExternosMes:
+          type: number
+        ventaNetaMes:
+          type: number
