@@ -25,10 +25,13 @@ info:
     - Fechas en formato `YYYY-MM-DD HH:mm:ss` (hora del servidor) salvo que se indique ISO.
 
     ## Alcance de este documento
-    Cubre los endpoints JSON de los módulos principales: Auth, Productos, Clientes, Facturas,
-    Mesas/Pedidos, Cocina, POS, Dashboard y Menú QR público. Las rutas que renderizan vistas
-    HTML (páginas EJS) no se documentan aquí.
-  version: 1.2.0
+    Cubre los endpoints JSON de los módulos del tenant: Auth, Productos, Clientes, Facturas,
+    Mesas/Pedidos, Cocina, POS, Dashboard, Inventario, Recetas, Proveedores, Caja, Eventos,
+    Finanzas, Analítica, WhatsApp, Servicios, Soporte, Perfil, Notificaciones (SSE) y Menú QR
+    público. Las rutas que renderizan vistas HTML (páginas EJS) no se documentan aquí.
+    Pendientes: módulo **Costeo** (en rediseño) y panel **SuperAdmin** (`/admin/*`, se documentará
+    en una spec aparte).
+  version: 1.3.0
   contact:
     name: GastroFlow
 servers:
@@ -53,6 +56,32 @@ tags:
     description: Terminal punto de venta
   - name: Dashboard
     description: Estadísticas del restaurante
+  - name: Inventario
+    description: Insumos, stock y movimientos de inventario
+  - name: Recetas
+    description: Recetas de productos (ingredientes y porciones)
+  - name: Proveedores
+    description: Proveedores y sus facturas adjuntas
+  - name: Caja
+    description: Turnos de caja (apertura, cierre y movimientos)
+  - name: Eventos
+    description: Eventos especiales del restaurante
+  - name: Finanzas
+    description: Dashboard financiero (ingresos, egresos, utilidad)
+  - name: Analítica
+    description: 'Analítica de ventas y predicción (solo rol admin)'
+  - name: WhatsApp
+    description: Conexión del bot de WhatsApp del tenant
+  - name: Servicios
+    description: Servicios internos y externos facturables
+  - name: Ventas
+    description: Exportación de ventas
+  - name: Soporte
+    description: Tickets de soporte del tenant
+  - name: Perfil
+    description: Perfil del restaurante (datos, logo, reportes)
+  - name: Notificaciones
+    description: Eventos en tiempo real vía Server-Sent Events
   - name: QR Público
     description: 'Pedidos desde el menú QR (sin autenticación, rate-limited)'
 security:
@@ -452,6 +481,21 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+      x-apidog-folder: Productos
+  /api/productos/plantilla:
+    get:
+      tags:
+        - Productos
+      summary: Descargar plantilla Excel para importación de productos
+      description: Devuelve un archivo .xlsx con el formato esperado por POST /api/productos/importar.
+      responses:
+        '200':
+          description: Archivo Excel (plantilla_productos.xlsx)
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
       x-apidog-folder: Productos
   /api/clientes/buscar:
     get:
@@ -1622,6 +1666,1443 @@ paths:
         '429':
           description: Demasiados pedidos desde esta IP
       x-apidog-folder: QR Público
+  /inventario/api/insumos:
+    get:
+      tags:
+        - Inventario
+      summary: Listar insumos del tenant
+      description: 'Feature de plan: inventario.'
+      parameters:
+        - name: q
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Búsqueda por código o nombre
+      responses:
+        '200':
+          description: Insumos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Insumo'
+      x-apidog-folder: Inventario
+    post:
+      tags:
+        - Inventario
+      summary: Crear insumo
+      description: >
+        'Permiso: inventario.editar'. Si se envía `stock_inicial` > 0 se registra automáticamente
+        una entrada de inventario con costo unitario `precio_compra / cantidad_compra`.
+      requestBody:
+        $ref: '#/components/requestBodies/InsumoBody'
+      responses:
+        '201':
+          description: Insumo creado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    example: 7
+        '400':
+          $ref: '#/components/responses/ValidationError'
+      x-apidog-folder: Inventario
+  '/inventario/api/insumos/{id}':
+    get:
+      tags:
+        - Inventario
+      summary: Obtener insumo por ID
+      parameters:
+        - $ref: '#/components/parameters/idPath'
+      responses:
+        '200':
+          description: Insumo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Insumo'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      x-apidog-folder: Inventario
+    put:
+      tags:
+        - Inventario
+      summary: Actualizar insumo
+      description: 'Permiso: inventario.editar'
+      parameters:
+        - $ref: '#/components/parameters/idPath'
+      requestBody:
+        $ref: '#/components/requestBodies/InsumoBody'
+      responses:
+        '200':
+          description: Insumo actualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ok'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+      x-apidog-folder: Inventario
+    delete:
+      tags:
+        - Inventario
+      summary: Eliminar insumo
+      description: 'Permiso: inventario.editar'
+      parameters:
+        - $ref: '#/components/parameters/idPath'
+      responses:
+        '200':
+          description: Insumo eliminado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Insumo eliminado exitosamente
+        '400':
+          description: No se pudo eliminar
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      x-apidog-folder: Inventario
+  /inventario/api/resumen:
+    get:
+      tags:
+        - Inventario
+      summary: Resumen de valorización del inventario
+      responses:
+        '200':
+          description: Resumen
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total_insumos:
+                    type: integer
+                    example: 42
+                  con_stock:
+                    type: integer
+                    example: 35
+                  valor_total:
+                    type: number
+                    description: Valor total del stock a costo promedio
+                    example: 1250000.5
+      x-apidog-folder: Inventario
+  /inventario/api/lista-mercado:
+    get:
+      tags:
+        - Inventario
+      summary: Lista de mercado (insumos bajo stock)
+      description: Insumos con stock <= mínimo. Con `incluir_cerca=1` incluye también los que están a menos del 120% del mínimo.
+      parameters:
+        - name: incluir_cerca
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - '0'
+              - '1'
+              - 'true'
+              - 'false'
+      responses:
+        '200':
+          description: Lista de compras sugerida
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  lista:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        codigo:
+                          type: string
+                        nombre:
+                          type: string
+                        stock_actual:
+                          type: number
+                        stock_minimo:
+                          type: number
+                        unidad_base:
+                          type: string
+                          example: g
+                        bajo:
+                          type: boolean
+                          description: true si está en o bajo el mínimo
+      x-apidog-folder: Inventario
+  '/inventario/api/check-producto/{productoId}':
+    get:
+      tags:
+        - Inventario
+      summary: Verificar stock disponible para vender un producto
+      description: Revisa la receta del producto y compara ingredientes vs. stock. Si el producto no tiene receta responde `ok true`.
+      parameters:
+        - name: productoId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: cantidad
+          in: query
+          required: false
+          schema:
+            type: number
+            default: 1
+      responses:
+        '200':
+          description: Resultado de la verificación
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  faltantes:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        insumo_nombre:
+                          type: string
+                        requerido:
+                          type: number
+                        disponible:
+                          type: number
+                        unidad_base:
+                          type: string
+      x-apidog-folder: Inventario
+  /inventario/api/movimientos:
+    get:
+      tags:
+        - Inventario
+      summary: Listar movimientos de inventario
+      parameters:
+        - name: insumo_id
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: tipo
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - entrada
+              - salida
+              - ajuste
+      responses:
+        '200':
+          description: Movimientos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MovimientoInventario'
+      x-apidog-folder: Inventario
+  /inventario/api/movimientos/entrada:
+    post:
+      tags:
+        - Inventario
+      summary: Registrar entrada de inventario (compra)
+      description: 'Permiso: inventario.editar. Recalcula el costo promedio del insumo.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - insumo_id
+                - cantidad
+              properties:
+                insumo_id:
+                  type: integer
+                  example: 7
+                cantidad:
+                  type: number
+                  description: Cantidad en unidad base del insumo
+                  example: 5000
+                costo_unitario:
+                  type: number
+                  description: Costo por unidad base
+                  example: 12.5
+                referencia:
+                  type: string
+                  nullable: true
+                  example: Compra factura 00123
+      responses:
+        '201':
+          description: Entrada registrada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  nuevoStock:
+                    type: number
+                  nuevoCosto:
+                    type: number
+        '400':
+          description: 'Datos inválidos (insumo no encontrado, cantidad <= 0)'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      x-apidog-folder: Inventario
+  /inventario/api/movimientos/salida:
+    post:
+      tags:
+        - Inventario
+      summary: Registrar salida de inventario (consumo/merma)
+      description: 'Permiso: inventario.editar'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - insumo_id
+                - cantidad
+              properties:
+                insumo_id:
+                  type: integer
+                cantidad:
+                  type: number
+                  description: Cantidad en unidad base del insumo
+                referencia:
+                  type: string
+                  nullable: true
+      responses:
+        '201':
+          description: Salida registrada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  nuevoStock:
+                    type: number
+        '400':
+          description: Datos inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      x-apidog-folder: Inventario
+  /inventario/api/movimientos/ajuste:
+    post:
+      tags:
+        - Inventario
+      summary: Registrar ajuste de inventario
+      description: 'Permiso: inventario.editar. `cantidad` puede ser positiva o negativa; el stock resultante nunca baja de 0.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - insumo_id
+                - cantidad
+              properties:
+                insumo_id:
+                  type: integer
+                cantidad:
+                  type: number
+                  description: Delta a aplicar (positivo o negativo)
+                  example: -250
+                referencia:
+                  type: string
+                  nullable: true
+                  example: Conteo físico
+      responses:
+        '201':
+          description: Ajuste registrado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  nuevoStock:
+                    type: number
+        '400':
+          description: Datos inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      x-apidog-folder: Inventario
+  /recetas/api/recetas:
+    get:
+      tags:
+        - Recetas
+      summary: Listar recetas del tenant
+      description: 'Feature de plan: recetas.'
+      responses:
+        '200':
+          description: Recetas
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Receta'
+      x-apidog-folder: Recetas
+    post:
+      tags:
+        - Recetas
+      summary: Crear receta para un producto
+      description: 'Permiso: recetas.editar. Un producto solo puede tener una receta.'
+      requestBody:
+        $ref: '#/components/requestBodies/RecetaBody'
+      responses:
+        '201':
+          description: Receta creada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+        '400':
+          description: 'Datos inválidos, producto no encontrado o ya tiene receta'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      x-apidog-folder: Recetas
+  '/recetas/api/recetas/{id}':
+    get:
+      tags:
+        - Recetas
+      summary: Obtener receta por ID (con ingredientes)
+      parameters:
+        - $ref: '#/components/parameters/idPath'
+      responses:
+        '200':
+          description: Receta
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Receta'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      x-apidog-folder: Recetas
+    put:
+      tags:
+        - Recetas
+      summary: Actualizar receta
+      description: 'Permiso: recetas.editar'
+      parameters:
+        - $ref: '#/components/parameters/idPath'
+      requestBody:
+        $ref: '#/components/requestBodies/RecetaBody'
+      responses:
+        '200':
+          description: Receta actualizada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ok'
+        '400':
+          description: Datos inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      x-apidog-folder: Recetas
+    delete:
+      tags:
+        - Recetas
+      summary: Eliminar receta
+      description: 'Permiso: recetas.editar'
+      parameters:
+        - $ref: '#/components/parameters/idPath'
+      responses:
+        '200':
+          description: Receta eliminada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ok'
+        '400':
+          description: No se pudo eliminar
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      x-apidog-folder: Recetas
+  '/recetas/api/recetas/producto/{productoId}':
+    get:
+      tags:
+        - Recetas
+      summary: Obtener la receta de un producto
+      description: Devuelve `null` (body vacío JSON) si el producto no tiene receta.
+      parameters:
+        - name: productoId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Receta del producto o null
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Receta'
+      x-apidog-folder: Recetas
+  /recetas/api/productos:
+    get:
+      tags:
+        - Recetas
+      summary: 'Helper: listar productos (para asociar recetas)'
+      responses:
+        '200':
+          description: Productos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Producto'
+      x-apidog-folder: Recetas
+  /recetas/api/insumos:
+    get:
+      tags:
+        - Recetas
+      summary: 'Helper: listar insumos (para ingredientes)'
+      responses:
+        '200':
+          description: Insumos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Insumo'
+      x-apidog-folder: Recetas
+  /proveedores:
+    post:
+      tags:
+        - Proveedores
+      summary: Crear proveedor
+      description: 'Permiso: proveedores.editar. Feature de plan: inventario.'
+      requestBody:
+        $ref: '#/components/requestBodies/ProveedorBody'
+      responses:
+        '201':
+          description: Proveedor creado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  message:
+                    type: string
+                    example: Proveedor creado correctamente
+        '400':
+          description: Nombre requerido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      x-apidog-folder: Proveedores
+  '/proveedores/{id}':
+    get:
+      tags:
+        - Proveedores
+      summary: Obtener proveedor por ID
+      description: 'Permiso: proveedores.ver'
+      parameters:
+        - $ref: '#/components/parameters/idPath'
+      responses:
+        '200':
+          description: Proveedor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Proveedor'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      x-apidog-folder: Proveedores
+    put:
+      tags:
+        - Proveedores
+      summary: Actualizar proveedor
+      description: 'Permiso: proveedores.editar'
+      parameters:
+        - $ref: '#/components/parameters/idPath'
+      requestBody:
+        $ref: '#/components/requestBodies/ProveedorBody'
+      responses:
+        '200':
+          description: Proveedor actualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '400':
+          description: Datos inválidos o proveedor no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      x-apidog-folder: Proveedores
+    delete:
+      tags:
+        - Proveedores
+      summary: Eliminar proveedor
+      description: 'Permiso: proveedores.editar. Falla si el proveedor tiene insumos o movimientos de inventario asociados.'
+      parameters:
+        - $ref: '#/components/parameters/idPath'
+      responses:
+        '200':
+          description: Proveedor eliminado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '400':
+          description: Tiene insumos o movimientos asociados
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      x-apidog-folder: Proveedores
+  '/proveedores/{id}/historial-costos':
+    get:
+      tags:
+        - Proveedores
+      summary: Historial de costos de compra al proveedor
+      description: 'Permiso: proveedores.ver'
+      parameters:
+        - $ref: '#/components/parameters/idPath'
+      responses:
+        '200':
+          description: Historial de costos por insumo
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+      x-apidog-folder: Proveedores
+  '/proveedores/{id}/facturas':
+    get:
+      tags:
+        - Proveedores
+      summary: Listar facturas adjuntas de un proveedor
+      description: 'Permiso: proveedores.facturas'
+      parameters:
+        - $ref: '#/components/parameters/idPath'
+      responses:
+        '200':
+          description: Facturas del proveedor (sin el contenido binario)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                    numero_factura:
+                      type: string
+                    fecha_emision:
+                      type: string
+                      format: date
+                    monto_total:
+                      type: number
+                    archivo_nombre:
+                      type: string
+                    archivo_tipo:
+                      type: string
+                      example: application/pdf
+                    notas:
+                      type: string
+                      nullable: true
+      x-apidog-folder: Proveedores
+    post:
+      tags:
+        - Proveedores
+      summary: Adjuntar factura a un proveedor
+      description: 'Permiso: proveedores.facturas. Archivo PDF/JPG/PNG, máx. 2 MB.'
+      parameters:
+        - $ref: '#/components/parameters/idPath'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - archivo
+              properties:
+                archivo:
+                  type: string
+                  format: binary
+                numero_factura:
+                  type: string
+                fecha_emision:
+                  type: string
+                  format: date
+                monto_total:
+                  type: number
+                notas:
+                  type: string
+      responses:
+        '201':
+          description: Factura cargada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  message:
+                    type: string
+                    example: Factura cargada correctamente
+        '400':
+          description: 'Sin archivo, formato no permitido o datos inválidos'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      x-apidog-folder: Proveedores
+  '/proveedores/facturas/{facturaId}/ver':
+    get:
+      tags:
+        - Proveedores
+      summary: Ver/descargar el archivo de una factura de proveedor
+      description: 'Permiso: proveedores.facturas. Devuelve el binario con su Content-Type original (inline).'
+      parameters:
+        - name: facturaId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Archivo de la factura
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+            image/png:
+              schema:
+                type: string
+                format: binary
+        '404':
+          $ref: '#/components/responses/NotFound'
+      x-apidog-folder: Proveedores
+  '/proveedores/facturas/{facturaId}':
+    delete:
+      tags:
+        - Proveedores
+      summary: Eliminar factura de proveedor
+      description: 'Permiso: proveedores.facturas'
+      parameters:
+        - name: facturaId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Factura eliminada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessMessage'
+        '400':
+          description: No se pudo eliminar
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      x-apidog-folder: Proveedores
+  /caja/abrir:
+    post:
+      tags:
+        - Caja
+      summary: Abrir turno de caja
+      description: 'Permiso: caja.abrir_cerrar. Falla si ya existe un turno abierto.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                monto_inicial_efectivo:
+                  type: number
+                  example: 100000
+                monto_inicial_transferencia:
+                  type: number
+                  example: 0
+                notas:
+                  type: string
+                  nullable: true
+      responses:
+        '200':
+          description: Turno abierto
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessMessage'
+        '400':
+          description: Ya existe un turno abierto
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      x-apidog-folder: Caja
+  '/caja/{id}/cerrar':
+    post:
+      tags:
+        - Caja
+      summary: Cerrar turno de caja
+      description: 'Permiso: caja.abrir_cerrar. `id` es la sesión de caja abierta.'
+      parameters:
+        - $ref: '#/components/parameters/idPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - monto_final_real
+              properties:
+                monto_final_real:
+                  type: number
+                  description: Monto contado físicamente al cierre
+                  example: 845000
+                notas:
+                  type: string
+                  nullable: true
+      responses:
+        '200':
+          description: Turno cerrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessMessage'
+        '400':
+          description: No se pudo cerrar
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      x-apidog-folder: Caja
+  '/caja/{id}/movimiento':
+    post:
+      tags:
+        - Caja
+      summary: Registrar movimiento de caja (entrada/salida de efectivo)
+      description: 'Permiso: caja.movimientos. `id` es la sesión de caja abierta.'
+      parameters:
+        - $ref: '#/components/parameters/idPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - tipo
+                - monto
+              properties:
+                tipo:
+                  type: string
+                  enum:
+                    - entrada
+                    - salida
+                monto:
+                  type: number
+                  example: 50000
+                motivo:
+                  type: string
+                  example: Pago proveedor hielo
+      responses:
+        '200':
+          description: Movimiento registrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessMessage'
+        '400':
+          description: Datos inválidos o sesión no válida
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      x-apidog-folder: Caja
+  /eventos:
+    post:
+      tags:
+        - Eventos
+      summary: Crear evento
+      description: 'Permiso: eventos.crear. Feature de plan: eventos.'
+      requestBody:
+        $ref: '#/components/requestBodies/EventoBody'
+      responses:
+        '201':
+          description: Evento creado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  message:
+                    type: string
+                    example: Evento creado
+        '400':
+          $ref: '#/components/responses/ValidationError'
+      x-apidog-folder: Eventos
+  /eventos/activos:
+    get:
+      tags:
+        - Eventos
+      summary: Listar eventos activos en una fecha
+      description: 'Permiso: eventos.ver o ventas_evento.realizar. Sin `fecha` usa la fecha actual.'
+      parameters:
+        - name: fecha
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+          example: '2026-07-07'
+      responses:
+        '200':
+          description: Eventos activos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                    nombre:
+                      type: string
+                      example: Feria gastronómica
+      x-apidog-folder: Eventos
+  '/eventos/{id}':
+    put:
+      tags:
+        - Eventos
+      summary: Actualizar evento
+      description: 'Permiso: eventos.editar'
+      parameters:
+        - $ref: '#/components/parameters/idPath'
+      requestBody:
+        $ref: '#/components/requestBodies/EventoBody'
+      responses:
+        '200':
+          description: Evento actualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+      x-apidog-folder: Eventos
+    delete:
+      tags:
+        - Eventos
+      summary: Eliminar evento
+      description: 'Permiso: eventos.eliminar'
+      parameters:
+        - $ref: '#/components/parameters/idPath'
+      responses:
+        '200':
+          description: Evento eliminado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '400':
+          description: No se pudo eliminar
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      x-apidog-folder: Eventos
+  /finanzas/api/chart-data:
+    get:
+      tags:
+        - Finanzas
+      summary: Datos del dashboard financiero
+      description: 'Permiso: finanzas.ver'
+      parameters:
+        - name: dias
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 30
+          description: Rango en días hacia atrás
+      responses:
+        '200':
+          description: Resumen financiero
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ingresos:
+                    type: number
+                  egresos:
+                    type: number
+                  utilidad:
+                    type: number
+                  gastosPorCategoria:
+                    type: array
+                    items:
+                      type: object
+                  historico:
+                    type: array
+                    description: Serie temporal para gráficos
+                    items:
+                      type: object
+                  movimientos:
+                    type: array
+                    items:
+                      type: object
+      x-apidog-folder: Finanzas
+  /analitica/datos:
+    get:
+      tags:
+        - Analítica
+      summary: Analítica de ventas y predicción del próximo mes
+      description: 'Requiere rol admin.'
+      responses:
+        '200':
+          description: Analítica completa
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  resumen:
+                    type: object
+                    properties:
+                      meses:
+                        type: array
+                        description: 'Ventas por mes (etiqueta YYYY-MM, nombreMes, totales)'
+                        items:
+                          type: object
+                      totalGeneral:
+                        type: number
+                      cantidadFacturas:
+                        type: integer
+                  prediccion:
+                    type: object
+                    properties:
+                      ventasProximoMes:
+                        type: number
+                      rangoMin:
+                        type: number
+                      rangoMax:
+                        type: number
+                      gananciasEsperadas:
+                        type: number
+                        nullable: true
+                      posiblesPerdidasVariacion:
+                        type: number
+                        nullable: true
+                      mesesUsados:
+                        type: array
+                        items:
+                          type: object
+                      mensaje:
+                        type: string
+      x-apidog-folder: Analítica
+  /whatsapp/connect:
+    post:
+      tags:
+        - WhatsApp
+      summary: Iniciar conexión del bot de WhatsApp
+      description: 'Permiso: whatsapp.ajustes. Inicia el cliente; el QR o pairing code se consulta luego en GET /whatsapp/status.'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                phoneNumber:
+                  type: string
+                  description: 'Número para emparejar por código (opcional; sin él se usa QR)'
+                  example: '573001234567'
+      responses:
+        '200':
+          description: Proceso iniciado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+      x-apidog-folder: WhatsApp
+  /whatsapp/disconnect:
+    post:
+      tags:
+        - WhatsApp
+      summary: Desconectar el bot de WhatsApp
+      description: 'Permiso: whatsapp.ajustes'
+      responses:
+        '200':
+          description: Desconectado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+      x-apidog-folder: WhatsApp
+  /whatsapp/save-config:
+    post:
+      tags:
+        - WhatsApp
+      summary: Guardar configuración de mensajes del bot
+      description: 'Permiso: whatsapp.ajustes'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                mensaje_bienvenida:
+                  type: string
+                  nullable: true
+                mensaje_transferencia:
+                  type: string
+                  nullable: true
+      responses:
+        '200':
+          description: Configuración guardada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessMessage'
+      x-apidog-folder: WhatsApp
+  /whatsapp/status:
+    get:
+      tags:
+        - WhatsApp
+      summary: Estado de la conexión (polling)
+      responses:
+        '200':
+          description: Estado actual
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  estado:
+                    type: string
+                    example: desconectado
+                  last_qr:
+                    type: string
+                    nullable: true
+                    description: Data del QR para escanear
+                  last_pairing_code:
+                    type: string
+                    nullable: true
+      x-apidog-folder: WhatsApp
+  /api/servicios:
+    post:
+      tags:
+        - Servicios
+      summary: Crear servicio
+      description: 'Permiso: servicios.crear. Enviar header `Accept: application/json` para respuesta JSON (si no, redirige a la vista).'
+      requestBody:
+        $ref: '#/components/requestBodies/ServicioBody'
+      responses:
+        '200':
+          description: Servicio creado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessMessage'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+      x-apidog-folder: Servicios
+  /api/servicios/lista:
+    get:
+      tags:
+        - Servicios
+      summary: Listar servicios activos
+      description: 'Permiso: servicios.ver'
+      responses:
+        '200':
+          description: Servicios activos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Servicio'
+      x-apidog-folder: Servicios
+  '/api/servicios/{id}/update':
+    post:
+      tags:
+        - Servicios
+      summary: Actualizar servicio
+      description: 'Permiso: servicios.editar. Enviar header `Accept: application/json` para respuesta JSON.'
+      parameters:
+        - $ref: '#/components/parameters/idPath'
+      requestBody:
+        $ref: '#/components/requestBodies/ServicioBody'
+      responses:
+        '200':
+          description: Servicio actualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessMessage'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      x-apidog-folder: Servicios
+  '/api/servicios/{id}/delete':
+    post:
+      tags:
+        - Servicios
+      summary: Eliminar servicio
+      description: 'Permiso: servicios.eliminar. Enviar header `Accept: application/json` para respuesta JSON.'
+      parameters:
+        - $ref: '#/components/parameters/idPath'
+      responses:
+        '200':
+          description: Servicio eliminado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessMessage'
+      x-apidog-folder: Servicios
+  /ventas/export:
+    get:
+      tags:
+        - Ventas
+      summary: Exportar ventas a Excel
+      description: 'Permiso: plantillas.ver. Features de plan: ventas y plantillas. Mismos filtros que la vista de ventas.'
+      parameters:
+        - name: desde
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: hasta
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: q
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Búsqueda por cliente o número de factura
+        - name: evento_id
+          in: query
+          required: false
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Archivo Excel con las ventas filtradas
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+      x-apidog-folder: Ventas
+  /soporte/enviar:
+    post:
+      tags:
+        - Soporte
+      summary: Enviar ticket de soporte
+      description: Guarda el ticket y notifica por email al equipo de soporte.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - tipo
+                - descripcion
+              properties:
+                tipo:
+                  type: string
+                  enum:
+                    - bug
+                    - mejora
+                    - duda
+                    - urgente
+                descripcion:
+                  type: string
+                  minLength: 10
+                  maxLength: 2000
+      responses:
+        '200':
+          description: Ticket enviado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessMessage'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+      x-apidog-folder: Soporte
+  /perfil/actualizar:
+    post:
+      tags:
+        - Perfil
+      summary: Actualizar perfil del restaurante (datos y logo)
+      description: 'Permiso: perfil.editar. Logo: imagen máx. 2 MB.'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                nombre:
+                  type: string
+                direccion:
+                  type: string
+                telefono:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                colores:
+                  type: string
+                  description: JSON serializado con la paleta de colores del tenant
+                  example: '{"primario":"#c0392b","secundario":"#2c3e50"}'
+                logo:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Perfil actualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessMessage'
+        '500':
+          description: Error al actualizar
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessMessage'
+      x-apidog-folder: Perfil
+  /perfil/test-report:
+    post:
+      tags:
+        - Perfil
+      summary: Generar y enviar reporte mensual (prueba)
+      description: 'Permiso: perfil.editar. Envía el reporte por email (y WhatsApp si el bot está conectado) y devuelve el PDF en base64.'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                mes:
+                  type: integer
+                  minimum: 1
+                  maximum: 12
+                  description: Mes del reporte (sin mes/anio usa el mes actual)
+                anio:
+                  type: integer
+                  example: 2026
+      responses:
+        '200':
+          description: Reporte generado y enviado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  whatsapp:
+                    type: boolean
+                    description: true si también se envió por WhatsApp
+                  pdfBase64:
+                    type: string
+                    nullable: true
+                  fileName:
+                    type: string
+                    example: Reporte_7_2026.pdf
+      x-apidog-folder: Perfil
+  /api/notifications/subscribe:
+    get:
+      tags:
+        - Notificaciones
+      summary: Suscribirse a notificaciones en tiempo real (SSE)
+      description: |
+        Conexión **Server-Sent Events** (`Content-Type: text/event-stream`). Al conectar emite
+        `{"event":"connected","tenantId":N}` y luego un evento `data:` por cada pedido creado
+        (`{"event":"orderCreated", ...}`), filtrado por el tenant del token. Envía keep-alive
+        cada 30 segundos. La conexión permanece abierta hasta que el cliente la cierre.
+      responses:
+        '200':
+          description: Stream de eventos SSE
+          content:
+            text/event-stream:
+              schema:
+                type: string
+                example: |
+                  data: {"event":"connected","tenantId":2}
+        '400':
+          description: Tenant no disponible
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      x-apidog-folder: Notificaciones
 components:
   securitySchemes:
     bearerAuth:
@@ -1744,6 +3225,216 @@ components:
             email: juan@example.com
             tipo_documento: CC
             numero_documento: '1020304050'
+    InsumoBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - codigo
+              - nombre
+            properties:
+              codigo:
+                type: string
+                maxLength: 50
+                example: INS-POLLO
+              nombre:
+                type: string
+                maxLength: 100
+                example: Pechuga de pollo
+              unidad_compra:
+                type: string
+                maxLength: 20
+                default: UND
+                example: Kilo
+              cantidad_compra:
+                type: number
+                minimum: 0.0001
+                default: 1
+                description: Cantidad (en unidad base) que trae cada unidad de compra
+                example: 1000
+              precio_compra:
+                type: number
+                minimum: 0
+                example: 18000
+              precio_venta:
+                type: number
+                minimum: 0
+                nullable: true
+              unidad_base:
+                type: string
+                default: g
+                example: g
+              stock_minimo:
+                type: number
+                minimum: 0
+                example: 2000
+              categoria_id:
+                type: integer
+                nullable: true
+              unidad_medida_id:
+                type: integer
+                nullable: true
+              proveedor_id:
+                type: integer
+                nullable: true
+              stock_inicial:
+                type: number
+                nullable: true
+                description: 'Solo en creación: si es > 0 registra una entrada inicial automática'
+          example:
+            codigo: INS-POLLO
+            nombre: Pechuga de pollo
+            unidad_compra: Kilo
+            cantidad_compra: 1000
+            precio_compra: 18000
+            unidad_base: g
+            stock_minimo: 2000
+            stock_inicial: 5000
+    RecetaBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - producto_id
+              - nombre_receta
+            properties:
+              producto_id:
+                type: integer
+                example: 12
+              nombre_receta:
+                type: string
+                example: Hamburguesa clásica x1
+              porciones:
+                type: number
+                default: 1
+                example: 1
+              costos_adicionales:
+                type: number
+                nullable: true
+                example: 500
+              ingredientes:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    insumo_id:
+                      type: integer
+                    cantidad:
+                      type: number
+                      description: Cantidad por receta (en la unidad indicada)
+                    unidad:
+                      type: string
+                      example: g
+          example:
+            producto_id: 12
+            nombre_receta: Hamburguesa clásica x1
+            porciones: 1
+            ingredientes:
+              - insumo_id: 7
+                cantidad: 150
+                unidad: g
+    ProveedorBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - nombre
+            properties:
+              nombre:
+                type: string
+                example: Distribuidora El Campo
+              nit:
+                type: string
+                nullable: true
+                example: '900123456-7'
+              contacto:
+                type: string
+                nullable: true
+                example: Carlos Gómez
+              telefono:
+                type: string
+                nullable: true
+                example: '3009876543'
+              email:
+                type: string
+                format: email
+                nullable: true
+              direccion:
+                type: string
+                nullable: true
+              activo:
+                type: integer
+                enum:
+                  - 0
+                  - 1
+                description: Solo en actualización (default 1)
+    EventoBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - nombre
+              - fecha_inicio
+              - fecha_fin
+            properties:
+              nombre:
+                type: string
+                maxLength: 100
+                example: Feria gastronómica
+              descripcion:
+                type: string
+                maxLength: 500
+                nullable: true
+              fecha_inicio:
+                type: string
+                format: date
+                example: '2026-07-10'
+              fecha_fin:
+                type: string
+                format: date
+                example: '2026-07-12'
+              presupuesto:
+                type: number
+                minimum: 0
+                nullable: true
+                example: 500000
+    ServicioBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - nombre
+              - precio
+            properties:
+              nombre:
+                type: string
+                maxLength: 100
+                example: Domicilio
+              descripcion:
+                type: string
+                maxLength: 500
+                nullable: true
+              precio:
+                type: number
+                minimum: 0
+                example: 5000
+              es_externo:
+                type: boolean
+                default: false
+                description: true si el cobro se transfiere a un tercero (no cuenta como venta propia)
+              activo:
+                type: boolean
+                default: true
   responses:
     Unauthorized:
       description: 'Token ausente, inválido o expirado'
@@ -1810,6 +3501,177 @@ components:
           example: true
         message:
           type: string
+    Ok:
+      type: object
+      properties:
+        ok:
+          type: boolean
+          example: true
+    Insumo:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 7
+        codigo:
+          type: string
+          example: INS-POLLO
+        nombre:
+          type: string
+          example: Pechuga de pollo
+        unidad_compra:
+          type: string
+          example: Kilo
+        cantidad_compra:
+          type: number
+          description: Cantidad en unidad base por cada unidad de compra
+          example: 1000
+        precio_compra:
+          type: number
+          example: 18000
+        precio_venta:
+          type: number
+          nullable: true
+        unidad_base:
+          type: string
+          example: g
+        stock_actual:
+          type: number
+          example: 4500
+        stock_minimo:
+          type: number
+          example: 2000
+        costo_promedio:
+          type: number
+          description: Costo promedio por unidad base
+          example: 18
+        categoria_id:
+          type: integer
+          nullable: true
+        proveedor_id:
+          type: integer
+          nullable: true
+    MovimientoInventario:
+      type: object
+      properties:
+        id:
+          type: integer
+        insumo_id:
+          type: integer
+          example: 7
+        insumo_codigo:
+          type: string
+          example: INS-POLLO
+        insumo_nombre:
+          type: string
+          example: Pechuga de pollo
+        tipo:
+          type: string
+          enum:
+            - entrada
+            - salida
+            - ajuste
+        cantidad:
+          type: number
+          example: 5000
+        costo_unitario:
+          type: number
+          nullable: true
+        referencia:
+          type: string
+          nullable: true
+          example: Compra factura 00123
+        unidad_base:
+          type: string
+          example: g
+        proveedor_nombre:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+    Receta:
+      type: object
+      nullable: true
+      properties:
+        id:
+          type: integer
+          example: 3
+        producto_id:
+          type: integer
+          example: 12
+        nombre_receta:
+          type: string
+          example: Hamburguesa clásica x1
+        porciones:
+          type: number
+          example: 1
+        costos_adicionales:
+          type: number
+          nullable: true
+        ingredientes:
+          type: array
+          items:
+            type: object
+            properties:
+              insumo_id:
+                type: integer
+              insumo_nombre:
+                type: string
+              cantidad:
+                type: number
+              unidad:
+                type: string
+                example: g
+    Proveedor:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 4
+        nombre:
+          type: string
+          example: Distribuidora El Campo
+        nit:
+          type: string
+          nullable: true
+          example: '900123456-7'
+        contacto:
+          type: string
+          nullable: true
+        telefono:
+          type: string
+          nullable: true
+        email:
+          type: string
+          nullable: true
+        direccion:
+          type: string
+          nullable: true
+        activo:
+          type: integer
+          example: 1
+    Servicio:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 2
+        nombre:
+          type: string
+          example: Domicilio
+        descripcion:
+          type: string
+          nullable: true
+        precio:
+          type: number
+          example: 5000
+        es_externo:
+          type: boolean
+          example: false
+        activo:
+          type: boolean
+          example: true
     Usuario:
       type: object
       properties:
