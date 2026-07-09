@@ -17,7 +17,7 @@ graph TD
     CL[Cliente / Comensal]
 
     %% Casos de Uso de Superadmin
-    subgraph Módulo Global SaaS (Superadmin)
+    subgraph "Módulo Global SaaS (Superadmin)"
         UC_T[Gestionar Inquilinos / Tenants]
         UC_Pl[Gestionar Planes y Precios]
         UC_O[Override de Permisos Individuales]
@@ -31,7 +31,7 @@ graph TD
     SA --> UC_Met
 
     %% Casos de Uso de Admin Local
-    subgraph Configuración y Administración (Admin Local)
+    subgraph "Configuración y Administración (Admin Local)"
         UC_Emp[Gestionar Empleados y Roles]
         UC_Rec[Crear y Configurar Recetas]
         UC_CF[Gestionar Costos Fijos]
@@ -53,7 +53,7 @@ graph TD
     AL --> UC_ML
 
     %% Casos de Uso de Cajero
-    subgraph Caja y POS (Cajero)
+    subgraph "Caja y POS (Cajero)"
         UC_Apert[Apertura de Turno de Caja]
         UC_Mov[Registrar Entradas / Salidas Manuales]
         UC_POS[Venta Directa POS]
@@ -69,7 +69,7 @@ graph TD
     CA --> UC_Arq
 
     %% Casos de Uso de Mesero
-    subgraph Operación de Salón (Mesero)
+    subgraph "Operación de Salón (Mesero)"
         UC_Ped[Abrir Pedido en Mesa]
         UC_Itm[Adicionar Ítems y Servicios]
         UC_Not[Agregar Notas de Preparación]
@@ -83,7 +83,7 @@ graph TD
     ME --> UC_Pref
 
     %% Casos de Uso de Cocinero
-    subgraph Cola de Cocina (Cocinero)
+    subgraph "Cola de Cocina (Cocinero)"
         UC_Coc[Ver Cola de Comandas en SSE]
         UC_Prep[Marcar Ítem en Preparación]
         UC_Ready[Marcar Ítem como Listo]
@@ -93,7 +93,7 @@ graph TD
     CO --> UC_Ready
 
     %% Casos de Uso de Cliente
-    subgraph Autoconsumo (Cliente)
+    subgraph "Autoconsumo (Cliente)"
         UC_Scan[Escanear QR de Mesa]
         UC_Menu[Ver Carta Interactiva]
         UC_Ord[Enviar Pedido Directo]

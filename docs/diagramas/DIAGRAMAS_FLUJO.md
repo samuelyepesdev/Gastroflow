@@ -105,5 +105,5 @@ flowchart TD
     L --> M["Modificar consultas SQL subsiguientes:
     Agregar cláusula WHERE tenant_id = req.tenant.id"]
     
-    M --> N[Pasar control al Controlador (next)]
+    M --> N["Pasar control al Controlador (next)"]
 ```
