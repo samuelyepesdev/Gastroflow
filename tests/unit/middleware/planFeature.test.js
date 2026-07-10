@@ -77,9 +77,25 @@ describe('middleware/planFeature', () => {
             const res = createRes();
             const next = jest.fn();
             middleware(req, res, next);
-            expect(planPermissions.planHasModule).toHaveBeenCalledWith({ caracteristicas: ['costeo'] }, 'costeo');
+            expect(planPermissions.planHasModule).toHaveBeenCalledWith({ caracteristicas: ['costeo'] }, 'costeo', []);
             expect(next).toHaveBeenCalled();
             expect(authService.hasPermission).not.toHaveBeenCalled();
+        });
+
+        it('pasa el addonSlugs del tenant a planHasModule (BUG REGRESIÓN: antes un add-on pago nunca desbloqueaba nada)', () => {
+            planPermissions.planHasModule.mockReturnValue(true);
+            const middleware = requirePlanFeature('costeo');
+            const req = createReq({
+                user: { rol: 'admin' },
+                tenant: { plan: { caracteristicas: ['productos'] }, addonSlugs: ['costeo'] }
+            });
+            const res = createRes();
+            const next = jest.fn();
+            middleware(req, res, next);
+            expect(planPermissions.planHasModule).toHaveBeenCalledWith({ caracteristicas: ['productos'] }, 'costeo', [
+                'costeo'
+            ]);
+            expect(next).toHaveBeenCalled();
         });
 
         it('pasa si el usuario tiene permiso que desbloquea el módulo', () => {

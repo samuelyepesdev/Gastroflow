@@ -5,58 +5,8 @@ $(function () {
   const mod = window.CosteoModule;
 
   // --- Insumos ---
-  window.getInsumosFilters = function() {
-    const q = document.getElementById('filtroInsumoQ')?.value?.trim() || '';
-    const unidad = document.getElementById('filtroInsumoUnidad')?.value?.trim() || '';
-    return { q, unidad };
-  };
-
-  window.loadInsumos = function(filters) {
-    const f = filters || window.getInsumosFilters();
-    const qs = new URLSearchParams();
-    if (f.q) qs.set('q', f.q);
-    if (f.unidad) qs.set('unidad', f.unidad);
-    const path = '/api/insumos' + (qs.toString() ? '?' + qs.toString() : '');
-    return mod.api(path).then(list => {
-      const tbody = document.querySelector('#tablaInsumos tbody');
-      if (tbody) {
-        tbody.innerHTML = '';
-        (list || []).forEach(ins => {
-          const tr = document.createElement('tr');
-          var presentacion = (ins.cantidad_compra != null ? ins.cantidad_compra : 1) + ' ' + (ins.unidad_compra || 'UND');
-          tr.innerHTML = `
-            <td>${mod.escapeHtml(ins.codigo)}</td>
-            <td>${mod.escapeHtml(ins.nombre)}</td>
-            <td>${mod.escapeHtml(presentacion)}</td>
-            <td>${mod.formatMoney(ins.precio_compra)}</td>
-            <td class="text-end">
-              ${mod.canEdit ? `<button class="btn btn-sm btn-outline-primary me-1 btnEditInsumo" data-id="${ins.id}">Editar</button>
-              <button class="btn btn-sm btn-outline-danger btnElimInsumo" data-id="${ins.id}">Eliminar</button>` : ''}
-            </td>`;
-          tbody.appendChild(tr);
-        });
-      }
-      if (!filters) {
-        const unidades = [...new Set((list || []).map(i => i.unidad_compra).filter(Boolean))].sort();
-        const sel = document.getElementById('filtroInsumoUnidad');
-        if (sel) {
-          const current = sel.value;
-          sel.innerHTML = '<option value="">Todas las unidades</option>';
-          unidades.forEach(u => {
-            const opt = document.createElement('option');
-            opt.value = u;
-            opt.textContent = u;
-            if (u === current) opt.selected = true;
-            sel.appendChild(opt);
-          });
-        }
-      }
-      return list;
-    });
-  };
-
-  document.getElementById('btnFiltrarInsumos')?.addEventListener('click', () => window.loadInsumos());
-
+  // La gestión de insumos (crear/editar/eliminar, tabla, filtros) vive en /inventario.
+  // Acá solo queda la carga masiva por Excel, que no tiene equivalente en Inventario.
   document.getElementById('btnCargarExcelInsumos')?.addEventListener('click', () => {
     document.getElementById('inputCargarExcelInsumos')?.click();
   });
@@ -85,124 +35,17 @@ $(function () {
           msg += (msg ? ' ' : '') + errores.length + ' fila(s) con error.';
         }
         mod.showToast(msg || 'Carga completada', msg ? 'success' : 'info');
-        window.loadInsumos(window.getInsumosFilters());
       })
       .catch(err => mod.showToast(err.message || 'Error al cargar archivo', 'danger'));
     this.value = '';
   });
 
-  window.openInsumoModal = function(insumo) {
-    const modal = document.getElementById('insumoModal');
-    if (!modal) return;
-    const title = document.getElementById('insumoModalTitle');
-    document.getElementById('insumoId').value = insumo ? insumo.id : '';
-    document.getElementById('insumoCodigo').value = insumo ? insumo.codigo : '';
-    document.getElementById('insumoNombre').value = insumo ? insumo.nombre : '';
-
-    const selectMedida = document.getElementById('insumoUnidadId');
-    const textMedida = document.getElementById('insumoUnidadText');
-    const selectCategoria = document.getElementById('insumoCategoriaId');
-
-    if (insumo) {
-      if (insumo.unidad_medida_id) {
-        selectMedida.value = insumo.unidad_medida_id;
-        textMedida.classList.add('d-none');
-      } else {
-        selectMedida.value = "";
-        textMedida.value = insumo.unidad_compra || 'UND';
-        textMedida.classList.remove('d-none');
-      }
-      if (insumo.categoria_id) {
-        selectCategoria.value = insumo.categoria_id;
-      } else {
-        selectCategoria.value = "";
-      }
-    } else {
-      selectMedida.value = "";
-      textMedida.value = "UND";
-      textMedida.classList.remove('d-none');
-      selectCategoria.value = "";
-    }
-
-    document.getElementById('insumoCantidadCompra').value = insumo != null && insumo.cantidad_compra != null ? insumo.cantidad_compra : '1';
-    document.getElementById('insumoPrecioCompra').value = insumo != null ? (insumo.precio_compra != null ? insumo.precio_compra : '0') : '0';
-    document.getElementById('insumoRendimiento').value = insumo != null && insumo.rendimiento_pct != null ? insumo.rendimiento_pct : '100';
-    if (title) title.textContent = insumo ? 'Editar Insumo' : 'Nuevo Insumo';
-    bootstrap.Modal.getOrCreateInstance(modal).show();
-  };
-
-  document.getElementById('insumoUnidadId')?.addEventListener('change', function () {
-    const textMedida = document.getElementById('insumoUnidadText');
-    if (this.value === "") {
-      textMedida?.classList.remove('d-none');
-    } else {
-      textMedida?.classList.add('d-none');
-    }
-  });
-
-  document.getElementById('btnNuevoInsumo')?.addEventListener('click', (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    window.openInsumoModal(null);
-  });
-  
   function quitarBackdropModal() {
     document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
     document.body.classList.remove('modal-open');
     document.body.style.overflow = '';
     document.body.style.paddingRight = '';
   }
-  document.getElementById('insumoModal')?.addEventListener('hidden.bs.modal', function () {
-    quitarBackdropModal();
-  });
-
-  document.getElementById('btnGuardarInsumo')?.addEventListener('click', () => {
-    const id = document.getElementById('insumoId').value;
-    const selectMedida = document.getElementById('insumoUnidadId');
-    const textMedida = document.getElementById('insumoUnidadText');
-    const payload = {
-      codigo: document.getElementById('insumoCodigo').value.trim(),
-      nombre: document.getElementById('insumoNombre').value.trim(),
-      unidad_compra: selectMedida.value ? selectMedida.options[selectMedida.selectedIndex].dataset.name || textMedida.value : textMedida.value || 'UND',
-      unidad_medida_id: selectMedida.value || null,
-      categoria_id: document.getElementById('insumoCategoriaId').value || null,
-      cantidad_compra: parseFloat(document.getElementById('insumoCantidadCompra').value) || 1,
-      precio_compra: parseFloat(document.getElementById('insumoPrecioCompra').value) || 0,
-      rendimiento_pct: parseFloat(document.getElementById('insumoRendimiento').value) || 100
-    };
-    const modalEl = document.getElementById('insumoModal');
-    const instance = bootstrap.Modal.getInstance(modalEl);
-    let promise;
-    if (id) {
-      promise = mod.api('/api/insumos/' + id, { method: 'PUT', body: JSON.stringify(payload) });
-    } else {
-      promise = mod.api('/api/insumos', { method: 'POST', body: JSON.stringify(payload) });
-    }
-    promise.then(() => {
-      if (instance) instance.hide();
-      quitarBackdropModal();
-      window.loadInsumos(window.getInsumosFilters()).catch(() => { });
-      mod.showToast('Insumo guardado', 'success');
-    }).catch(err => {
-      if (instance) instance.hide();
-      quitarBackdropModal();
-      mod.showToast(err.message || 'Error al guardar', 'danger');
-    });
-  });
-
-  document.getElementById('tablaInsumos')?.addEventListener('click', (e) => {
-    const id = e.target.closest('[data-id]')?.getAttribute('data-id');
-    if (!id) return;
-    if (e.target.classList.contains('btnEditInsumo')) {
-      mod.api('/api/insumos/' + id).then(ins => window.openInsumoModal(ins)).catch(err => mod.showToast(err.message, 'danger'));
-    } else if (e.target.classList.contains('btnElimInsumo')) {
-      if (!confirm('¿Eliminar este insumo?')) return;
-      mod.api('/api/insumos/' + id, { method: 'DELETE' }).then(() => {
-        window.loadInsumos(window.getInsumosFilters());
-        mod.showToast('Insumo eliminado', 'success');
-      }).catch(err => mod.showToast(err.message, 'danger'));
-    }
-  });
 
   // --- Recetas ---
   window.getRecetasFilters = function() {
@@ -717,7 +560,6 @@ $(function () {
   window.COSTEO_quitarBackdropModal = quitarBackdropModal;
 
   // Init
-  window.loadInsumos();
   window.loadRecetas();
   loadConfig();
 });

@@ -5,8 +5,23 @@
  */
 
 const TenantRepository = require('../repositories/Admin/TenantRepository');
+const AddonRepository = require('../repositories/Admin/AddonRepository');
 const AuthService = require('../services/Shared/AuthService');
 const { getAllowedByPlan, getAllowedForUser } = require('../utils/planPermissions');
+
+/**
+ * Slugs de add-ons activos del tenant (tenant_addons). Nunca debe tumbar el request:
+ * si falla, se asume sin add-ons (el acceso sigue dependiendo del plan/permisos).
+ */
+async function getAddonSlugs(tenantId) {
+    try {
+        const addons = await AddonRepository.getByTenant(tenantId);
+        return (addons || []).map(a => a.slug);
+    } catch (error) {
+        console.error('Error al cargar add-ons del tenant:', error);
+        return [];
+    }
+}
 
 /**
  * Resolve tenant for the current user and attach to request.
@@ -65,10 +80,13 @@ async function attachTenantContext(req, res, next) {
             return res.redirect('/auth/login?mensaje=' + encodeURIComponent(msg));
         }
 
+        tenant.addonSlugs = await getAddonSlugs(tenant.id);
+
         req.tenant = tenant;
         res.locals.tenant = tenant;
-        // Navbar y vistas: mostrar módulo si el plan lo incluye O si el usuario tiene permiso (Superadmin lo asignó)
-        res.locals.allowedByPlan = getAllowedForUser(tenant.plan || null, req.user.permisos || []);
+        // Navbar y vistas: mostrar módulo si el plan lo incluye, si tiene un add-on que lo
+        // desbloquea, O si el usuario tiene permiso (Superadmin lo asignó)
+        res.locals.allowedByPlan = getAllowedForUser(tenant.plan || null, req.user.permisos || [], tenant.addonSlugs);
         next();
     } catch (error) {
         console.error('Error en attachTenantContext:', error);
@@ -91,9 +109,10 @@ async function costeoTenantContext(req, res, next) {
             try {
                 const tenant = await TenantRepository.findById(tenantId);
                 if (tenant) {
+                    tenant.addonSlugs = await getAddonSlugs(tenant.id);
                     req.tenant = tenant;
                     res.locals.tenant = tenant;
-                    res.locals.allowedByPlan = getAllowedByPlan(tenant.plan || null);
+                    res.locals.allowedByPlan = getAllowedByPlan(tenant.plan || null, tenant.addonSlugs);
                 } else {
                     req.tenant = null;
                     res.locals.allowedByPlan = getAllowedByPlan(null);

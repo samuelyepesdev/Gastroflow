@@ -1,31 +1,31 @@
                     <!-- Tab Insumos -->
                     <div class="tab-pane fade show active" id="insumos" role="tabpanel">
-                        <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
-                            <input type="text" class="form-control form-control-sm" id="filtroInsumoQ" placeholder="Buscar por código o nombre..." style="max-width: 220px;">
-                            <select class="form-select form-select-sm" id="filtroInsumoUnidad" style="max-width: 120px;">
-                                <option value="">Todas las unidades</option>
-                            </select>
-                            <button type="button" class="btn btn-sm btn-outline-secondary" id="btnFiltrarInsumos">Filtrar</button>
-                            <% if (user && user.permisos && user.permisos.includes('costeo.editar')) { %>
-                            <% if (typeof allowedByPlan !== 'undefined' && allowedByPlan && allowedByPlan.plantillas && user.permisos.includes('plantillas.ver')) { %>
-                            <a href="/costeo/api/insumos/plantilla<%= (typeof tenant !== 'undefined' && tenant && tenant.id) ? '?tenant_id=' + tenant.id : '' %>" class="btn btn-sm btn-outline-success" download="plantilla_insumos.xlsx" id="linkPlantillaInsumos">
-                                <i class="bi bi-file-earmark-excel me-1"></i>Descargar plantilla
+                        <div class="glass-card p-4 text-center">
+                            <i class="bi bi-box-seam display-6 text-muted mb-2 d-block"></i>
+                            <p class="mb-3">Los insumos (precio de compra, stock, costo real de compras) se gestionan
+                                desde el módulo de <strong>Inventario</strong>. El costeo de recetas ya usa esos datos
+                                automáticamente.</p>
+                            <a href="/inventario" class="btn btn-primary">
+                                <i class="bi bi-arrow-right-circle me-1"></i>Ir a Inventario
                             </a>
-                            <button type="button" class="btn btn-sm btn-outline-primary" id="btnCargarExcelInsumos">
-                                <i class="bi bi-upload me-1"></i>Cargar Excel
-                            </button>
-                            <input type="file" accept=".xlsx,.xls" id="inputCargarExcelInsumos" class="d-none">
-                            <% } %>
-                            <button type="button" class="btn btn-primary btn-sm ms-auto" id="btnNuevoInsumo">
-                                <i class="bi bi-plus-lg me-1"></i>Nuevo Insumo
-                            </button>
-                            <% } %>
                         </div>
-                        <div class="table-responsive">
-                            <table class="table table-hover" id="tablaInsumos">
-                                <thead><tr><th>Código</th><th>Nombre</th><th>Presentación</th><th>Precio compra</th><th></th></tr></thead>
-                                <tbody></tbody>
-                            </table>
+
+                        <% if (user && user.permisos && user.permisos.includes('costeo.editar')) { %>
+                        <% if (typeof allowedByPlan !== 'undefined' && allowedByPlan && allowedByPlan.plantillas && user.permisos.includes('plantillas.ver')) { %>
+                        <div class="glass-card p-3 mt-3">
+                            <p class="small text-muted mb-2">Carga masiva de insumos por Excel (crea o actualiza por
+                                código):</p>
+                            <div class="d-flex flex-wrap gap-2">
+                                <a href="/costeo/api/insumos/plantilla<%= (typeof tenant !== 'undefined' && tenant && tenant.id) ? '?tenant_id=' + tenant.id : '' %>" class="btn btn-sm btn-outline-success" download="plantilla_insumos.xlsx" id="linkPlantillaInsumos">
+                                    <i class="bi bi-file-earmark-excel me-1"></i>Descargar plantilla
+                                </a>
+                                <button type="button" class="btn btn-sm btn-outline-primary" id="btnCargarExcelInsumos">
+                                    <i class="bi bi-upload me-1"></i>Cargar Excel
+                                </button>
+                                <input type="file" accept=".xlsx,.xls" id="inputCargarExcelInsumos" class="d-none">
+                            </div>
                         </div>
+                        <% } %>
+                        <% } %>
                     </div>
 

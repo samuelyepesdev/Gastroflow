@@ -6,8 +6,12 @@ jest.mock('../../../repositories/Admin/TenantRepository', () => ({
     getDefault: jest.fn(),
     findById: jest.fn()
 }));
+jest.mock('../../../repositories/Admin/AddonRepository', () => ({
+    getByTenant: jest.fn().mockResolvedValue([])
+}));
 
 const TenantRepository = require('../../../repositories/Admin/TenantRepository');
+const AddonRepository = require('../../../repositories/Admin/AddonRepository');
 const { attachTenantContext, costeoTenantContext } = require('../../../middleware/tenant');
 
 const createReq = (overrides = {}) => ({
@@ -119,6 +123,31 @@ describe('middleware/tenant', () => {
                 expect.objectContaining({ error: expect.stringContaining('desactivado') })
             );
             expect(next).not.toHaveBeenCalled();
+        });
+
+        it('BUG REGRESIÓN: adjunta addonSlugs al tenant y desbloquea el módulo en allowedByPlan', async () => {
+            const tenant = { id: 1, nombre: 'Tenant A', activo: true, plan: { caracteristicas: ['productos'] } };
+            TenantRepository.findById.mockResolvedValue(tenant);
+            AddonRepository.getByTenant.mockResolvedValueOnce([{ slug: 'costeo' }]);
+            const req = createReq({ user: { tenant_id: 1, permisos: [] } });
+            const res = createRes();
+            const next = jest.fn();
+            await attachTenantContext(req, res, next);
+            expect(req.tenant.addonSlugs).toEqual(['costeo']);
+            expect(res.locals.allowedByPlan.costeo).toBe(true);
+            expect(next).toHaveBeenCalled();
+        });
+
+        it('si falla la carga de add-ons, no tumba el request (addonSlugs vacío)', async () => {
+            const tenant = { id: 1, nombre: 'Tenant A', activo: true, plan: { caracteristicas: [] } };
+            TenantRepository.findById.mockResolvedValue(tenant);
+            AddonRepository.getByTenant.mockRejectedValueOnce(new Error('DB caída'));
+            const req = createReq({ user: { tenant_id: 1 } });
+            const res = createRes();
+            const next = jest.fn();
+            await attachTenantContext(req, res, next);
+            expect(req.tenant.addonSlugs).toEqual([]);
+            expect(next).toHaveBeenCalled();
         });
 
         it('devuelve 500 JSON en caso de error (XHR)', async () => {

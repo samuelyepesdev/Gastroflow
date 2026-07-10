@@ -65,6 +65,7 @@ document.getElementById('btnCrearInsumo').addEventListener('click', async () => 
         unidad_base: document.getElementById('nuevoUnidadBase').value,
         cantidad_compra: parseFloat(document.getElementById('nuevoCantidadCompra').value) || 1,
         precio_compra: parseFloat(document.getElementById('nuevoPrecioCompra').value) || 0,
+        rendimiento_pct: parseFloat(document.getElementById('nuevoRendimiento').value) || 100,
         stock_minimo: parseFloat(document.getElementById('nuevoStockMinimo').value) || 0,
         stock_inicial: parseFloat(document.getElementById('nuevoStockInicial').value) || 0,
         proveedor_id: document.getElementById('nuevoProveedorId').value || null,
@@ -349,6 +350,7 @@ async function abrirEditarInsumo(id) {
 
         document.getElementById('editCantidadCompra').value = item.cantidad_compra || 1;
         document.getElementById('editPrecioCompra').value = item.precio_compra || 0;
+        document.getElementById('editRendimiento').value = item.rendimiento_pct != null ? item.rendimiento_pct : 100;
 
         const selectMedida = document.getElementById('editUnidadMedidaId');
         if (selectMedida) {
@@ -390,6 +392,7 @@ document.getElementById('btnActualizarInsumo').addEventListener('click', async (
         stock_minimo: parseFloat(document.getElementById('editStockMinimo').value) || 0,
         cantidad_compra: parseFloat(document.getElementById('editCantidadCompra').value) || 1,
         precio_compra: parseFloat(document.getElementById('editPrecioCompra').value) || 0,
+        rendimiento_pct: parseFloat(document.getElementById('editRendimiento').value) || 100,
         unidad_medida_id: document.getElementById('editUnidadMedidaId').value || null,
         precio_venta: parseFloat(document.getElementById('editPrecioVenta').value) || 0
     };

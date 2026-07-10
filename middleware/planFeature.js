@@ -20,12 +20,19 @@ function requirePlanFeature(featureSlug) {
         const tenant = req.tenant;
         if (!tenant) {
             if (req.xhr || (req.headers.accept && req.headers.accept.indexOf('json') > -1)) {
-                return res.status(403).json({ error: 'Tu plan no incluye esta función. Contacta al administrador para actualizar.' });
+                return res
+                    .status(403)
+                    .json({ error: 'Tu plan no incluye esta función. Contacta al administrador para actualizar.' });
             }
-            return res.status(403).render('errors/generic', { error: { message: 'Tu plan no incluye esta función. Contacta al administrador para actualizar.' } });
+            return res
+                .status(403)
+                .render('errors/generic', {
+                    error: { message: 'Tu plan no incluye esta función. Contacta al administrador para actualizar.' }
+                });
         }
         const plan = tenant.plan || null;
-        const planIncludes = planHasModule(plan, featureSlug);
+        const addonSlugs = tenant.addonSlugs || [];
+        const planIncludes = planHasModule(plan, featureSlug, addonSlugs);
         if (planIncludes) {
             return next();
         }
@@ -36,9 +43,15 @@ function requirePlanFeature(featureSlug) {
             return next();
         }
         if (req.xhr || (req.headers.accept && req.headers.accept.indexOf('json') > -1)) {
-            return res.status(403).json({ error: 'Tu plan no incluye esta función. Contacta al administrador para actualizar.' });
+            return res
+                .status(403)
+                .json({ error: 'Tu plan no incluye esta función. Contacta al administrador para actualizar.' });
         }
-        return res.status(403).render('errors/generic', { error: { message: 'Tu plan no incluye esta función. Contacta al administrador para actualizar.' } });
+        return res
+            .status(403)
+            .render('errors/generic', {
+                error: { message: 'Tu plan no incluye esta función. Contacta al administrador para actualizar.' }
+            });
     };
 }
 

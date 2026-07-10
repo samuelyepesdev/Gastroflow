@@ -83,7 +83,7 @@ class CosteoController {
             const list = await InsumoService.list(tenantId, { q: req.query.q, unidad: req.query.unidad });
             const listWithCosto = (list || []).map(ins => ({
                 ...ins,
-                costo_unitario: CosteoService.getCostoUnitarioCalculado(ins)
+                costo_unitario: CosteoService.getCostoRealUnitario(ins)
             }));
             res.json(listWithCosto);
         } catch (error) {
@@ -221,7 +221,7 @@ class CosteoController {
             if (!insumo) {
                 return res.status(404).json({ error: 'Insumo no encontrado' });
             }
-            const withCosto = { ...insumo, costo_unitario: CosteoService.getCostoUnitarioCalculado(insumo) };
+            const withCosto = { ...insumo, costo_unitario: CosteoService.getCostoRealUnitario(insumo) };
             res.json(withCosto);
         } catch (error) {
             res.status(500).json({ error: error.message });

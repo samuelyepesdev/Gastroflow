@@ -169,10 +169,18 @@
         return grams / 1000;
     }
 
+    function costoConRendimiento(costoUnit, insumo) {
+        // Mismo criterio que CosteoService.aplicarRendimiento: rendimiento 100% (sin merma)
+        // no cambia el costo; rendimiento menor encarece el costo "limpio" real.
+        var r = insumo ? parseFloat(insumo.rendimiento_pct) : NaN;
+        var rendimiento = !isNaN(r) && r > 0 && r <= 100 ? r : 100;
+        return costoUnit / (rendimiento / 100);
+    }
+
     function costoIngrediente(amount, fromUnit, insumo, ingredientType) {
         if (!insumo) return 0;
         var u = (insumo.unidad_compra || 'g').toLowerCase();
-        var costoUnit = parseFloat(insumo.costo_unitario) || 0;
+        var costoUnit = costoConRendimiento(parseFloat(insumo.costo_unitario) || 0, insumo);
         if (u === 'und') return (parseFraction(String(amount)) || 0) * costoUnit;
         var qty = cantidadToUnidadCompra(amount, fromUnit, u, ingredientType);
         return Math.round(qty * costoUnit * 100) / 100;
@@ -288,7 +296,7 @@
                     var costo = 0;
                     if (ins) {
                         var qty = cantidadToUnidadCompra(ing.cantidad, ing.unidad || 'g', ins.unidad_compra, 'custom-solid');
-                        costo = Math.round(qty * (parseFloat(ins.costo_unitario) || 0) * 100) / 100;
+                        costo = Math.round(qty * costoConRendimiento(parseFloat(ins.costo_unitario) || 0, ins) * 100) / 100;
                     }
                     return {
                         insumo_id: ing.insumo_id,
