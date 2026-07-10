@@ -126,6 +126,7 @@ $(function () {
 
     document.getElementById('insumoCantidadCompra').value = insumo != null && insumo.cantidad_compra != null ? insumo.cantidad_compra : '1';
     document.getElementById('insumoPrecioCompra').value = insumo != null ? (insumo.precio_compra != null ? insumo.precio_compra : '0') : '0';
+    document.getElementById('insumoRendimiento').value = insumo != null && insumo.rendimiento_pct != null ? insumo.rendimiento_pct : '100';
     if (title) title.textContent = insumo ? 'Editar Insumo' : 'Nuevo Insumo';
     bootstrap.Modal.getOrCreateInstance(modal).show();
   };
@@ -166,7 +167,8 @@ $(function () {
       unidad_medida_id: selectMedida.value || null,
       categoria_id: document.getElementById('insumoCategoriaId').value || null,
       cantidad_compra: parseFloat(document.getElementById('insumoCantidadCompra').value) || 1,
-      precio_compra: parseFloat(document.getElementById('insumoPrecioCompra').value) || 0
+      precio_compra: parseFloat(document.getElementById('insumoPrecioCompra').value) || 0,
+      rendimiento_pct: parseFloat(document.getElementById('insumoRendimiento').value) || 100
     };
     const modalEl = document.getElementById('insumoModal');
     const instance = bootstrap.Modal.getInstance(modalEl);
@@ -529,6 +531,10 @@ $(function () {
     const m = metodo || document.getElementById('configMetodo')?.value || 'porcentaje';
     document.getElementById('rowPorcentaje')?.classList.toggle('d-none', m !== 'porcentaje');
     document.getElementById('rowCostoFijo')?.classList.toggle('d-none', m !== 'costo_fijo');
+  }
+
+  function togglePrecioRows(metodoPrecio) {
+    const m = metodoPrecio || document.getElementById('configMetodoPrecio')?.value || 'margen';
     document.getElementById('rowFactor')?.classList.toggle('d-none', m !== 'factor');
   }
 
@@ -536,6 +542,8 @@ $(function () {
     return mod.api('/api/costeo/config').then(config => {
       const metodo = document.getElementById('configMetodo');
       if (metodo) metodo.value = config.metodo_indirectos || 'porcentaje';
+      const metodoPrecio = document.getElementById('configMetodoPrecio');
+      if (metodoPrecio) metodoPrecio.value = config.metodo_precio || 'margen';
       const pct = document.getElementById('configPorcentaje');
       if (pct) pct.value = config.porcentaje_indirectos ?? 10;
       const platosMes = document.getElementById('configPlatosMes');
@@ -549,6 +557,7 @@ $(function () {
       const gananciaDeseada = document.getElementById('configGananciaDeseada');
       if (gananciaDeseada) gananciaDeseada.value = config.ganancia_neta_deseada_mensual ?? 0;
       toggleConfigRows(config.metodo_indirectos);
+      togglePrecioRows(config.metodo_precio);
       if (config.metodo_indirectos === 'costo_fijo') loadCostosFijos();
       loadResumenFinanciero();
       return config;
@@ -676,6 +685,9 @@ $(function () {
     toggleConfigRows(metodo);
     if (metodo === 'costo_fijo') loadCostosFijos();
   });
+  document.getElementById('configMetodoPrecio')?.addEventListener('change', (e) => {
+    togglePrecioRows(e.target.value);
+  });
   document.getElementById('config-tab')?.addEventListener('shown.bs.tab', () => {
     if (document.getElementById('configMetodo')?.value === 'costo_fijo') loadCostosFijos();
     loadResumenFinanciero();
@@ -685,6 +697,7 @@ $(function () {
     e.preventDefault();
     const payload = {
       metodo_indirectos: document.getElementById('configMetodo')?.value || 'porcentaje',
+      metodo_precio: document.getElementById('configMetodoPrecio')?.value || 'margen',
       porcentaje_indirectos: parseFloat(document.getElementById('configPorcentaje')?.value) || 10,
       platos_estimados_mes: parseInt(document.getElementById('configPlatosMes')?.value, 10) || 500,
       factor_carga: parseFloat(document.getElementById('configFactor')?.value) || 2.5,

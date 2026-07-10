@@ -4,6 +4,21 @@
  */
 
 const InsumoRepository = require('../../repositories/Tenant/InsumoRepository');
+const { derivarTipoBase } = require('../../utils/unidadesCosteo');
+
+/**
+ * Normaliza rendimiento_pct a un rango válido (1-100). 100 = sin merma (default).
+ */
+function normalizarRendimiento(value, fallback = 100) {
+    if (value === undefined || value === null || value === '') {
+        return fallback;
+    }
+    const n = parseFloat(value);
+    if (Number.isNaN(n)) {
+        return fallback;
+    }
+    return Math.min(100, Math.max(1, n));
+}
 
 class InsumoService {
     static async list(tenantId, filters = {}) {
@@ -22,13 +37,16 @@ class InsumoService {
         if (exists) {
             throw new Error('Ya existe un insumo con ese código');
         }
+        const unidadCompra = data.unidad_compra || 'UND';
         return InsumoRepository.create(tenantId, {
             codigo: data.codigo.trim(),
             nombre: data.nombre.trim(),
-            unidad_compra: data.unidad_compra || 'UND',
+            unidad_compra: unidadCompra,
             cantidad_compra: parseFloat(data.cantidad_compra) || 1,
             precio_compra: parseFloat(data.precio_compra) || 0,
-            unidad_base: data.unidad_base || 'g',
+            // unidad_base se deriva de unidad_compra salvo que venga explícita (no depender de que el frontend la envíe)
+            unidad_base: data.unidad_base || derivarTipoBase(unidadCompra),
+            rendimiento_pct: normalizarRendimiento(data.rendimiento_pct),
             stock_minimo: data.stock_minimo !== undefined ? parseFloat(data.stock_minimo) : 0,
             categoria_id: data.categoria_id ? parseInt(data.categoria_id, 10) : null,
             unidad_medida_id: data.unidad_medida_id ? parseInt(data.unidad_medida_id, 10) : null,
@@ -48,10 +66,11 @@ class InsumoService {
                 throw new Error('Ya existe un insumo con ese código');
             }
         }
+        const unidadCompra = data.unidad_compra || insumo.unidad_compra;
         const updateData = {
             codigo: (data.codigo || insumo.codigo).trim(),
             nombre: (data.nombre || insumo.nombre).trim(),
-            unidad_compra: data.unidad_compra || insumo.unidad_compra,
+            unidad_compra: unidadCompra,
             cantidad_compra:
                 data.cantidad_compra !== undefined ? parseFloat(data.cantidad_compra) : insumo.cantidad_compra,
             precio_compra: data.precio_compra !== undefined ? parseFloat(data.precio_compra) : insumo.precio_compra,
@@ -59,6 +78,12 @@ class InsumoService {
         };
         if (data.unidad_base !== undefined) {
             updateData.unidad_base = data.unidad_base;
+        } else if (data.unidad_compra !== undefined && data.unidad_compra !== insumo.unidad_compra) {
+            // Cambió la unidad de compra sin especificar unidad_base explícita: re-derivarla.
+            updateData.unidad_base = derivarTipoBase(unidadCompra);
+        }
+        if (data.rendimiento_pct !== undefined) {
+            updateData.rendimiento_pct = normalizarRendimiento(data.rendimiento_pct, insumo.rendimiento_pct ?? 100);
         }
         if (data.stock_minimo !== undefined) {
             updateData.stock_minimo = parseFloat(data.stock_minimo);

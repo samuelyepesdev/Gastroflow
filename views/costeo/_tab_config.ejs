@@ -9,13 +9,14 @@
                             </div>
                             <div class="collapse show" id="comoFuncionaCosteo">
                                 <div class="card-body small text-muted">
-                                    <p class="mb-2"><strong>1. Insumos</strong> — Precio de compra y presentación (tamaño en que comprás: ej. 450 ml, 1 kg). El costo unitario se calcula: precio ÷ presentación en base (g, ml, UND).</p>
-                                    <p class="mb-2"><strong>2. Recetas</strong> — Porciones e ingredientes (insumo + cantidad + unidad). Costo por ingrediente = costo unitario × cantidad usada (convertida a la misma base).</p>
-                                    <p class="mb-2"><strong>3. CVU (costo variable unitario)</strong> — Costo materia prima por porción + costos indirectos (merma % o costos fijos repartidos en las unidades estimadas al mes).</p>
-                                    <p class="mb-2"><strong>4. Precio sugerido (margen sobre venta)</strong> — Precio = CVU ÷ (1 − margen). Ej: CVU $10, margen 65% → precio = 10 ÷ 0,35 = $28,57. El margen es sobre el precio final, no sobre el costo.</p>
-                                    <p class="mb-2"><strong>5. Utilidad y márgenes</strong> — Utilidad bruta = Precio − CVU. Margen real % = (Utilidad ÷ Precio)×100. Markup % = (Utilidad ÷ CVU)×100.</p>
-                                    <p class="mb-2"><strong>6. Punto de equilibrio</strong> — En cada receta: porciones de ese plato para cubrir costos fijos. En Configuración (resumen del negocio): ventas totales en $ considerando todos los productos.</p>
-                                    <p class="mb-0"><strong>7. Alertas</strong> — Productos con margen real por debajo del mínimo o precio bajo costo aparecen en la pestaña Alertas.</p>
+                                    <p class="mb-2"><strong>1. Insumos</strong> — Precio de compra y presentación (tamaño en que comprás: ej. 450 ml, 1 kg). El costo unitario se calcula: precio ÷ presentación en base (g, ml, UND). Si ya compraste ese insumo por Inventario, se usa el costo promedio real de tus compras en vez del precio de lista.</p>
+                                    <p class="mb-2"><strong>2. Rendimiento (merma)</strong> — Cada insumo tiene un % de rendimiento neto (lo que queda utilizable tras limpiar/pelar/cocinar). El costo "limpio" de ese insumo = costo ÷ (rendimiento/100). Se configura en el insumo, no acá.</p>
+                                    <p class="mb-2"><strong>3. Recetas</strong> — Porciones e ingredientes (insumo + cantidad + unidad). Costo por ingrediente = costo limpio × cantidad usada (convertida a la misma base).</p>
+                                    <p class="mb-2"><strong>4. CVU (costo variable unitario)</strong> — Costo materia prima por porción + costos operativos indirectos (empaques, gas, mano de obra no capturada en costos fijos, etc. — % o costos fijos repartidos en las unidades estimadas al mes).</p>
+                                    <p class="mb-2"><strong>5. Precio sugerido</strong> — Según el método de fijación de precio elegido: por margen objetivo (Precio = CVU ÷ (1 − margen); ej. CVU $10, margen 65% → $28,57) o por factor de carga (Precio = CVU × factor).</p>
+                                    <p class="mb-2"><strong>6. Utilidad y márgenes</strong> — Utilidad bruta = Precio − CVU. Margen real % = (Utilidad ÷ Precio)×100. Markup % = (Utilidad ÷ CVU)×100.</p>
+                                    <p class="mb-2"><strong>7. Punto de equilibrio</strong> — En cada receta: porciones de ese plato para cubrir costos fijos. En Configuración (resumen del negocio): ventas totales en $ considerando todos los productos.</p>
+                                    <p class="mb-0"><strong>8. Alertas</strong> — Productos con margen real por debajo del mínimo o precio bajo costo aparecen en la pestaña Alertas.</p>
                                 </div>
                             </div>
                         </div>
@@ -23,17 +24,25 @@
                         <form id="formConfigCosteo">
                             <div class="row mb-3">
                                 <div class="col-md-6">
-                                    <label class="form-label">Método de costos indirectos</label>
+                                    <label class="form-label">Método de costos operativos indirectos</label>
                                     <select class="form-select" name="metodo_indirectos" id="configMetodo">
-                                        <option value="porcentaje">Porcentaje sobre costo materia prima (merma/variación)</option>
+                                        <option value="porcentaje">Porcentaje sobre costo materia prima (empaques, gas, variación)</option>
                                         <option value="costo_fijo">Costos fijos repartidos en unidades vendidas</option>
-                                        <option value="factor">Factor de carga (multiplicador para precio)</option>
                                     </select>
+                                    <small class="text-muted">La merma real de cada insumo se configura en su ficha (Rendimiento %), no acá.</small>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Método de fijación de precio</label>
+                                    <select class="form-select" name="metodo_precio" id="configMetodoPrecio">
+                                        <option value="margen">Margen de ganancia objetivo</option>
+                                        <option value="factor">Factor de carga (multiplicador)</option>
+                                    </select>
+                                    <small class="text-muted">Independiente de cómo calculás el costo indirecto.</small>
                                 </div>
                             </div>
                             <div class="row mb-3" id="rowPorcentaje">
                                 <div class="col-md-4">
-                                    <label class="form-label">Merma / variación (%)</label>
+                                    <label class="form-label">Costos operativos indirectos (%)</label>
                                     <input type="number" class="form-control" name="porcentaje_indirectos" id="configPorcentaje" step="0.01" min="0" placeholder="10">
                                     <small class="text-muted">Sobre costo materia prima. Ej: 10</small>
                                 </div>
@@ -63,7 +72,7 @@
                                 <div class="col-md-4">
                                     <label class="form-label">Factor de carga</label>
                                     <input type="number" class="form-control" name="factor_carga" id="configFactor" step="0.01" min="1" placeholder="2.5">
-                                    <small class="text-muted">Precio sugerido = Costo directo × factor. Ej: 2.5</small>
+                                    <small class="text-muted">Precio sugerido = CVU × factor. Ej: 2.5</small>
                                 </div>
                             </div>
                             <div class="row mb-3">

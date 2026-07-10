@@ -1,107 +1,36 @@
 /**
  * CosteoService - Calculation of dish cost, indirect cost, suggested price
  * Related to: RecetaRepository, ConfiguracionCosteoRepository
+ *
+ * Fuente de costo por insumo: usa el costo promedio real (costo_promedio, actualizado por
+ * Inventario en cada compra) cuando el insumo tiene historial; si nunca se registró una
+ * entrada de inventario, cae al precio de lista (precio_compra / cantidad_compra) como
+ * estimación inicial. Antes este motor solo miraba precio_compra, un valor manual que
+ * quedaba desactualizado apenas Inventario empezaba a trackear compras reales.
+ *
+ * Rendimiento (merma): cada insumo tiene rendimiento_pct (% utilizable tras limpiar/pelar/
+ * cocinar). El costo "limpio" de un insumo = costo_base / (rendimiento_pct / 100). Esto es
+ * distinto de "porcentaje_indirectos" en configuracion_costeo, que representa costos
+ * operativos indirectos (empaques, gas, mano de obra no capturada en costos fijos) — no
+ * merma de insumo.
  */
 
 const RecetaRepository = require('../../repositories/Tenant/RecetaRepository');
 const ConfiguracionCosteoRepository = require('../../repositories/Tenant/ConfiguracionCosteoRepository');
 const CostosFijosRepository = require('../../repositories/Tenant/CostosFijosRepository');
 const ProductRepository = require('../../repositories/Tenant/ProductRepository');
+const { convertirABase } = require('../../utils/unidadesCosteo');
 
 /**
- * Convierte cantidad de compra + unidad a cantidad en unidad base (como en Excel).
- * kg → gramos (×1000), g → gramos (×1), L → ml (×1000), ml → ml (×1), UND → UND (×1), lb → gramos (×453.592).
- * @returns {{ cantidadBase: number, tipoBase: 'g'|'ml'|'UND' }}
- */
-function compraABase(cantidadCompra, unidadCompra) {
-    const q = parseFloat(cantidadCompra) || 0;
-    const u = String(unidadCompra || 'UND')
-        .trim()
-        .toLowerCase();
-    if (u === 'kg') {
-        return { cantidadBase: q * 1000, tipoBase: 'g' };
-    }
-    if (u === 'g' || u === 'gr') {
-        return { cantidadBase: q, tipoBase: 'g' };
-    }
-    if (u === 'lb') {
-        return { cantidadBase: q * 453.592, tipoBase: 'g' };
-    }
-    if (u === 'l') {
-        return { cantidadBase: q * 1000, tipoBase: 'ml' };
-    }
-    if (u === 'ml') {
-        return { cantidadBase: q, tipoBase: 'ml' };
-    }
-    return { cantidadBase: q || 1, tipoBase: 'UND' };
-}
-
-/**
- * Convierte cantidad usada en receta a la misma unidad base que el insumo.
- */
-function recetaCantidadABase(cantidad, unidadReceta, tipoBase) {
-    const q = parseFloat(cantidad) || 0;
-    const u = String(unidadReceta || 'g')
-        .trim()
-        .toLowerCase();
-    if (tipoBase === 'g') {
-        if (u === 'kg') {
-            return q * 1000;
-        }
-        if (u === 'g' || u === 'gr') {
-            return q;
-        }
-        if (u === 'lb') {
-            return q * 453.592;
-        }
-        return q;
-    }
-    if (tipoBase === 'ml') {
-        if (u === 'l') {
-            return q * 1000;
-        }
-        if (u === 'ml') {
-            return q;
-        }
-        return q;
-    }
-    return q;
-}
-
-/**
- * Costo directo de una receta = suma de (costo_unitario_real × cantidad_usada_en_base) por ingrediente.
- * Aplicando Programación Funcional (.reduce) en lugar de bucles for mutables.
- */
-function calcularCostoDirecto(ingredientes) {
-    const total = (ingredientes || []).reduce((sum, it) => {
-        const precioCompra = parseFloat(it.precio_compra) || 0;
-        const cantidadCompra = parseFloat(it.cantidad_compra) || 1;
-        const unidadCompra = (it.unidad_compra || 'UND').trim();
-        const cantidadUsada = parseFloat(it.cantidad) || 0;
-        const unidadReceta = (it.unidad || 'g').trim();
-
-        const { cantidadBase: cantidadBaseCompra, tipoBase } = compraABase(cantidadCompra, unidadCompra);
-        if (cantidadBaseCompra <= 0) {
-            return sum;
-        }
-
-        const costoUnitarioReal = precioCompra / cantidadBaseCompra;
-        const cantidadRecetaBase = recetaCantidadABase(cantidadUsada, unidadReceta, tipoBase);
-        return sum + costoUnitarioReal * cantidadRecetaBase;
-    }, 0);
-
-    return Math.round(total * 100) / 100;
-}
-
-/**
- * Costo unitario calculado (por unidad base): precio_compra / cantidad_compra_en_base.
+ * Costo por unidad base (g/ml/UND) según el precio de lista del insumo: precio_compra
+ * dividido entre la presentación convertida a base. No refleja compras reales.
  */
 function getCostoUnitarioCalculado(insumo) {
     if (!insumo) {
         return 0;
     }
     const precio = parseFloat(insumo.precio_compra) || 0;
-    const { cantidadBase } = compraABase(parseFloat(insumo.cantidad_compra) || 1, insumo.unidad_compra);
+    const { cantidadBase } = convertirABase(parseFloat(insumo.cantidad_compra) || 1, insumo.unidad_compra);
     if (cantidadBase <= 0) {
         return 0;
     }
@@ -109,39 +38,91 @@ function getCostoUnitarioCalculado(insumo) {
 }
 
 /**
- * Costo indirecto según configuración: porcentaje (merma), costo fijo por plato, o factor.
+ * Costo real por unidad base: costo_promedio (promedio ponderado de compras reales,
+ * mantenido por InventarioService) si existe; si no, precio de lista como fallback.
+ */
+function getCostoRealUnitario(insumo) {
+    const costoPromedio = parseFloat(insumo.costo_promedio);
+    if (!Number.isNaN(costoPromedio) && costoPromedio > 0) {
+        return costoPromedio;
+    }
+    return getCostoUnitarioCalculado(insumo);
+}
+
+/**
+ * Aplica el rendimiento (merma) de un insumo a su costo por unidad base.
+ * Rendimiento 100% (sin merma) deja el costo igual. Rendimiento 80% encarece el costo
+ * "limpio" en 100/80, porque el 20% comprado se pierde en limpieza/cocción.
+ */
+function aplicarRendimiento(costoBase, rendimientoPct) {
+    const r = parseFloat(rendimientoPct);
+    const rendimiento = !Number.isNaN(r) && r > 0 && r <= 100 ? r : 100;
+    return costoBase / (rendimiento / 100);
+}
+
+/**
+ * Costo directo de una receta = suma de (costo limpio del insumo × cantidad usada en base)
+ * por ingrediente. Devuelve el total y el detalle por línea (transparencia para la UI).
+ */
+function calcularCostoDirecto(ingredientes) {
+    const detalle = (ingredientes || []).map(it => {
+        const costoBase = getCostoRealUnitario(it);
+        const rendimientoPct =
+            it.rendimiento_pct !== undefined && it.rendimiento_pct !== null ? parseFloat(it.rendimiento_pct) : 100;
+        const costoLimpio = aplicarRendimiento(costoBase, rendimientoPct);
+        const { cantidadBase: cantidadUsadaBase } = convertirABase(it.cantidad, it.unidad || 'g');
+        const costoLinea = costoLimpio * cantidadUsadaBase;
+        return {
+            insumo_id: it.insumo_id,
+            insumo_nombre: it.insumo_nombre,
+            cantidad: parseFloat(it.cantidad) || 0,
+            unidad: it.unidad,
+            costo_unitario_base: Math.round(costoBase * 100000) / 100000,
+            rendimiento_pct: rendimientoPct,
+            costo_unitario_limpio: Math.round(costoLimpio * 100000) / 100000,
+            costo_linea: Math.round(costoLinea * 100) / 100
+        };
+    });
+    const total = detalle.reduce((sum, d) => sum + d.costo_linea, 0);
+    return { total: Math.round(total * 100) / 100, detalle };
+}
+
+/**
+ * Costo indirecto operativo según configuración: porcentaje sobre materia prima, o costo
+ * fijo por plato (costos fijos totales ÷ unidades estimadas al mes). No incluye 'factor':
+ * ese es un método de fijación de PRECIO (ver calcularPrecioSugerido), no de costo.
  */
 function calcularCostoIndirecto(costoDirecto, config, totalCostosFijos = 0) {
     if (!config) {
         return 0;
     }
     const metodo = config.metodo_indirectos || 'porcentaje';
-    if (metodo === 'porcentaje') {
-        const pct = parseFloat(config.porcentaje_indirectos) || 0;
-        return Math.round(((costoDirecto * pct) / 100) * 100) / 100;
-    }
     if (metodo === 'costo_fijo') {
         const totalFijo =
             typeof totalCostosFijos === 'number' ? totalCostosFijos : parseFloat(config.costo_fijo_mensual) || 0;
         const unidadesEstimadasMes = parseInt(config.platos_estimados_mes, 10) || 500;
         return unidadesEstimadasMes > 0 ? Math.round((totalFijo / unidadesEstimadasMes) * 100) / 100 : 0;
     }
-    return 0;
+    const pct = parseFloat(config.porcentaje_indirectos) || 0;
+    return Math.round(((costoDirecto * pct) / 100) * 100) / 100;
 }
 
 /**
- * Precio sugerido: Precio = Costo total ÷ (1 - Margen de ganancia esperado)
+ * Precio sugerido según el método de fijación de precio (independiente del método de costo
+ * indirecto): margen objetivo sobre el precio de venta, o factor de carga sobre el costo total.
+ * Precio (margen) = Costo total ÷ (1 - Margen de ganancia esperado)
+ * Precio (factor) = Costo total × Factor de carga
  */
 function calcularPrecioSugerido(costoTotal, config) {
     if (!config) {
-        return costoTotal * 2;
+        return Math.round(costoTotal * 2 * 100) / 100;
     }
-    const metodo = config.metodo_indirectos || 'factor';
-    const margen = parseFloat(config.margen_objetivo_default) || 65;
-    if (metodo === 'factor') {
+    const metodoPrecio = config.metodo_precio || 'margen';
+    if (metodoPrecio === 'factor') {
         const factor = parseFloat(config.factor_carga) || 2.5;
         return Math.round(costoTotal * factor * 100) / 100;
     }
+    const margen = parseFloat(config.margen_objetivo_default) || 65;
     const precio = costoTotal / (1 - margen / 100);
     return Math.round(precio * 100) / 100;
 }
@@ -167,7 +148,7 @@ class CosteoService {
             CostosFijosRepository.getTotalActivo(tenantId)
         ]);
 
-        const costoDirecto = calcularCostoDirecto(ingredientes);
+        const { total: costoDirecto, detalle: ingredientesDetalle } = calcularCostoDirecto(ingredientes);
         const porciones = parseFloat(receta.porciones) || 1;
         const costoMateriaPrimaPorcion = porciones > 0 ? costoDirecto / porciones : costoDirecto;
         const costoIndirecto = calcularCostoIndirecto(costoMateriaPrimaPorcion, config, totalCostosFijos);
@@ -195,6 +176,7 @@ class CosteoService {
         return {
             receta,
             ingredientes,
+            ingredientes_detalle: ingredientesDetalle,
             config,
             total_costos_fijos: Math.round(totalCostosFijos * 100) / 100,
             costo_directo_total: costoDirecto,
@@ -364,5 +346,8 @@ class CosteoService {
 
 module.exports = CosteoService;
 module.exports.calcularCostoDirecto = calcularCostoDirecto;
+module.exports.calcularCostoIndirecto = calcularCostoIndirecto;
 module.exports.calcularPrecioSugerido = calcularPrecioSugerido;
 module.exports.getCostoUnitarioCalculado = getCostoUnitarioCalculado;
+module.exports.getCostoRealUnitario = getCostoRealUnitario;
+module.exports.aplicarRendimiento = aplicarRendimiento;

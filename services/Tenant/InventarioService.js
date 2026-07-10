@@ -7,24 +7,12 @@ const db = require('../../config/database');
 const InsumoRepository = require('../../repositories/Tenant/InsumoRepository');
 const MovimientoInventarioRepository = require('../../repositories/Tenant/MovimientoInventarioRepository');
 const RecetaRepository = require('../../repositories/Tenant/RecetaRepository');
+const { convertirABase } = require('../../utils/unidadesCosteo');
 
-// Conversión a unidad base para comparar con stock (stock está en unidad_base)
-const A_BASE = {
-    g: 1,
-    kg: 1000,
-    mg: 0.001,
-    ml: 1,
-    L: 1000,
-    l: 1000,
-    UND: 1,
-    und: 1,
-    u: 1
-};
-
+// Conversión a unidad base para comparar con stock (stock está en unidad_base).
+// Antes esta tabla vivía duplicada aquí y en CosteoService, y esta copia no soportaba 'lb'.
 function cantidadABase(cantidad, unidad) {
-    const u = (unidad || 'g').toString().trim().toLowerCase();
-    const factor = A_BASE[u] ?? A_BASE[unidad] ?? 1;
-    return (parseFloat(cantidad) || 0) * factor;
+    return convertirABase(cantidad, unidad || 'g').cantidadBase;
 }
 
 class InventarioService {
