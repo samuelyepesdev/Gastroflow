@@ -14,4 +14,7 @@ router.get('/:id/imprimir', FacturasController.imprimir);
 // GET /facturas/:id/detalles - API: Detalles de factura
 router.get('/:id/detalles', FacturasController.getDetalles);
 
+// POST /facturas/:id/facturacion-electronica/reintentar - Reintentar emisión electrónica fallida
+router.post('/:id/facturacion-electronica/reintentar', FacturasController.reintentarFacturacionElectronica);
+
 module.exports = router;

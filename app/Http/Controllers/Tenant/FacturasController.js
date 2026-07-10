@@ -101,6 +101,28 @@ class FacturasController {
             res.status(500).json({ error: 'Error al obtener detalles de la factura' });
         }
     }
+
+    // POST /facturas/:id/facturacion-electronica/reintentar
+    static async reintentarFacturacionElectronica(req, res) {
+        try {
+            const tenantId = req.tenant?.id;
+            if (!tenantId) {
+                return res.status(403).json({ error: 'Contexto de tenant no disponible' });
+            }
+            const FacturaElectronicaRepository = require('../../../../repositories/Tenant/FacturaElectronicaRepository');
+            const facturaId = parseInt(req.params.id, 10);
+            const reintentado = await FacturaElectronicaRepository.reintentar(facturaId, tenantId);
+            if (!reintentado) {
+                return res
+                    .status(404)
+                    .json({ error: 'No hay una emisión electrónica pendiente/errónea para esta factura' });
+            }
+            res.json({ message: 'Reintento programado' });
+        } catch (error) {
+            console.error('Error al reintentar facturación electrónica:', error);
+            res.status(500).json({ error: 'Error al reintentar facturación electrónica' });
+        }
+    }
 }
 
 module.exports = FacturasController;
