@@ -110,9 +110,15 @@
                                     </div>
                                 </div>
                                 <% } %>
-                                    <div class="total-final" style="font-size: 1.4em;">
-                                        Total: $<%= Number(factura.total).toLocaleString('es-CO') %>
-                                    </div>
+                                    <% if (factura.total_impuestos != null && Number(factura.total_impuestos) > 0) { %>
+                                        <div class="small" style="text-align: right; margin-top: 8px;">
+                                            <div>Subtotal: $<%= Number(factura.subtotal || 0).toLocaleString('es-CO') %></div>
+                                            <div>Impuestos: $<%= Number(factura.total_impuestos).toLocaleString('es-CO') %></div>
+                                        </div>
+                                        <% } %>
+                                            <div class="total-final" style="font-size: 1.4em;">
+                                                Total: $<%= Number(factura.total).toLocaleString('es-CO') %>
+                                            </div>
                 </div>
 
                 <div class="divider"></div>

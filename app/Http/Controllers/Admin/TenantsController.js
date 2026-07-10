@@ -14,12 +14,17 @@ class TenantsController {
             const plans = await PlanService.getAll();
             const tenantId = Number(req.query.tenantId) || (tenants[0] && tenants[0].id);
             const tenantUsers = tenantId ? await TenantUserService.getUsersByTenant(tenantId) : [];
+            const FacturacionElectronicaConfigService = require('../../../../services/Tenant/FacturacionElectronicaConfigService');
+            const facturacionElectronica = tenantId
+                ? await FacturacionElectronicaConfigService.getForAdmin(tenantId)
+                : null;
             res.render('admin/tenants', {
                 user: req.user,
                 tenants,
                 plans,
                 tenantUsers,
-                activeTenantId: tenantId
+                activeTenantId: tenantId,
+                facturacionElectronica
             });
         } catch (error) {
             console.error('Error al listar tenants:', error);
@@ -90,7 +95,17 @@ class TenantsController {
     static async update(req, res) {
         try {
             const update = {};
-            const textFields = ['nombre', 'email', 'nit', 'direccion', 'telefono', 'ciudad', 'regimen_fiscal'];
+            const textFields = [
+                'nombre',
+                'email',
+                'nit',
+                'direccion',
+                'telefono',
+                'ciudad',
+                'regimen_fiscal',
+                'tributo_default',
+                'tasa_impuesto_default'
+            ];
             textFields.forEach(f => {
                 if (req.body[f] !== undefined) {
                     update[f] = req.body[f];
@@ -320,6 +335,64 @@ class TenantsController {
             return res.json({ message: 'Categorías creadas', inserted: result.inserted });
         } catch (error) {
             res.status(500).json({ error: error.message });
+        }
+    }
+
+    // PUT /admin/tenants/:id/facturacion-electronica
+    static async updateFacturacionElectronica(req, res) {
+        try {
+            const FacturacionElectronicaConfigService = require('../../../../services/Tenant/FacturacionElectronicaConfigService');
+            const tenantId = Number(req.params.id);
+            const config = await FacturacionElectronicaConfigService.save(tenantId, req.body);
+            await TenantAuditService.log({
+                tenantId,
+                userId: req.user?.id || null,
+                accion: 'actualizar_config_factus',
+                detalles: `ambiente=${config.ambiente}`
+            });
+            res.status(200).json(config);
+        } catch (error) {
+            console.error('Error al guardar configuración de facturación electrónica:', error);
+            res.status(400).json({ error: error.message });
+        }
+    }
+
+    // POST /admin/tenants/:id/facturacion-electronica/probar-conexion
+    static async testFacturacionElectronica(req, res) {
+        try {
+            const FacturacionElectronicaConfigService = require('../../../../services/Tenant/FacturacionElectronicaConfigService');
+            const tenantId = Number(req.params.id);
+            const result = await FacturacionElectronicaConfigService.testConnection(tenantId);
+            if (!result.ok) {
+                return res.status(400).json(result);
+            }
+            res.status(200).json(result);
+        } catch (error) {
+            res.status(400).json({ ok: false, error: error.message });
+        }
+    }
+
+    // GET /admin/tenants/:id/facturacion-electronica/rangos
+    static async getFacturacionElectronicaRangos(req, res) {
+        try {
+            const FacturacionElectronicaConfigService = require('../../../../services/Tenant/FacturacionElectronicaConfigService');
+            const tenantId = Number(req.params.id);
+            const rangos = await FacturacionElectronicaConfigService.listNumberingRanges(tenantId);
+            res.status(200).json(rangos);
+        } catch (error) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+
+    // PUT /admin/tenants/:id/facturacion-electronica/rango-activo
+    static async setFacturacionElectronicaRango(req, res) {
+        try {
+            const FacturacionElectronicaConfigService = require('../../../../services/Tenant/FacturacionElectronicaConfigService');
+            const tenantId = Number(req.params.id);
+            await FacturacionElectronicaConfigService.setNumberingRange(tenantId, req.body);
+            res.sendStatus(204);
+        } catch (error) {
+            res.status(400).json({ error: error.message });
         }
     }
 }

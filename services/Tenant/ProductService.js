@@ -54,7 +54,8 @@ class ProductService {
      * @throws {Error} If validation fails or duplicate code
      */
     static async create(tenantId, productData) {
-        const { codigo, nombre, precio_unidad, categoria_id, descripcion, imagen_url } = productData;
+        const { codigo, nombre, precio_unidad, categoria_id, descripcion, imagen_url, tributo, tasa_impuesto } =
+            productData;
 
         if (!codigo || !nombre) {
             throw new Error('El código y nombre son requeridos');
@@ -74,7 +75,12 @@ class ProductService {
                 precio_unidad: parseFloat(precio_unidad) || 0,
                 categoria_id: categoria_id || 1,
                 descripcion: descripcion ? descripcion.trim() : null,
-                imagen_url: imagen_url || null
+                imagen_url: imagen_url || null,
+                tributo: tributo || null,
+                tasa_impuesto:
+                    tasa_impuesto !== undefined && tasa_impuesto !== null && tasa_impuesto !== ''
+                        ? parseFloat(tasa_impuesto)
+                        : null
             });
 
             return {
@@ -97,7 +103,8 @@ class ProductService {
      * @throws {Error} If product not found or validation fails
      */
     static async update(id, tenantId, productData) {
-        const { codigo, nombre, precio_unidad, categoria_id, descripcion, imagen_url } = productData;
+        const { codigo, nombre, precio_unidad, categoria_id, descripcion, imagen_url, tributo, tasa_impuesto } =
+            productData;
 
         if (!codigo || !nombre) {
             throw new Error('El código y nombre son requeridos');
@@ -122,7 +129,12 @@ class ProductService {
                 precio_unidad: parseFloat(precio_unidad) || 0,
                 categoria_id: categoria_id || 1,
                 descripcion: descripcion ? descripcion.trim() : null,
-                imagen_url: imagen_url || null
+                imagen_url: imagen_url || null,
+                tributo: tributo || null,
+                tasa_impuesto:
+                    tasa_impuesto !== undefined && tasa_impuesto !== null && tasa_impuesto !== ''
+                        ? parseFloat(tasa_impuesto)
+                        : null
             });
 
             if (result.affectedRows === 0) {

@@ -12,13 +12,16 @@ class ProductRepository {
      * @returns {Promise<Array>} Array of products
      */
     static async findAll(tenantId) {
-        const [productos] = await db.query(`
+        const [productos] = await db.query(
+            `
             SELECT p.*, c.nombre as categoria_nombre 
             FROM productos p 
             LEFT JOIN categorias c ON p.categoria_id = c.id 
             WHERE p.tenant_id = ? AND p.activo = 1
             ORDER BY p.nombre
-        `, [tenantId]);
+        `,
+            [tenantId]
+        );
         return productos;
     }
 
@@ -28,12 +31,15 @@ class ProductRepository {
      * @returns {Promise<Object|null>} Product object or null
      */
     static async findById(id, tenantId) {
-        const [productos] = await db.query(`
+        const [productos] = await db.query(
+            `
             SELECT p.*, c.nombre as categoria_nombre 
             FROM productos p 
             LEFT JOIN categorias c ON p.categoria_id = c.id 
             WHERE p.id = ? AND p.tenant_id = ? AND p.activo = 1
-        `, [id, tenantId]);
+        `,
+            [id, tenantId]
+        );
         return productos[0] || null;
     }
 
@@ -46,7 +52,7 @@ class ProductRepository {
      */
     static async search(queryTerm, tenantId, limit = 10) {
         const searchTerm = `%${queryTerm}%`;
-        
+
         // Buscamos productos reales y opcionalmente insumos de la categoría 'Cerámicas'
         const sql = `
             (SELECT p.id, p.codigo, p.nombre, p.precio_unidad, c.nombre AS categoria_nombre, 0 AS is_insumo
@@ -64,13 +70,19 @@ class ProductRepository {
             LIMIT ?)
             LIMIT ?
         `;
-        
+
         const [rows] = await db.query(sql, [
-            tenantId, searchTerm, searchTerm, limit,
-            tenantId, searchTerm, searchTerm, limit,
+            tenantId,
+            searchTerm,
+            searchTerm,
+            limit,
+            tenantId,
+            searchTerm,
+            searchTerm,
+            limit,
             limit
         ]);
-        
+
         return rows;
     }
 
@@ -85,10 +97,21 @@ class ProductRepository {
      * @returns {Promise<Object>} Created product with insertId
      */
     static async create(tenantId, productData) {
-        const { codigo, nombre, precio_unidad, categoria_id, descripcion, imagen_url } = productData;
+        const { codigo, nombre, precio_unidad, categoria_id, descripcion, imagen_url, tributo, tasa_impuesto } =
+            productData;
         const result = await db.query(
-            'INSERT INTO productos (tenant_id, codigo, nombre, precio_unidad, categoria_id, descripcion, imagen_url) VALUES (?, ?, ?, ?, ?, ?, ?)',
-            [tenantId, codigo, nombre, precio_unidad || 0, categoria_id || 1, descripcion || null, imagen_url || null]
+            'INSERT INTO productos (tenant_id, codigo, nombre, precio_unidad, categoria_id, descripcion, imagen_url, tributo, tasa_impuesto) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            [
+                tenantId,
+                codigo,
+                nombre,
+                precio_unidad || 0,
+                categoria_id || 1,
+                descripcion || null,
+                imagen_url || null,
+                tributo || null,
+                tasa_impuesto !== undefined && tasa_impuesto !== null && tasa_impuesto !== '' ? tasa_impuesto : null
+            ]
         );
         return result;
     }
@@ -100,14 +123,25 @@ class ProductRepository {
      * @returns {Promise<Object>} Update result
      */
     static async update(id, tenantId, productData) {
-        const { codigo, nombre, precio_unidad, categoria_id, descripcion, imagen_url } = productData;
+        const { codigo, nombre, precio_unidad, categoria_id, descripcion, imagen_url, tributo, tasa_impuesto } =
+            productData;
         const result = await db.query(
-            'UPDATE productos SET codigo = ?, nombre = ?, precio_unidad = ?, categoria_id = ?, descripcion = ?, imagen_url = ? WHERE id = ? AND tenant_id = ?',
-            [codigo, nombre, precio_unidad || 0, categoria_id || 1, descripcion || null, imagen_url || null, id, tenantId]
+            'UPDATE productos SET codigo = ?, nombre = ?, precio_unidad = ?, categoria_id = ?, descripcion = ?, imagen_url = ?, tributo = ?, tasa_impuesto = ? WHERE id = ? AND tenant_id = ?',
+            [
+                codigo,
+                nombre,
+                precio_unidad || 0,
+                categoria_id || 1,
+                descripcion || null,
+                imagen_url || null,
+                tributo || null,
+                tasa_impuesto !== undefined && tasa_impuesto !== null && tasa_impuesto !== '' ? tasa_impuesto : null,
+                id,
+                tenantId
+            ]
         );
         return result;
     }
-
 
     /**
      * Update only product price (for applying suggested price from costeo)
@@ -117,10 +151,11 @@ class ProductRepository {
      * @returns {Promise<Object>} Update result
      */
     static async updatePrecio(id, tenantId, precioUnidad) {
-        const [result] = await db.query(
-            'UPDATE productos SET precio_unidad = ? WHERE id = ? AND tenant_id = ?',
-            [parseFloat(precioUnidad) || 0, id, tenantId]
-        );
+        const [result] = await db.query('UPDATE productos SET precio_unidad = ? WHERE id = ? AND tenant_id = ?', [
+            parseFloat(precioUnidad) || 0,
+            id,
+            tenantId
+        ]);
         return result;
     }
 
@@ -130,10 +165,10 @@ class ProductRepository {
      * @returns {Promise<Object>} Delete result
      */
     static async delete(id, tenantId) {
-        const [result] = await db.query(
-            'UPDATE productos SET activo = 0 WHERE id = ? AND tenant_id = ?',
-            [id, tenantId]
-        );
+        const [result] = await db.query('UPDATE productos SET activo = 0 WHERE id = ? AND tenant_id = ?', [
+            id,
+            tenantId
+        ]);
         return result;
     }
 
@@ -156,7 +191,14 @@ class ProductRepository {
                         precio_unidad = VALUES(precio_unidad),
                         descripcion = VALUES(descripcion),
                         activo = 1`,
-                    [tenantId, String(p.codigo).trim(), String(p.nombre).trim(), p.categoria_id, parseFloat(p.precio_unidad) || 0, p.descripcion || null]
+                    [
+                        tenantId,
+                        String(p.codigo).trim(),
+                        String(p.nombre).trim(),
+                        p.categoria_id,
+                        parseFloat(p.precio_unidad) || 0,
+                        p.descripcion || null
+                    ]
                 );
             }
             await connection.commit();
@@ -176,13 +218,13 @@ class ProductRepository {
      * @returns {Promise<Object>} Update result
      */
     static async toggleFavorite(id, tenantId, esFavorito) {
-        const [result] = await db.query(
-            'UPDATE productos SET es_favorito = ? WHERE id = ? AND tenant_id = ?',
-            [esFavorito ? 1 : 0, id, tenantId]
-        );
+        const [result] = await db.query('UPDATE productos SET es_favorito = ? WHERE id = ? AND tenant_id = ?', [
+            esFavorito ? 1 : 0,
+            id,
+            tenantId
+        ]);
         return result;
     }
 }
 
 module.exports = ProductRepository;
-

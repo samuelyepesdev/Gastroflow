@@ -32,9 +32,104 @@
                             : '' %>>Régimen Simple (RST)</option>
                     </select>
                 </div>
+                <div class="col-md-4">
+                    <label class="form-label">Tributo por Defecto (productos nuevos)</label>
+                    <select name="tributo_default" id="tributoDefaultSelect" class="form-select">
+                        <option value="iva_19" data-tasa="19.00" <%=selectedTenant.tributo_default==='iva_19'
+                            ? 'selected' : '' %>>IVA 19%</option>
+                        <option value="iva_5" data-tasa="5.00" <%=selectedTenant.tributo_default==='iva_5'
+                            ? 'selected' : '' %>>IVA 5%</option>
+                        <option value="impoconsumo_8" data-tasa="8.00" <%=selectedTenant.tributo_default==='impoconsumo_8'
+                            ? 'selected' : '' %>>Impoconsumo 8%</option>
+                        <option value="exento" data-tasa="0.00" <%=selectedTenant.tributo_default==='exento'
+                            ? 'selected' : '' %>>Exento (0%)</option>
+                        <option value="excluido" data-tasa="0.00" <%=selectedTenant.tributo_default==='excluido'
+                            ? 'selected' : '' %>>Excluido (0%)</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Tasa de Impuesto por Defecto (%)</label>
+                    <input type="number" name="tasa_impuesto_default" id="tasaImpuestoDefaultInput" class="form-control"
+                        step="0.01" min="0" max="100"
+                        value="<%= selectedTenant.tasa_impuesto_default != null ? selectedTenant.tasa_impuesto_default : 8.00 %>">
+                    <small class="text-muted">Se aplica a los productos que no tengan un tributo propio configurado.</small>
+                </div>
                 <div class="col-12 text-end">
                     <button type="submit" class="btn btn-primary px-4">Actualizar Datos
                         Fiscales</button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <% const fe = typeof facturacionElectronica !== 'undefined' && facturacionElectronica ? facturacionElectronica : {
+        ambiente: 'sandbox', estado: 'deshabilitado', client_id: '', client_secret_configurado: false,
+        api_usuario: '', api_password_configurado: false, codigo_municipio_dane: '', tipo_organizacion: '',
+        numbering_range_id: '', numbering_range_prefijo: '', ultima_verificacion: null, ultimo_error: null
+    }; %>
+    <div class="glass-card mt-4">
+        <h5 class="mb-3"><i class="bi bi-file-earmark-check me-2"></i>Facturación Electrónica (Factus)</h5>
+        <p class="small text-muted">
+            Estado:
+            <span class="badge <%= fe.estado === 'activo' ? 'bg-success' : (fe.estado === 'pruebas' ? 'bg-warning text-dark' : 'bg-secondary') %>">
+                <%= fe.estado %>
+            </span>
+            <% if (fe.ultima_verificacion) { %>
+                &middot; Última verificación: <%= new Date(fe.ultima_verificacion).toLocaleString('es-CO') %>
+            <% } %>
+            <% if (fe.ultimo_error) { %>
+                <br><span class="text-danger"><%= fe.ultimo_error %></span>
+            <% } %>
+        </p>
+        <form id="form-edit-factus" onsubmit="return handleFacturacionElectronicaSubmit(event, <%= selectedTenant.id %>)">
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <label class="form-label">Ambiente</label>
+                    <select name="ambiente" class="form-select">
+                        <option value="sandbox" <%= fe.ambiente === 'sandbox' ? 'selected' : '' %>>Sandbox (pruebas)</option>
+                        <option value="produccion" <%= fe.ambiente === 'produccion' ? 'selected' : '' %>>Producción</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Código Municipio DANE</label>
+                    <input type="text" name="codigo_municipio_dane" class="form-control"
+                        value="<%= fe.codigo_municipio_dane || '' %>" placeholder="Ej: 05001">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Tipo de Organización</label>
+                    <input type="text" name="tipo_organizacion" class="form-control"
+                        value="<%= fe.tipo_organizacion || '' %>" placeholder="persona_natural / persona_juridica">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Client ID</label>
+                    <input type="text" name="client_id" class="form-control" value="<%= fe.client_id || '' %>">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Client Secret</label>
+                    <input type="password" name="client_secret" class="form-control"
+                        placeholder="<%= fe.client_secret_configurado ? '••••••••  (dejar vacío para no cambiar)' : '' %>">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Usuario API Factus</label>
+                    <input type="text" name="api_usuario" class="form-control" value="<%= fe.api_usuario || '' %>">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Contraseña API Factus</label>
+                    <input type="password" name="api_password" class="form-control"
+                        placeholder="<%= fe.api_password_configurado ? '••••••••  (dejar vacío para no cambiar)' : '' %>">
+                </div>
+                <div class="col-12">
+                    <small class="text-muted">
+                        Rango de numeración activo:
+                        <strong><%= fe.numbering_range_prefijo || 'sin configurar' %></strong>
+                    </small>
+                </div>
+                <div class="col-12 text-end d-flex justify-content-end gap-2">
+                    <button type="button" class="btn btn-outline-secondary" id="btnProbarConexionFactus"
+                        data-tenant-id="<%= selectedTenant.id %>">
+                        <i class="bi bi-plug me-1"></i>Probar Conexión
+                    </button>
+                    <button type="submit" class="btn btn-primary px-4">Guardar Configuración Factus</button>
                 </div>
             </div>
         </form>

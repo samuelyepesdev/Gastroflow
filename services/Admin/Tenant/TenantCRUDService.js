@@ -101,6 +101,8 @@ class TenantCRUDService {
             'telefono',
             'ciudad',
             'regimen_fiscal',
+            'tributo_default',
+            'tasa_impuesto_default',
             'logo_data',
             'logo_tipo'
         ];

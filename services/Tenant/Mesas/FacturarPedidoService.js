@@ -1,6 +1,7 @@
 const db = require('../../../config/database');
 const FacturaRepository = require('../../../repositories/Tenant/FacturaRepository');
 const InventarioService = require('../InventarioService');
+const TaxService = require('../../Shared/TaxService');
 
 class FacturarPedidoService {
     /**
@@ -40,6 +41,11 @@ class FacturarPedidoService {
             let total = 0;
             let montoEfectivo = 0;
             let montoTransferencia = 0;
+            let subtotalFactura = 0;
+            let impuestosFactura = 0;
+
+            const productoIds = items.filter(i => !i.es_servicio && i.producto_id).map(i => i.producto_id);
+            const { tasas, defaultTasa } = await TaxService.getTasasPorProducto(tenantId, productoIds, connection);
 
             const lineasFactura = items.map(i => {
                 const cant = Number(i.cantidad || 0);
@@ -67,6 +73,11 @@ class FacturarPedidoService {
                     }
                 }
 
+                const tasa = i.es_servicio ? defaultTasa : (tasas.get(i.producto_id) ?? defaultTasa);
+                const { base_gravable, valor_impuesto } = TaxService.desglosarLinea(subtotal, tasa);
+                subtotalFactura += base_gravable;
+                impuestosFactura += valor_impuesto;
+
                 return {
                     producto_id: i.producto_id,
                     servicio_id: i.servicio_id,
@@ -75,7 +86,10 @@ class FacturarPedidoService {
                     precio_unitario: precioUnitFactura,
                     unidad_medida: i.unidad_medida || 'UND',
                     subtotal,
-                    descuento_porcentaje: desc > 0 ? pct : null
+                    descuento_porcentaje: desc > 0 ? pct : null,
+                    base_gravable,
+                    tasa_impuesto: tasa,
+                    valor_impuesto
                 };
             });
             total = Math.round(total * 100) / 100;
@@ -117,7 +131,7 @@ class FacturarPedidoService {
             const cajaSesionId = sesiones.length > 0 ? sesiones[0].id : null;
 
             const [facturaInsert] = await connection.query(
-                `INSERT INTO facturas (tenant_id, numero, cliente_id, total, forma_pago, monto_efectivo, monto_transferencia, propina, fecha, caja_sesion_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                `INSERT INTO facturas (tenant_id, numero, cliente_id, total, forma_pago, monto_efectivo, monto_transferencia, propina, fecha, caja_sesion_id, subtotal, total_impuestos) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                 [
                     tenantId,
                     numeroFactura,
@@ -128,7 +142,9 @@ class FacturarPedidoService {
                     montoTransferencia,
                     propina,
                     fechaEmisionUtc,
-                    cajaSesionId
+                    cajaSesionId,
+                    Math.round(subtotalFactura * 100) / 100,
+                    Math.round(impuestosFactura * 100) / 100
                 ]
             );
             const facturaId = facturaInsert.insertId;
@@ -142,11 +158,14 @@ class FacturarPedidoService {
                 l.precio_unitario,
                 l.unidad_medida,
                 l.subtotal,
-                l.descuento_porcentaje
+                l.descuento_porcentaje,
+                l.base_gravable,
+                l.tasa_impuesto,
+                l.valor_impuesto
             ]);
 
             await connection.query(
-                `INSERT INTO detalle_factura (factura_id, producto_id, servicio_id, es_servicio, cantidad, precio_unitario, unidad_medida, subtotal, descuento_porcentaje) VALUES ?`,
+                `INSERT INTO detalle_factura (factura_id, producto_id, servicio_id, es_servicio, cantidad, precio_unitario, unidad_medida, subtotal, descuento_porcentaje, base_gravable, tasa_impuesto, valor_impuesto) VALUES ?`,
                 [detallesValuesFinal]
             );
 
@@ -175,6 +194,15 @@ class FacturarPedidoService {
             );
 
             await connection.commit();
+
+            // --- FACTURACIÓN ELECTRÓNICA (opcional, no bloquea la venta) ---
+            try {
+                const FacturacionElectronicaConfigService = require('../FacturacionElectronicaConfigService');
+                await FacturacionElectronicaConfigService.encolarSiActivo(facturaId, tenantId);
+            } catch (feErr) {
+                console.error('Error opcional al encolar factura electrónica:', feErr);
+            }
+            // --------------------------------
 
             // Emitir evento SSE para notificar en tiempo real que se facturó el pedido
             try {

@@ -6,6 +6,7 @@
 
 const db = require('../../config/database');
 const { toFechaISOUtc } = require('../../utils/dateHelpers');
+const TaxService = require('../../services/Shared/TaxService');
 
 class FacturaRepository {
     /**
@@ -120,25 +121,62 @@ class FacturaRepository {
 
             const factura_id = result.insertId;
 
+            // Desglose de impuestos por línea (Fase 1 - Factus): precios de catálogo
+            // se tratan como "impuesto incluido", el desglose se calcula hacia atrás.
+            const productoIds = facturaData.productos
+                .filter(p => !p.es_servicio && p.producto_id)
+                .map(p => p.producto_id);
+            const { tasas, defaultTasa } = await TaxService.getTasasPorProducto(tenantId, productoIds, connection);
+
+            let subtotalFactura = 0;
+            let impuestosFactura = 0;
+            let descuentoFactura = 0;
+
             // Insert invoice details (incl. descuento_porcentaje y precio_original para mostrar en factura impresa)
-            const detallesValues = facturaData.productos.map(p => [
-                factura_id,
-                p.producto_id || null,
-                p.servicio_id || null,
-                p.es_servicio ? 1 : 0,
-                p.cantidad,
-                p.precio,
-                p.precio_original || p.precio, // Guardar precio original (catálogo)
-                p.unidad || (p.es_servicio ? 'SERV' : 'UND'),
-                p.subtotal,
-                p.descuento_porcentaje !== null && p.descuento_porcentaje !== undefined && p.descuento_porcentaje > 0
-                    ? p.descuento_porcentaje
-                    : null
-            ]);
+            const detallesValues = facturaData.productos.map(p => {
+                const tasa = p.es_servicio ? defaultTasa : (tasas.get(p.producto_id) ?? defaultTasa);
+                const { base_gravable, valor_impuesto } = TaxService.desglosarLinea(p.subtotal, tasa);
+                subtotalFactura += base_gravable;
+                impuestosFactura += valor_impuesto;
+                const precioOriginal = p.precio_original || p.precio;
+                if (precioOriginal > p.precio) {
+                    descuentoFactura += Math.round((precioOriginal - p.precio) * p.cantidad * 100) / 100;
+                }
+
+                return [
+                    factura_id,
+                    p.producto_id || null,
+                    p.servicio_id || null,
+                    p.es_servicio ? 1 : 0,
+                    p.cantidad,
+                    p.precio,
+                    precioOriginal, // Guardar precio original (catálogo)
+                    p.unidad || (p.es_servicio ? 'SERV' : 'UND'),
+                    p.subtotal,
+                    p.descuento_porcentaje !== null &&
+                    p.descuento_porcentaje !== undefined &&
+                    p.descuento_porcentaje > 0
+                        ? p.descuento_porcentaje
+                        : null,
+                    base_gravable,
+                    tasa,
+                    valor_impuesto
+                ];
+            });
 
             await connection.query(
-                'INSERT INTO detalle_factura (factura_id, producto_id, servicio_id, es_servicio, cantidad, precio_unitario, precio_original, unidad_medida, subtotal, descuento_porcentaje) VALUES ?',
+                'INSERT INTO detalle_factura (factura_id, producto_id, servicio_id, es_servicio, cantidad, precio_unitario, precio_original, unidad_medida, subtotal, descuento_porcentaje, base_gravable, tasa_impuesto, valor_impuesto) VALUES ?',
                 [detallesValues]
+            );
+
+            await connection.query(
+                'UPDATE facturas SET subtotal = ?, descuento = ?, total_impuestos = ? WHERE id = ?',
+                [
+                    Math.round(subtotalFactura * 100) / 100,
+                    Math.round(descuentoFactura * 100) / 100,
+                    Math.round(impuestosFactura * 100) / 100,
+                    factura_id
+                ]
             );
 
             await connection.commit();
@@ -161,6 +199,7 @@ class FacturaRepository {
         const [facturas] = await db.query(
             `
             SELECT f.id, f.tenant_id, f.numero, f.cliente_id, f.total, f.forma_pago, f.propina, f.evento_id,
+                   f.subtotal, f.descuento, f.total_impuestos,
                    DATE_FORMAT(f.fecha, '%Y-%m-%d %H:%i:%s') AS fecha,
                    c.nombre AS cliente_nombre, c.direccion, c.telefono,
                    e.nombre AS evento_nombre
@@ -203,6 +242,7 @@ class FacturaRepository {
         const [facturas] = await db.query(
             `
             SELECT f.id, f.tenant_id, f.numero, f.cliente_id, f.total, f.forma_pago, f.propina, f.evento_id,
+                   f.subtotal, f.descuento, f.total_impuestos,
                    DATE_FORMAT(f.fecha, '%Y-%m-%d %H:%i:%s') AS fecha,
                    c.nombre AS cliente_nombre, c.direccion, c.telefono
             FROM facturas f
@@ -219,11 +259,12 @@ class FacturaRepository {
         const factura = facturas[0];
         const [productos] = await db.query(
             `
-            SELECT d.cantidad, d.precio_unitario, d.unidad_medida, d.subtotal, 
+            SELECT d.cantidad, d.precio_unitario, d.unidad_medida, d.subtotal,
+                   d.base_gravable, d.tasa_impuesto, d.valor_impuesto,
                    COALESCE(p.nombre, s.nombre) as nombre,
                    d.es_servicio
-            FROM detalle_factura d 
-            LEFT JOIN productos p ON d.producto_id = p.id 
+            FROM detalle_factura d
+            LEFT JOIN productos p ON d.producto_id = p.id
             LEFT JOIN servicios s ON d.servicio_id = s.id
             WHERE d.factura_id = ?
         `,
@@ -237,6 +278,9 @@ class FacturaRepository {
                 fecha: factura.fecha,
                 fechaISO: toFechaISOUtc(factura.fecha),
                 total: parseFloat(factura.total || 0),
+                subtotal: parseFloat(factura.subtotal || 0),
+                descuento: parseFloat(factura.descuento || 0),
+                total_impuestos: parseFloat(factura.total_impuestos || 0),
                 forma_pago: factura.forma_pago,
                 propina: parseFloat(factura.propina || 0)
             },
@@ -251,6 +295,9 @@ class FacturaRepository {
                 unidad: p.unidad_medida || (p.es_servicio ? 'SVG' : ''),
                 precio: parseFloat(p.precio_unitario || 0),
                 subtotal: parseFloat(p.subtotal || 0),
+                base_gravable: parseFloat(p.base_gravable || 0),
+                tasa_impuesto: parseFloat(p.tasa_impuesto || 0),
+                valor_impuesto: parseFloat(p.valor_impuesto || 0),
                 es_servicio: !!p.es_servicio
             }))
         };

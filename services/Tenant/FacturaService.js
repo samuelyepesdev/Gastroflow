@@ -33,9 +33,18 @@ class FacturaService {
 
         for (const p of productos) {
             if (!p.es_servicio && p.producto_id) {
-                const check = await InventarioService.checkStockParaProducto(tenantId, p.producto_id, parseFloat(p.cantidad) || 1);
+                const check = await InventarioService.checkStockParaProducto(
+                    tenantId,
+                    p.producto_id,
+                    parseFloat(p.cantidad) || 1
+                );
                 if (!check.ok) {
-                    const msg = (check.faltantes || []).map(f => `${f.insumo_nombre}: requiere ${f.requerido} ${f.unidad_base}, disponible ${f.disponible}`).join('; ');
+                    const msg = (check.faltantes || [])
+                        .map(
+                            f =>
+                                `${f.insumo_nombre}: requiere ${f.requerido} ${f.unidad_base}, disponible ${f.disponible}`
+                        )
+                        .join('; ');
                     throw new Error('No hay stock suficiente para realizar esta venta. ' + msg);
                 }
             }
@@ -51,35 +60,52 @@ class FacturaService {
 
         const facturaId = result.insertId;
 
+        // --- FACTURACIÓN ELECTRÓNICA (opcional, no bloquea la venta) ---
+        try {
+            const FacturacionElectronicaConfigService = require('./FacturacionElectronicaConfigService');
+            await FacturacionElectronicaConfigService.encolarSiActivo(facturaId, tenantId);
+        } catch (feErr) {
+            console.error('Error opcional al encolar factura electrónica:', feErr);
+        }
+        // --------------------------------
+
         // --- INTEGRACIÓN CON FINANZAS (Garantizada) ---
         const FinanzasService = require('./FinanzasService');
         const InsumoRepository = require('../../repositories/Tenant/InsumoRepository');
         const ProductRepository = require('../../repositories/Tenant/ProductRepository');
-        
+
         try {
             let tieneCeramicas = false;
             const usuario_id = facturaData.usuario_id || null;
-            
+
             // Intento de detección de cerámicas
             try {
                 for (const p of productos) {
                     let esCeramica = false;
-                    
+
                     // 1. Por nombre directo
                     if (p.nombre && p.nombre.toLowerCase().includes('cerámica')) {
                         esCeramica = true;
-                    } 
+                    }
                     // 2. Por ID virtual de Insumo (> 1M)
                     else if (p.producto_id && p.producto_id > 1000000) {
                         const insumoDb = await InsumoRepository.findById(p.producto_id - 1000000, tenantId);
-                        if (insumoDb && (insumoDb.nombre.toLowerCase().includes('cerámica') || insumoDb.categoria_nombre === 'Cerámicas')) {
+                        if (
+                            insumoDb &&
+                            (insumoDb.nombre.toLowerCase().includes('cerámica') ||
+                                insumoDb.categoria_nombre === 'Cerámicas')
+                        ) {
                             esCeramica = true;
                         }
                     }
                     // 3. Por Producto existente (si ya se creó)
                     else if (p.producto_id) {
                         const prodDb = await ProductRepository.findById(p.producto_id, tenantId);
-                        if (prodDb && (prodDb.nombre.toLowerCase().includes('cerámica') || prodDb.categoria_nombre === 'Cerámicas')) {
+                        if (
+                            prodDb &&
+                            (prodDb.nombre.toLowerCase().includes('cerámica') ||
+                                prodDb.categoria_nombre === 'Cerámicas')
+                        ) {
                             esCeramica = true;
                         }
                     }
@@ -92,7 +118,7 @@ class FacturaService {
             } catch (e) {
                 console.error('Error opcional en detección de cerámicas:', e);
             }
-            
+
             // REGISTRO FINAL (Siempre se ejecuta)
             await FinanzasService.registrarIngresoVenta(tenantId, {
                 monto: total,
@@ -108,13 +134,18 @@ class FacturaService {
         for (const p of productos) {
             try {
                 if (!p.es_servicio && p.producto_id) {
-                    await InventarioService.descontarPorReceta(tenantId, p.producto_id, parseFloat(p.cantidad) || 1, 'factura_' + facturaId);
+                    await InventarioService.descontarPorReceta(
+                        tenantId,
+                        p.producto_id,
+                        parseFloat(p.cantidad) || 1,
+                        'factura_' + facturaId
+                    );
                 }
             } catch (err) {
                 console.error('Error al descontar inventario por receta:', err);
             }
         }
-        
+
         // --- INVALIDAR CACHÉ DE ESTADÍSTICAS (Actualización instantánea del Dashboard) ---
         try {
             const cacheService = require('../Shared/CacheService');

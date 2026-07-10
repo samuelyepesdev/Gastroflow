@@ -99,7 +99,8 @@ class ProductManager {
       categoria_id: data.categoriaId || document.getElementById('categoriaId').value,
       precio_unidad: parseFloat(data.precioUnidad || document.getElementById('precioUnidad').value) || 0,
       descripcion: document.getElementById('descripcion') ? document.getElementById('descripcion').value : '',
-      imagen_url: document.getElementById('imagenUrl')?.value || null
+      imagen_url: document.getElementById('imagenUrl')?.value || null,
+      tributo: document.getElementById('tributo')?.value || null
     };
 
     try {
@@ -152,6 +153,9 @@ class ProductManager {
       document.getElementById('nombre').value = producto.nombre;
       document.getElementById('categoriaId').value = producto.categoria_id || '';
       document.getElementById('precioUnidad').value = producto.precio_unidad;
+      if (document.getElementById('tributo')) {
+        document.getElementById('tributo').value = producto.tributo || '';
+      }
       if (document.getElementById('descripcion')) {
         document.getElementById('descripcion').value = producto.descripcion || '';
       }

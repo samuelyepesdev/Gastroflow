@@ -76,7 +76,7 @@
 
     <!-- Modals -->
     <%- include('_modal_costeo') %>
-    <%- include('_modal_form', { categorias: categorias }) %>
+    <%- include('_modal_form', { categorias: categorias, tenant: typeof tenant !== 'undefined' ? tenant : null }) %>
 
     <!-- Base Scripts -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>

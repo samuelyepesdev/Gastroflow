@@ -45,6 +45,18 @@
                         <input type="number" class="form-control" id="precioUnidad" step="0.01" min="0" required>
                     </div>
                     <div class="mb-3">
+                        <label class="form-label">Tributo (facturación electrónica)</label>
+                        <select class="form-control" id="tributo">
+                            <option value="">Usar el del negocio (<%= typeof tenant !== 'undefined' && tenant && tenant.tasa_impuesto_default != null ? Number(tenant.tasa_impuesto_default) + '%' : 'por defecto' %>)</option>
+                            <option value="iva_19">IVA 19%</option>
+                            <option value="iva_5">IVA 5%</option>
+                            <option value="impoconsumo_8">Impoconsumo 8%</option>
+                            <option value="exento">Exento (0%)</option>
+                            <option value="excluido">Excluido (0%)</option>
+                        </select>
+                        <small class="text-muted">El precio de venta se considera con impuesto incluido; el desglose se calcula automáticamente al facturar.</small>
+                    </div>
+                    <div class="mb-3">
                         <label class="form-label">Descripción</label>
                         <textarea class="form-control" id="descripcion" rows="3" placeholder="Descripción para el menú digital"></textarea>
                     </div>

@@ -16,6 +16,68 @@
         });
     }
 
+    // Fiscal: al cambiar el tributo por defecto, sugerir su tasa asociada
+    const tributoDefaultSelect = document.getElementById('tributoDefaultSelect');
+    const tasaImpuestoDefaultInput = document.getElementById('tasaImpuestoDefaultInput');
+    if (tributoDefaultSelect && tasaImpuestoDefaultInput) {
+        tributoDefaultSelect.addEventListener('change', () => {
+            const tasa = tributoDefaultSelect.selectedOptions[0]?.getAttribute('data-tasa');
+            if (tasa !== null) {
+                tasaImpuestoDefaultInput.value = tasa;
+            }
+        });
+    }
+
+    // Facturación electrónica (Factus): guardar config y probar conexión
+    async function handleFacturacionElectronicaSubmit(event, tenantId) {
+        event.preventDefault();
+        const formData = new FormData(event.target);
+        const data = Object.fromEntries(formData.entries());
+
+        try {
+            const resp = await fetch(`/admin/tenants/${tenantId}/facturacion-electronica`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            const result = await resp.json();
+            if (resp.ok) {
+                Swal.fire({ icon: 'success', title: 'Configuración de Factus guardada', timer: 1500, showConfirmButton: false })
+                    .then(() => window.location.reload());
+            } else {
+                Swal.fire({ icon: 'error', title: 'Error', text: result.error || 'No se pudo guardar la configuración' });
+            }
+        } catch (e) {
+            Swal.fire({ icon: 'error', title: 'Error de red', text: e.message });
+        }
+        return false;
+    }
+
+    const btnProbarConexionFactus = document.getElementById('btnProbarConexionFactus');
+    if (btnProbarConexionFactus) {
+        btnProbarConexionFactus.addEventListener('click', async () => {
+            const tenantId = btnProbarConexionFactus.getAttribute('data-tenant-id');
+            btnProbarConexionFactus.disabled = true;
+            btnProbarConexionFactus.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Probando...';
+            try {
+                const resp = await fetch(`/admin/tenants/${tenantId}/facturacion-electronica/probar-conexion`, {
+                    method: 'POST'
+                });
+                const result = await resp.json();
+                if (resp.ok && result.ok) {
+                    Swal.fire({ icon: 'success', title: 'Conexión exitosa', text: 'Las credenciales de Factus son válidas.' });
+                } else {
+                    Swal.fire({ icon: 'error', title: 'Conexión fallida', text: result.error || 'No se pudo conectar con Factus' });
+                }
+            } catch (e) {
+                Swal.fire({ icon: 'error', title: 'Error de red', text: e.message });
+            } finally {
+                btnProbarConexionFactus.disabled = false;
+                btnProbarConexionFactus.innerHTML = '<i class="bi bi-plug me-1"></i>Probar Conexión';
+            }
+        });
+    }
+
     // Manejo de Colores
     const colorInput = document.getElementById('editConfigColor');
     const colorPreview = document.getElementById('colorPreview');
