@@ -3,6 +3,7 @@ const cron = require('node-cron');
 const ReporteMensualService = require('../services/Tenant/ReporteMensualService');
 const WhatsAppService = require('../services/Tenant/WhatsAppService');
 const FacturacionElectronicaWorkerService = require('../services/Tenant/FacturacionElectronicaWorkerService');
+const JobWorkerService = require('../services/Shared/JobWorkerService');
 
 const runBackgroundJobs = async () => {
     try {
@@ -19,6 +20,12 @@ const runBackgroundJobs = async () => {
         // Worker de emisión de facturación electrónica (Factus): procesa la cola cada minuto.
         cron.schedule('* * * * *', () => {
             FacturacionElectronicaWorkerService.procesarPendientes();
+        });
+
+        // Worker de job_queue genérico (PDF pesados, email): procesa cada 15s para que
+        // el usuario no espere demasiado por algo que antes era síncrono en el request.
+        cron.schedule('*/15 * * * * *', () => {
+            JobWorkerService.procesarPendientes();
         });
 
         console.log('--- Cron jobs iniciados exitosamente ---');

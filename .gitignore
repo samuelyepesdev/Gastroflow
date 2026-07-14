@@ -2,6 +2,7 @@
 node_modules/
 dist/
 public/uploads/
+storage/job_results/
 
 # Archivos de entorno
 .env

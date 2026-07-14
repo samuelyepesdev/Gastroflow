@@ -6,6 +6,10 @@
 
 const db = require('../../config/database');
 
+const PEDIDO_COLUMNS =
+    'id, numero, tenant_id, mesa_id, cliente_id, estado, canal, metodo_pago, total, propina, notas, ' +
+    'created_at, updated_at, origen, sesion_cliente';
+
 class PedidoRepository {
     /**
      * Find open order by table ID
@@ -14,7 +18,7 @@ class PedidoRepository {
      */
     static async findOpenByMesaId(mesaId) {
         const [pedidos] = await db.query(
-            'SELECT * FROM pedidos WHERE mesa_id = ? AND estado NOT IN (\'cerrado\',\'cancelado\') ORDER BY id DESC LIMIT 1',
+            `SELECT ${PEDIDO_COLUMNS} FROM pedidos WHERE mesa_id = ? AND estado NOT IN ('cerrado','cancelado') ORDER BY id DESC LIMIT 1`,
             [mesaId]
         );
         return pedidos[0] || null;
@@ -26,7 +30,7 @@ class PedidoRepository {
      * @returns {Promise<Object|null>} Order object or null
      */
     static async findById(id) {
-        const [pedidos] = await db.query('SELECT * FROM pedidos WHERE id = ?', [id]);
+        const [pedidos] = await db.query(`SELECT ${PEDIDO_COLUMNS} FROM pedidos WHERE id = ?`, [id]);
         return pedidos[0] || null;
     }
 
@@ -86,13 +90,16 @@ class PedidoRepository {
      * @returns {Promise<Array>} Array of order items
      */
     static async getItemsByPedidoId(pedidoId) {
-        const [items] = await db.query(`
+        const [items] = await db.query(
+            `
             SELECT i.*, p.nombre AS producto_nombre 
             FROM pedido_items i
             JOIN productos p ON p.id = i.producto_id
             WHERE i.pedido_id = ?
             ORDER BY i.created_at ASC
-        `, [pedidoId]);
+        `,
+            [pedidoId]
+        );
         return items;
     }
 
@@ -150,4 +157,3 @@ class PedidoRepository {
 }
 
 module.exports = PedidoRepository;
-

@@ -30,6 +30,7 @@ const adminVentasRoutes = require('./admin/ventas');
 const adminSoporteRoutes = require('./admin/soporte');
 const adminDashboardRoutes = require('./admin/dashboard');
 const adminReportesRoutes = require('./admin/reportes');
+const adminJobsRoutes = require('./admin/jobs');
 const adminLandingRoutes = require('./admin/landing');
 const LandingSettingsService = require('../services/Admin/LandingSettingsService');
 const eventosRoutes = require('./tenant/eventos');
@@ -174,6 +175,7 @@ router.use('/admin/permisos', requireAuth, adminPermisosRoutes);
 router.use('/admin/ventas', requireAuth, adminVentasRoutes);
 router.use('/admin/soporte', requireAuth, adminSoporteRoutes);
 router.use('/admin/reportes', requireAuth, adminReportesRoutes);
+router.use('/admin/jobs', requireAuth, adminJobsRoutes);
 router.use('/admin/landing', requireAuth, adminLandingRoutes);
 
 module.exports = router;

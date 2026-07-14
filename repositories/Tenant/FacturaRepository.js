@@ -10,42 +10,26 @@ const TaxService = require('../../services/Shared/TaxService');
 
 class FacturaRepository {
     /**
-     * Si hay facturas sin numerar (numero NULL) o con numeración que no empieza en 1 por tenant
-     * (p. ej. migración que puso numero = id), las acomoda a 1, 2, 3... por tenant (orden por id).
-     * Usa la misma connection (dentro de transacción).
+     * Si las facturas de ESTE tenant tienen numero NULL o no empiezan en 1 (p. ej. migración
+     * que puso numero = id), las acomoda a 1, 2, 3... (orden por id). Usa la misma connection
+     * (dentro de transacción).
+     *
+     * Antes esto corría un `COUNT(*) FROM facturas WHERE numero IS NULL` SIN filtro de tenant
+     * (full scan cross-tenant en cada venta de cualquier tenant) y, si encontraba cualquier
+     * NULL en cualquier tenant, renumeraba TODOS los tenants como efecto secundario. Ahora está
+     * acotado al tenant actual: 2 queries indexadas por tenant_id en el camino feliz, y el loop
+     * de renumeración solo corre si hay algo realmente inconsistente en este tenant.
      * @param {import('mysql2/promise').PoolConnection} connection
-     * @param {number} tenantId - Tenant actual (para acomodar solo su secuencia si hace falta)
+     * @param {number} tenantId - Tenant actual
      */
     static async acomodarNumeracionSiFalta(connection, tenantId) {
-        const tieneColumnaNumero = true;
         try {
-            const [rows] = await connection.query('SELECT COUNT(*) AS total FROM facturas WHERE numero IS NULL');
-            const total = (rows && rows[0] && rows[0].total) || 0;
-            if (total > 0) {
-                const [tenants] = await connection.query(
-                    'SELECT DISTINCT tenant_id FROM facturas ORDER BY tenant_id ASC'
-                );
-                for (const { tenant_id } of tenants) {
-                    const [facturas] = await connection.query(
-                        'SELECT id FROM facturas WHERE tenant_id <=> ? ORDER BY id ASC',
-                        [tenant_id]
-                    );
-                    let n = 1;
-                    for (const f of facturas || []) {
-                        await connection.query('UPDATE facturas SET numero = ? WHERE id = ?', [n, f.id]);
-                        n++;
-                    }
-                }
-                return;
-            }
-        } catch (err) {
-            if (err.code === 'ER_BAD_FIELD_ERROR' || (err.message && err.message.includes('numero'))) {
-                return;
-            }
-            throw err;
-        }
+            const [rows] = await connection.query(
+                'SELECT COUNT(*) AS total FROM facturas WHERE tenant_id = ? AND numero IS NULL',
+                [tenantId]
+            );
+            const totalNulos = (rows && rows[0] && rows[0].total) || 0;
 
-        try {
             const [minRows] = await connection.query(
                 'SELECT MIN(numero) AS min_num FROM facturas WHERE tenant_id = ?',
                 [tenantId]
@@ -54,7 +38,9 @@ class FacturaRepository {
                 minRows && minRows[0] && minRows[0].min_num !== null && minRows[0].min_num !== undefined
                     ? Number(minRows[0].min_num)
                     : null;
-            if (minNum === null || minNum === 1) {
+
+            // Camino feliz: sin nulos y ya empieza en 1 (o no hay facturas aún) -> nada que corregir.
+            if (totalNulos === 0 && (minNum === null || minNum === 1)) {
                 return;
             }
 

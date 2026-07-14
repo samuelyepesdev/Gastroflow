@@ -1,9 +1,7 @@
 const PlanService = require('../../../../services/Admin/PlanService');
 const AddonService = require('../../../../services/Admin/AddonService');
 const TenantService = require('../../../../services/Admin/TenantService');
-const ejs = require('ejs');
-const path = require('path');
-const puppeteer = require('puppeteer');
+const JobQueueRepository = require('../../../../repositories/Shared/JobQueueRepository');
 
 class PlanesController {
     // GET /admin/planes
@@ -70,54 +68,16 @@ class PlanesController {
         }
     }
 
-    // GET /admin/planes/exportar-pdf
+    // GET /admin/planes/exportar-pdf - encola la generación (puppeteer es pesado, no
+    // debe bloquear el request). El frontend hace polling a /admin/jobs/:id y descarga
+    // desde /admin/jobs/:id/download cuando el worker termina.
     static async exportPdf(req, res) {
-        let browser = null;
         try {
-            const plans = await PlanService.getAll();
-            const templatePath = path.join(__dirname, '../../../../views/admin/planes/pdf_export.ejs');
-
-            const html = await ejs.renderFile(templatePath, { plans });
-
-            browser = await puppeteer.launch({
-                headless: true,
-                args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu']
-            });
-            const page = await browser.newPage();
-
-            // Usar setContent con timeout y waitUntil: 'load'
-            await page.setContent(html, { waitUntil: 'load', timeout: 30000 });
-
-            const pdfBuffer = await page.pdf({
-                format: 'A4',
-                printBackground: true,
-                margin: { top: '15mm', bottom: '15mm', left: '15mm', right: '15mm' }
-            });
-
-            await browser.close();
-            browser = null;
-
-            // Headers seguros para Express
-            res.type('application/pdf');
-            res.attachment('Portafolio_GastroFlow.pdf');
-            return res.end(pdfBuffer, 'binary');
+            const jobId = await JobQueueRepository.encolar('pdf_planes', {});
+            res.json({ jobId });
         } catch (error) {
             console.error('[PDF_EXPORT_ERROR]:', error);
-            if (browser) {
-                try {
-                    await browser.close();
-                } catch (e) {
-                    /* intentional */
-                }
-            }
-            // Si hay error, enviamos un HTML amigable en lugar de un buffer corrupto
-            res.status(500).send(`
-                <div style="font-family:sans-serif; text-align:center; padding:50px;">
-                    <h1 style="color:#ef4444;">Error al generar reporte</h1>
-                    <p>${error.message}</p>
-                    <button onclick="window.close()">Cerrar pestaña</button>
-                </div>
-            `);
+            res.status(500).json({ error: 'Error al encolar la generación del PDF.' });
         }
     }
 

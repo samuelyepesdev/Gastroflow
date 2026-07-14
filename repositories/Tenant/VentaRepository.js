@@ -37,12 +37,16 @@ class VentaRepository {
         }
 
         if (filters.desde) {
-            query += ` AND DATE(f.fecha) >= ?`;
+            // Sargable: DATE(f.fecha) >= ? impedía usar el índice de fecha (evalúa la
+            // función en cada fila). f.fecha >= '00:00:00' del día es equivalente.
+            query += ` AND f.fecha >= ?`;
             params.push(filters.desde);
         }
 
         if (filters.hasta) {
-            query += ` AND DATE(f.fecha) <= ?`;
+            // Igual que arriba: rango sargable en vez de DATE(f.fecha) <= ?. Incluye
+            // todo el día "hasta" comparando contra el inicio del día siguiente.
+            query += ` AND f.fecha < DATE_ADD(?, INTERVAL 1 DAY)`;
             params.push(filters.hasta);
         }
 
@@ -95,12 +99,16 @@ class VentaRepository {
         }
 
         if (filters.desde) {
-            query += ` AND DATE(f.fecha) >= ?`;
+            // Sargable: DATE(f.fecha) >= ? impedía usar el índice de fecha (evalúa la
+            // función en cada fila). f.fecha >= '00:00:00' del día es equivalente.
+            query += ` AND f.fecha >= ?`;
             params.push(filters.desde);
         }
 
         if (filters.hasta) {
-            query += ` AND DATE(f.fecha) <= ?`;
+            // Igual que arriba: rango sargable en vez de DATE(f.fecha) <= ?. Incluye
+            // todo el día "hasta" comparando contra el inicio del día siguiente.
+            query += ` AND f.fecha < DATE_ADD(?, INTERVAL 1 DAY)`;
             params.push(filters.hasta);
         }
 

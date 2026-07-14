@@ -1,5 +1,5 @@
 const TenantService = require('../../../../services/Admin/TenantService');
-const ReporteConsolidadoService = require('../../../../services/Admin/ReporteConsolidadoService');
+const JobQueueRepository = require('../../../../repositories/Shared/JobQueueRepository');
 
 class ReportesController {
     // GET /admin/reportes
@@ -19,44 +19,33 @@ class ReportesController {
         }
     }
 
-    // GET /admin/reportes/exportar-pdf
+    // GET /admin/reportes/exportar-pdf - encola la generación (puppeteer es pesado,
+    // no debe bloquear el request). El frontend hace polling a /admin/jobs/:id y
+    // descarga desde /admin/jobs/:id/download cuando el worker termina.
     static async exportPdf(req, res) {
         try {
             const { mes, anio } = req.query;
 
             if (!mes || !anio) {
-                return res.status(400).send('Mes y año son requeridos.');
+                return res.status(400).json({ error: 'Mes y año son requeridos.' });
             }
 
             const mesInt = parseInt(mes, 10);
             const anioInt = parseInt(anio, 10);
 
             if (isNaN(mesInt) || mesInt < 1 || mesInt > 12) {
-                return res.status(400).send('Mes inválido.');
+                return res.status(400).json({ error: 'Mes inválido.' });
             }
 
             if (isNaN(anioInt) || anioInt < 2000 || anioInt > 2100) {
-                return res.status(400).send('Año inválido.');
+                return res.status(400).json({ error: 'Año inválido.' });
             }
 
-            const pdfBuffer = await ReporteConsolidadoService.generarReporteConsolidado({
-                mes: mesInt,
-                anio: anioInt
-            });
-
-            // Headers seguros para Express
-            res.type('application/pdf');
-            res.attachment(`Reporte_Consolidado_${mesInt}_${anioInt}.pdf`);
-            return res.end(pdfBuffer, 'binary');
+            const jobId = await JobQueueRepository.encolar('pdf_reporte_consolidado', { mes: mesInt, anio: anioInt });
+            res.json({ jobId });
         } catch (error) {
             console.error('[PDF_CONSOLIDADO_EXPORT_ERROR]:', error);
-            res.status(500).send(`
-                <div style="font-family:sans-serif; text-align:center; padding:50px;">
-                    <h1 style="color:#ef4444;">Error al generar el reporte consolidado</h1>
-                    <p>${error.message}</p>
-                    <button onclick="window.close()">Cerrar pestaña</button>
-                </div>
-            `);
+            res.status(500).json({ error: 'Error al encolar la generación del reporte consolidado.' });
         }
     }
 }

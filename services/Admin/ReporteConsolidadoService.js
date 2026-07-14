@@ -47,51 +47,42 @@ class ReporteConsolidadoService {
         const allTenants = await TenantService.getAllTenants();
         const activeTenants = (allTenants || []).filter(t => t.activo);
 
-        const activeTenantsData = [];
+        // Un tenant es independiente de otro: se resuelven en paralelo en vez de
+        // secuencial (antes eran 4 awaits × N tenants en serie).
+        const activeTenantsData = await Promise.all(
+            activeTenants.map(async tenant => {
+                try {
+                    const [totalMes, facturasMes, topProductos, porCategoria] = await Promise.all([
+                        StatsRepository.getTotalSales(tenant.id, { desde: firstDay, hasta: lastDayStr }),
+                        StatsRepository.getTotalInvoices(tenant.id, { desde: firstDay, hasta: lastDayStr }),
+                        StatsRepository.getTopProducts(tenant.id, 5, { desde: firstDay, hasta: lastDayStr }),
+                        StatsRepository.getSalesByCategory(tenant.id, { desde: firstDay, hasta: lastDayStr })
+                    ]);
+
+                    return { tenant, totalMes, facturasMes, topProductos, porCategoria };
+                } catch (err) {
+                    console.error(
+                        `[CONSOLIDADO_ERROR] Error obteniendo estadísticas para tenant ${tenant.nombre}:`,
+                        err.message
+                    );
+                    // Si falla un tenant individual, lo agregamos con datos vacíos para no romper todo el reporte consolidado
+                    return {
+                        tenant,
+                        totalMes: 0,
+                        facturasMes: 0,
+                        topProductos: [],
+                        porCategoria: [],
+                        error: err.message
+                    };
+                }
+            })
+        );
+
         let globalTotalSales = 0;
         let globalTotalInvoices = 0;
-
-        for (const tenant of activeTenants) {
-            try {
-                const totalMes = await StatsRepository.getTotalSales(tenant.id, { desde: firstDay, hasta: lastDayStr });
-                const facturasMes = await StatsRepository.getTotalInvoices(tenant.id, {
-                    desde: firstDay,
-                    hasta: lastDayStr
-                });
-                const topProductos = await StatsRepository.getTopProducts(tenant.id, 5, {
-                    desde: firstDay,
-                    hasta: lastDayStr
-                });
-                const porCategoria = await StatsRepository.getSalesByCategory(tenant.id, {
-                    desde: firstDay,
-                    hasta: lastDayStr
-                });
-
-                globalTotalSales += totalMes;
-                globalTotalInvoices += facturasMes;
-
-                activeTenantsData.push({
-                    tenant,
-                    totalMes,
-                    facturasMes,
-                    topProductos,
-                    porCategoria
-                });
-            } catch (err) {
-                console.error(
-                    `[CONSOLIDADO_ERROR] Error obteniendo estadísticas para tenant ${tenant.nombre}:`,
-                    err.message
-                );
-                // Si falla un tenant individual, lo agregamos con datos vacíos para no romper todo el reporte consolidado
-                activeTenantsData.push({
-                    tenant,
-                    totalMes: 0,
-                    facturasMes: 0,
-                    topProductos: [],
-                    porCategoria: [],
-                    error: err.message
-                });
-            }
+        for (const tenantData of activeTenantsData) {
+            globalTotalSales += tenantData.totalMes;
+            globalTotalInvoices += tenantData.facturasMes;
         }
 
         const templatePath = path.join(__dirname, '../../views/admin/reportes/consolidado_pdf.ejs');

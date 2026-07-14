@@ -213,4 +213,21 @@
     window.selTamano = selTamano;
     window.savePlanCompleto = savePlanCompleto;
     window.saveAddon = saveAddon;
+
+    var exportBtn = document.getElementById('exportPortafolioBtn');
+    var exportLabel = document.getElementById('exportPortafolioLabel');
+    if (exportBtn) {
+        exportBtn.addEventListener('click', function () {
+            pollJobAndDownload('/admin/planes/exportar-pdf', {
+                onStart: function () {
+                    exportBtn.disabled = true;
+                    exportLabel.textContent = 'Generando PDF...';
+                },
+                onDone: function () {
+                    exportBtn.disabled = false;
+                    exportLabel.textContent = 'Exportar Portafolio (PDF)';
+                }
+            });
+        });
+    }
 })();

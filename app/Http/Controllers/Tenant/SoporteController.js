@@ -1,5 +1,5 @@
 const db = require('../../../../config/database');
-const MailerService = require('../../../../services/Shared/MailerService');
+const JobQueueRepository = require('../../../../repositories/Shared/JobQueueRepository');
 const logger = require('../../../../utils/logger');
 
 function escapeHtml(str) {
@@ -68,14 +68,20 @@ class SoporteController {
                 <p>Inicia sesión en el panel SuperAdmin para responder.</p>
             `;
 
+            // Encolado async (job_queue): el envío de email no debe bloquear la
+            // respuesta al usuario ni depender de que el SMTP responda a tiempo.
             try {
-                await MailerService.sendMail({
-                    to: adminEmail,
-                    subject: `Nuevo Ticket: [${tipo.toUpperCase()}] de ${req.tenant.nombre}`,
-                    html: htmlEmail
-                });
+                await JobQueueRepository.encolar(
+                    'email_soporte',
+                    {
+                        to: adminEmail,
+                        subject: `Nuevo Ticket: [${tipo.toUpperCase()}] de ${req.tenant.nombre}`,
+                        html: htmlEmail
+                    },
+                    tenantId
+                );
             } catch (mailError) {
-                logger.warn('Error enviando email de soporte (el ticket se guardó)', { error: mailError.message });
+                logger.warn('Error encolando email de soporte (el ticket se guardó)', { error: mailError.message });
             }
 
             res.json({ success: true, message: 'Ticket de soporte enviado correctamente. Te contactaremos pronto.' });

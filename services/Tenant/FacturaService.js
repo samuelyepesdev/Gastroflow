@@ -76,43 +76,46 @@ class FacturaService {
             let tieneCeramicas = false;
             const usuario_id = facturaData.usuario_id || null;
 
-            // Intento de detección de cerámicas
+            // Intento de detección de cerámicas: batch fetch (2 queries) en vez de
+            // 1 query por producto (findById secuencial en el loop original).
             try {
-                for (const p of productos) {
-                    let esCeramica = false;
+                const insumoIds = productos
+                    .filter(p => p.producto_id && p.producto_id > 1000000)
+                    .map(p => p.producto_id - 1000000);
+                const productoIds = productos
+                    .filter(p => p.producto_id && p.producto_id <= 1000000)
+                    .map(p => p.producto_id);
 
+                const [insumosPorId, productosPorId] = await Promise.all([
+                    InsumoRepository.findByIds(insumoIds, tenantId),
+                    ProductRepository.findByIds(productoIds, tenantId)
+                ]);
+
+                tieneCeramicas = productos.some(p => {
                     // 1. Por nombre directo
                     if (p.nombre && p.nombre.toLowerCase().includes('cerámica')) {
-                        esCeramica = true;
+                        return true;
                     }
                     // 2. Por ID virtual de Insumo (> 1M)
-                    else if (p.producto_id && p.producto_id > 1000000) {
-                        const insumoDb = await InsumoRepository.findById(p.producto_id - 1000000, tenantId);
-                        if (
+                    if (p.producto_id && p.producto_id > 1000000) {
+                        const insumoDb = insumosPorId.get(p.producto_id - 1000000);
+                        return !!(
                             insumoDb &&
                             (insumoDb.nombre.toLowerCase().includes('cerámica') ||
                                 insumoDb.categoria_nombre === 'Cerámicas')
-                        ) {
-                            esCeramica = true;
-                        }
+                        );
                     }
                     // 3. Por Producto existente (si ya se creó)
-                    else if (p.producto_id) {
-                        const prodDb = await ProductRepository.findById(p.producto_id, tenantId);
-                        if (
+                    if (p.producto_id) {
+                        const prodDb = productosPorId.get(p.producto_id);
+                        return !!(
                             prodDb &&
                             (prodDb.nombre.toLowerCase().includes('cerámica') ||
                                 prodDb.categoria_nombre === 'Cerámicas')
-                        ) {
-                            esCeramica = true;
-                        }
+                        );
                     }
-
-                    if (esCeramica) {
-                        tieneCeramicas = true;
-                        break;
-                    }
-                }
+                    return false;
+                });
             } catch (e) {
                 console.error('Error opcional en detección de cerámicas:', e);
             }
@@ -129,20 +132,24 @@ class FacturaService {
         }
         // --------------------------------
 
-        for (const p of productos) {
-            try {
-                if (!p.es_servicio && p.producto_id) {
-                    await InventarioService.descontarPorReceta(
-                        tenantId,
-                        p.producto_id,
-                        parseFloat(p.cantidad) || 1,
-                        'factura_' + facturaId
-                    );
-                }
-            } catch (err) {
-                console.error('Error al descontar inventario por receta:', err);
-            }
-        }
+        // Descuento de inventario en paralelo: cada producto es independiente y cada
+        // fallo se captura por-item (igual que antes), así que no hay razón para serializar.
+        await Promise.all(
+            productos
+                .filter(p => !p.es_servicio && p.producto_id)
+                .map(async p => {
+                    try {
+                        await InventarioService.descontarPorReceta(
+                            tenantId,
+                            p.producto_id,
+                            parseFloat(p.cantidad) || 1,
+                            'factura_' + facturaId
+                        );
+                    } catch (err) {
+                        console.error('Error al descontar inventario por receta:', err);
+                    }
+                })
+        );
 
         // --- INVALIDAR CACHÉ DE ESTADÍSTICAS (Actualización instantánea del Dashboard) ---
         try {

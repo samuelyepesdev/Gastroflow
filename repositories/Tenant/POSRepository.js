@@ -54,7 +54,7 @@ class POSRepository {
         const [rows] = await db.query(
             `SELECT COUNT(*) AS num_ordenes, COALESCE(SUM(total), 0) AS total_hoy
              FROM facturas
-             WHERE tenant_id = ? AND DATE(fecha) = CURDATE()`,
+             WHERE tenant_id = ? AND fecha >= CURDATE() AND fecha < CURDATE() + INTERVAL 1 DAY`,
             [tenantId]
         );
         return rows[0] || { num_ordenes: 0, total_hoy: 0 };

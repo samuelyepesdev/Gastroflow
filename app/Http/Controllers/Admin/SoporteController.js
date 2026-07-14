@@ -1,5 +1,5 @@
 const db = require('../../../../config/database');
-const MailerService = require('../../../../services/Shared/MailerService');
+const JobQueueRepository = require('../../../../repositories/Shared/JobQueueRepository');
 
 class SoporteAdminController {
     static async index(req, res) {
@@ -13,7 +13,7 @@ class SoporteAdminController {
                 ORDER BY t.estado ASC, t.created_at DESC
             `);
 
-            res.render('admin/soporte/index', { 
+            res.render('admin/soporte/index', {
                 user: req.user,
                 tickets,
                 title: 'Soporte Técnico',
@@ -30,9 +30,12 @@ class SoporteAdminController {
             const { id } = req.params;
             const { estado } = req.body;
 
-            await db.query(`
+            await db.query(
+                `
                 UPDATE soporte_tickets SET estado = ? WHERE id = ?
-            `, [estado, id]);
+            `,
+                [estado, id]
+            );
 
             res.json({ success: true, message: 'Estado actualizado correctamente' });
         } catch (error) {
@@ -46,19 +49,25 @@ class SoporteAdminController {
             const { respuesta } = req.body;
 
             // Save reply to database
-            await db.query(`
+            await db.query(
+                `
                 UPDATE soporte_tickets 
                 SET respuesta_admin = ?, estado = 'resuelto' 
                 WHERE id = ?
-            `, [respuesta, id]);
+            `,
+                [respuesta, id]
+            );
 
             // Try to find the user's email to send the confirmation
-            const [rows] = await db.query(`
+            const [rows] = await db.query(
+                `
                 SELECT t.*, u.email, u.nombre_completo 
                 FROM soporte_tickets t 
                 JOIN usuarios u ON t.usuario_id = u.id 
                 WHERE t.id = ?
-            `, [id]);
+            `,
+                [id]
+            );
 
             if (rows.length > 0 && rows[0].email) {
                 const userEmail = rows[0].email;
@@ -75,14 +84,16 @@ class SoporteAdminController {
                     <p>El ticket ha sido marcado como "Resuelto". Si tienes más dudas puedes abrir otro ticket desde el panel.</p>
                 `;
 
+                // Encolado async (job_queue): igual que en SoporteController tenant,
+                // no bloquea la respuesta al admin ni depende del tiempo de SMTP.
                 try {
-                    await MailerService.sendMail({
+                    await JobQueueRepository.encolar('email_soporte', {
                         to: userEmail,
                         subject: `Respuesta de Soporte - Ticket #${id}`,
                         html: htmlEmail
                     });
-                } catch(e) {
-                    console.error("Error enviando email al usuario:", e);
+                } catch (e) {
+                    console.error('Error encolando email al usuario:', e);
                 }
             }
 

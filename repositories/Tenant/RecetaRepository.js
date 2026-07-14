@@ -5,10 +5,13 @@
 
 const db = require('../../config/database');
 
+const RECETA_COLUMNS =
+    'r.id, r.tenant_id, r.producto_id, r.nombre_receta, r.porciones, r.costos_adicionales, r.created_at, r.updated_at';
+
 class RecetaRepository {
     static async findAll(tenantId, filters = {}) {
         let sql = `
-            SELECT r.*, p.nombre AS producto_nombre, p.codigo AS producto_codigo, p.precio_unidad AS precio_venta_actual
+            SELECT ${RECETA_COLUMNS}, p.nombre AS producto_nombre, p.codigo AS producto_codigo, p.precio_unidad AS precio_venta_actual
             FROM recetas r
             INNER JOIN productos p ON p.id = r.producto_id AND p.tenant_id = r.tenant_id
             WHERE r.tenant_id = ?
@@ -42,7 +45,7 @@ class RecetaRepository {
     static async findById(id, tenantId) {
         const [rows] = await db.query(
             `
-            SELECT r.*, p.nombre AS producto_nombre, p.codigo AS producto_codigo, p.precio_unidad AS precio_venta_actual
+            SELECT ${RECETA_COLUMNS}, p.nombre AS producto_nombre, p.codigo AS producto_codigo, p.precio_unidad AS precio_venta_actual
             FROM recetas r
             INNER JOIN productos p ON p.id = r.producto_id
             WHERE r.id = ? AND r.tenant_id = ?
@@ -64,10 +67,11 @@ class RecetaRepository {
     }
 
     static async findByProductoId(productoId, tenantId) {
-        const [rows] = await db.query('SELECT * FROM recetas WHERE producto_id = ? AND tenant_id = ?', [
-            productoId,
-            tenantId
-        ]);
+        const [rows] = await db.query(
+            'SELECT id, tenant_id, producto_id, nombre_receta, porciones, costos_adicionales, created_at, updated_at ' +
+                'FROM recetas WHERE producto_id = ? AND tenant_id = ?',
+            [productoId, tenantId]
+        );
         return rows[0] || null;
     }
 
