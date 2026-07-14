@@ -37,7 +37,26 @@
     "test:coverage": "jest --coverage",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
-    "test:e2e:report": "playwright show-report tests/e2e/reports"
+    "test:e2e:report": "playwright show-report tests/e2e/reports",
+    "electron:dev": "electron electron/main.js",
+    "electron:build": "electron-builder --win nsis"
+  },
+  "build": {
+    "appId": "com.gastroflow.desktop",
+    "productName": "GastroFlow",
+    "directories": {
+      "output": "dist-electron"
+    },
+    "win": {
+      "target": "nsis"
+    },
+    "extraResources": [
+      {
+        "from": "resources/mysql-portable",
+        "to": "mysql-portable",
+        "filter": ["**/*"]
+      }
+    ]
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1041.0",
@@ -68,6 +87,8 @@
     "@types/node": "25.3.0",
     "artillery": "^1.7.9",
     "autocannon": "^2.0.1",
+    "electron": "^43.1.0",
+    "electron-builder": "^26.15.3",
     "eslint": "^10.4.1",
     "globals": "^17.6.0",
     "husky": "^9.1.7",
