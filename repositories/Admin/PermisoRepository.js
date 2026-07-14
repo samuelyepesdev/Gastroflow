@@ -5,6 +5,7 @@
 
 const db = require('../../config/database');
 const { PERMISSION_SECTIONS } = require('../../utils/constants');
+const CacheService = require('../../services/Shared/CacheService');
 
 class PermisoRepository {
     static async getAllRoles() {
@@ -80,6 +81,9 @@ class PermisoRepository {
         } finally {
             connection.release();
         }
+        // Un cambio de rol afecta a todos sus usuarios; se limpia todo el contexto
+        // cacheado en vez de resolver qué usuarios específicos tienen ese rol.
+        CacheService.deleteByPrefix('user:ctx:');
     }
 
     /** Usuarios de un tenant (para asignar permisos por restaurante) */
@@ -145,6 +149,7 @@ class PermisoRepository {
         } finally {
             connection.release();
         }
+        CacheService.delete(`user:ctx:${userId}`);
     }
 }
 

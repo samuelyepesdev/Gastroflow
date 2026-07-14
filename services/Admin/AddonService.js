@@ -7,6 +7,7 @@
 const AddonRepository = require('../../repositories/Admin/AddonRepository');
 const PlanRepository = require('../../repositories/Admin/PlanRepository');
 const db = require('../../config/database');
+const CacheService = require('../Shared/CacheService');
 
 class AddonService {
     /** Listar todos los add-ons del catálogo */
@@ -36,11 +37,13 @@ class AddonService {
             throw new Error('Add-on no encontrado');
         }
         await AddonRepository.addToTenant(tenantId, addonId);
+        CacheService.delete(`addons:${tenantId}`);
     }
 
     /** Quitar add-on de un tenant */
     static async removeFromTenant(tenantId, addonId) {
         await AddonRepository.removeFromTenant(tenantId, addonId);
+        CacheService.delete(`addons:${tenantId}`);
     }
 
     /**
@@ -82,6 +85,7 @@ class AddonService {
             throw new Error('Tamaño inválido');
         }
         await db.query('UPDATE tenants SET tamano = ? WHERE id = ?', [tamano, tenantId]);
+        CacheService.delete(`tenant:${tenantId}`);
     }
 
     /**

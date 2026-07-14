@@ -209,10 +209,15 @@ class InventarioService {
         const porciones = parseFloat(receta.porciones) || 1;
         const factor = (parseFloat(cantidad) || 1) / porciones;
 
-        // Validar ingredientes de forma paralela y concurrente usando programación funcional
-        const checkResultados = await Promise.all(
-            (ingredientes || []).map(async ing => {
-                const insumo = await InsumoRepository.findById(ing.insumo_id, tenantId);
+        // Un solo batch fetch en vez de 1 query por ingrediente.
+        const insumosPorId = await InsumoRepository.findByIds(
+            (ingredientes || []).map(ing => ing.insumo_id),
+            tenantId
+        );
+
+        const faltantes = (ingredientes || [])
+            .map(ing => {
+                const insumo = insumosPorId.get(ing.insumo_id);
                 if (!insumo) {
                     return null;
                 }
@@ -231,9 +236,8 @@ class InventarioService {
                 }
                 return null;
             })
-        );
+            .filter(Boolean);
 
-        const faltantes = checkResultados.filter(Boolean);
         return { ok: faltantes.length === 0, faltantes };
     }
 
@@ -251,10 +255,17 @@ class InventarioService {
         const porciones = parseFloat(receta.porciones) || 1;
         const factor = (parseFloat(cantidad) || 1) / porciones;
 
-        // Descontar inventario en paralelo usando programación funcional concurrente
+        // Un solo batch fetch para resolver unidad_base de todos los ingredientes.
+        // registrarSalida sigue leyendo su propio insumo internamente: necesita el
+        // stock_actual fresco al momento de escribir, no el de este batch de lectura.
+        const insumosPorId = await InsumoRepository.findByIds(
+            (ingredientes || []).map(ing => ing.insumo_id),
+            tenantId
+        );
+
         await Promise.all(
             (ingredientes || []).map(async ing => {
-                const insumo = await InsumoRepository.findById(ing.insumo_id, tenantId);
+                const insumo = insumosPorId.get(ing.insumo_id);
                 if (!insumo) {
                     return;
                 }

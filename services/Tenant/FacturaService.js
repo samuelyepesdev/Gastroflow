@@ -31,23 +31,21 @@ class FacturaService {
             }
         }
 
-        for (const p of productos) {
-            if (!p.es_servicio && p.producto_id) {
-                const check = await InventarioService.checkStockParaProducto(
-                    tenantId,
-                    p.producto_id,
-                    parseFloat(p.cantidad) || 1
-                );
-                if (!check.ok) {
-                    const msg = (check.faltantes || [])
-                        .map(
-                            f =>
-                                `${f.insumo_nombre}: requiere ${f.requerido} ${f.unidad_base}, disponible ${f.disponible}`
-                        )
-                        .join('; ');
-                    throw new Error('No hay stock suficiente para realizar esta venta. ' + msg);
-                }
-            }
+        // Chequeo de stock en paralelo (cada producto es independiente) en vez de
+        // secuencial: para una venta de N productos evita N round-trips en serie.
+        const checks = await Promise.all(
+            productos
+                .filter(p => !p.es_servicio && p.producto_id)
+                .map(p =>
+                    InventarioService.checkStockParaProducto(tenantId, p.producto_id, parseFloat(p.cantidad) || 1)
+                )
+        );
+        const todosLosFaltantes = checks.filter(c => !c.ok).flatMap(c => c.faltantes || []);
+        if (todosLosFaltantes.length > 0) {
+            const msg = todosLosFaltantes
+                .map(f => `${f.insumo_nombre}: requiere ${f.requerido} ${f.unidad_base}, disponible ${f.disponible}`)
+                .join('; ');
+            throw new Error('No hay stock suficiente para realizar esta venta. ' + msg);
         }
 
         const result = await FacturaRepository.createWithDetails(tenantId, {

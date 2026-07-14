@@ -1,5 +1,6 @@
 const db = require('../../../config/database');
 const TenantSeederService = require('./TenantSeederService');
+const CacheService = require('../../Shared/CacheService');
 
 class TenantCRUDService {
     static async getAllTenants() {
@@ -126,17 +127,20 @@ class TenantCRUDService {
         const query = `UPDATE tenants SET ${parts.join(', ')} WHERE id = ?`;
         payload.push(id);
         const [result] = await db.query(query, payload);
+        CacheService.delete(`tenant:${id}`);
         return result;
     }
 
     static async setTenantConfig(id, config) {
         const configStr = typeof config === 'string' ? config : JSON.stringify(config || {});
         const [result] = await db.query('UPDATE tenants SET config = ? WHERE id = ?', [configStr, id]);
+        CacheService.delete(`tenant:${id}`);
         return result;
     }
 
     static async changeTenantStatus(id, activo) {
         const [result] = await db.query('UPDATE tenants SET activo = ? WHERE id = ?', [activo ? 1 : 0, id]);
+        CacheService.delete(`tenant:${id}`);
         return result;
     }
 
@@ -202,6 +206,8 @@ class TenantCRUDService {
 
             await connection.query('SET FOREIGN_KEY_CHECKS = 1');
             await connection.commit();
+            CacheService.delete(`tenant:${id}`);
+            CacheService.delete(`addons:${id}`);
         } catch (error) {
             await connection.query('SET FOREIGN_KEY_CHECKS = 1'); // Ensure it's re-enabled
             await connection.rollback();

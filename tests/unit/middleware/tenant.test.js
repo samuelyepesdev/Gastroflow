@@ -12,6 +12,7 @@ jest.mock('../../../repositories/Admin/AddonRepository', () => ({
 
 const TenantRepository = require('../../../repositories/Admin/TenantRepository');
 const AddonRepository = require('../../../repositories/Admin/AddonRepository');
+const CacheService = require('../../../services/Shared/CacheService');
 const { attachTenantContext, costeoTenantContext } = require('../../../middleware/tenant');
 
 const createReq = (overrides = {}) => ({
@@ -37,6 +38,9 @@ const createRes = () => {
 describe('middleware/tenant', () => {
     beforeEach(() => {
         jest.clearAllMocks();
+        // El middleware cachea tenant/addons/permisos en CacheService (TTL 45s); sin esto,
+        // el mock de un test contamina al siguiente (varios tests reusan tenant_id: 1).
+        CacheService.clear();
     });
 
     describe('attachTenantContext', () => {

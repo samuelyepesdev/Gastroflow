@@ -44,6 +44,28 @@ class ProductRepository {
     }
 
     /**
+     * Batch lookup por ids (evita N+1 al resolver varios productos de una venta a la vez).
+     * @param {number[]} ids
+     * @param {number} tenantId
+     * @returns {Promise<Map<number, Object>>} producto_id -> producto
+     */
+    static async findByIds(ids, tenantId) {
+        const uniqueIds = [...new Set((ids || []).filter(id => id !== null && id !== undefined))];
+        if (uniqueIds.length === 0) {
+            return new Map();
+        }
+        const placeholders = uniqueIds.map(() => '?').join(',');
+        const [productos] = await db.query(
+            `SELECT p.*, c.nombre as categoria_nombre
+             FROM productos p
+             LEFT JOIN categorias c ON p.categoria_id = c.id
+             WHERE p.tenant_id = ? AND p.id IN (${placeholders})`,
+            [tenantId, ...uniqueIds]
+        );
+        return new Map(productos.map(p => [p.id, p]));
+    }
+
+    /**
      * Search products by name or code, including ingredients from 'Cerámicas' category
      * @param {string} queryTerm - Search term
      * @param {number} tenantId - Tenant ID

@@ -7,20 +7,50 @@
 const TenantRepository = require('../repositories/Admin/TenantRepository');
 const AddonRepository = require('../repositories/Admin/AddonRepository');
 const AuthService = require('../services/Shared/AuthService');
+const CacheService = require('../services/Shared/CacheService');
 const { getAllowedByPlan, getAllowedForUser } = require('../utils/planPermissions');
+
+/** TTL del contexto de tenant (usuario/permisos, tenant, add-ons) en el CacheService en memoria. */
+const CONTEXT_TTL_SECONDS = 45;
 
 /**
  * Slugs de add-ons activos del tenant (tenant_addons). Nunca debe tumbar el request:
  * si falla, se asume sin add-ons (el acceso sigue dependiendo del plan/permisos).
+ * Cacheado por tenant (cambia poco) para evitar una query por request.
  */
 async function getAddonSlugs(tenantId) {
+    const cacheKey = `addons:${tenantId}`;
+    const cached = CacheService.get(cacheKey);
+    if (cached) {
+        return cached;
+    }
     try {
         const addons = await AddonRepository.getByTenant(tenantId);
-        return (addons || []).map(a => a.slug);
+        const slugs = (addons || []).map(a => a.slug);
+        CacheService.set(cacheKey, slugs, CONTEXT_TTL_SECONDS);
+        return slugs;
     } catch (error) {
         console.error('Error al cargar add-ons del tenant:', error);
         return [];
     }
+}
+
+/**
+ * Tenant por id, cacheado con TTL corto. Se invalida proactivamente en
+ * TenantCRUDService al mutar un tenant para que los cambios del superadmin
+ * se sientan inmediatos en vez de esperar el TTL.
+ */
+async function getCachedTenant(tenantId) {
+    const cacheKey = `tenant:${tenantId}`;
+    const cached = CacheService.get(cacheKey);
+    if (cached) {
+        return cached;
+    }
+    const tenant = await TenantRepository.findById(tenantId);
+    if (tenant) {
+        CacheService.set(cacheKey, tenant, CONTEXT_TTL_SECONDS);
+    }
+    return tenant;
 }
 
 /**
@@ -38,7 +68,14 @@ async function attachTenantContext(req, res, next) {
 
         const rol = String(req.user.rol || '').toLowerCase();
         if (rol !== 'superadmin' && req.user.id) {
-            const freshUser = await AuthService.getUserById(req.user.id);
+            const userCacheKey = `user:ctx:${req.user.id}`;
+            let freshUser = CacheService.get(userCacheKey);
+            if (!freshUser) {
+                freshUser = await AuthService.getUserById(req.user.id);
+                if (freshUser) {
+                    CacheService.set(userCacheKey, freshUser, CONTEXT_TTL_SECONDS);
+                }
+            }
             if (freshUser && Array.isArray(freshUser.permisos)) {
                 req.user.permisos = freshUser.permisos;
             }
@@ -59,8 +96,8 @@ async function attachTenantContext(req, res, next) {
             req.user.tenant_id = tenantId;
         }
 
-        const tenant = await TenantRepository.findById(tenantId);
-        if (!tenant) {
+        const cachedTenant = await getCachedTenant(tenantId);
+        if (!cachedTenant) {
             if (req.xhr || req.headers.accept?.indexOf('json') > -1) {
                 return res.status(403).json({ error: 'Tenant no encontrado' });
             }
@@ -70,8 +107,9 @@ async function attachTenantContext(req, res, next) {
             );
         }
 
-        if (!tenant.activo) {
-            const msg = 'Tu restaurante "' + (tenant.nombre || '') + '" está desactivado. Contacta al administrador.';
+        if (!cachedTenant.activo) {
+            const msg =
+                'Tu restaurante "' + (cachedTenant.nombre || '') + '" está desactivado. Contacta al administrador.';
             if (req.xhr || req.headers.accept?.indexOf('json') > -1) {
                 res.clearCookie('auth_token');
                 return res.status(403).json({ error: msg, redirect: '/auth/login' });
@@ -80,6 +118,10 @@ async function attachTenantContext(req, res, next) {
             return res.redirect('/auth/login?mensaje=' + encodeURIComponent(msg));
         }
 
+        // addonSlugs es a nivel tenant (mismo valor para cualquier request de ese tenant),
+        // así que mutar el objeto cacheado es seguro: requests concurrentes calculan el
+        // mismo valor y no se pisan entre sí.
+        const tenant = cachedTenant;
         tenant.addonSlugs = await getAddonSlugs(tenant.id);
 
         req.tenant = tenant;
