@@ -44,6 +44,7 @@ const cajaRoutes = require('./tenant/caja');
 const serviciosRoutes = require('./tenant/servicios');
 const soporteTenantRoutes = require('./tenant/soporte');
 const posRoutes = require('./tenant/pos');
+const syncRoutes = require('./tenant/sync');
 const NotificationController = require('../app/Http/Controllers/Tenant/NotificationController');
 
 // ...
@@ -124,6 +125,13 @@ router.use(
 router.use('/caja', requireAuthWithTenant, requirePermission('caja.ver'), cajaRoutes);
 router.use('/soporte', requireAuthWithTenant, soporteTenantRoutes);
 router.use('/pos', requireAuthWithTenant, requirePlanFeature('ventas'), requirePermission('pos.ver'), posRoutes);
+// Sync desktop <-> producción: sin requirePlanFeature/requirePermission propios.
+// Las acciones que hoy despacha el push (abrir pedido, agregar/editar items,
+// propina) son las mismas que en /mesas ya son de libre acceso para cualquier
+// usuario autenticado del tenant (sin requirePermission en esas rutas). Si se
+// agregan acciones que sí requieren un permiso específico, ese chequeo debe
+// añadirse en SyncService antes de despachar, no asumirse aquí.
+router.use('/sync', requireAuthWithTenant, syncRoutes);
 
 // --- RUTAS API ---
 router.use(
