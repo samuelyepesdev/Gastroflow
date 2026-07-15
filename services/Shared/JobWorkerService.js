@@ -10,8 +10,7 @@ const { randomUUID } = require('crypto');
 const JobQueueRepository = require('../../repositories/Shared/JobQueueRepository');
 const MailerService = require('./MailerService');
 const logger = require('../../utils/logger');
-
-const JOB_RESULTS_DIR = path.join(__dirname, '../../storage/job_results');
+const { JOB_RESULTS_DIR } = require('../../config/storage-paths');
 
 async function handlePdfReporteConsolidado(job) {
     const ReporteConsolidadoService = require('../Admin/ReporteConsolidadoService');

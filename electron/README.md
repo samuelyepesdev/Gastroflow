@@ -1,4 +1,4 @@
-# Prototipo de escritorio (Electron + MySQL local)
+# Prototipo de escritorio (Electron + MariaDB local)
 
 Rama: `feature/electron-desktop-offline`. Objetivo: empaquetar GastroFlow como
 `.exe` de Windows que corre 100% local, sin depender de un servidor MySQL
@@ -7,10 +7,10 @@ externo.
 ## Cómo funciona
 
 1. `electron/main.js` arranca al abrir la app.
-2. `db-manager.js` inicializa (primer arranque) y levanta un `mysqld` local en
-   el puerto `33060` (distinto de 3306 para no chocar con otro MySQL/MariaDB
-   que ya esté corriendo en la máquina), con su propio `datadir` fuera del
-   repo.
+2. `db-manager.js` inicializa (primer arranque, con `mariadb-install-db.exe`)
+   y levanta un `mariadbd` local en el puerto `33306` (distinto de 3306 para
+   no chocar con otro MySQL/MariaDB que ya esté corriendo en la máquina), con
+   su propio `datadir` fuera del repo.
 3. `server-manager.js` corre la misma cadena que `npm start`
    (migraciones → create-admin → seeds → `server.js`) como procesos hijos,
    usando el propio binario de Electron como runtime de Node
@@ -20,36 +20,48 @@ externo.
 El `JWT_SECRET` se genera una sola vez por instalación y se guarda en
 `userData/jwt.secret` (fuera del repo, fuera del `.exe`).
 
+## Por qué MariaDB y no MySQL
+
+Se probó primero con la copia de MySQL 8.4.3 que trae Laragon. Le falta la
+carpeta `lib/plugin` completa (incluyendo `component_reference_cache.dll`), lo
+que causaba un fallo **intermitente** (aprox. 1 de cada 3 arranques) al
+inicializar el Data Dictionary — reproducido de forma aislada, sin Electron
+de por medio, arrancando el mismo binario varias veces seguidas sobre el
+mismo `datadir`. MariaDB 12.3.2 (descarga oficial de
+`downloads.mariadb.org`, ZIP portable "winx64") no tiene ese problema: se
+probó arrancar 4 veces seguidas sobre el mismo `datadir` sin un solo fallo.
+Es además ~2.5x más liviano (104 MB comprimido vs 249 MB de la copia de
+Laragon) y usa el mismo protocolo de red que `mysql2`, así que no hizo falta
+tocar ninguna query de la app.
+
+Diferencia de arranque relevante: MariaDB **no** soporta
+`mysqld --initialize-insecure` (eso es específico de MySQL 5.7+/8.x). El
+primer arranque se hace con `mariadb-install-db.exe --datadir=... --default-user`.
+
 ## Cómo probarlo en desarrollo
 
-Necesitas un binario de MySQL/MariaDB portable en el disco (no lo bajamos ni
-lo commiteamos automáticamente). Para probar en esta máquina, Laragon ya trae
-uno:
+Necesitas un binario de MariaDB portable en el disco (no lo bajamos ni lo
+commiteamos automáticamente en cada corrida — usa la copia que ya está en
+`resources/mysql-portable/`, o descarga el ZIP de
+`https://downloads.mariadb.org/` si empiezas de cero):
 
 ```
-set MYSQL_BIN_DIR=C:\laragon\bin\mysql\mysql-8.4.3-winx64\bin
+set MYSQL_BIN_DIR=C:\laragon\www\Sistema-Restaurante-Node\resources\mysql-portable\bin
 npm run electron:dev
 ```
 
-`MYSQL_BIN_DIR` le dice a `db-manager.js` dónde están `mysqld.exe` y
-`mysql.exe`. En este modo se crea un `datadir` nuevo e independiente en
-`.local-desktop/mysql-data` (gitignored), así que no toca la base de datos
-que uses normalmente con Laragon.
+`MYSQL_BIN_DIR` le dice a `db-manager.js` dónde están `mariadbd.exe` y
+`mariadb-install-db.exe`. En este modo se crea un `datadir` nuevo e
+independiente en `.local-desktop/mysql-data` (gitignored).
 
 ## Qué falta para un build distribuible real
 
-- **Poblar `resources/mysql-portable/bin/`** con los binarios que se
-  empaquetarán dentro del instalador (no están en git — carpeta vacía con
-  `.gitkeep`). Opciones:
-  - MySQL Community Server, distribución ZIP "no install" (licencia GPLv2,
-    redistribución permitida, pero hay que incluir el aviso de licencia en el
-    instalador).
-  - MariaDB Server portable (también GPLv2, suele ser más liviano).
-- El paso `npm run electron:build` (electron-builder, target NSIS) todavía no
-  se ha ejecutado de punta a punta con binarios reales — falta validar tamaño
-  final del instalador y que el `datadir` se cree correctamente en la carpeta
-  `userData` de una instalación limpia.
+- `resources/mysql-portable/` ya tiene los binarios reales de MariaDB
+  (no están en git — están gitignored, solo queda el `.gitkeep`). El tamaño
+  sin comprimir es de ~320 MB; vale la pena en algún momento podar
+  `lib/plugin` a los motores/plugins que realmente se usan (solo InnoDB) para
+  bajar el tamaño del instalador final.
 - **No resuelto todavía**: sincronización offline/online, degradación de
   WhatsApp/S3/email cuando no hay internet, multi-terminal (LAN) sobre el
-  mismo `mysqld` local. Eso es la siguiente fase, fuera del alcance de este
+  mismo `mariadbd` local. Eso es la siguiente fase, fuera del alcance de este
   prototipo.

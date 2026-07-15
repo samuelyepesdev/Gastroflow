@@ -1,30 +1,73 @@
 const { spawn } = require('child_process');
 const path = require('path');
+const fs = require('fs');
 const net = require('net');
 const { killProcessTree } = require('./process-utils');
 
 const ROOT = path.join(__dirname, '..');
 
-function runScript(relPath, env) {
+// stdio:'inherit' no sirve cuando la app se lanza sin consola (doble clic en
+// el .exe empaquetado): en ese caso el proceso padre no tiene un handle de
+// stdout/stderr válido para heredar, así que la salida (incluyendo errores
+// fatales) desaparece en silencio. Para poder diagnosticar arranques
+// fallidos, capturamos la salida de cada script hijo y la escribimos a un
+// archivo en userData, además de reenviarla al proceso padre cuando sí hay
+// consola.
+let logStream = null;
+function getLogStream(logDir) {
+    if (!logStream && logDir) {
+        fs.mkdirSync(logDir, { recursive: true });
+        logStream = fs.createWriteStream(path.join(logDir, 'electron-bootstrap.log'), { flags: 'a' });
+    }
+    return logStream;
+}
+
+function spawnCaptured(command, args, { env, logDir }) {
     return new Promise((resolve, reject) => {
-        const child = spawn(process.execPath, [path.join(ROOT, relPath)], {
-            env: { ...process.env, ELECTRON_RUN_AS_NODE: '1', ...env },
-            stdio: 'inherit'
+        const child = spawn(command, args, {
+            env,
+            stdio: ['ignore', 'pipe', 'pipe']
         });
+
+        const stream = getLogStream(logDir);
+        let tail = '';
+        const onData = chunk => {
+            process.stdout.write(chunk);
+            if (stream) {
+                stream.write(chunk);
+            }
+            tail = (tail + chunk.toString()).slice(-4000);
+        };
+        child.stdout.on('data', onData);
+        child.stderr.on('data', onData);
+
+        child.on('error', err => reject(err));
         child.on('exit', code => {
             if (code === 0) {
                 resolve();
             } else {
-                reject(new Error(`${relPath} salió con código ${code}`));
+                reject(new Error(`${args[0]} salió con código ${code}${tail ? `\n\n${tail}` : ''}`));
             }
         });
     });
 }
 
-function waitForHttp(port, timeoutMs = 30000) {
+function runScript(relPath, env, logDir) {
+    return spawnCaptured(process.execPath, [path.join(ROOT, relPath)], {
+        env: { ...process.env, ELECTRON_RUN_AS_NODE: '1', ...env },
+        logDir
+    });
+}
+
+function waitForHttp(port, timeoutMs = 30000, getEarlyExit = () => null) {
     const start = Date.now();
     return new Promise((resolve, reject) => {
         const attempt = () => {
+            const earlyExit = getEarlyExit();
+            if (earlyExit) {
+                reject(earlyExit);
+                return;
+            }
             const socket = net.createConnection({ port, host: '127.0.0.1' }, () => {
                 socket.end();
                 resolve();
@@ -43,16 +86,18 @@ function waitForHttp(port, timeoutMs = 30000) {
 }
 
 class AppServer {
-    constructor(env) {
+    constructor(env, logDir) {
         this.env = env;
+        this.logDir = logDir;
         this.process = null;
+        this.stopping = false;
     }
 
     async bootstrap() {
-        await runScript('scripts/run-migrations.js', this.env);
-        await runScript('scripts/create-admin.js', this.env);
-        await runScript('scripts/seed-doc-types.js', this.env);
-        await runScript('scripts/seed-temas-parametros.js', this.env);
+        await runScript('scripts/run-migrations.js', this.env, this.logDir);
+        await runScript('scripts/create-admin.js', this.env, this.logDir);
+        await runScript('scripts/seed-doc-types.js', this.env, this.logDir);
+        await runScript('scripts/seed-temas-parametros.js', this.env, this.logDir);
     }
 
     async start() {
@@ -60,20 +105,36 @@ class AppServer {
 
         this.process = spawn(process.execPath, [path.join(ROOT, 'server.js')], {
             env: { ...process.env, ELECTRON_RUN_AS_NODE: '1', ...this.env },
-            stdio: 'inherit'
+            stdio: ['ignore', 'pipe', 'pipe']
         });
 
+        const stream = getLogStream(this.logDir);
+        let tail = '';
+        const onData = chunk => {
+            process.stdout.write(chunk);
+            if (stream) {
+                stream.write(chunk);
+            }
+            tail = (tail + chunk.toString()).slice(-4000);
+        };
+        this.process.stdout.on('data', onData);
+        this.process.stderr.on('data', onData);
+
+        let earlyExit = null;
         this.process.on('exit', code => {
-            if (code !== null && code !== 0) {
-                console.error(`server.js se detuvo inesperadamente (código ${code})`);
+            if (!this.stopping && code !== null && code !== 0) {
+                const message = `server.js se detuvo inesperadamente (código ${code})${tail ? `\n\n${tail}` : ''}`;
+                console.error(message);
+                earlyExit = new Error(message);
             }
         });
 
-        await waitForHttp(Number(this.env.PORT) || 3000);
+        await waitForHttp(Number(this.env.PORT) || 3000, 30000, () => earlyExit);
     }
 
     stop() {
         if (this.process) {
+            this.stopping = true;
             killProcessTree(this.process);
             this.process = null;
         }

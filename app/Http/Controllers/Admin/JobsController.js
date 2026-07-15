@@ -7,8 +7,7 @@
 const fs = require('fs');
 const path = require('path');
 const JobQueueRepository = require('../../../../repositories/Shared/JobQueueRepository');
-
-const JOB_RESULTS_DIR = path.join(__dirname, '../../../../storage/job_results');
+const { JOB_RESULTS_DIR } = require('../../../../config/storage-paths');
 
 const DOWNLOAD_NAMES = {
     pdf_reporte_consolidado: 'Reporte_Consolidado.pdf',

@@ -48,10 +48,15 @@ class LocalDatabase {
         this.database = database;
         this.binDir = binDir || resolveBinDir();
         this.process = null;
+        this.stopping = false;
     }
 
-    get mysqldPath() {
-        return path.join(this.binDir, 'mysqld.exe');
+    get mariadbdPath() {
+        return path.join(this.binDir, 'mariadbd.exe');
+    }
+
+    get installDbPath() {
+        return path.join(this.binDir, 'mariadb-install-db.exe');
     }
 
     isInitialized() {
@@ -60,7 +65,7 @@ class LocalDatabase {
 
     initialize() {
         fs.mkdirSync(this.dataDir, { recursive: true });
-        execFileSync(this.mysqldPath, [`--datadir=${this.dataDir}`, '--initialize-insecure'], {
+        execFileSync(this.installDbPath, [`--datadir=${this.dataDir}`, '--default-user'], {
             stdio: 'inherit'
         });
     }
@@ -71,7 +76,7 @@ class LocalDatabase {
         }
 
         this.process = spawn(
-            this.mysqldPath,
+            this.mariadbdPath,
             [
                 `--datadir=${this.dataDir}`,
                 `--port=${this.port}`,
@@ -82,8 +87,8 @@ class LocalDatabase {
         );
 
         this.process.on('exit', code => {
-            if (code !== null && code !== 0) {
-                console.error(`mysqld se detuvo inesperadamente (código ${code})`);
+            if (!this.stopping && code !== null && code !== 0) {
+                console.error(`mariadbd se detuvo inesperadamente (código ${code})`);
             }
         });
 
@@ -114,6 +119,7 @@ class LocalDatabase {
 
     stop() {
         if (this.process) {
+            this.stopping = true;
             killProcessTree(this.process);
             this.process = null;
         }
