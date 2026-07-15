@@ -19,14 +19,19 @@ const EliminarItemService = require('./Mesas/EliminarItemService');
 const UpdatePropinaService = require('./Mesas/UpdatePropinaService');
 
 // Tablas globales, sin tenant_id: se mandan completas siempre (son chicas y
-// casi no cambian en runtime).
-const GLOBAL_FULL_TABLES = ['permisos', 'rol_permisos'];
+// casi no cambian en runtime). planes/addons se agregan aquí porque
+// requirePlanFeature (middleware/planFeature.js) los necesita resueltos
+// localmente para no rechazar con 403 casi todas las rutas.
+const GLOBAL_FULL_TABLES = ['permisos', 'rol_permisos', 'planes', 'addons'];
 
 // Tablas globales pero con updated_at: delta por fecha, sin filtro de tenant.
 const GLOBAL_INCREMENTAL_TABLES = ['roles', 'categorias'];
 
 // Tablas del tenant con updated_at: delta por fecha y por tenant_id.
 const TENANT_INCREMENTAL_TABLES = ['usuarios', 'mesas', 'productos', 'servicios', 'clientes', 'temas', 'parametros'];
+
+// Tablas del tenant sin updated_at: completas cada vez, filtradas por tenant_id (chicas).
+const TENANT_FULL_TABLES = ['tenant_addons'];
 
 // Despacho de acciones del push: cada una delega en el Service que ya usa el
 // endpoint web equivalente (ver PedidoController / PedidoItemsController).
@@ -43,6 +48,11 @@ class SyncService {
     static async pull(tenantId, since) {
         const data = {};
 
+        // La fila del propio tenant siempre va completa: mesas/productos/etc.
+        // tienen FOREIGN KEY (tenant_id) REFERENCES tenants(id), así que sin
+        // esto el INSERT local fallaría por integridad referencial.
+        data.tenants = await SyncRepository.findTenantRow(tenantId);
+
         for (const table of GLOBAL_FULL_TABLES) {
             data[table] = await SyncRepository.findAll(table);
         }
@@ -51,6 +61,9 @@ class SyncService {
         }
         for (const table of TENANT_INCREMENTAL_TABLES) {
             data[table] = await SyncRepository.findChangedByTenant(table, tenantId, since);
+        }
+        for (const table of TENANT_FULL_TABLES) {
+            data[table] = await SyncRepository.findAllByTenant(table, tenantId);
         }
 
         data.syncedAt = await SyncRepository.serverNow();

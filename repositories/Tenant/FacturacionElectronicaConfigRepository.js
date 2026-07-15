@@ -49,7 +49,10 @@ class FacturacionElectronicaConfigRepository {
      * @param {string} estado - 'deshabilitado' | 'pruebas' | 'activo'
      */
     static async updateEstado(tenantId, estado) {
-        await db.query('UPDATE tenant_facturacion_electronica SET estado = ? WHERE tenant_id = ?', [estado, tenantId]);
+        // Vía upsert (no UPDATE crudo): si el tenant nunca ha guardado
+        // configuración, un UPDATE directo no afecta ninguna fila y el cambio
+        // de estado se pierde en silencio.
+        await FacturacionElectronicaConfigRepository.upsert(tenantId, { estado });
     }
 
     /**

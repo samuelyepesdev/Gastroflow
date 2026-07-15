@@ -91,7 +91,18 @@ async function startBackend() {
         // server.js corre empaquetado dentro de app.asar (solo lectura); cualquier
         // directorio que necesite escritura en tiempo de ejecución (ej. PDFs de
         // job_queue) debe apuntar a userData en vez de a __dirname.
-        STORAGE_DIR: path.join(userDataDir, 'storage')
+        STORAGE_DIR: path.join(userDataDir, 'storage'),
+        // Sync con producción (ver DesktopSyncService): inactivo por completo si
+        // GASTROFLOW_SYNC_API_URL no está seteado en el entorno de esta máquina.
+        // SYNC_TOKEN_FILE se pasa siempre (el archivo puede no existir aún; se
+        // crea cuando exista un flujo de login contra producción — no construido
+        // todavía, ver README de electron/).
+        ...(process.env.GASTROFLOW_SYNC_API_URL
+            ? {
+                  SYNC_API_URL: process.env.GASTROFLOW_SYNC_API_URL,
+                  SYNC_TOKEN_FILE: path.join(userDataDir, 'production-session.json')
+              }
+            : {})
     };
 
     appServer = new AppServer(env, userDataDir);

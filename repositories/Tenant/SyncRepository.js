@@ -36,6 +36,13 @@ class SyncRepository {
         return rows;
     }
 
+    // La tabla tenants no tiene columna tenant_id (su propio id ES el tenant),
+    // por eso necesita un método aparte en vez de findAllByTenant.
+    static async findTenantRow(tenantId) {
+        const [rows] = await db.query('SELECT * FROM tenants WHERE id = ?', [tenantId]);
+        return rows;
+    }
+
     static async serverNow() {
         const [rows] = await db.query('SELECT NOW() AS now');
         return rows[0].now;

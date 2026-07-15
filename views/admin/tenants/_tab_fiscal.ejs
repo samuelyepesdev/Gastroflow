@@ -81,6 +81,23 @@
                 <br><span class="text-danger"><%= fe.ultimo_error %></span>
             <% } %>
         </p>
+        <form id="form-estado-factus" class="row g-2 align-items-end mb-4"
+            onsubmit="return handleFacturacionElectronicaEstadoSubmit(event, <%= selectedTenant.id %>)">
+            <div class="col-md-4">
+                <label class="form-label">Cambiar estado</label>
+                <select name="estado" class="form-select">
+                    <option value="deshabilitado" <%= fe.estado === 'deshabilitado' ? 'selected' : '' %>>Deshabilitado</option>
+                    <option value="pruebas" <%= fe.estado === 'pruebas' ? 'selected' : '' %>>Pruebas</option>
+                    <option value="activo" <%= fe.estado === 'activo' ? 'selected' : '' %>>Activo</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <button type="submit" class="btn btn-outline-primary">Actualizar estado</button>
+                <small class="d-block text-muted mt-1">
+                    "Activo" requiere credenciales y rango de numeración ya guardados.
+                </small>
+            </div>
+        </form>
         <form id="form-edit-factus" onsubmit="return handleFacturacionElectronicaSubmit(event, <%= selectedTenant.id %>)">
             <div class="row g-4">
                 <div class="col-md-4">

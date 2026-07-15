@@ -29,6 +29,30 @@
     }
 
     // Facturación electrónica (Factus): guardar config y probar conexión
+    async function handleFacturacionElectronicaEstadoSubmit(event, tenantId) {
+        event.preventDefault();
+        const formData = new FormData(event.target);
+        const data = Object.fromEntries(formData.entries());
+
+        try {
+            const resp = await fetch(`/admin/tenants/${tenantId}/facturacion-electronica/estado`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            const result = await resp.json();
+            if (resp.ok) {
+                Swal.fire({ icon: 'success', title: 'Estado actualizado', timer: 1500, showConfirmButton: false })
+                    .then(() => window.location.reload());
+            } else {
+                Swal.fire({ icon: 'error', title: 'No se pudo actualizar el estado', text: result.error || '' });
+            }
+        } catch (e) {
+            Swal.fire({ icon: 'error', title: 'Error de red', text: e.message });
+        }
+        return false;
+    }
+
     async function handleFacturacionElectronicaSubmit(event, tenantId) {
         event.preventDefault();
         const formData = new FormData(event.target);
