@@ -152,6 +152,40 @@ class FacturacionElectronicaConfigService {
     }
 
     /**
+     * Cambia el estado (deshabilitado/pruebas/activo) de FE para el tenant.
+     * Antes de dejarlo pasar a 'activo' exige que las credenciales y el rango
+     * de numeración ya estén configurados, para no encolar facturas que el
+     * worker va a rechazar de inmediato por falta de configuración.
+     * @param {number} tenantId
+     * @param {string} estado - 'deshabilitado' | 'pruebas' | 'activo'
+     */
+    static async updateEstado(tenantId, estado) {
+        const ESTADOS_VALIDOS = ['deshabilitado', 'pruebas', 'activo'];
+        if (!ESTADOS_VALIDOS.includes(estado)) {
+            throw new Error(`Estado inválido: ${estado}`);
+        }
+
+        if (estado === 'activo') {
+            const config = await FacturacionElectronicaConfigRepository.findByTenantId(tenantId);
+            if (
+                !config ||
+                !config.client_id ||
+                !config.client_secret_enc ||
+                !config.api_usuario ||
+                !config.api_password_enc
+            ) {
+                throw new Error('Debe guardar las credenciales de Factus antes de activar la facturación electrónica');
+            }
+            if (!config.numbering_range_id) {
+                throw new Error('Debe seleccionar un rango de numeración antes de activar la facturación electrónica');
+            }
+        }
+
+        await FacturacionElectronicaConfigRepository.updateEstado(tenantId, estado);
+        return FacturacionElectronicaConfigService.getForAdmin(tenantId);
+    }
+
+    /**
      * Sincroniza y guarda el rango de numeración activo elegido por el admin.
      * @param {number} tenantId
      * @param {Object} rango - { id, prefijo, desde, hasta, vigencia_hasta }

@@ -357,6 +357,24 @@ class TenantsController {
         }
     }
 
+    // PUT /admin/tenants/:id/facturacion-electronica/estado
+    static async updateFacturacionElectronicaEstado(req, res) {
+        try {
+            const FacturacionElectronicaConfigService = require('../../../../services/Tenant/FacturacionElectronicaConfigService');
+            const tenantId = Number(req.params.id);
+            const config = await FacturacionElectronicaConfigService.updateEstado(tenantId, req.body.estado);
+            await TenantAuditService.log({
+                tenantId,
+                userId: req.user?.id || null,
+                accion: 'actualizar_estado_factus',
+                detalles: `estado=${config.estado}`
+            });
+            res.status(200).json(config);
+        } catch (error) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+
     // POST /admin/tenants/:id/facturacion-electronica/probar-conexion
     static async testFacturacionElectronica(req, res) {
         try {

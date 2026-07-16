@@ -37,22 +37,31 @@ async function startServer() {
         });
 
         server.on('error', error => {
-            if (error.code === 'EADDRINUSE') {
-                logger.error(`Puerto ${PORT} en uso`, { port: PORT });
-            } else {
-                logger.error('Error al iniciar el servidor', { error: error.message });
-            }
-            process.exit(1);
+            const message =
+                error.code === 'EADDRINUSE'
+                    ? `Puerto ${PORT} en uso`
+                    : `Error al iniciar el servidor: ${error.message}`;
+            fatalExit(message, { port: PORT, error: error.message });
         });
     } catch (err) {
-        logger.error('Error fatal al iniciar el sistema', { error: err.message, stack: err.stack });
-        process.exit(1);
+        fatalExit('Error fatal al iniciar el sistema', { error: err.message, stack: err.stack });
     }
 }
 
+// El transport de archivo de Winston escribe de forma asíncrona; llamar a
+// process.exit() justo después de logger.error() puede matar el proceso antes
+// de que la escritura llegue a disco (visto en el prototipo de escritorio,
+// donde además no hay consola: el fallo de arranque quedaba completamente
+// silencioso, sin log y sin salida visible). console.error queda como
+// respaldo síncrono para estos casos fatales de arranque.
+function fatalExit(message, meta) {
+    console.error(message, meta);
+    logger.error(message, meta);
+    setTimeout(() => process.exit(1), 100);
+}
+
 process.on('uncaughtException', err => {
-    logger.error('Excepción no capturada', { error: err.message, stack: err.stack });
-    process.exit(1);
+    fatalExit('Excepción no capturada', { error: err.message, stack: err.stack });
 });
 
 process.on('unhandledRejection', reason => {

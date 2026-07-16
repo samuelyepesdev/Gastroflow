@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vincular con producción - GastroFlow</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="/css/auth/login.css">
+</head>
+
+<body>
+    <aside class="login-brand">
+        <div class="brand-top">
+            <div class="brand-icon"><i class="bi bi-shop"></i></div>
+            <span class="brand-name">GastroFlow</span>
+        </div>
+        <div class="brand-center">
+            <h2 class="brand-headline">
+                Conecta este equipo<br>con tu cuenta <span>de GastroFlow</span>
+            </h2>
+            <p class="brand-sub">
+                Ingresa las mismas credenciales que usas en la web. Se trae tu
+                menú, mesas y usuarios para que este equipo pueda trabajar sin
+                internet.
+            </p>
+        </div>
+    </aside>
+
+    <main class="login-form-side">
+        <div class="login-card">
+            <h1 class="login-title">Vincular equipo</h1>
+            <p class="login-subtitle">Solo se pide una vez por equipo</p>
+
+            <% if (error) { %>
+                <div class="login-alert error" role="alert">
+                    <i class="bi bi-exclamation-circle-fill"></i>
+                    <span><%= error %></span>
+                </div>
+            <% } %>
+
+            <form method="POST" action="/desktop/link" autocomplete="off">
+                <div>
+                    <label for="username" class="field-label">Usuario</label>
+                    <div class="field-wrap">
+                        <input type="text" class="field-input" id="username" name="username"
+                            placeholder="tu_usuario" required autofocus autocomplete="username">
+                        <i class="bi bi-person field-icon"></i>
+                    </div>
+                </div>
+
+                <div>
+                    <label for="password" class="field-label">Contraseña</label>
+                    <div class="field-wrap">
+                        <input type="password" class="field-input" id="password" name="password"
+                            placeholder="••••••••" required autocomplete="current-password">
+                        <i class="bi bi-lock field-icon"></i>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-login">
+                    <i class="bi bi-cloud-arrow-down"></i>
+                    Vincular y traer mis datos
+                </button>
+            </form>
+        </div>
+    </main>
+</body>
+
+</html>

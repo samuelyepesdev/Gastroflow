@@ -6,6 +6,7 @@ const { requirePlanFeature } = require('../middleware/planFeature');
 
 // Importar controladores base
 const HomeController = require('../app/Http/Controllers/HomeController');
+const DesktopController = require('../app/Http/Controllers/DesktopController');
 
 // Middlewares comunes
 const requireAuthWithTenant = [requireAuth, restrictSuperadminToAdmin, attachTenantContext];
@@ -44,6 +45,7 @@ const cajaRoutes = require('./tenant/caja');
 const serviciosRoutes = require('./tenant/servicios');
 const soporteTenantRoutes = require('./tenant/soporte');
 const posRoutes = require('./tenant/pos');
+const syncRoutes = require('./tenant/sync');
 const NotificationController = require('../app/Http/Controllers/Tenant/NotificationController');
 
 // ...
@@ -52,6 +54,12 @@ router.use('/api/servicios', requireAuthWithTenant, serviciosRoutes);
 
 // --- RUTAS PÚBLICAS Y AUTH ---
 router.use('/auth', authRoutes);
+// Vinculación inicial del desktop con producción (ver DesktopController). Sin
+// auth porque corre antes de que exista ningún usuario local; en producción
+// normal ambas rutas redirigen a /auth/login sin hacer nada (isDesktopMode()
+// es false ahí).
+router.get('/desktop/link', DesktopController.showLink);
+router.post('/desktop/link', DesktopController.link);
 router.use('/qr', require('./qr'));
 router.use('/api/qr', require('./qr_api'));
 
@@ -124,6 +132,13 @@ router.use(
 router.use('/caja', requireAuthWithTenant, requirePermission('caja.ver'), cajaRoutes);
 router.use('/soporte', requireAuthWithTenant, soporteTenantRoutes);
 router.use('/pos', requireAuthWithTenant, requirePlanFeature('ventas'), requirePermission('pos.ver'), posRoutes);
+// Sync desktop <-> producción: sin requirePlanFeature/requirePermission propios.
+// Las acciones que hoy despacha el push (abrir pedido, agregar/editar items,
+// propina) son las mismas que en /mesas ya son de libre acceso para cualquier
+// usuario autenticado del tenant (sin requirePermission en esas rutas). Si se
+// agregan acciones que sí requieren un permiso específico, ese chequeo debe
+// añadirse en SyncService antes de despachar, no asumirse aquí.
+router.use('/sync', requireAuthWithTenant, syncRoutes);
 
 // --- RUTAS API ---
 router.use(

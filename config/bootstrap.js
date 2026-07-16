@@ -4,6 +4,7 @@ const ReporteMensualService = require('../services/Tenant/ReporteMensualService'
 const WhatsAppService = require('../services/Tenant/WhatsAppService');
 const FacturacionElectronicaWorkerService = require('../services/Tenant/FacturacionElectronicaWorkerService');
 const JobWorkerService = require('../services/Shared/JobWorkerService');
+const DesktopSyncService = require('../services/Shared/DesktopSyncService');
 
 const runBackgroundJobs = async () => {
     try {
@@ -26,6 +27,14 @@ const runBackgroundJobs = async () => {
         // el usuario no espere demasiado por algo que antes era síncrono en el request.
         cron.schedule('*/15 * * * * *', () => {
             JobWorkerService.procesarPendientes();
+        });
+
+        // Ciclo de sync del prototipo de escritorio: no-op en producción normal
+        // (DesktopSyncService.runCycle sale de inmediato si SYNC_API_URL no está
+        // seteado). Solo hace algo cuando este proceso es el server.js local de
+        // Electron.
+        cron.schedule('*/15 * * * * *', () => {
+            DesktopSyncService.runCycle();
         });
 
         console.log('--- Cron jobs iniciados exitosamente ---');

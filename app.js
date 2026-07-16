@@ -158,6 +158,13 @@ const staticOpts = {
 app.use('/static', express.static(path.join(__dirname, 'public'), staticOpts));
 app.use(express.static(path.join(__dirname, 'public'), staticOpts));
 
+// Health-check: usado por el desktop (Electron) para detectar conectividad
+// real hacia esta API, no un ping genérico a un tercero. Sin auth: solo
+// confirma que el servidor responde.
+app.get('/api/health', (req, res) => {
+    res.json({ status: 'ok', serverTime: new Date().toISOString() });
+});
+
 // Favicon
 const faviconPath = path.join(__dirname, 'public', 'logo.png');
 app.get('/favicon.ico', (req, res) => {

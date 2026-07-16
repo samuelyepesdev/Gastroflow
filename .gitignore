@@ -46,3 +46,10 @@ Thumbs.db
 .wwebjs_auth/
 .wwebjs_cache/
 .agent/
+
+# Electron desktop prototype
+.local-desktop/
+dist-electron/
+resources/mysql-portable/*
+!resources/mysql-portable/.gitkeep
+!resources/mysql-portable/bin/.gitkeep

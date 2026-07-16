@@ -28,6 +28,7 @@ router.post('/:id/seed-categorias', TenantsController.seedCategorias);
 
 // Facturación electrónica (Factus) — configuración fiscal por tenant
 router.put('/:id/facturacion-electronica', TenantsController.updateFacturacionElectronica);
+router.put('/:id/facturacion-electronica/estado', TenantsController.updateFacturacionElectronicaEstado);
 router.post('/:id/facturacion-electronica/probar-conexion', TenantsController.testFacturacionElectronica);
 router.get('/:id/facturacion-electronica/rangos', TenantsController.getFacturacionElectronicaRangos);
 router.put('/:id/facturacion-electronica/rango-activo', TenantsController.setFacturacionElectronicaRango);
