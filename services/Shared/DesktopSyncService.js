@@ -2,9 +2,11 @@
  * DesktopSyncService - Cliente de sincronización del prototipo de escritorio
  * contra la API de producción (endpoints /sync/pull y /sync/push, ver
  * SyncService.js en el lado servidor). Inactivo por completo a menos que
- * SYNC_API_URL esté seteado en el entorno (electron/main.js lo pasa solo
- * cuando corre empaquetado y GASTROFLOW_SYNC_API_URL existe en la máquina);
- * en producción normal nunca se activa.
+ * SYNC_API_URL esté seteado en el entorno; electron/main.js lo pasa siempre
+ * que corre empaquetado, horneado con un valor por defecto (ver
+ * DEFAULT_SYNC_API_URL ahí), salvo que GASTROFLOW_SYNC_API_URL lo
+ * sobreescriba. En producción normal (server.js corriendo directo, no vía
+ * Electron) nunca se activa.
  *
  * loginAndSaveToken() es lo que usa DesktopController (ruta /desktop/link)
  * para obtener el token real de producción la primera vez que se abre el

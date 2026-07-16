@@ -37,12 +37,17 @@ app.commandLine.appendSwitch('no-sandbox');
 const APP_PORT = 3000;
 const DB_PORT = 33306; // distinto de 3306 (otro MySQL local) y de 33060 (puerto por defecto del plugin X de MySQL)
 
+// Horneado en el instalador para que vincular el desktop con producción no
+// dependa de configurar una variable de entorno a mano en cada PC nueva.
+// GASTROFLOW_SYNC_API_URL sigue funcionando como override (útil para probar
+// contra un backend distinto sin reconstruir el instalador).
+const DEFAULT_SYNC_API_URL = 'https://gastroflow.digital';
+
 let mainWindow;
 let localDb;
 let appServer;
-// Decidido en startBackend(): '/desktop/link' si este equipo está en modo
-// sync (GASTROFLOW_SYNC_API_URL seteado) y todavía no se vinculó con
-// producción; '/' en cualquier otro caso (flujo local normal de siempre).
+// Decidido en startBackend(): '/desktop/link' si este equipo todavía no se
+// vinculó con producción (sin sesión guardada); '/' si ya se vinculó antes.
 let initialPath = '/';
 
 function getUserDataDir() {
@@ -96,14 +101,10 @@ async function startBackend() {
         // directorio que necesite escritura en tiempo de ejecución (ej. PDFs de
         // job_queue) debe apuntar a userData en vez de a __dirname.
         STORAGE_DIR: path.join(userDataDir, 'storage'),
-        // Sync con producción (ver DesktopSyncService): inactivo por completo si
-        // GASTROFLOW_SYNC_API_URL no está seteado en el entorno de esta máquina.
-        ...(process.env.GASTROFLOW_SYNC_API_URL
-            ? {
-                  SYNC_API_URL: process.env.GASTROFLOW_SYNC_API_URL,
-                  SYNC_TOKEN_FILE: path.join(userDataDir, 'production-session.json')
-              }
-            : {})
+        // Sync con producción (ver DesktopSyncService): siempre activo, usando
+        // la URL horneada salvo que GASTROFLOW_SYNC_API_URL la sobreescriba.
+        SYNC_API_URL: process.env.GASTROFLOW_SYNC_API_URL || DEFAULT_SYNC_API_URL,
+        SYNC_TOKEN_FILE: path.join(userDataDir, 'production-session.json')
     };
 
     // Si este equipo está en modo sync y todavía no existe un archivo de
