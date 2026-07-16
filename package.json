@@ -50,6 +50,38 @@
     "win": {
       "target": "nsis"
     },
+    "files": [
+      "**/*",
+      "!dist-electron{,/**/*}",
+      "!.local-desktop{,/**/*}",
+      "!.git{,/**/*}",
+      "!.github{,/**/*}",
+      "!.husky{,/**/*}",
+      "!.claude{,/**/*}",
+      "!.antigravitycli{,/**/*}",
+      "!coverage{,/**/*}",
+      "!test-results{,/**/*}",
+      "!tests{,/**/*}",
+      "!stress-tests{,/**/*}",
+      "!docs{,/**/*}",
+      "!logs{,/**/*}",
+      "!storage{,/**/*}",
+      "!.env",
+      "!.env.test",
+      "!.env.example",
+      "!*.md",
+      "!eslint.config.js",
+      "!jest.config.js",
+      "!playwright.config.js",
+      "!.prettierrc",
+      "!.prettierignore",
+      "!.dockerignore",
+      "!docker-compose.yml",
+      "!Dockerfile",
+      "!requerimientos.txt",
+      "!skills-lock.json",
+      "!node_modules/{@playwright,@eslint,@types,artillery,autocannon,electron,electron-builder,eslint,globals,husky,jest,lint-staged,nodemon,prettier,supertest}{,/**/*}"
+    ],
     "extraResources": [
       {
         "from": "resources/mysql-portable",
