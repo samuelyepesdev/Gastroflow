@@ -209,7 +209,11 @@ class DesktopSyncService {
             await DesktopSyncService._upsertRows(table, data[table]);
         }
 
-        await SyncOutboxRepository.setLastPullAt(data.syncedAt);
+        // data.syncedAt sobrevivió un viaje por JSON (igual que las columnas
+        // de fecha de cada fila), así que necesita la misma normalización
+        // antes de insertarlo — visto en producción con el mismo error de
+        // "Incorrect datetime value" pero para sync_meta.last_pull_at.
+        await SyncOutboxRepository.setLastPullAt(DesktopSyncService._toParam(data.syncedAt));
     }
 
     // Formatea a 'YYYY-MM-DD HH:MM:SS' (lo que MariaDB acepta para

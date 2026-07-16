@@ -34,15 +34,22 @@ const GLOBAL_INCREMENTAL_TABLES = ['roles'];
 // datos) y el INSERT local fallaba por la FK al no existir esos otros
 // tenants localmente. Confirmado con `grep` sobre todas las migraciones
 // antes de asumir cuáles tablas son realmente globales.
+//
+// El orden de este array es el orden en que DesktopSyncService las inserta
+// (recorre Object.keys(data) en orden de inserción). productos.categoria_id
+// tiene FK a categorias(id) (migración 002), así que categorias debe ir
+// antes que productos o el INSERT local falla por la FK. Verificado con
+// `grep` de "ALTER TABLE X ADD...FOREIGN KEY" sobre todas las migraciones
+// que ninguna otra tabla de esta lista depende de otra además de tenants.
 const TENANT_INCREMENTAL_TABLES = [
     'usuarios',
     'mesas',
+    'categorias',
     'productos',
     'servicios',
     'clientes',
     'temas',
-    'parametros',
-    'categorias'
+    'parametros'
 ];
 
 // Tablas del tenant sin updated_at: completas cada vez, filtradas por tenant_id (chicas).
