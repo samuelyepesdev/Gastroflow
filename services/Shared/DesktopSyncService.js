@@ -72,6 +72,18 @@ class DesktopSyncService {
         return !!(tokenFile && fs.existsSync(tokenFile));
     }
 
+    // Borra el archivo de sesión si existe. Usado por DesktopController
+    // cuando el login contra producción funcionó pero el pull inicial falló
+    // a mitad de camino: sin esto, la vinculación queda a medias pero
+    // "parece" completa (el archivo ya existe), así que el próximo arranque
+    // saltaría al login local con la BD todavía vacía en vez de reintentar.
+    static async clearSession() {
+        const tokenFile = process.env.SYNC_TOKEN_FILE;
+        if (tokenFile && fs.existsSync(tokenFile)) {
+            fs.unlinkSync(tokenFile);
+        }
+    }
+
     /**
      * Login contra la API de producción con las credenciales reales del
      * tenant y guarda el token resultante en SYNC_TOKEN_FILE. Usado por
@@ -200,13 +212,36 @@ class DesktopSyncService {
         await SyncOutboxRepository.setLastPullAt(data.syncedAt);
     }
 
+    // Formatea a 'YYYY-MM-DD HH:MM:SS' (lo que MariaDB acepta para
+    // DATETIME/TIMESTAMP). ISO 8601 con 'T'/'Z' (lo que produce
+    // Date#toJSON, usado por JSON.stringify) lo rechaza.
+    static _toMysqlDateTime(date) {
+        const pad = n => String(n).padStart(2, '0');
+        return (
+            `${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())} ` +
+            `${pad(date.getUTCHours())}:${pad(date.getUTCMinutes())}:${pad(date.getUTCSeconds())}`
+        );
+    }
+
     // Columnas JSON (ej. tenants.config) llegan de mysql2 ya parseadas como
     // objeto JS. mysql2 formatea un parámetro que es un objeto plano como una
     // lista `col = valor` (pensado para `SET ?`), no como el valor opaco que
-    // necesitamos aquí — eso corrompe el VALUES(...) de todo el INSERT.
-    // Hay que re-serializarlo a string antes de pasarlo como parámetro.
+    // necesitamos aquí — eso corrompe el VALUES(...) de todo el INSERT. Hay
+    // que re-serializarlo a string antes de pasarlo como parámetro.
+    //
+    // Las columnas de fecha, al pasar por JSON (pull vía HTTP), pueden llegar
+    // como string ISO 8601 con 'T'/'Z' en vez del formato de MySQL — visto en
+    // producción con tenants.created_at ("Incorrect datetime value"). Se
+    // normalizan aquí antes del INSERT, sin importar si el origen fue un
+    // Date real o un string ISO ya serializado.
     static _toParam(value) {
-        if (value !== null && typeof value === 'object' && !(value instanceof Date) && !Buffer.isBuffer(value)) {
+        if (value instanceof Date) {
+            return DesktopSyncService._toMysqlDateTime(value);
+        }
+        if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/.test(value)) {
+            return DesktopSyncService._toMysqlDateTime(new Date(value));
+        }
+        if (value !== null && typeof value === 'object' && !Buffer.isBuffer(value)) {
             return JSON.stringify(value);
         }
         return value;

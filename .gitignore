@@ -50,6 +50,7 @@ Thumbs.db
 # Electron desktop prototype
 .local-desktop/
 dist-electron/
+dist-electron2/
 resources/mysql-portable/*
 !resources/mysql-portable/.gitkeep
 !resources/mysql-portable/bin/.gitkeep
