@@ -25,10 +25,25 @@ const UpdatePropinaService = require('./Mesas/UpdatePropinaService');
 const GLOBAL_FULL_TABLES = ['permisos', 'rol_permisos', 'planes', 'addons'];
 
 // Tablas globales pero con updated_at: delta por fecha, sin filtro de tenant.
-const GLOBAL_INCREMENTAL_TABLES = ['roles', 'categorias'];
+const GLOBAL_INCREMENTAL_TABLES = ['roles'];
 
 // Tablas del tenant con updated_at: delta por fecha y por tenant_id.
-const TENANT_INCREMENTAL_TABLES = ['usuarios', 'mesas', 'productos', 'servicios', 'clientes', 'temas', 'parametros'];
+// categorias parece global en su CREATE TABLE original (002), pero la
+// migración 003 (multi-tenancy) le agregó tenant_id + FK a tenants — sin
+// filtrar por tenant acá se traían categorías de TODOS los tenants (fuga de
+// datos) y el INSERT local fallaba por la FK al no existir esos otros
+// tenants localmente. Confirmado con `grep` sobre todas las migraciones
+// antes de asumir cuáles tablas son realmente globales.
+const TENANT_INCREMENTAL_TABLES = [
+    'usuarios',
+    'mesas',
+    'productos',
+    'servicios',
+    'clientes',
+    'temas',
+    'parametros',
+    'categorias'
+];
 
 // Tablas del tenant sin updated_at: completas cada vez, filtradas por tenant_id (chicas).
 const TENANT_FULL_TABLES = ['tenant_addons'];
