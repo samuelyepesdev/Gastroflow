@@ -6,6 +6,7 @@ const { requirePlanFeature } = require('../middleware/planFeature');
 
 // Importar controladores base
 const HomeController = require('../app/Http/Controllers/HomeController');
+const DesktopController = require('../app/Http/Controllers/DesktopController');
 
 // Middlewares comunes
 const requireAuthWithTenant = [requireAuth, restrictSuperadminToAdmin, attachTenantContext];
@@ -53,6 +54,12 @@ router.use('/api/servicios', requireAuthWithTenant, serviciosRoutes);
 
 // --- RUTAS PÚBLICAS Y AUTH ---
 router.use('/auth', authRoutes);
+// Vinculación inicial del desktop con producción (ver DesktopController). Sin
+// auth porque corre antes de que exista ningún usuario local; en producción
+// normal ambas rutas redirigen a /auth/login sin hacer nada (isDesktopMode()
+// es false ahí).
+router.get('/desktop/link', DesktopController.showLink);
+router.post('/desktop/link', DesktopController.link);
 router.use('/qr', require('./qr'));
 router.use('/api/qr', require('./qr_api'));
 

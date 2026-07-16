@@ -40,6 +40,10 @@ const DB_PORT = 33306; // distinto de 3306 (otro MySQL local) y de 33060 (puerto
 let mainWindow;
 let localDb;
 let appServer;
+// Decidido en startBackend(): '/desktop/link' si este equipo está en modo
+// sync (GASTROFLOW_SYNC_API_URL seteado) y todavía no se vinculó con
+// producción; '/' en cualquier otro caso (flujo local normal de siempre).
+let initialPath = '/';
 
 function getUserDataDir() {
     return app.isPackaged ? app.getPath('userData') : path.join(__dirname, '..', '.local-desktop');
@@ -94,9 +98,6 @@ async function startBackend() {
         STORAGE_DIR: path.join(userDataDir, 'storage'),
         // Sync con producción (ver DesktopSyncService): inactivo por completo si
         // GASTROFLOW_SYNC_API_URL no está seteado en el entorno de esta máquina.
-        // SYNC_TOKEN_FILE se pasa siempre (el archivo puede no existir aún; se
-        // crea cuando exista un flujo de login contra producción — no construido
-        // todavía, ver README de electron/).
         ...(process.env.GASTROFLOW_SYNC_API_URL
             ? {
                   SYNC_API_URL: process.env.GASTROFLOW_SYNC_API_URL,
@@ -104,6 +105,13 @@ async function startBackend() {
               }
             : {})
     };
+
+    // Si este equipo está en modo sync y todavía no existe un archivo de
+    // sesión de producción (nunca se vinculó), arranca en la pantalla de
+    // vinculación en vez del login local normal.
+    if (env.SYNC_API_URL && !fs.existsSync(env.SYNC_TOKEN_FILE)) {
+        initialPath = '/desktop/link';
+    }
 
     appServer = new AppServer(env, userDataDir);
     await appServer.start();
@@ -121,7 +129,7 @@ function createWindow() {
     // 127.0.0.1 en vez de 'localhost': evita que la resolución DNS propia de
     // Chromium (independiente de la de Node) intente IPv6 (::1) primero y
     // demore o falle la navegación inicial en máquinas donde eso no responde.
-    mainWindow.loadURL(`http://127.0.0.1:${APP_PORT}`).catch(err => {
+    mainWindow.loadURL(`http://127.0.0.1:${APP_PORT}${initialPath}`).catch(err => {
         logToFile(`Error cargando la interfaz (loadURL): ${err.message}`);
     });
     mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription, validatedURL) => {

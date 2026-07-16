@@ -95,9 +95,19 @@ class AppServer {
 
     async bootstrap() {
         await runScript('scripts/run-migrations.js', this.env, this.logDir);
-        await runScript('scripts/create-admin.js', this.env, this.logDir);
-        await runScript('scripts/seed-doc-types.js', this.env, this.logDir);
-        await runScript('scripts/seed-temas-parametros.js', this.env, this.logDir);
+
+        if (!this.env.SYNC_API_URL) {
+            // Desktop puramente local (sin vínculo a producción): mantiene el
+            // flujo original de crear admin/superadmin y catálogos base desde
+            // cero, igual que antes de que existiera la sincronización.
+            await runScript('scripts/create-admin.js', this.env, this.logDir);
+            await runScript('scripts/seed-doc-types.js', this.env, this.logDir);
+            await runScript('scripts/seed-temas-parametros.js', this.env, this.logDir);
+        }
+        // Si SYNC_API_URL está seteado, los datos reales (usuarios, mesas,
+        // productos) llegan por /desktop/link + pull, no por seeds genéricos.
+        // Sembrar aquí crearía una cuenta admin/admin123 "fantasma" con
+        // acceso además del usuario real del tenant.
     }
 
     async start() {

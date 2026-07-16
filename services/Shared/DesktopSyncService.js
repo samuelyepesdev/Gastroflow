@@ -3,15 +3,17 @@
  * contra la API de producción (endpoints /sync/pull y /sync/push, ver
  * SyncService.js en el lado servidor). Inactivo por completo a menos que
  * SYNC_API_URL esté seteado en el entorno (electron/main.js lo pasa solo
- * cuando corre empaquetado); en producción normal nunca se activa.
+ * cuando corre empaquetado y GASTROFLOW_SYNC_API_URL existe en la máquina);
+ * en producción normal nunca se activa.
  *
- * Falta por construir: la pantalla de login que obtiene el token de
- * producción y lo guarda en SYNC_TOKEN_FILE (hoy ese archivo hay que crearlo
- * a mano para probar). Sin ese archivo, isConfigured() es false y el ciclo
- * de sync no intenta red, pero sí sigue encolando en sync_outbox.
+ * loginAndSaveToken() es lo que usa DesktopController (ruta /desktop/link)
+ * para obtener el token real de producción la primera vez que se abre el
+ * desktop. Sin ese archivo, isConfigured() es false y el ciclo de sync no
+ * intenta red, pero sí sigue encolando en sync_outbox.
  */
 
 const fs = require('fs');
+const path = require('path');
 const crypto = require('crypto');
 const db = require('../../config/database');
 const SyncOutboxRepository = require('../../repositories/Shared/SyncOutboxRepository');
@@ -58,6 +60,44 @@ class DesktopSyncService {
 
     static getStatus() {
         return { online: isOnline, apiUrl: getApiUrl(), configured: DesktopSyncService.isConfigured() };
+    }
+
+    // true si ya existe un archivo de sesión de producción, sin importar si
+    // el token adentro sigue vigente. Es lo que usa electron/main.js para
+    // decidir si mostrar /desktop/link o ir directo al login local.
+    static hasStoredSession() {
+        const tokenFile = process.env.SYNC_TOKEN_FILE;
+        return !!(tokenFile && fs.existsSync(tokenFile));
+    }
+
+    /**
+     * Login contra la API de producción con las credenciales reales del
+     * tenant y guarda el token resultante en SYNC_TOKEN_FILE. Usado por
+     * DesktopController en la primera vinculación del desktop (ruta
+     * /desktop/link), antes de que exista ningún usuario local.
+     */
+    static async loginAndSaveToken(username, password) {
+        const apiUrl = getApiUrl();
+        const tokenFile = process.env.SYNC_TOKEN_FILE;
+        if (!apiUrl || !tokenFile) {
+            throw new Error('Este desktop no está configurado para sincronizar con producción');
+        }
+
+        const res = await fetch(`${apiUrl}/auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password }),
+            signal: AbortSignal.timeout(15000)
+        });
+        const body = await res.json().catch(() => ({}));
+        if (!res.ok) {
+            throw new Error(body.error || 'No se pudo iniciar sesión contra producción');
+        }
+
+        fs.mkdirSync(path.dirname(tokenFile), { recursive: true });
+        fs.writeFileSync(tokenFile, JSON.stringify({ token: body.token, savedAt: new Date().toISOString() }), {
+            mode: 0o600
+        });
     }
 
     static async enqueue(action, params) {
