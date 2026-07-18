@@ -31,8 +31,8 @@
                                 <select class="form-select" id="tipo_documento" name="tipo_documento">
                                     <% if (typeof tiposDocumento !=='undefined' && tiposDocumento.length> 0) { %>
                                         <% tiposDocumento.forEach(function(tipo) { %>
-                                            <option value="<%= tipo.nombre %>">
-                                                <%= getFriendlyName(tipo.nombre) %>
+                                            <option value="<%= tipo.name %>">
+                                                <%= getFriendlyName(tipo.name) %>
                                             </option>
                                             <% }); %>
                                                 <% } else { %>
