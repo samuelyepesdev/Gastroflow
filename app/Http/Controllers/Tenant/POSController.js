@@ -1,5 +1,6 @@
 const POSService = require('../../../../services/Tenant/POSService');
 const FacturaService = require('../../../../services/Tenant/FacturaService');
+const CajaService = require('../../../../services/Tenant/CajaService');
 const logger = require('../../../../utils/logger');
 
 class POSController {
@@ -13,7 +14,8 @@ class POSController {
                 });
             }
             const { productos, categorias } = await POSService.getProductosForPOS(tenantId);
-            res.render('pos/index', { user: req.user, tenant: req.tenant, productos, categorias });
+            const avisoCajaCerrada = await CajaService.debeAvisarCajaCerrada(tenantId);
+            res.render('pos/index', { user: req.user, tenant: req.tenant, productos, categorias, avisoCajaCerrada });
         } catch (err) {
             logger.error('POS index error', { err: err.message });
             res.status(500).render('errors/internal', { error: err, user: req.user });

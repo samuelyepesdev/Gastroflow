@@ -1,6 +1,7 @@
 const db = require('../../../../../config/database');
 const CategoryService = require('../../../../../services/Admin/CategoryService');
 const ProductRepository = require('../../../../../repositories/Tenant/ProductRepository');
+const CajaService = require('../../../../../services/Tenant/CajaService');
 
 class MesaDashboardController {
     // GET /mesas
@@ -31,12 +32,14 @@ class MesaDashboardController {
 
             const categorias = await CategoryService.getAllActive(tenantId);
             const productos = await ProductRepository.findAll(tenantId);
+            const avisoCajaCerrada = await CajaService.debeAvisarCajaCerrada(tenantId);
 
             res.render('mesas/index', {
                 mesas: mesas || [],
                 mesasVirtuales: mesasVirtuales || [],
                 categorias: categorias || [],
                 productos: productos || [],
+                avisoCajaCerrada,
                 user: req.user,
                 tenant: req.tenant
             });

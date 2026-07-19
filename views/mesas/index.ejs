@@ -14,7 +14,18 @@
     <%- include('../partials/navbar', { user: typeof user !=='undefined' ? user : null, tenant: typeof tenant
         !=='undefined' ? tenant : null }) %>
 
-        <div class="container py-4">
+        <% if (typeof avisoCajaCerrada !=='undefined' && avisoCajaCerrada) { %>
+            <div class="alert alert-warning alert-dismissible fade show rounded-0 mb-0 text-center py-2" role="alert">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                No tienes un turno de caja abierto — las ventas de hoy no quedarán incluidas en ningún arqueo.
+                <% if (user && user.permisos && user.permisos.includes('caja.abrir_cerrar')) { %>
+                    <a href="/caja" class="alert-link">Abrir caja</a>
+                <% } %>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+            </div>
+            <% } %>
+
+                <div class="container py-4">
             <div class="d-flex flex-column flex-md-row justify-content-between align-items-stretch align-items-md-center gap-3 mb-4">
                 <h4 class="mb-0 fw-bold text-dark"><i class="bi bi-grid text-primary me-2"></i>Mesas</h4>
                 

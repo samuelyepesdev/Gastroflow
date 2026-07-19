@@ -16,6 +16,17 @@
 
 <%- include('../partials/navbar', { user: typeof user !== 'undefined' ? user : null, tenant: typeof tenant !== 'undefined' ? tenant : null }) %>
 
+<% if (typeof avisoCajaCerrada !== 'undefined' && avisoCajaCerrada) { %>
+    <div class="alert alert-warning alert-dismissible fade show rounded-0 mb-0 text-center py-2 flex-shrink-0" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        No tienes un turno de caja abierto — las ventas de hoy no quedarán incluidas en ningún arqueo.
+        <% if (user && user.permisos && user.permisos.includes('caja.abrir_cerrar')) { %>
+            <a href="/caja" class="alert-link">Abrir caja</a>
+        <% } %>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+    </div>
+<% } %>
+
 <script type="application/json" id="posInitData"><%- JSON.stringify({ productos: productos || [], categorias: categorias || [] }) %></script>
 
 <div class="pos-wrapper">
