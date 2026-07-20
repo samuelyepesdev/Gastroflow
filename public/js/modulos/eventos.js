@@ -61,7 +61,8 @@
             } else {
                 Swal.fire({ icon: 'error', title: data.error || 'Error' });
             }
-        } catch (_) {
+        } catch (err) {
+            console.error('Error al eliminar evento:', err);
             Swal.fire({ icon: 'error', title: 'Error de conexión' });
         }
     };
@@ -87,10 +88,11 @@
         try {
             const res = await fetch(url, { method: method, credentials: 'same-origin', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' }, body: JSON.stringify(payload) });
             const ct = res.headers.get('content-type');
-            result = ct && ct.indexOf('json') !== -1
+            result = ct && ct.includes('json')
                 ? await parseJsonResponse(res)
                 : { ok: false, data: { error: 'Respuesta no válida del servidor' } };
-        } catch (_) {
+        } catch (err) {
+            console.error('Error al guardar evento:', err);
             const modalInstance = bootstrap.Modal.getInstance(modal);
             if (modalInstance) modalInstance.hide();
             setTimeout(function () { Swal.fire({ icon: 'error', title: 'Error de conexión' }); }, 150);

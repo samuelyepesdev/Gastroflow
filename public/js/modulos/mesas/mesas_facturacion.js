@@ -24,7 +24,7 @@ $(function () {
   $('#btnFacturarPedido').on('click', async function () {
     try {
       // --- GENERAR LLAVE DE IDEMPOTENCIA ÚNICA PARA ESTE INTENTO ---
-      const keyIdemp = 'intent_' + Date.now() + '_' + Math.random().toString(36).slice(2, 11);
+      const keyIdemp = 'intent_' + Date.now() + '_' + crypto.randomUUID();
 
       if (!mod.pedidoActual || !mod.pedidoActual.id) {
         Swal.fire({ icon: 'error', title: 'No hay pedido activo' });
