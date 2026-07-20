@@ -55,6 +55,21 @@ window.MesasModule.actualizarUICliente = function() {
   $('#btnClienteTexto').text(textoBoton);
 };
 
+// Extraída de seleccionarProducto (S2004): el didOpen anidaba
+// offcanvas > didOpen > forEach > addEventListener, 5 niveles de funciones.
+// Como referencia (no definición inline) para didOpen, esa cadena baja a 2.
+function stopPropagationEvt(e) {
+  e.stopPropagation();
+}
+
+function evitarPropagacionEnInputSwal() {
+  const inp = document.querySelector('.swal2-input');
+  if (!inp) return;
+  ['keydown', 'keyup', 'keypress', 'paste', 'copy', 'cut', 'contextmenu'].forEach(evt => {
+    inp.addEventListener(evt, stopPropagationEvt);
+  });
+}
+
 window.MesasModule.seleccionarProducto = async function(p) {
   await this.runWithOffcanvasHidden(async () => {
     let nota = '';
@@ -63,14 +78,7 @@ window.MesasModule.seleccionarProducto = async function(p) {
       const notaRes = await Swal.fire({
         title: 'Nota para cocina (opcional)',
         input: 'text', inputPlaceholder: 'Ej: sin cebolla, sin queso...', showCancelButton: true,
-        didOpen: () => {
-          const inp = document.querySelector('.swal2-input');
-          if (inp) {
-            ['keydown', 'keyup', 'keypress', 'paste', 'copy', 'cut', 'contextmenu'].forEach(evt => {
-              inp.addEventListener(evt, e => e.stopPropagation());
-            });
-          }
-        }
+        didOpen: evitarPropagacionEnInputSwal
       });
       if (!notaRes.isConfirmed) return;
       nota = (notaRes.value || '').trim();
@@ -87,6 +95,133 @@ window.MesasModule.seleccionarProducto = async function(p) {
   });
 };
 
+// Extraída de refreshMesas: es el mismo bloque de "mesa ya facturada en otro
+// lado" que limpiarMesaPorEventoExterno en mesas_core.js, pero detectado por
+// polling en vez de por evento SSE (no re-dispara refreshMesas, ya estamos
+// dentro de un ciclo suyo). Se deja local para no acoplar los dos archivos.
+function limpiarMesaFacturadaDetectadaPorPolling(openMesaId) {
+  console.log(`[Polling] Detectado cierre/facturación de mesa abierta ${openMesaId}. Limpiando interfaz...`);
+
+  $('.modal').each(function() {
+    const modalInstance = bootstrap.Modal.getInstance(this);
+    modalInstance?.hide();
+  });
+
+  if (typeof Swal !== 'undefined' && typeof Swal.close === 'function') {
+    Swal.close();
+  }
+
+  const canvasEl = document.getElementById('canvasPedido');
+  if (canvasEl && window.MesasModule.canvas) {
+    window.MesasModule.canvas.hide();
+  }
+
+  window.MesasModule.pedidoActual = null;
+  window.MesasModule.items = [];
+  window.MesasModule.propinaPedido = 0;
+  if (typeof window.MesasModule.renderItems === 'function') {
+    window.MesasModule.renderItems();
+  }
+
+  Swal.fire({
+    icon: 'info',
+    title: 'Mesa Facturada',
+    text: 'Esta mesa ha sido facturada por otro usuario o dispositivo.',
+    timer: 3000
+  });
+}
+
+// Extraídas de refreshMesas: cada una resume una responsabilidad de la
+// tarjeta de mesa (S3776 — el forEach original marcaba complejidad 18).
+function actualizarBadgeFisico(card, estado) {
+  const physicalBadge = card.querySelector('.mesa-real-objeto-badge');
+  if (!physicalBadge) return;
+  if (estado === 'ocupada') {
+    physicalBadge.className = 'mesa-real-objeto-badge badge bg-danger border border-light animate-pulse';
+    physicalBadge.innerHTML = '<i class="bi bi-egg-fried me-1"></i>ACTIVA';
+  } else if (estado === 'reservada') {
+    physicalBadge.className = 'mesa-real-objeto-badge badge bg-warning text-dark border border-light';
+    physicalBadge.innerHTML = 'RES';
+  } else {
+    physicalBadge.className = 'mesa-real-objeto-badge text-white-50 fs-9';
+    physicalBadge.innerHTML = 'Libre';
+  }
+}
+
+function actualizarPillEstado(card, estado) {
+  const pill = card.querySelector('.mesa-estado-pill');
+  if (!pill) return;
+  pill.classList.remove('pill-libre', 'pill-ocupada', 'pill-reservada');
+  pill.classList.add('pill-' + estado);
+  let texto = 'Reservada';
+  if (estado === 'libre') texto = 'Libre';
+  else if (estado === 'ocupada') texto = 'Ocupada';
+  pill.innerHTML = '<i class="bi bi-circle-fill" style="font-size:.5rem;"></i>' + texto;
+}
+
+function actualizarBotonCta(card, estado) {
+  const btnCta = card.querySelector('.btnAbrirPedido');
+  if (!btnCta) return;
+  const isVirtual = card.classList.contains('virtual');
+  if (estado === 'libre') {
+    if (isVirtual) {
+      btnCta.className = 'btn btn-success btn-cta btnAbrirPedido py-2 rounded-3 fw-bold';
+      btnCta.innerHTML = '<i class="bi bi-plus-circle me-1"></i>Abrir pedido';
+    } else {
+      btnCta.className = 'btn btn-success btn-cta btn-premium-action btnAbrirPedido w-100';
+      btnCta.innerHTML = '<i class="bi bi-plus-circle me-1"></i>Abrir comanda';
+    }
+  } else {
+    if (isVirtual) {
+      btnCta.className = 'btn btn-warning btn-cta btnAbrirPedido py-2 rounded-3 fw-bold';
+      btnCta.innerHTML = '<i class="bi bi-pencil-square me-1"></i>Editar pedido';
+    } else {
+      btnCta.className = 'btn btn-warning btn-cta btn-premium-action text-dark btnAbrirPedido w-100';
+      btnCta.innerHTML = '<i class="bi bi-pencil-square me-1"></i>Gestionar mesa';
+    }
+  }
+}
+
+function actualizarBotonLiberar(card, estado) {
+  const btnLiberar = card.querySelector('.btnLiberarMesa');
+  if (estado === 'libre') {
+    btnLiberar?.remove();
+    return;
+  }
+  if (btnLiberar) return;
+
+  const btnVer = card.querySelector('.btnVerPedido');
+  if (!btnVer) return;
+  const isVirtual = card.classList.contains('virtual');
+  const nuevoBtn = document.createElement('button');
+  if (isVirtual) {
+    nuevoBtn.className = 'btn btn-outline-secondary btn-sec flex-fill btnLiberarMesa rounded-3 py-1_5';
+    nuevoBtn.title = 'Liberar mesa';
+    nuevoBtn.innerHTML = '<i class="bi bi-unlock me-1"></i>Liberar';
+  } else {
+    nuevoBtn.className = 'btn btn-outline-danger btn-sec btn-premium-secondary flex-fill btnLiberarMesa';
+    nuevoBtn.title = 'Liberar mesa inmediatamente';
+    nuevoBtn.innerHTML = '<i class="bi bi-unlock"></i>';
+  }
+  btnVer.after(nuevoBtn);
+}
+
+function actualizarTarjetaMesa(m) {
+  const card = document.querySelector(`.mesa-card[data-mesa-id="${m.id}"]`);
+  if (!card) return;
+  const estadoAnterior = card.dataset.mesaEstado;
+  if (estadoAnterior === m.estado) return;
+
+  card.dataset.mesaEstado = m.estado;
+  card.classList.remove('libre', 'ocupada', 'reservada');
+  card.classList.add(m.estado);
+
+  actualizarBadgeFisico(card, m.estado);
+  actualizarPillEstado(card, m.estado);
+  actualizarBotonCta(card, m.estado);
+  actualizarBotonLiberar(card, m.estado);
+}
+
 // State refresh in live
 window.refreshMesas = async function() {
   try {
@@ -102,130 +237,17 @@ window.refreshMesas = async function() {
       // Si la mesa física ahora está libre, o si no está en la lista (para mesas virtuales que al estar libres se omiten),
       // o si tiene 0 pedidos abiertos, significa que el pedido actual fue cerrado, facturado o cancelado.
       if (!mesaData || mesaData.estado === 'libre' || Number(mesaData.pedidos_abiertos || 0) === 0) {
-        console.log(`[Polling] Detectado cierre/facturación de mesa abierta ${openMesaId}. Limpiando interfaz...`);
-
-        // Cerramos todos los modales Bootstrap abiertos
-        $('.modal').each(function() {
-          const modalInstance = bootstrap.Modal.getInstance(this);
-          if (modalInstance) {
-            modalInstance.hide();
-          }
-        });
-
-        // Cerrar cualquier SweetAlert abierto
-        if (typeof Swal !== 'undefined' && typeof Swal.close === 'function') {
-          Swal.close();
-        }
-
-        // Ocultar panel lateral (offcanvas)
-        const canvasEl = document.getElementById('canvasPedido');
-        if (canvasEl && window.MesasModule.canvas) {
-          window.MesasModule.canvas.hide();
-        }
-
-        // Limpiar datos del módulo
-        window.MesasModule.pedidoActual = null;
-        window.MesasModule.items = [];
-        window.MesasModule.propinaPedido = 0;
-        if (typeof window.MesasModule.renderItems === 'function') {
-          window.MesasModule.renderItems();
-        }
-
-        Swal.fire({
-          icon: 'info',
-          title: 'Mesa Facturada',
-          text: 'Esta mesa ha sido facturada por otro usuario o dispositivo.',
-          timer: 3000
-        });
+        limpiarMesaFacturadaDetectadaPorPolling(openMesaId);
       }
     }
 
-    mesas.forEach(m => {
-      const card = document.querySelector(`.mesa-card[data-mesa-id="${m.id}"]`);
-      if (!card) return;
-      const estadoAnterior = card.dataset.mesaEstado;
-      if (estadoAnterior === m.estado) return;
+    mesas.forEach(actualizarTarjetaMesa);
 
-      card.dataset.mesaEstado = m.estado;
-      card.classList.remove('libre', 'ocupada', 'reservada');
-      card.classList.add(m.estado);
-
-      // Update badge for physical table if it exists
-      const physicalBadge = card.querySelector('.mesa-real-objeto-badge');
-      if (physicalBadge) {
-        if (m.estado === 'ocupada') {
-          physicalBadge.className = 'mesa-real-objeto-badge badge bg-danger border border-light animate-pulse';
-          physicalBadge.innerHTML = '<i class="bi bi-egg-fried me-1"></i>ACTIVA';
-        } else if (m.estado === 'reservada') {
-          physicalBadge.className = 'mesa-real-objeto-badge badge bg-warning text-dark border border-light';
-          physicalBadge.innerHTML = 'RES';
-        } else {
-          physicalBadge.className = 'mesa-real-objeto-badge text-white-50 fs-9';
-          physicalBadge.innerHTML = 'Libre';
-        }
-      }
-
-      const pill = card.querySelector('.mesa-estado-pill');
-      if (pill) {
-        pill.classList.remove('pill-libre', 'pill-ocupada', 'pill-reservada');
-        pill.classList.add('pill-' + m.estado);
-        const texto = m.estado === 'libre' ? 'Libre' : (m.estado === 'ocupada' ? 'Ocupada' : 'Reservada');
-        pill.innerHTML = '<i class="bi bi-circle-fill" style="font-size:.5rem;"></i>' + texto;
-      }
-
-      const btnCta = card.querySelector('.btnAbrirPedido');
-      if (btnCta) {
-        const isVirtual = card.classList.contains('virtual');
-        if (m.estado === 'libre') {
-          if (isVirtual) {
-            btnCta.className = 'btn btn-success btn-cta btnAbrirPedido py-2 rounded-3 fw-bold';
-            btnCta.innerHTML = '<i class="bi bi-plus-circle me-1"></i>Abrir pedido';
-          } else {
-            btnCta.className = 'btn btn-success btn-cta btn-premium-action btnAbrirPedido w-100';
-            btnCta.innerHTML = '<i class="bi bi-plus-circle me-1"></i>Abrir comanda';
-          }
-        } else {
-          if (isVirtual) {
-            btnCta.className = 'btn btn-warning btn-cta btnAbrirPedido py-2 rounded-3 fw-bold';
-            btnCta.innerHTML = '<i class="bi bi-pencil-square me-1"></i>Editar pedido';
-          } else {
-            btnCta.className = 'btn btn-warning btn-cta btn-premium-action text-dark btnAbrirPedido w-100';
-            btnCta.innerHTML = '<i class="bi bi-pencil-square me-1"></i>Gestionar mesa';
-          }
-        }
-      }
-
-      const btnLiberar = card.querySelector('.btnLiberarMesa');
-      if (m.estado === 'libre') {
-        if (btnLiberar) btnLiberar.remove();
-      } else if (!btnLiberar) {
-        const btnVer = card.querySelector('.btnVerPedido');
-        if (btnVer) {
-          const isVirtual = card.classList.contains('virtual');
-          const nuevoBtn = document.createElement('button');
-          if (isVirtual) {
-            nuevoBtn.className = 'btn btn-outline-secondary btn-sec flex-fill btnLiberarMesa rounded-3 py-1_5';
-            nuevoBtn.title = 'Liberar mesa';
-            nuevoBtn.innerHTML = '<i class="bi bi-unlock me-1"></i>Liberar';
-          } else {
-            nuevoBtn.className = 'btn btn-outline-danger btn-sec btn-premium-secondary flex-fill btnLiberarMesa';
-            nuevoBtn.title = 'Liberar mesa inmediatamente';
-            nuevoBtn.innerHTML = '<i class="bi bi-unlock"></i>';
-          }
-          btnVer.insertAdjacentElement('afterend', nuevoBtn);
-        }
-      }
-    });
-
-    const idsRecibidos = mesas.map(m => m.id);
+    const idsRecibidos = new Set(mesas.map(m => m.id));
     document.querySelectorAll('.mesa-card.virtual').forEach(card => {
       const id = Number.parseInt(card.dataset.mesaId);
       const col = card.closest('.col-6, .col-sm-6');
-      if (!idsRecibidos.includes(id)) {
-        if (col) col.style.display = 'none';
-      } else {
-        if (col) col.style.display = 'block';
-      }
+      if (col) col.style.display = idsRecibidos.has(id) ? 'block' : 'none';
     });
   } catch (err) {
     console.warn('Error al sincronizar mesas virtuales:', err);
