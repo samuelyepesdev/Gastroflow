@@ -54,3 +54,6 @@ dist-electron2/
 resources/mysql-portable/*
 !resources/mysql-portable/.gitkeep
 !resources/mysql-portable/bin/.gitkeep
+
+
+.sonarlint/

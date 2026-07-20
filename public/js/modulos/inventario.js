@@ -14,6 +14,16 @@ function abrirAjuste(id, nombre, disp) {
     new bootstrap.Modal(document.getElementById('modalAjuste')).show();
 }
 
+function estiloMovimiento(tipo) {
+    if (tipo === 'entrada') {
+        return { color: 'text-success', signo: '+', badge: 'bg-success' };
+    }
+    if (tipo === 'salida') {
+        return { color: 'text-danger', signo: '-', badge: 'bg-danger' };
+    }
+    return { color: 'text-primary', signo: '', badge: 'bg-primary' };
+}
+
 async function verMovimientos(id, nombre) {
     document.getElementById('movInsumoNombre').textContent = nombre;
     const tbody = document.getElementById('tbodyMovimientos');
@@ -31,12 +41,11 @@ async function verMovimientos(id, nombre) {
         } else {
             movs.forEach(m => {
                 const row = document.createElement('tr');
-                const color = m.tipo === 'entrada' ? 'text-success' : (m.tipo === 'salida' ? 'text-danger' : 'text-primary');
-                const signo = m.tipo === 'entrada' ? '+' : (m.tipo === 'salida' ? '-' : '');
+                const { color, signo, badge } = estiloMovimiento(m.tipo);
                 row.innerHTML = `
                     <td class="ps-3 small">${new Date(m.created_at).toLocaleString()}</td>
-                    <td><span class="badge ${m.tipo === 'entrada' ? 'bg-success' : (m.tipo === 'salida' ? 'bg-danger' : 'bg-primary')}">${m.tipo.toUpperCase()}</span></td>
-                    <td class="text-end fw-bold ${color}">${signo}${parseFloat(m.cantidad).toLocaleString('es-CO')}</td>
+                    <td><span class="badge ${badge}">${m.tipo.toUpperCase()}</span></td>
+                    <td class="text-end fw-bold ${color}">${signo}${Number.parseFloat(m.cantidad).toLocaleString('es-CO')}</td>
                     <td class="small">${m.documento_referencia || m.referencia || '-'}</td>
                     <td class="small">${m.proveedor_nombre || '-'}</td>
                 `;
@@ -63,13 +72,13 @@ document.getElementById('btnCrearInsumo').addEventListener('click', async () => 
         unidad_medida_id: selectMedida.value || null,
         categoria_id: document.getElementById('nuevoCategoriaId').value || null,
         unidad_base: document.getElementById('nuevoUnidadBase').value,
-        cantidad_compra: parseFloat(document.getElementById('nuevoCantidadCompra').value) || 1,
-        precio_compra: parseFloat(document.getElementById('nuevoPrecioCompra').value) || 0,
-        rendimiento_pct: parseFloat(document.getElementById('nuevoRendimiento').value) || 100,
-        stock_minimo: parseFloat(document.getElementById('nuevoStockMinimo').value) || 0,
-        stock_inicial: parseFloat(document.getElementById('nuevoStockInicial').value) || 0,
+        cantidad_compra: Number.parseFloat(document.getElementById('nuevoCantidadCompra').value) || 1,
+        precio_compra: Number.parseFloat(document.getElementById('nuevoPrecioCompra').value) || 0,
+        rendimiento_pct: Number.parseFloat(document.getElementById('nuevoRendimiento').value) || 100,
+        stock_minimo: Number.parseFloat(document.getElementById('nuevoStockMinimo').value) || 0,
+        stock_inicial: Number.parseFloat(document.getElementById('nuevoStockInicial').value) || 0,
         proveedor_id: document.getElementById('nuevoProveedorId').value || null,
-        precio_venta: parseFloat(document.getElementById('nuevoPrecioVenta').value) || 0
+        precio_venta: Number.parseFloat(document.getElementById('nuevoPrecioVenta').value) || 0
     };
     let valid = true;
     [fCodigo, fNombre].forEach(f => {
@@ -118,8 +127,8 @@ document.getElementById('nuevoCategoriaId')?.addEventListener('change', function
 });
 
 function actualizarPreviewCosto() {
-    const precio = parseFloat(document.getElementById('nuevoPrecioCompra')?.value) || 0;
-    const cantidad = parseFloat(document.getElementById('nuevoCantidadCompra')?.value) || 1;
+    const precio = Number.parseFloat(document.getElementById('nuevoPrecioCompra')?.value) || 0;
+    const cantidad = Number.parseFloat(document.getElementById('nuevoCantidadCompra')?.value) || 1;
     const unidadBase = document.getElementById('nuevoUnidadBase')?.value || 'g';
     const preview = document.getElementById('previewCostoPorUnidad');
     const previewValor = document.getElementById('previewCosto');
@@ -141,7 +150,7 @@ document.getElementById('nuevoUnidadBase')?.addEventListener('change', actualiza
 
 document.getElementById('btnConfirmarEntrada').addEventListener('click', async () => {
     const id = document.getElementById('entradaInsumoId').value;
-    const cantidad = parseFloat(document.getElementById('entradaCantidad').value);
+    const cantidad = Number.parseFloat(document.getElementById('entradaCantidad').value);
     const costo = document.getElementById('entradaCosto').value;
     const ref = document.getElementById('entradaRef').value;
     const fCant = document.getElementById('entradaCantidad');
@@ -162,7 +171,7 @@ document.getElementById('btnConfirmarEntrada').addEventListener('click', async (
             body: JSON.stringify({
                 insumo_id: id,
                 cantidad,
-                costo_unitario: costo ? parseFloat(costo) : null,
+                costo_unitario: costo ? Number.parseFloat(costo) : null,
                 referencia: ref || null,
                 proveedor_id: provId || null,
                 documento_referencia: nFactura || null
@@ -211,8 +220,8 @@ function procesarSiguienteInsumo() {
     }
 
     const insumo = colaInsumosCompra.shift();
-    const stockActual = parseFloat(insumo.stock_actual) || 0;
-    const stockMin = parseFloat(insumo.stock_minimo) || 0;
+    const stockActual = Number.parseFloat(insumo.stock_actual) || 0;
+    const stockMin = Number.parseFloat(insumo.stock_minimo) || 0;
     const falta = Math.max(0, stockMin - stockActual);
 
     document.getElementById('entradaInsumoId').value = insumo.id || insumo.insumo_id;
@@ -229,7 +238,7 @@ function procesarSiguienteInsumo() {
 
 document.getElementById('btnConfirmarSalida').addEventListener('click', async () => {
     const id = document.getElementById('salidaInsumoId').value;
-    const cantidad = parseFloat(document.getElementById('salidaCantidad').value);
+    const cantidad = Number.parseFloat(document.getElementById('salidaCantidad').value);
     const ref = document.getElementById('salidaRef').value;
     const fCant = document.getElementById('salidaCantidad');
     if (!cantidad || cantidad <= 0) {
@@ -259,12 +268,12 @@ document.getElementById('btnConfirmarSalida').addEventListener('click', async ()
 
 document.getElementById('btnConfirmarAjuste').addEventListener('click', async () => {
     const id = document.getElementById('ajusteInsumoId').value;
-    let cantidad = parseFloat(document.getElementById('ajusteCantidad').value);
+    let cantidad = Number.parseFloat(document.getElementById('ajusteCantidad').value);
     const ref = document.getElementById('ajusteRef').value;
     const typo = document.querySelector('input[name="ajusteTipo"]:checked').value;
     const fCant = document.getElementById('ajusteCantidad');
 
-    if (!cantidad || cantidad <= 0 || isNaN(cantidad)) {
+    if (!cantidad || cantidad <= 0 || Number.isNaN(cantidad)) {
         fCant.classList.add('is-invalid');
         Swal.fire({ icon: 'warning', title: 'Cantidad requerida', text: 'Ingresa un valor mayor a 0', timer: 2000, showConfirmButton: false });
         return;
@@ -303,8 +312,8 @@ document.getElementById('btnConfirmarAjuste').addEventListener('click', async ()
 });
 
 function actualizarPreviewEditCosto() {
-    const precio = parseFloat(document.getElementById('editPrecioCompra')?.value) || 0;
-    const cantidad = parseFloat(document.getElementById('editCantidadCompra')?.value) || 1;
+    const precio = Number.parseFloat(document.getElementById('editPrecioCompra')?.value) || 0;
+    const cantidad = Number.parseFloat(document.getElementById('editCantidadCompra')?.value) || 1;
     const unidadBase = document.getElementById('editUnidadBase')?.value || 'g';
     const preview = document.getElementById('previewEditCosto');
     const previewValor = document.getElementById('previewEditCostoValor');
@@ -389,12 +398,12 @@ document.getElementById('btnActualizarInsumo').addEventListener('click', async (
         categoria_id: document.getElementById('editCategoriaId').value || null,
         proveedor_id: document.getElementById('editProveedorId').value || null,
         unidad_base: document.getElementById('editUnidadBase').value,
-        stock_minimo: parseFloat(document.getElementById('editStockMinimo').value) || 0,
-        cantidad_compra: parseFloat(document.getElementById('editCantidadCompra').value) || 1,
-        precio_compra: parseFloat(document.getElementById('editPrecioCompra').value) || 0,
-        rendimiento_pct: parseFloat(document.getElementById('editRendimiento').value) || 100,
+        stock_minimo: Number.parseFloat(document.getElementById('editStockMinimo').value) || 0,
+        cantidad_compra: Number.parseFloat(document.getElementById('editCantidadCompra').value) || 1,
+        precio_compra: Number.parseFloat(document.getElementById('editPrecioCompra').value) || 0,
+        rendimiento_pct: Number.parseFloat(document.getElementById('editRendimiento').value) || 100,
         unidad_medida_id: document.getElementById('editUnidadMedidaId').value || null,
-        precio_venta: parseFloat(document.getElementById('editPrecioVenta').value) || 0
+        precio_venta: Number.parseFloat(document.getElementById('editPrecioVenta').value) || 0
     };
 
     if (!payload.nombre || !payload.codigo) {
@@ -460,8 +469,8 @@ document.getElementById('editCategoriaId')?.addEventListener('change', function 
             row.style.display = match ? '' : 'none';
         });
         document.querySelectorAll('#listaInsumosMobile .insumo-card').forEach(card => {
-            const codigo = (card.getAttribute('data-codigo') || '').toLowerCase();
-            const nombre = (card.getAttribute('data-nombre') || '').toLowerCase();
+            const codigo = (card.dataset.codigo || '').toLowerCase();
+            const nombre = (card.dataset.nombre || '').toLowerCase();
             const match = !term || codigo.includes(term) || nombre.includes(term);
             card.style.display = match ? '' : 'none';
         });
@@ -491,8 +500,8 @@ document.getElementById('editCategoriaId')?.addEventListener('change', function 
 
         listaMercadoActual.forEach(function (it) {
             const li = document.createElement('li');
-            const stockActual = parseFloat(it.stock_actual) || 0;
-            const stockMin = parseFloat(it.stock_minimo) || 0;
+            const stockActual = Number.parseFloat(it.stock_actual) || 0;
+            const stockMin = Number.parseFloat(it.stock_minimo) || 0;
             const falta = Math.max(0, stockMin - stockActual);
             const unidad = it.unidad_base || '';
             const sinStock = stockActual <= 0;
@@ -531,8 +540,8 @@ document.getElementById('editCategoriaId')?.addEventListener('change', function 
     if (incluirCerca) incluirCerca.addEventListener('change', cargarListaMercado);
     document.getElementById('btnListaMercadoCopiar').addEventListener('click', function () {
         const lineas = listaMercadoActual.map(function (it) {
-            const stockActual = parseFloat(it.stock_actual) || 0;
-            const stockMin = parseFloat(it.stock_minimo) || 0;
+            const stockActual = Number.parseFloat(it.stock_actual) || 0;
+            const stockMin = Number.parseFloat(it.stock_minimo) || 0;
             const falta = Math.max(0, stockMin - stockActual);
             const u = it.unidad_base || '';
             let linea = (it.nombre || it.codigo) + ': Tienes ' + formatoNum(stockActual) + ' ' + u + ' / Mínimo ' + formatoNum(stockMin) + ' ' + u;
@@ -555,8 +564,8 @@ document.getElementById('editCategoriaId')?.addEventListener('change', function 
     });
     document.getElementById('btnListaMercadoImprimir').addEventListener('click', function () {
         const lineas = listaMercadoActual.map(function (it) {
-            const stockActual = parseFloat(it.stock_actual) || 0;
-            const stockMin = parseFloat(it.stock_minimo) || 0;
+            const stockActual = Number.parseFloat(it.stock_actual) || 0;
+            const stockMin = Number.parseFloat(it.stock_minimo) || 0;
             const falta = Math.max(0, stockMin - stockActual);
             const u = it.unidad_base || '';
             let linea = (it.nombre || it.codigo) + ': Tienes ' + formatoNum(stockActual) + ' ' + u + ' / Mínimo ' + formatoNum(stockMin) + ' ' + u;
@@ -610,9 +619,9 @@ document.getElementById('editCategoriaId')?.addEventListener('change', function 
         let id = null;
         let nombre = '';
 
-        for (let i = 0; i < opts.length; i++) {
-            if (opts[i].value === val) {
-                id = opts[i].getAttribute('data-id');
+        for (const opt of opts) {
+            if (opt.value === val) {
+                id = opt.dataset.id;
                 nombre = val.split(' (')[0];
                 break;
             }
@@ -636,9 +645,9 @@ document.getElementById('editCategoriaId')?.addEventListener('change', function 
         if (!btn) return;
 
         e.preventDefault();
-        const id = btn.getAttribute('data-id');
-        const nombre = (btn.getAttribute('data-nombre') || '').replace(/&quot;/g, '"');
-        const stock = btn.getAttribute('data-stock');
+        const id = btn.dataset.id;
+        const nombre = (btn.dataset.nombre || '').replaceAll('&quot;', '"');
+        const stock = btn.dataset.stock;
 
         if (btn.classList.contains('btn-action-entrada')) {
             abrirEntrada(id, nombre);
