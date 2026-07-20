@@ -1,3 +1,10 @@
+// Extraída del click de vista previa (S3776): convierte 7 ifs anidados en 7
+// llamadas planas (las llamadas a función no suman complejidad cognitiva).
+function agregarParamSiExiste(params, form, selector, key) {
+    const el = form.querySelector(selector);
+    if (el?.value) params.set(key, el.value);
+}
+
 document.addEventListener('DOMContentLoaded', function () {
     const btnPreview = document.getElementById('btnPreviewFactura');
     const modalPreview = new bootstrap.Modal(document.getElementById('modalPreviewFactura'));
@@ -8,20 +15,13 @@ document.addEventListener('DOMContentLoaded', function () {
             const form = document.querySelector('form[action="/configuracion"]');
             const params = new URLSearchParams();
             if (form) {
-                const nombre = form.querySelector('[name="nombre_negocio"]');
-                const direccion = form.querySelector('[name="direccion"]');
-                const telefono = form.querySelector('[name="telefono"]');
-                const nit = form.querySelector('[name="nit"]');
-                const pie = form.querySelector('[name="pie_pagina"]');
-                const ancho = form.querySelector('[name="ancho_papel"]');
-                const fontSize = form.querySelector('[name="font_size"]');
-                if (nombre?.value) params.set('nombre_negocio', nombre.value);
-                if (direccion?.value) params.set('direccion', direccion.value);
-                if (telefono?.value) params.set('telefono', telefono.value);
-                if (nit?.value) params.set('nit', nit.value);
-                if (pie?.value) params.set('pie_pagina', pie.value);
-                if (ancho?.value) params.set('ancho_papel', ancho.value);
-                if (fontSize?.value) params.set('font_size', fontSize.value);
+                agregarParamSiExiste(params, form, '[name="nombre_negocio"]', 'nombre_negocio');
+                agregarParamSiExiste(params, form, '[name="direccion"]', 'direccion');
+                agregarParamSiExiste(params, form, '[name="telefono"]', 'telefono');
+                agregarParamSiExiste(params, form, '[name="nit"]', 'nit');
+                agregarParamSiExiste(params, form, '[name="pie_pagina"]', 'pie_pagina');
+                agregarParamSiExiste(params, form, '[name="ancho_papel"]', 'ancho_papel');
+                agregarParamSiExiste(params, form, '[name="font_size"]', 'font_size');
             }
             iframePreview.src = '/configuracion/preview' + (params.toString() ? '?' + params.toString() : '');
             modalPreview.show();

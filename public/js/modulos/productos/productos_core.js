@@ -1,5 +1,64 @@
 // Core state, Class, and Methods for Products module
 
+// Extraída de handleSubmit: reducía la anidación de bloques a 5 niveles
+// (try > if isEdit > try > if checkboxes) para una sub-tarea opcional que
+// falla en silencio a propósito (planes sin costeo no tienen este endpoint).
+async function guardarParametrosCosteo(id) {
+  try {
+    const checkboxes = document.querySelectorAll('#productoParametrosCheckboxes .producto-parametro-cb:checked');
+    if (checkboxes.length === 0 && !document.getElementById('productoParametrosCheckboxes')) return;
+
+    const parametroIds = Array.from(checkboxes).map(cb => Number.parseInt(cb.value, 10));
+    const r = await fetch('/costeo/api/productos/' + id + '/parametros', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify({ parametro_ids: parametroIds })
+    });
+    if (!r.ok && r.status !== 403) throw new Error('Error al guardar parámetros de costeo');
+  } catch (costeoErr) {
+    console.warn('No se pudieron guardar parámetros de costeo (posiblemente por restricciones de plan):', costeoErr);
+  }
+}
+
+// Extraída de handleEdit (S3776): también reduce su anidación real
+// (try > if paramContainer > try > if status403).
+async function cargarParametrosCosteoParaEdicion(id, paramContainer) {
+  try {
+    const [resAll, resProd] = await Promise.all([
+      fetch('/costeo/api/parametros', { credentials: 'same-origin' }),
+      fetch('/costeo/api/productos/' + id + '/parametros', { credentials: 'same-origin' })
+    ]);
+
+    if (resAll.status === 403 || resProd.status === 403) {
+      paramContainer.classList.add('d-none');
+      return;
+    }
+
+    const allParams = resAll.ok ? await resAll.json() : [];
+    const productParams = resProd.ok ? await resProd.json() : [];
+
+    if (!allParams || allParams.length === 0) {
+      paramContainer.classList.add('d-none');
+      return;
+    }
+
+    paramContainer.classList.remove('d-none');
+    const assignedIds = new Set((productParams || []).map(p => p.id));
+    const div = document.getElementById('productoParametrosCheckboxes');
+    div.innerHTML = '';
+    allParams.forEach(p => {
+      const label = document.createElement('label');
+      label.className = 'd-block me-3';
+      label.innerHTML = `<input type="checkbox" class="form-check-input me-2 producto-parametro-cb" value="${p.id}" ${assignedIds.has(p.id) ? 'checked' : ''}> ${p.name}`;
+      div.appendChild(label);
+    });
+  } catch (e) {
+    console.log('Modulo de costeo no disponible o error de red:', e);
+    paramContainer.classList.add('d-none');
+  }
+}
+
 class ProductManager {
   constructor() {
     this.formManager = null;
@@ -106,23 +165,7 @@ class ProductManager {
     try {
       if (isEdit) {
         await ApiClient.put(`/api/productos/${id}`, productData);
-        
-        try {
-          const checkboxes = document.querySelectorAll('#productoParametrosCheckboxes .producto-parametro-cb:checked');
-          if (checkboxes.length > 0 || document.getElementById('productoParametrosCheckboxes')) {
-            const parametroIds = Array.from(checkboxes).map(cb => Number.parseInt(cb.value, 10));
-            const r = await fetch('/costeo/api/productos/' + id + '/parametros', {
-              method: 'PUT',
-              headers: { 'Content-Type': 'application/json' },
-              credentials: 'same-origin',
-              body: JSON.stringify({ parametro_ids: parametroIds })
-            });
-            if (!r.ok && r.status !== 403) throw new Error('Error al guardar parámetros de costeo');
-          }
-        } catch (costeoErr) {
-          console.warn('No se pudieron guardar parámetros de costeo (posiblemente por restricciones de plan):', costeoErr);
-        }
-        
+        await guardarParametrosCosteo(id);
         AlertManager.success('Producto actualizado correctamente');
       } else {
         await ApiClient.post('/api/productos', productData);
@@ -178,39 +221,7 @@ class ProductManager {
 
       const paramContainer = document.getElementById('productoParametrosContainer');
       if (paramContainer) {
-        try {
-          const [resAll, resProd] = await Promise.all([
-            fetch('/costeo/api/parametros', { credentials: 'same-origin' }),
-            fetch('/costeo/api/productos/' + id + '/parametros', { credentials: 'same-origin' })
-          ]);
-
-          if (resAll.status === 403 || resProd.status === 403) {
-            paramContainer.classList.add('d-none');
-            return;
-          }
-
-          const allParams = resAll.ok ? await resAll.json() : [];
-          const productParams = resProd.ok ? await resProd.json() : [];
-
-          if (!allParams || allParams.length === 0) {
-            paramContainer.classList.add('d-none');
-            return;
-          }
-
-          paramContainer.classList.remove('d-none');
-          const assignedIds = new Set((productParams || []).map(p => p.id));
-          const div = document.getElementById('productoParametrosCheckboxes');
-          div.innerHTML = '';
-          allParams.forEach(p => {
-            const label = document.createElement('label');
-            label.className = 'd-block me-3';
-            label.innerHTML = `<input type="checkbox" class="form-check-input me-2 producto-parametro-cb" value="${p.id}" ${assignedIds.has(p.id) ? 'checked' : ''}> ${p.name}`;
-            div.appendChild(label);
-          });
-        } catch (e) {
-          console.log('Modulo de costeo no disponible o error de red:', e);
-          paramContainer.classList.add('d-none');
-        }
+        await cargarParametrosCosteoParaEdicion(id, paramContainer);
       }
     } catch (error) {
       AlertManager.alert('Error al cargar el producto', 'error');

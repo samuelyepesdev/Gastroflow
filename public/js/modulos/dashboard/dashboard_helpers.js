@@ -1,4 +1,30 @@
 // Rendering helpers and SVG generators for GastroFlow Dashboard
+
+// Extraída de updateMiniCalendarioEventos (S3776): arma una sola celda del
+// mini-calendario. No captura nada del closure, llega por parámetro.
+function construirCeldaCalendario({ year, month, day, hoy, eventosMap, mixFn, activeTheme }) {
+  const dateStr = year + '-' + String(month + 1).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+  const nombres = eventosMap.get(dateStr) || [];
+  const hasEvent = nombres.length > 0;
+  const isToday = dateStr === hoy;
+  let cls = '';
+  if (hasEvent) cls += ' dia-evento';
+  if (isToday) cls += ' dia-hoy';
+  const titulo = hasEvent ? ('Evento' + (nombres.length > 1 ? 's' : '') + ': ' + nombres.join(', ')) : '';
+  const attrTooltip = titulo ? ' data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="' + titulo.replaceAll('"', '&quot;') + '" title="' + titulo.replaceAll('"', '&quot;') + '"' : '';
+
+  let style = '';
+  if (isToday) {
+    style = 'background:var(--accent) !important; color:#fff !important; font-weight:700;';
+  } else if (hasEvent) {
+    const evBg = mixFn(activeTheme, '#ffffff', 0.87);
+    const evBorder = mixFn(activeTheme, '#ffffff', 0.6);
+    style = `background:${evBg} !important; color:var(--accent) !important; font-weight:700; border:1px solid ${evBorder} !important; cursor:pointer;`;
+  }
+
+  return `<td class="${cls.trim()}" ${attrTooltip} style="${style}">${day}</td>`;
+}
+
 $(function () {
   const mod = window.DashboardModule;
 
@@ -207,27 +233,9 @@ $(function () {
 
     for (let i = 0; i < startDay; i++) html += '<td></td>';
     let cellCount = startDay;
+    const mixFn = this.mix.bind(this);
     for (let day = 1; day <= daysInMonth; day++) {
-      const dateStr = year + '-' + String(month + 1).padStart(2, '0') + '-' + String(day).padStart(2, '0');
-      const nombres = eventosMap.get(dateStr) || [];
-      const hasEvent = nombres.length > 0;
-      const isToday = dateStr === hoy;
-      let cls = '';
-      if (hasEvent) cls += ' dia-evento';
-      if (isToday) cls += ' dia-hoy';
-      const titulo = hasEvent ? ('Evento' + (nombres.length > 1 ? 's' : '') + ': ' + nombres.join(', ')) : '';
-      const attrTooltip = titulo ? ' data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="' + titulo.replaceAll('"', '&quot;') + '" title="' + titulo.replaceAll('"', '&quot;') + '"' : '';
-
-      let style = '';
-      if (isToday) {
-        style = 'background:var(--accent) !important; color:#fff !important; font-weight:700;';
-      } else if (hasEvent) {
-        const evBg = this.mix(this.activeTheme, '#ffffff', 0.87);
-        const evBorder = this.mix(this.activeTheme, '#ffffff', 0.6);
-        style = `background:${evBg} !important; color:var(--accent) !important; font-weight:700; border:1px solid ${evBorder} !important; cursor:pointer;`;
-      }
-
-      html += `<td class="${cls.trim()}" ${attrTooltip} style="${style}">${day}</td>`;
+      html += construirCeldaCalendario({ year, month, day, hoy, eventosMap, mixFn, activeTheme: this.activeTheme });
       cellCount++;
       if (cellCount % 7 === 0 && day < daysInMonth) html += '</tr><tr>';
     }

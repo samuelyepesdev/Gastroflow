@@ -4,6 +4,13 @@
  * Related to: views/clientes.ejs, routes/clientes.js, modules/ApiClient.js, modules/FormManager.js, etc.
  */
 
+// Extraída de handleSubmit (S3776): las dos validaciones mostraban el mismo
+// aviso con el mismo fallback Swal/AlertManager, solo cambiaba el mensaje.
+function mostrarAdvertenciaValidacion(mensaje) {
+    if (typeof Swal !== 'undefined') Swal.fire({ icon: 'warning', title: mensaje });
+    else AlertManager.alert(mensaje, 'error');
+}
+
 // Client manager class
 class ClientManager {
     constructor() {
@@ -75,14 +82,12 @@ class ClientManager {
         // Validate required fields
         const validation = Utils.validateRequired(clientData, ['nombre']);
         if (!validation.valid) {
-            if (typeof Swal !== 'undefined') Swal.fire({ icon: 'warning', title: 'El nombre es requerido' });
-            else AlertManager.alert('El nombre es requerido', 'error');
+            mostrarAdvertenciaValidacion('El nombre es requerido');
             return;
         }
 
         if (clientData.telefono && !/^\d+$/.test(clientData.telefono)) {
-            if (typeof Swal !== 'undefined') Swal.fire({ icon: 'warning', title: 'El teléfono solo puede contener números' });
-            else AlertManager.alert('El teléfono solo puede contener números', 'error');
+            mostrarAdvertenciaValidacion('El teléfono solo puede contener números');
             return;
         }
 

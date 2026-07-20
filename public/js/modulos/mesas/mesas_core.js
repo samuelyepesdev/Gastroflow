@@ -69,84 +69,46 @@ $(function () {
   });
 });
 
+// Extraída de refreshMesaIfOpen: los eventos 'billed' y 'cancelled' hacían
+// exactamente esta misma limpieza, solo cambiaba el ícono y el texto (S3776).
+function limpiarMesaPorEventoExterno(icon, title, text) {
+  $('.modal').each(function() {
+    const modalInstance = bootstrap.Modal.getInstance(this);
+    modalInstance?.hide();
+  });
+
+  if (typeof Swal !== 'undefined' && typeof Swal.close === 'function') {
+    Swal.close();
+  }
+
+  const canvasEl = document.getElementById('canvasPedido');
+  if (canvasEl && window.MesasModule.canvas) {
+    window.MesasModule.canvas.hide();
+  }
+
+  window.MesasModule.pedidoActual = null;
+  window.MesasModule.items = [];
+  window.MesasModule.propinaPedido = 0;
+  if (typeof window.MesasModule.renderItems === 'function') {
+    window.MesasModule.renderItems();
+  }
+
+  Swal.fire({ icon, title, text, timer: 3000 });
+
+  if (typeof refreshMesas === 'function') refreshMesas();
+}
+
 window.refreshMesaIfOpen = async function(mesaId, action) {
   if (window.MesasModule.pedidoActual?.mesa_id == mesaId) {
     console.log(`[SSE] Mesa abierta ${mesaId} afectada por acción: ${action}...`);
 
     if (action === 'billed') {
-      // Ocultar todos los modals abiertos para evitar clics de facturación
-      $('.modal').each(function() {
-        const modalInstance = bootstrap.Modal.getInstance(this);
-        if (modalInstance) {
-          modalInstance.hide();
-        }
-      });
-
-      // Cerrar cualquier SweetAlert abierto
-      if (typeof Swal !== 'undefined' && typeof Swal.close === 'function') {
-        Swal.close();
-      }
-
-      // Ocultar panel lateral (offcanvas)
-      const canvasEl = document.getElementById('canvasPedido');
-      if (canvasEl && window.MesasModule.canvas) {
-        window.MesasModule.canvas.hide();
-      }
-
-      // Limpiar datos
-      window.MesasModule.pedidoActual = null;
-      window.MesasModule.items = [];
-      window.MesasModule.propinaPedido = 0;
-      if (typeof window.MesasModule.renderItems === 'function') {
-        window.MesasModule.renderItems();
-      }
-
-      Swal.fire({
-        icon: 'info',
-        title: 'Mesa Facturada',
-        text: 'Esta mesa ha sido facturada por otro usuario o dispositivo.',
-        timer: 3000
-      });
-
-      if (typeof refreshMesas === 'function') refreshMesas();
+      limpiarMesaPorEventoExterno('info', 'Mesa Facturada', 'Esta mesa ha sido facturada por otro usuario o dispositivo.');
       return;
     }
 
     if (action === 'cancelled') {
-      // Ocultar todos los modals abiertos
-      $('.modal').each(function() {
-        const modalInstance = bootstrap.Modal.getInstance(this);
-        if (modalInstance) {
-          modalInstance.hide();
-        }
-      });
-
-      // Cerrar cualquier SweetAlert abierto
-      if (typeof Swal !== 'undefined' && typeof Swal.close === 'function') {
-        Swal.close();
-      }
-
-      // Ocultar offcanvas
-      const canvasEl = document.getElementById('canvasPedido');
-      if (canvasEl && window.MesasModule.canvas) {
-        window.MesasModule.canvas.hide();
-      }
-
-      window.MesasModule.pedidoActual = null;
-      window.MesasModule.items = [];
-      window.MesasModule.propinaPedido = 0;
-      if (typeof window.MesasModule.renderItems === 'function') {
-        window.MesasModule.renderItems();
-      }
-
-      Swal.fire({
-        icon: 'warning',
-        title: 'Pedido Cancelado',
-        text: 'El pedido de esta mesa ha sido cancelado.',
-        timer: 3000
-      });
-
-      if (typeof refreshMesas === 'function') refreshMesas();
+      limpiarMesaPorEventoExterno('warning', 'Pedido Cancelado', 'El pedido de esta mesa ha sido cancelado.');
       return;
     }
 

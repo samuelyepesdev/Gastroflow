@@ -1,4 +1,35 @@
 // State and Event controller for GastroFlow Dashboard
+
+// Extraídas de updateStatsUI (S3776): no capturan `mod`, solo el `stats` que
+// ya reciben por parámetro.
+function actualizarBannerStockBajo(stats) {
+  const lowStock = stats.insumosBajoStock != null ? stats.insumosBajoStock : 0;
+  if (lowStock > 0) {
+    $('#lowStockCount').text(lowStock);
+    $('#focusLowStockVal').text(lowStock);
+    const namesList = (stats.insumosBajoStockLista || []).map(x => x.nombre).slice(0, 5).join(', ');
+    $('#lowStockNames').text(namesList ? ` · ${namesList}` : '');
+    $('#lowStockAlertBanner').css('display', 'flex');
+  } else {
+    $('#lowStockAlertBanner').hide();
+    $('#focusLowStockVal').text(0);
+  }
+}
+
+function calcularTendenciaVentasHoy(stats) {
+  let trendHoy = { pct: '12,4%', up: true };
+  if (stats.dailySales?.length >= 2) {
+    const len = stats.dailySales.length;
+    const lastVal = stats.dailySales[len - 1].total_ventas;
+    const prevVal = stats.dailySales[len - 2].total_ventas;
+    if (prevVal > 0) {
+      const diff = ((lastVal - prevVal) / prevVal) * 100;
+      trendHoy = { pct: Math.abs(diff).toFixed(1).replace('.', ',') + '%', up: diff >= 0 };
+    }
+  }
+  return trendHoy;
+}
+
 $(function () {
   const mod = window.DashboardModule;
 
@@ -112,17 +143,7 @@ $(function () {
     $('#currentDateLabel').text(dateText);
 
     // 2. Low Stock Alert Banner
-    const lowStock = stats.insumosBajoStock != null ? stats.insumosBajoStock : 0;
-    if (lowStock > 0) {
-      $('#lowStockCount').text(lowStock);
-      $('#focusLowStockVal').text(lowStock);
-      const namesList = (stats.insumosBajoStockLista || []).map(x => x.nombre).slice(0, 5).join(', ');
-      $('#lowStockNames').text(namesList ? ` · ${namesList}` : '');
-      $('#lowStockAlertBanner').css('display', 'flex');
-    } else {
-      $('#lowStockAlertBanner').hide();
-      $('#focusLowStockVal').text(0);
-    }
+    actualizarBannerStockBajo(stats);
 
     // 3. Variation A: Card values
     const ventasHoy = stats.ventasHoyTotal != null ? stats.ventasHoyTotal : 0;
@@ -136,20 +157,10 @@ $(function () {
     $('#statsVentaNetaMesVal').text(mod.formatCurrency(netMes));
 
     // Determine trends from dailySales history
-    let trendHoy = { pct: '12,4%', up: true };
-    let trendFact = { pct: '8,2%', up: true };
-    let trendTicket = { pct: '2,5%', up: false };
-    let trendNeta = { pct: '18,2%', up: true };
-
-    if (stats.dailySales?.length >= 2) {
-      const len = stats.dailySales.length;
-      const lastVal = stats.dailySales[len - 1].total_ventas;
-      const prevVal = stats.dailySales[len - 2].total_ventas;
-      if (prevVal > 0) {
-        const diff = ((lastVal - prevVal) / prevVal) * 100;
-        trendHoy = { pct: Math.abs(diff).toFixed(1).replace('.', ',') + '%', up: diff >= 0 };
-      }
-    }
+    const trendHoy = calcularTendenciaVentasHoy(stats);
+    const trendFact = { pct: '8,2%', up: true };
+    const trendTicket = { pct: '2,5%', up: false };
+    const trendNeta = { pct: '18,2%', up: true };
 
     $('#deltaVentasHoy').html(mod.deltaChip(trendHoy.pct, trendHoy.up));
     $('#deltaFacturasHoy').html(mod.deltaChip(trendFact.pct, trendFact.up));

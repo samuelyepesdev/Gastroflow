@@ -1,5 +1,47 @@
 // Actions, Wizard, Client lookup, Tips, and QRs for Mesas module
 
+// Extraída de la búsqueda de cliente: bajaba la anidación de callbacks a 5
+// niveles (input > setTimeout > forEach > click). No captura nada del
+// closure que la usaba, todo llega por parámetro (S7721).
+function crearItemResultadoCliente(mod, list, modalClienteMesa, c) {
+  const docInfo = c.numero_documento ? `${c.tipo_documento || 'DOC'}: ${c.numero_documento}` : 'Sin documento';
+  const item = $(`
+    <a href="#" class="list-group-item list-group-item-action py-3 border-bottom">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <div class="fw-bold text-dark">${c.nombre}</div>
+            <div class="small text-muted">${docInfo}</div>
+        </div>
+        <i class="bi bi-chevron-right text-muted"></i>
+      </div>
+    </a>`);
+  item.on('click', async e => {
+    e.preventDefault();
+    const originalCliente = { ...mod.clienteActual };
+    mod.clienteActual = { id: c.id, nombre: c.nombre };
+
+    if (mod.pedidoActual?.id) {
+      try {
+        const r = await fetch(`/api/mesas/pedidos/${mod.pedidoActual.id}/cliente`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ cliente_id: c.id })
+        });
+        if (!r.ok) throw new Error('No se pudo asociar el cliente');
+      } catch (err) {
+        mod.clienteActual = originalCliente;
+        return Swal.fire({ icon: 'error', title: 'Error al asociar cliente' });
+      }
+    }
+
+    mod.actualizarUICliente();
+    modalClienteMesa.hide();
+    $('#buscarClienteInputMesa').val('');
+    list.empty();
+  });
+  return item;
+}
+
 $(function () {
   const mod = window.MesasModule;
 
@@ -167,42 +209,7 @@ $(function () {
           list.append('<div class="list-group-item text-muted text-center py-3">Sin resultados</div>');
         } else {
           clientes.forEach(c => {
-            const docInfo = c.numero_documento ? `${c.tipo_documento || 'DOC'}: ${c.numero_documento}` : 'Sin documento';
-            const item = $(`
-              <a href="#" class="list-group-item list-group-item-action py-3 border-bottom">
-                <div class="d-flex justify-content-between align-items-center">
-                  <div>
-                      <div class="fw-bold text-dark">${c.nombre}</div>
-                      <div class="small text-muted">${docInfo}</div>
-                  </div>
-                  <i class="bi bi-chevron-right text-muted"></i>
-                </div>
-              </a>`);
-            item.on('click', async e => {
-              e.preventDefault();
-              const originalCliente = { ...mod.clienteActual };
-              mod.clienteActual = { id: c.id, nombre: c.nombre };
-
-              if (mod.pedidoActual?.id) {
-                try {
-                  const r = await fetch(`/api/mesas/pedidos/${mod.pedidoActual.id}/cliente`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ cliente_id: c.id })
-                  });
-                  if (!r.ok) throw new Error('No se pudo asociar el cliente');
-                } catch (err) {
-                  mod.clienteActual = originalCliente;
-                  return Swal.fire({ icon: 'error', title: 'Error al asociar cliente' });
-                }
-              }
-
-              mod.actualizarUICliente();
-              modalClienteMesa.hide();
-              $('#buscarClienteInputMesa').val('');
-              list.empty();
-            });
-            list.append(item);
+            list.append(crearItemResultadoCliente(mod, list, modalClienteMesa, c));
           });
         }
       } catch (_) {

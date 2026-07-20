@@ -232,6 +232,31 @@ window.refreshMesas = async function() {
   }
 };
 
+// Extraída del resultado de búsqueda de productos en mesas: bajaba la
+// anidación de callbacks a 5 niveles (input > setTimeout > forEach > click).
+function crearItemResultadoProducto(mod, list, p) {
+  const precio = p.precio_unidad != null ? p.precio_unidad : (p.precio || 0);
+  const item = $(`
+    <a href="#" class="list-group-item list-group-item-action">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <div class="fw-bold text-primary">${p.codigo}</div>
+          <div class="text-dark">${p.nombre}</div>
+        </div>
+        <div class="text-end">
+            <span class="badge bg-light text-dark border">$${Number(precio).toLocaleString()}</span>
+        </div>
+      </div>
+    </a>`);
+  item.on('click', e => {
+    e.preventDefault();
+    list.hide().empty();
+    $('#buscarProductoMesa').val('');
+    mod.seleccionarProducto(p);
+  });
+  return item;
+}
+
 $(function () {
   const mod = window.MesasModule;
 
@@ -343,26 +368,7 @@ $(function () {
         list.append('<div class="list-group-item text-muted">No se encontraron productos</div>');
       } else {
         productos.forEach(p => {
-          const precio = p.precio_unidad != null ? p.precio_unidad : (p.precio || 0);
-          const item = $(`
-            <a href="#" class="list-group-item list-group-item-action">
-              <div class="d-flex justify-content-between align-items-center">
-                <div>
-                  <div class="fw-bold text-primary">${p.codigo}</div>
-                  <div class="text-dark">${p.nombre}</div>
-                </div>
-                <div class="text-end">
-                    <span class="badge bg-light text-dark border">$${Number(precio).toLocaleString()}</span>
-                </div>
-              </div>
-            </a>`);
-          item.on('click', e => {
-            e.preventDefault();
-            list.hide().empty();
-            $('#buscarProductoMesa').val('');
-            mod.seleccionarProducto(p);
-          });
-          list.append(item);
+          list.append(crearItemResultadoProducto(mod, list, p));
         });
       }
       list.show();
