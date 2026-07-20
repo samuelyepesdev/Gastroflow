@@ -228,7 +228,7 @@ ProductManager.prototype.setupImportExport = function() {
           <div class="mb-1"><i class="bi bi-arrow-repeat text-primary me-2"></i>Actualizados: <strong>${data.updated}</strong></div>
         </div>`;
 
-        if (data.errores && data.errores.length > 0) {
+        if (data.errores?.length > 0) {
           html += `<hr><div class="text-start small text-danger">
             <strong><i class="bi bi-exclamation-triangle me-1"></i> Errores (${data.errores.length}):</strong>
             <div class="mt-2 p-2 bg-light border rounded" style="max-height: 100px; overflow-y: auto; font-size: 0.75rem;">

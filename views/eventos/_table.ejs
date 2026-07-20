@@ -29,7 +29,7 @@ const formatYMD = (d) => {
                 </a>
                 <% if (user && user.permisos && user.permisos.includes('eventos.editar')) { %>
                     <button type="button" class="btn btn-sm btn-outline-primary"
-                        onclick="editarEvento(<%= e.id %>, '<%= (e.nombre || '').replace(/'/g, '\\\'') %>', '<%= formatYMD(e.fecha_inicio) %>', '<%= formatYMD(e.fecha_fin) %>', '<%= (e.descripcion || '').replace(/'/g, '\\\'') %>', <%= e.activo ? 'true' : 'false' %>, '<%= (e.tipo || 'permanente') %>')">
+                        onclick="editarEvento({id: <%= e.id %>, nombre: '<%= (e.nombre || '').replace(/'/g, '\\\'') %>', fIni: '<%= formatYMD(e.fecha_inicio) %>', fFin: '<%= formatYMD(e.fecha_fin) %>', desc: '<%= (e.descripcion || '').replace(/'/g, '\\\'') %>', activo: <%= e.activo ? 'true' : 'false' %>, tipo: '<%= (e.tipo || 'permanente') %>'})">
                         <i class="bi bi-pencil"></i>
                     </button>
                     <% } %>
@@ -99,7 +99,7 @@ const formatYMD = (d) => {
                         <td class="text-end">
                             <% if (user.permisos.includes('eventos.editar')) { %>
                                 <button type="button" class="btn btn-sm btn-outline-primary me-1"
-                                    onclick="editarEvento(<%= e.id %>, '<%= (e.nombre || '').replace(/'/g, '\\\'') %>', '<%= formatYMD(e.fecha_inicio) %>', '<%= formatYMD(e.fecha_fin) %>', '<%= (e.descripcion || '').replace(/'/g, '\\\'') %>', <%= e.activo ? 'true' : 'false' %>, '<%= (e.tipo || 'permanente') %>')"
+                                    onclick="editarEvento({id: <%= e.id %>, nombre: '<%= (e.nombre || '').replace(/'/g, '\\\'') %>', fIni: '<%= formatYMD(e.fecha_inicio) %>', fFin: '<%= formatYMD(e.fecha_fin) %>', desc: '<%= (e.descripcion || '').replace(/'/g, '\\\'') %>', activo: <%= e.activo ? 'true' : 'false' %>, tipo: '<%= (e.tipo || 'permanente') %>'})"
                                     title="Editar"><i class="bi bi-pencil"></i></button>
                                 <% } %>
                                     <% if (user.permisos.includes('eventos.eliminar')) { %>

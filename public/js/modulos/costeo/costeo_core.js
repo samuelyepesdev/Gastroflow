@@ -43,12 +43,12 @@ window.CosteoModule = {
     }).then(res => res.text().then(text => {
       let data = null;
       try {
-        if (text && text.trim()) data = JSON.parse(text);
+        if (text?.trim()) data = JSON.parse(text);
       } catch (_) {
-        if (!res.ok) return Promise.reject(new Error(res.statusText || 'Error del servidor'));
-        return Promise.reject(new Error('Respuesta inválida del servidor'));
+        if (!res.ok) throw new Error(res.statusText || 'Error del servidor');
+        throw new Error('Respuesta inválida del servidor');
       }
-      if (!res.ok) return Promise.reject(new Error((data && data.error) || res.statusText || 'Error'));
+      if (!res.ok) throw new Error(data?.error || res.statusText || 'Error');
       return data;
     }));
   },

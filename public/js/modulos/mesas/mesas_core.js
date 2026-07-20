@@ -70,7 +70,7 @@ $(function () {
 });
 
 window.refreshMesaIfOpen = async function(mesaId, action) {
-  if (window.MesasModule.pedidoActual && window.MesasModule.pedidoActual.mesa_id == mesaId) {
+  if (window.MesasModule.pedidoActual?.mesa_id == mesaId) {
     console.log(`[SSE] Mesa abierta ${mesaId} afectada por acción: ${action}...`);
 
     if (action === 'billed') {

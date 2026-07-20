@@ -109,7 +109,7 @@ $(function () {
     const originalCliente = { ...mod.clienteActual };
     mod.clienteActual = { id: null, nombre: 'Consumidor Final' };
 
-    if (mod.pedidoActual && mod.pedidoActual.id) {
+    if (mod.pedidoActual?.id) {
       try {
         await fetch(`/api/mesas/pedidos/${mod.pedidoActual.id}/cliente`, {
           method: 'PUT',
@@ -183,7 +183,7 @@ $(function () {
               const originalCliente = { ...mod.clienteActual };
               mod.clienteActual = { id: c.id, nombre: c.nombre };
 
-              if (mod.pedidoActual && mod.pedidoActual.id) {
+              if (mod.pedidoActual?.id) {
                 try {
                   const r = await fetch(`/api/mesas/pedidos/${mod.pedidoActual.id}/cliente`, {
                     method: 'PUT',

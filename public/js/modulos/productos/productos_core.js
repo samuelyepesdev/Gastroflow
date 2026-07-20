@@ -55,7 +55,7 @@ class ProductManager {
         headers: { 'Accept': 'application/json' },
         credentials: 'same-origin'
       }).then(res => {
-        if (!res.ok) return res.json().then(j => Promise.reject(new Error(j.error || res.statusText)));
+        if (!res.ok) return res.json().then(j => { throw new Error(j.error || res.statusText); });
         return res.json();
       });
       this._costeoData = data;
@@ -137,7 +137,7 @@ class ProductManager {
     } catch (error) {
       console.error('Error saving product:', error);
       const errorMessage = error.message || 'Hubo un problema al guardar el producto. Por favor, intente de nuevo.';
-      if (error.message && error.message.includes('fetch')) {
+      if (error.message?.includes('fetch')) {
         AlertManager.error('Error de conexión: No se pudo comunicar con el servidor.');
       } else {
         AlertManager.error(errorMessage);

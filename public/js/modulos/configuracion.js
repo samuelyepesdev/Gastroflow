@@ -15,13 +15,13 @@ document.addEventListener('DOMContentLoaded', function () {
                 const pie = form.querySelector('[name="pie_pagina"]');
                 const ancho = form.querySelector('[name="ancho_papel"]');
                 const fontSize = form.querySelector('[name="font_size"]');
-                if (nombre && nombre.value) params.set('nombre_negocio', nombre.value);
-                if (direccion && direccion.value) params.set('direccion', direccion.value);
-                if (telefono && telefono.value) params.set('telefono', telefono.value);
-                if (nit && nit.value) params.set('nit', nit.value);
-                if (pie && pie.value) params.set('pie_pagina', pie.value);
-                if (ancho && ancho.value) params.set('ancho_papel', ancho.value);
-                if (fontSize && fontSize.value) params.set('font_size', fontSize.value);
+                if (nombre?.value) params.set('nombre_negocio', nombre.value);
+                if (direccion?.value) params.set('direccion', direccion.value);
+                if (telefono?.value) params.set('telefono', telefono.value);
+                if (nit?.value) params.set('nit', nit.value);
+                if (pie?.value) params.set('pie_pagina', pie.value);
+                if (ancho?.value) params.set('ancho_papel', ancho.value);
+                if (fontSize?.value) params.set('font_size', fontSize.value);
             }
             iframePreview.src = '/configuracion/preview' + (params.toString() ? '?' + params.toString() : '');
             modalPreview.show();

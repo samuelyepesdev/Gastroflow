@@ -35,7 +35,7 @@ window.POS = {
 
         // Consumidor final por defecto
         POS_API.getOrCreateConsumidorFinal().then(cf => {
-            if (cf && cf.id && !this.state.cliente) {
+            if (cf?.id && !this.state.cliente) {
                 this.setCliente(cf);
             }
         }).catch(() => {});
@@ -120,7 +120,7 @@ window.POS = {
         if (inputEl) inputEl.value = '';
         if (idEl) idEl.value = '';
         POS_API.getOrCreateConsumidorFinal().then(cf => {
-            if (cf && cf.id) this.setCliente(cf);
+            if (cf?.id) this.setCliente(cf);
         }).catch(() => {});
     },
 
@@ -158,11 +158,11 @@ window.POS = {
             list = list.filter(p => String(p.categoria_id) === String(catActiva));
         }
 
-        if (searchQuery && searchQuery.trim()) {
+        if (searchQuery?.trim()) {
             const q = searchQuery.toLowerCase().trim();
             list = list.filter(p =>
                 p.nombre.toLowerCase().includes(q) ||
-                (p.codigo && p.codigo.toLowerCase().includes(q))
+                p.codigo?.toLowerCase().includes(q)
             );
         }
 

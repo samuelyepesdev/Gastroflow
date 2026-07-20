@@ -336,7 +336,7 @@
         const modal = document.getElementById('modalCalculadoraReposteria');
         if (!modal) return;
 
-        if (window.COSTEO_insumosList && window.COSTEO_insumosList.length) fillCalcInsumoSelect();
+        if (window.COSTEO_insumosList?.length) fillCalcInsumoSelect();
         if (window.COSTEO_refreshReposteriaSelect) {
             const orig = window.COSTEO_refreshReposteriaSelect;
             window.COSTEO_refreshReposteriaSelect = function () {
@@ -433,7 +433,7 @@
                     if (window.COSTEO_quitarBackdropModal) window.COSTEO_quitarBackdropModal();
                     if (loadRecetas) loadRecetas();
                     showToast('Receta creada', 'success');
-                    if (result && result.id) {
+                    if (result?.id) {
                         document.getElementById('calcRecetaId').value = result.id;
                     }
                 }).catch(function (err) {

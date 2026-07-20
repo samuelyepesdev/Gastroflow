@@ -1,5 +1,5 @@
 function previewImage(input) {
-    if (input.files && input.files[0]) {
+    if (input.files?.[0]) {
         const reader = new FileReader();
         reader.onload = function (e) {
             const plc = document.getElementById('previewLogoPlaceholder');
@@ -12,9 +12,7 @@ function previewImage(input) {
     }
 }
 
-function setTemplate(nav, text, pri, sec, cPri, cSec, mLibre, mOcupada) {
-    mLibre = mLibre || '#22c55e';
-    mOcupada = mOcupada || '#f59e0b';
+function setTemplate({ nav, text, pri, sec, cPri, cSec, mLibre = '#22c55e', mOcupada = '#f59e0b' }) {
     document.getElementById('colorNavbar').value = nav;
     document.getElementById('colorNavbarText').value = text;
     document.getElementById('colorPrimary').value = pri;
@@ -49,7 +47,7 @@ document.getElementById('perfilForm').addEventListener('submit', async function 
         mesaOcupada: document.getElementById('colorMesaOcupada').value
     }));
     const logoInput = document.getElementById('logo');
-    if (logoInput && logoInput.files.length > 0) {
+    if (logoInput?.files.length > 0) {
         fd.append('logo', logoInput.files[0]);
     }
 
@@ -113,7 +111,7 @@ async function testReport() {
                 a.download = result.fileName || 'Reporte_Mensual.pdf';
                 document.body.appendChild(a);
                 a.click();
-                document.body.removeChild(a);
+                a.remove();
             }
 
             Swal.fire({
@@ -140,9 +138,7 @@ async function testReport() {
     }
 }
 
-function b64toBlob(b64Data, contentType, sliceSize) {
-    contentType = contentType || '';
-    sliceSize = sliceSize || 512;
+function b64toBlob(b64Data, contentType = '', sliceSize = 512) {
     const cleanB64 = b64Data.replace(/\s/g, '');
     const byteCharacters = atob(cleanB64);
     const byteArrays = [];
@@ -150,7 +146,7 @@ function b64toBlob(b64Data, contentType, sliceSize) {
         const slice = byteCharacters.slice(offset, offset + sliceSize);
         const byteNumbers = new Array(slice.length);
         for (let i = 0; i < slice.length; i++) {
-            byteNumbers[i] = slice.charCodeAt(i);
+            byteNumbers[i] = slice.codePointAt(i);
         }
         const byteArray = new Uint8Array(byteNumbers);
         byteArrays.push(byteArray);

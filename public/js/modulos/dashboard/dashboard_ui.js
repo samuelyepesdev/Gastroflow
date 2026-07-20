@@ -141,7 +141,7 @@ $(function () {
     let trendTicket = { pct: '2,5%', up: false };
     let trendNeta = { pct: '18,2%', up: true };
 
-    if (stats.dailySales && stats.dailySales.length >= 2) {
+    if (stats.dailySales?.length >= 2) {
       const len = stats.dailySales.length;
       const lastVal = stats.dailySales[len - 1].total_ventas;
       const prevVal = stats.dailySales[len - 2].total_ventas;
@@ -454,7 +454,7 @@ $(function () {
         if (!resp.ok) throw new Error(data.error || 'Error al generar.');
 
         let htmlMsg = `Reporte generado correctamente y enviado al correo registrado.<br>`;
-        if (data.result && data.result.previewUrl) {
+        if (data.result?.previewUrl) {
           htmlMsg += `<a href="${data.result.previewUrl}" target="_blank" class="text-primary text-decoration-underline mt-2 d-inline-block">Ver preview del PDF aquí (Ethereal)</a>`;
         }
 

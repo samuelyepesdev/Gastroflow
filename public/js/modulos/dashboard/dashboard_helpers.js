@@ -265,7 +265,10 @@ $(function () {
     }
     const self = this;
     fetch('/api/dashboard/eventos-calendario?mes=' + mesParam, { credentials: 'same-origin' })
-      .then(function (r) { return r.ok ? r.json() : Promise.reject(new Error('Error al cargar eventos')); })
+      .then(function (r) {
+        if (!r.ok) throw new Error('Error al cargar eventos');
+        return r.json();
+      })
       .then(function (data) {
         let list = data.eventosCalendario || data.eventos || [];
         if (!Array.isArray(list)) list = [];

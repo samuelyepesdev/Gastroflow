@@ -24,7 +24,7 @@ window.FacturasModule = {
     if (!data) return;
     try {
       const sesion = JSON.parse(data);
-      if (sesion.productos && sesion.productos.length > 0) {
+      if (sesion.productos?.length > 0) {
         this.productosFactura = sesion.productos;
         if (typeof this.actualizarTablaProductos === 'function') this.actualizarTablaProductos();
       }

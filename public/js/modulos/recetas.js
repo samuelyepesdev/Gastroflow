@@ -11,10 +11,7 @@ async function loadInsumos() {
     const r = await fetch(base + '/api/insumos', { credentials: 'same-origin' });
     insumosList = await r.json();
 }
-function addIngredienteRow(insumoId, cantidad, unidad) {
-    insumoId = insumoId || '';
-    cantidad = cantidad || '';
-    unidad = unidad || 'g';
+function addIngredienteRow(insumoId = '', cantidad = '', unidad = 'g') {
     const tbody = document.getElementById('recetaIngredientesContainer');
     const tr = document.createElement('tr');
     tr.innerHTML = `
@@ -53,7 +50,7 @@ document.getElementById('btnGuardarReceta').addEventListener('click', async () =
 
 document.getElementById('modalReceta').addEventListener('show.bs.modal', async (e) => {
     const trigger = e.relatedTarget;
-    const abrioNueva = trigger && (trigger.id === 'btnNuevaReceta' || (trigger.closest && trigger.closest('#btnNuevaReceta')));
+    const abrioNueva = trigger?.id === 'btnNuevaReceta' || trigger?.closest?.('#btnNuevaReceta');
     const id = document.getElementById('recetaId').value;
     if (abrioNueva || !id) {
         document.getElementById('recetaId').value = '';
@@ -111,7 +108,6 @@ document.addEventListener('click', function (e) {
         e.preventDefault();
         const id = btnEditar.dataset.id;
         editarReceta(id);
-        return;
     }
 });
 

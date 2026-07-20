@@ -11,7 +11,7 @@ $(function () {
     document.getElementById('inputCargarExcelInsumos')?.click();
   });
   document.getElementById('inputCargarExcelInsumos')?.addEventListener('change', function () {
-    const file = this.files && this.files[0];
+    const file = this.files?.[0];
     if (!file) return;
     const formData = new FormData();
     formData.append('archivo', file);
@@ -24,7 +24,7 @@ $(function () {
       body: formData,
       credentials: 'same-origin'
     })
-      .then(res => res.ok ? res.json() : res.json().then(j => Promise.reject(new Error(j.error || res.statusText))))
+      .then(res => res.ok ? res.json() : res.json().then(j => { throw new Error(j.error || res.statusText); }))
       .then((result) => {
         const { creados = 0, actualizados = 0, errores = [] } = result;
         let msg = '';
@@ -162,7 +162,7 @@ $(function () {
         bootstrap.Modal.getInstance(document.getElementById('recetaNuevaModal')).hide();
         window.loadRecetas(window.getRecetasFilters());
         mod.showToast('Receta creada. Agregá los insumos a continuación.', 'success');
-        if (result && result.id) {
+        if (result?.id) {
           setTimeout(() => openRecetaEditarModal(result.id), 300);
         }
       }).catch(err => mod.showToast(err.message, 'danger'));
@@ -247,7 +247,7 @@ $(function () {
   function setUnidadRecetaPorInsumo(ins) {
     const unidadEl = document.getElementById('ingredienteUnidad');
     if (!unidadEl) return;
-    const base = getUnidadBaseReceta(ins && ins.unidad_compra);
+    const base = getUnidadBaseReceta(ins?.unidad_compra);
     const opciones = { g: [{ value: 'g', label: 'g' }], ml: [{ value: 'ml', label: 'ml' }], UND: [{ value: 'UND', label: 'UND' }] };
     const opts = opciones[base] || opciones.UND;
     unidadEl.innerHTML = '';

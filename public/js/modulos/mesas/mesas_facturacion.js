@@ -582,7 +582,7 @@ $(function () {
         mod.canvas.hide();
 
         const facturaCanvasEl = document.getElementById('canvasFactura');
-        if (facturaCanvasEl && facturaCanvasEl.classList.contains('show')) {
+        if (facturaCanvasEl?.classList.contains('show')) {
           const facturaCanvas = bootstrap.Offcanvas.getInstance(facturaCanvasEl);
           if (facturaCanvas) facturaCanvas.hide();
         }

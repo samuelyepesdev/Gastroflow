@@ -7,8 +7,7 @@ function getDetallesModal() {
     return el ? bootstrap.Modal.getOrCreateInstance(el) : null;
 }
 
-function mostrarAlerta(mensaje, tipo) {
-    tipo = tipo || 'success';
+function mostrarAlerta(mensaje, tipo = 'success') {
     const alertaDiv = document.createElement('div');
     alertaDiv.className = 'custom-alert ' + tipo;
     alertaDiv.innerHTML = '<div class="alert-content"><i class="bi ' + (tipo === 'success' ? 'bi-check-circle' : tipo === 'error' ? 'bi-x-circle' : 'bi-exclamation-triangle') + ' me-2"></i>' + mensaje + '</div><button type="button" class="btn-close ms-3" onclick="this.parentElement.remove()"></button>';
@@ -19,7 +18,7 @@ function mostrarAlerta(mensaje, tipo) {
 function mostrarFactura(id, numeroDisplay) {
     const modalEl = document.getElementById('facturaModal');
     const frameEl = document.getElementById('facturaFrame');
-    const titleEl = modalEl && modalEl.querySelector('.modal-title');
+    const titleEl = modalEl?.querySelector('.modal-title');
     if (!modalEl || !frameEl) return;
     if (titleEl) titleEl.textContent = 'Factura #' + (numeroDisplay != null ? numeroDisplay : id);
     frameEl.src = '/api/facturas/' + id + '/imprimir?return=' + encodeURIComponent('/ventas');
@@ -75,7 +74,7 @@ function mostrarDetalles(id) {
 
 function imprimirFactura() {
     const frame = document.getElementById('facturaFrame');
-    if (frame && frame.contentWindow) frame.contentWindow.print();
+    frame?.contentWindow?.print();
 }
 
 // Global delegated click handler for details & printing inside the grouped table
@@ -210,7 +209,7 @@ function recalculateVisibleStats() {
                 while (prev && !prev.classList.contains('table-group-header')) {
                     prev = prev.previousElementSibling;
                 }
-                if (prev && prev.classList.contains('today')) {
+                if (prev?.classList.contains('today')) {
                     hoyCount++;
                 }
             }
