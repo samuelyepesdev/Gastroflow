@@ -65,8 +65,8 @@ $(function () {
 
   window.setCant = (idx, val) => {
     const it = mod.productosFactura[idx];
-    const v = parseInt(val, 10);
-    if (isNaN(v) || v <= 0) {
+    const v = Number.parseInt(val, 10);
+    if (Number.isNaN(v) || v <= 0) {
       it.cantidad = 1;
     } else {
       it.cantidad = v;
@@ -210,7 +210,7 @@ $(function () {
   $('#btnAplicarPctManual').click(() => aplicarDescPct($('#descuentoPorcentajeManual').val()));
   $('#btnAplicarPrecioFijo').click(() => {
     const it = mod.productosFactura[window._descIdx];
-    it.precio = parseFloat($('#nuevoPrecioManual').val()) || it.precio;
+    it.precio = Number.parseFloat($('#nuevoPrecioManual').val()) || it.precio;
     it.descuento_porcentaje = 0;
     mod.actualizarTablaProductos();
     bootstrap.Modal.getInstance(document.getElementById('descuentoModal')).hide();
@@ -218,7 +218,7 @@ $(function () {
 
   function aplicarDescPct(p) {
     const it = mod.productosFactura[window._descIdx];
-    it.descuento_porcentaje = parseFloat(p) || 0;
+    it.descuento_porcentaje = Number.parseFloat(p) || 0;
     mod.actualizarTablaProductos();
     bootstrap.Modal.getInstance(document.getElementById('descuentoModal')).hide();
   }

@@ -24,7 +24,9 @@ window.POS = {
                 this.state.categorias = categorias || [];
                 this.state.filtrados = [...this.state.productos];
                 this.state.productosMap = new Map(this.state.productos.map(p => [p.id, p]));
-            } catch (_) {}
+            } catch (err) {
+                console.error('No se pudo leer los datos iniciales del POS:', err);
+            }
         }
 
         POS_UI.renderCats();
@@ -50,7 +52,7 @@ window.POS = {
         const hx = h => {
             h = h.replace('#', '').trim();
             if (h.length === 3) h = h.split('').map(c => c + c).join('');
-            return [parseInt(h.slice(0,2),16), parseInt(h.slice(2,4),16), parseInt(h.slice(4,6),16)];
+            return [Number.parseInt(h.slice(0,2),16), Number.parseInt(h.slice(2,4),16), Number.parseInt(h.slice(4,6),16)];
         };
         const toHex = a => '#' + a.map(v => Math.round(Math.max(0, Math.min(255, v))).toString(16).padStart(2,'0')).join('');
         const mix = (a, b, t) => { const A = hx(a), B = hx(b); return toHex([0,1,2].map(i => A[i] + (B[i] - A[i]) * t)); };
@@ -69,7 +71,7 @@ window.POS = {
         if (existing) {
             existing.cantidad++;
         } else {
-            const precio = parseFloat(producto.precio_unidad) || 0;
+            const precio = Number.parseFloat(producto.precio_unidad) || 0;
             this.state.cart.push({
                 producto_id: producto.id,
                 nombre: producto.nombre,
@@ -104,7 +106,7 @@ window.POS = {
     setDescuento(idx, pct) {
         const item = this.state.cart[idx];
         if (!item) return;
-        item.descuento_porcentaje = Math.min(Math.max(parseFloat(pct) || 0, 0), 100);
+        item.descuento_porcentaje = Math.min(Math.max(Number.parseFloat(pct) || 0, 0), 100);
         POS_UI.renderCart();
     },
 
@@ -213,7 +215,9 @@ window.POS = {
     async recargarStats() {
         try {
             this.state.stats = await POS_API.getStats();
-        } catch (_) {}
+        } catch (err) {
+            console.warn('No se pudo cargar estadísticas del POS:', err);
+        }
         POS_UI.renderStats();
     },
 

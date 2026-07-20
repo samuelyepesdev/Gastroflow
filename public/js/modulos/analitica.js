@@ -13,7 +13,7 @@
                 datasets: [
                     {
                         label: 'Ventas',
-                        data: mesesData.map(function (m) { return parseFloat(m.total_ventas) || 0; }),
+                        data: mesesData.map(function (m) { return Number.parseFloat(m.total_ventas) || 0; }),
                         backgroundColor: 'rgba(99,102,241,0.75)',
                         borderColor: 'rgba(99,102,241,1)',
                         borderWidth: 1,
@@ -22,7 +22,7 @@
                     },
                     {
                         label: 'Facturas',
-                        data: mesesData.map(function (m) { return parseInt(m.cantidad_facturas, 10) || 0; }),
+                        data: mesesData.map(function (m) { return Number.parseInt(m.cantidad_facturas, 10) || 0; }),
                         type: 'line',
                         borderColor: 'rgba(16,185,129,1)',
                         backgroundColor: 'rgba(16,185,129,0.1)',
@@ -74,7 +74,7 @@
     if (predData.length && document.getElementById('chartPrediccion')) {
         var labels = predData.map(function (m) { return m.nombreMes + ' ' + m.year; });
         labels.push('Estimado');
-        var valores = predData.map(function (m) { return parseFloat(m.total_ventas) || 0; });
+        var valores = predData.map(function (m) { return Number.parseFloat(m.total_ventas) || 0; });
         valores.push(predValor);
         var colores = predData.map(function () { return 'rgba(99,102,241,0.65)'; });
         colores.push('rgba(245,158,11,0.8)');

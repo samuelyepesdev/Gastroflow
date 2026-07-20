@@ -85,12 +85,12 @@ if (tableBody) {
         var btnDet = e.target.closest('.btn-detalles');
         var btnReim = e.target.closest('.btn-reimprimir');
         if (btnDet) {
-            var id = btnDet.getAttribute('data-factura-id');
+            var id = btnDet.dataset.facturaId;
             if (id) mostrarDetalles(id);
         }
         if (btnReim) {
-            var id = btnReim.getAttribute('data-factura-id');
-            var numero = btnReim.getAttribute('data-factura-numero');
+            var id = btnReim.dataset.facturaId;
+            var numero = btnReim.dataset.facturaNumero;
             if (id) mostrarFactura(id, numero != null && numero !== '' ? numero : undefined);
         }
     });
@@ -161,8 +161,8 @@ function recalculateVisibleStats() {
         
         while (next && !next.classList.contains('table-group-header')) {
             if (next.style.display !== 'none') {
-                const total = Number(next.getAttribute('data-total') || 0);
-                const fp = next.getAttribute('data-forma-pago') || '';
+                const total = Number(next.dataset.total || 0);
+                const fp = next.dataset.formaPago || '';
                 
                 groupTotal += total;
                 groupCount++;
@@ -227,7 +227,7 @@ $(document).on('click', '.payment-segment-btn', function() {
     const selectedPay = $(this).data('pay');
     
     document.querySelectorAll('.venta-row').forEach(row => {
-        const rowPay = row.getAttribute('data-forma-pago');
+        const rowPay = row.dataset.formaPago;
         const matchesSearch = rowMatchesSearch(row);
         const matchesPay = (selectedPay === 'todos' || rowPay === selectedPay);
         
@@ -245,10 +245,10 @@ $(document).on('click', '.payment-segment-btn', function() {
 const searchInput = document.getElementById('buscarVentas');
 if (searchInput) {
     searchInput.addEventListener('input', function() {
-        const selectedPay = document.querySelector('.payment-segment-btn.active')?.getAttribute('data-pay') || 'todos';
+        const selectedPay = document.querySelector('.payment-segment-btn.active')?.dataset.pay || 'todos';
         
         document.querySelectorAll('.venta-row').forEach(row => {
-            const rowPay = row.getAttribute('data-forma-pago');
+            const rowPay = row.dataset.formaPago;
             const matchesSearch = rowMatchesSearch(row);
             const matchesPay = (selectedPay === 'todos' || rowPay === selectedPay);
             

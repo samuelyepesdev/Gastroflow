@@ -46,9 +46,9 @@ $(function () {
       html: `
         <div class="text-start">
           <label class="form-label small">Número</label>
-          <input id="editMesaNumero" class="form-control mb-2" value="${(numeroActual || '').toString().replace(/"/g, '&quot;')}" />
+          <input id="editMesaNumero" class="form-control mb-2" value="${(numeroActual || '').toString().replaceAll('"', '&quot;')}" />
           <label class="form-label small">Descripción</label>
-          <input id="editMesaDesc" class="form-control" value="${(descActual || '').toString().replace(/"/g, '&quot;')}" />
+          <input id="editMesaDesc" class="form-control" value="${(descActual || '').toString().replaceAll('"', '&quot;')}" />
         </div>
       `,
       showCancelButton: true,

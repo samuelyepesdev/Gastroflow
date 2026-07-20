@@ -105,15 +105,15 @@ $(function () {
   }
 
   document.getElementById('tablaRecetas')?.addEventListener('click', (e) => {
-    const id = e.target.closest('[data-id]')?.getAttribute('data-id');
+    const id = e.target.closest('[data-id]')?.dataset.id;
     if (!id) return;
     if (e.target.classList.contains('btnVerCosteo')) {
       showCosteo(id);
     } else if (e.target.classList.contains('btnEditReceta')) {
       if (window.COSTEO_PLANTILLA_REPOSTERIA && document.getElementById('modalCalculadoraReposteria') && typeof window.COSTEO_openCalculadoraReposteria === 'function') {
-        window.COSTEO_openCalculadoraReposteria(parseInt(id, 10));
+        window.COSTEO_openCalculadoraReposteria(Number.parseInt(id, 10));
       } else {
-        openRecetaEditarModal(parseInt(id, 10));
+        openRecetaEditarModal(Number.parseInt(id, 10));
       }
     } else if (e.target.classList.contains('btnElimReceta')) {
       if (!confirm('¿Eliminar esta receta?')) return;
@@ -150,9 +150,9 @@ $(function () {
   });
 
   document.getElementById('btnCrearReceta')?.addEventListener('click', () => {
-    const producto_id = parseInt(document.getElementById('recetaProductoId').value, 10);
+    const producto_id = Number.parseInt(document.getElementById('recetaProductoId').value, 10);
     const nombre_receta = document.getElementById('recetaNombreNueva').value.trim();
-    const porciones = parseFloat(document.getElementById('recetaPorcionesNueva').value) || 1;
+    const porciones = Number.parseFloat(document.getElementById('recetaPorcionesNueva').value) || 1;
     if (!producto_id || !nombre_receta) {
       mod.showToast('Producto y nombre de receta son requeridos', 'warning');
       return;
@@ -228,7 +228,7 @@ $(function () {
       if (mod.canEdit) {
         tbody.querySelectorAll('.btnQuitarIng').forEach(btn => {
           btn.addEventListener('click', () => {
-            mod.recetaIngredientes.splice(parseInt(btn.getAttribute('data-idx'), 10), 1);
+            mod.recetaIngredientes.splice(Number.parseInt(btn.dataset.idx, 10), 1);
             renderIngredientes();
           });
         });
@@ -268,7 +268,7 @@ $(function () {
   }
 
   document.getElementById('ingredienteInsumo')?.addEventListener('change', function () {
-    const insumoId = parseInt(this.value, 10);
+    const insumoId = Number.parseInt(this.value, 10);
     const ins = mod.insumosList.find(i => i.id === insumoId);
     if (!ins) {
       restoreOpcionesUnidadReceta();
@@ -278,8 +278,8 @@ $(function () {
   });
 
   document.getElementById('btnAgregarIngrediente')?.addEventListener('click', () => {
-    const insumoId = parseInt(document.getElementById('ingredienteInsumo').value, 10);
-    const cantidad = parseFloat(document.getElementById('ingredienteCantidad').value) || 0;
+    const insumoId = Number.parseInt(document.getElementById('ingredienteInsumo').value, 10);
+    const cantidad = Number.parseFloat(document.getElementById('ingredienteCantidad').value) || 0;
     const unidadEl = document.getElementById('ingredienteUnidad');
     const unidad = unidadEl ? unidadEl.value : 'g';
     if (!insumoId || cantidad <= 0) return;
@@ -299,7 +299,7 @@ $(function () {
   document.getElementById('btnGuardarReceta')?.addEventListener('click', () => {
     const recetaId = document.getElementById('recetaId').value;
     const nombre_receta = document.getElementById('recetaNombre').value.trim();
-    const porciones = parseFloat(document.getElementById('recetaPorciones').value) || 1;
+    const porciones = Number.parseFloat(document.getElementById('recetaPorciones').value) || 1;
     const ingredientes = mod.recetaIngredientes.map(ing => ({ insumo_id: ing.insumo_id, cantidad: ing.cantidad, unidad: ing.unidad }));
     mod.api('/api/recetas/' + recetaId, {
       method: 'PUT',
@@ -319,7 +319,7 @@ $(function () {
     loadingEl.classList.remove('d-none');
     contentEl.classList.add('d-none');
     mod.api('/api/costeo/alertas').then(data => {
-      const fmt = (n) => n != null && !isNaN(n) ? new Intl.NumberFormat('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n) : '-';
+      const fmt = (n) => n != null && !Number.isNaN(n) ? new Intl.NumberFormat('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n) : '-';
       const margenBajo = data.margenBajo || [];
       const precioBajo = data.precioBajoCosto || [];
       const sinReceta = data.sinReceta || [];
@@ -456,7 +456,7 @@ $(function () {
       if (!tbody) return;
       tbody.innerHTML = '';
       const items = data.items || [];
-      const total = data.total != null ? data.total : items.filter(i => i.activo).reduce((s, i) => s + (parseFloat(i.monto_mensual) || 0), 0);
+      const total = data.total != null ? data.total : items.filter(i => i.activo).reduce((s, i) => s + (Number.parseFloat(i.monto_mensual) || 0), 0);
       if (totalEl) totalEl.textContent = mod.formatMoney(total);
       items.forEach(cf => {
         const tr = document.createElement('tr');
@@ -484,7 +484,7 @@ $(function () {
   });
 
   document.getElementById('costosFijosBody')?.addEventListener('click', (e) => {
-    const id = e.target.closest('[data-id]')?.getAttribute('data-id');
+    const id = e.target.closest('[data-id]')?.dataset.id;
     if (!id) return;
     if (e.target.classList.contains('btnEditCostoFijo')) {
       mod.api('/api/costeo/costos-fijos').then(data => {
@@ -509,7 +509,7 @@ $(function () {
     const id = document.getElementById('costoFijoId').value;
     const payload = {
       nombre: document.getElementById('costoFijoNombre').value.trim(),
-      monto_mensual: parseFloat(document.getElementById('costoFijoMonto').value) || 0,
+      monto_mensual: Number.parseFloat(document.getElementById('costoFijoMonto').value) || 0,
       activo: document.getElementById('costoFijoActivo').checked
     };
     if (!payload.nombre) { mod.showToast('El nombre es obligatorio', 'warning'); return; }
@@ -541,12 +541,12 @@ $(function () {
     const payload = {
       metodo_indirectos: document.getElementById('configMetodo')?.value || 'porcentaje',
       metodo_precio: document.getElementById('configMetodoPrecio')?.value || 'margen',
-      porcentaje_indirectos: parseFloat(document.getElementById('configPorcentaje')?.value) || 10,
-      platos_estimados_mes: parseInt(document.getElementById('configPlatosMes')?.value, 10) || 500,
-      factor_carga: parseFloat(document.getElementById('configFactor')?.value) || 2.5,
-      margen_objetivo_default: parseFloat(document.getElementById('configMargen')?.value) || 65,
-      margen_minimo_alerta: parseFloat(document.getElementById('configMargenMinimoAlerta')?.value) || 30,
-      ganancia_neta_deseada_mensual: parseFloat(document.getElementById('configGananciaDeseada')?.value) || 0
+      porcentaje_indirectos: Number.parseFloat(document.getElementById('configPorcentaje')?.value) || 10,
+      platos_estimados_mes: Number.parseInt(document.getElementById('configPlatosMes')?.value, 10) || 500,
+      factor_carga: Number.parseFloat(document.getElementById('configFactor')?.value) || 2.5,
+      margen_objetivo_default: Number.parseFloat(document.getElementById('configMargen')?.value) || 65,
+      margen_minimo_alerta: Number.parseFloat(document.getElementById('configMargenMinimoAlerta')?.value) || 30,
+      ganancia_neta_deseada_mensual: Number.parseFloat(document.getElementById('configGananciaDeseada')?.value) || 0
     };
     mod.api('/api/costeo/config', { method: 'PUT', body: JSON.stringify(payload) })
       .then(() => mod.showToast('Configuración guardada', 'success'))

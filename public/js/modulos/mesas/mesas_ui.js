@@ -219,7 +219,7 @@ window.refreshMesas = async function() {
 
     const idsRecibidos = mesas.map(m => m.id);
     document.querySelectorAll('.mesa-card.virtual').forEach(card => {
-      const id = parseInt(card.dataset.mesaId);
+      const id = Number.parseInt(card.dataset.mesaId);
       const col = card.closest('.col-6, .col-sm-6');
       if (!idsRecibidos.includes(id)) {
         if (col) col.style.display = 'none';
@@ -227,7 +227,9 @@ window.refreshMesas = async function() {
         if (col) col.style.display = 'block';
       }
     });
-  } catch (_) {}
+  } catch (err) {
+    console.warn('Error al sincronizar mesas virtuales:', err);
+  }
 };
 
 $(function () {
@@ -251,8 +253,8 @@ $(function () {
 
   $(document).on('change', '.input-cantidad-item', async function () {
     const id = $(this).data('item-id');
-    const cant = parseInt($(this).val(), 10);
-    if (isNaN(cant) || cant <= 0) {
+    const cant = Number.parseInt($(this).val(), 10);
+    if (Number.isNaN(cant) || cant <= 0) {
       $(this).val(1);
       return;
     }

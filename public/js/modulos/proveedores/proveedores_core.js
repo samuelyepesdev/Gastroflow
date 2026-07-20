@@ -42,7 +42,7 @@ window.cargarHistorial = async function(proveedorId) {
         <tr>
           <td class="small">${fecha}</td>
           <td class="fw-medium">${h.insumo}</td>
-          <td class="text-end">${parseFloat(h.cantidad).toFixed(2)}</td>
+          <td class="text-end">${Number.parseFloat(h.cantidad).toFixed(2)}</td>
           <td class="text-end fw-bold">${monto}</td>
           <td class="text-end text-muted">${subtotal}</td>
         </tr>

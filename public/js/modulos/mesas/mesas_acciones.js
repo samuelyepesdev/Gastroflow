@@ -39,7 +39,7 @@ $(function () {
   }
 
   $(document).on('click', '.btn-descuento-mesa', function () {
-    const pct = parseInt($(this).data('pct'), 10);
+    const pct = Number.parseInt($(this).data('pct'), 10);
     const itemId = window._descuentoItemIdMesa;
     if (itemId != null) { mod.descuentosPorItem[itemId] = pct; mod.renderItems(); }
     bootstrap.Modal.getInstance(document.getElementById('descuentoModalMesa')).hide();
@@ -67,7 +67,7 @@ $(function () {
   });
   
   $('#aplicarPropinaMesaBtn').on('click', async function () {
-    const valor = Math.max(0, parseFloat($('#propinaInputMesa').val()) || 0);
+    const valor = Math.max(0, Number.parseFloat($('#propinaInputMesa').val()) || 0);
     try {
       const r = await fetch(`/api/mesas/pedidos/${mod.pedidoActual.id}/propina`, {
         method: 'PATCH',

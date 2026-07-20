@@ -32,18 +32,18 @@
             let whole = 0;
             let fraction = amountText;
             if (parts.length > 1) {
-                whole = parseFloat(parts[0]) || 0;
+                whole = Number.parseFloat(parts[0]) || 0;
                 fraction = parts[1];
             }
             const fractionParts = fraction.split('/');
             if (fractionParts.length === 2) {
-                const num = parseFloat(fractionParts[0]);
-                const den = parseFloat(fractionParts[1]);
-                if (den && !isNaN(num)) return whole + (num / den);
+                const num = Number.parseFloat(fractionParts[0]);
+                const den = Number.parseFloat(fractionParts[1]);
+                if (den && !Number.isNaN(num)) return whole + (num / den);
             }
             return whole;
         }
-        return parseFloat(amountText.replace(',', '.')) || NaN;
+        return Number.parseFloat(amountText.replace(',', '.')) || NaN;
     }
 
     function convertToGrams(amount, fromUnit, ingredientType) {
@@ -97,7 +97,7 @@
             return;
         }
         const amount = parseFraction(amountText);
-        if (isNaN(amount)) {
+        if (Number.isNaN(amount)) {
             span.textContent = 'Cantidad no válida';
             return;
         }
@@ -132,13 +132,13 @@
         document.getElementById('ingredienteTipoRep')?.addEventListener('change', updateConvertidoSpan);
 
         document.getElementById('btnAgregarIngredienteRep')?.addEventListener('click', function () {
-            const insumoId = parseInt(document.getElementById('ingredienteInsumoRep')?.value, 10);
+            const insumoId = Number.parseInt(document.getElementById('ingredienteInsumoRep')?.value, 10);
             const amountText = document.getElementById('ingredienteCantidadRep')?.value?.trim() || '';
             const from = document.getElementById('ingredienteUnidadEntrada')?.value || 'g';
             const tipo = document.getElementById('ingredienteTipoRep')?.value || 'custom-solid';
             if (!insumoId) return;
             const amount = parseFraction(amountText);
-            if (isNaN(amount) || amount <= 0) return;
+            if (Number.isNaN(amount) || amount <= 0) return;
             const grams = convertToGrams(amount, from, tipo);
             const insumosList = window.COSTEO_insumosList || [];
             const ins = insumosList.find(function (i) { return i.id === insumoId; });
@@ -172,15 +172,15 @@
     function costoConRendimiento(costoUnit, insumo) {
         // Mismo criterio que CosteoService.aplicarRendimiento: rendimiento 100% (sin merma)
         // no cambia el costo; rendimiento menor encarece el costo "limpio" real.
-        var r = insumo ? parseFloat(insumo.rendimiento_pct) : NaN;
-        var rendimiento = !isNaN(r) && r > 0 && r <= 100 ? r : 100;
+        var r = insumo ? Number.parseFloat(insumo.rendimiento_pct) : NaN;
+        var rendimiento = !Number.isNaN(r) && r > 0 && r <= 100 ? r : 100;
         return costoUnit / (rendimiento / 100);
     }
 
     function costoIngrediente(amount, fromUnit, insumo, ingredientType) {
         if (!insumo) return 0;
         var u = (insumo.unidad_compra || 'g').toLowerCase();
-        var costoUnit = costoConRendimiento(parseFloat(insumo.costo_unitario) || 0, insumo);
+        var costoUnit = costoConRendimiento(Number.parseFloat(insumo.costo_unitario) || 0, insumo);
         if (u === 'und') return (parseFraction(String(amount)) || 0) * costoUnit;
         var qty = cantidadToUnidadCompra(amount, fromUnit, u, ingredientType);
         return Math.round(qty * costoUnit * 100) / 100;
@@ -188,7 +188,7 @@
 
     var calcIngredientes = [];
     var fmt = function (n) {
-        if (n == null || isNaN(n)) return '$0';
+        if (n == null || Number.isNaN(n)) return '$0';
         return '$' + Number(n).toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
     };
 
@@ -203,7 +203,7 @@
         });
         tbody.querySelectorAll('.calcQuitarIng').forEach(function (btn) {
             btn.addEventListener('click', function () {
-                calcIngredientes.splice(parseInt(btn.getAttribute('data-idx'), 10), 1);
+                calcIngredientes.splice(Number.parseInt(btn.dataset.idx, 10), 1);
                 renderCalcIngredientes();
                 recalcularCalc();
             });
@@ -212,20 +212,20 @@
 
     function recalcularCalc() {
         var totalIng = calcIngredientes.reduce(function (s, i) { return s + (i.costo || 0); }, 0);
-        var horas = parseFloat(document.getElementById('calcHorasTrabajo')?.value) || 0;
-        var valorHora = parseFloat(document.getElementById('calcValorHora')?.value) || 0;
+        var horas = Number.parseFloat(document.getElementById('calcHorasTrabajo')?.value) || 0;
+        var valorHora = Number.parseFloat(document.getElementById('calcValorHora')?.value) || 0;
         var manoObra = horas * valorHora;
         var desgaste = Math.round(totalIng * 0.02 * 100) / 100;
         document.getElementById('calcDesgaste').value = desgaste;
-        var servicios = parseFloat(document.getElementById('calcServicios')?.value) || 0;
-        var empaque = parseFloat(document.getElementById('calcEmpaque')?.value) || 0;
-        var envio = parseFloat(document.getElementById('calcEnvio')?.value) || 0;
+        var servicios = Number.parseFloat(document.getElementById('calcServicios')?.value) || 0;
+        var empaque = Number.parseFloat(document.getElementById('calcEmpaque')?.value) || 0;
+        var envio = Number.parseFloat(document.getElementById('calcEnvio')?.value) || 0;
         var otros = servicios + empaque + envio;
         var total = totalIng + manoObra + desgaste + otros;
-        var porciones = parseFloat(document.getElementById('calcPorciones')?.value) || 1;
+        var porciones = Number.parseFloat(document.getElementById('calcPorciones')?.value) || 1;
         if (porciones <= 0) porciones = 1;
         var costoPorcion = total / porciones;
-        var margenPct = parseFloat(document.getElementById('calcMargenPct')?.value) || 50;
+        var margenPct = Number.parseFloat(document.getElementById('calcMargenPct')?.value) || 50;
         var precioPorcion = margenPct >= 100 ? costoPorcion * 2 : costoPorcion / (1 - margenPct / 100);
         var gananciaPorcion = precioPorcion - costoPorcion;
         var margenVentas = precioPorcion > 0 ? (gananciaPorcion / precioPorcion) * 100 : 0;
@@ -296,7 +296,7 @@
                     var costo = 0;
                     if (ins) {
                         var qty = cantidadToUnidadCompra(ing.cantidad, ing.unidad || 'g', ins.unidad_compra, 'custom-solid');
-                        costo = Math.round(qty * costoConRendimiento(parseFloat(ins.costo_unitario) || 0, ins) * 100) / 100;
+                        costo = Math.round(qty * costoConRendimiento(Number.parseFloat(ins.costo_unitario) || 0, ins) * 100) / 100;
                     }
                     return {
                         insumo_id: ing.insumo_id,
@@ -346,7 +346,7 @@
         }
 
         document.getElementById('calcBtnAgregarIng')?.addEventListener('click', function () {
-            var insumoId = parseInt(document.getElementById('calcInsumo')?.value, 10);
+            var insumoId = Number.parseInt(document.getElementById('calcInsumo')?.value, 10);
             var amountText = (document.getElementById('calcCantidad')?.value || '').trim();
             var from = document.getElementById('calcUnidad')?.value || 'g';
             var tipo = document.getElementById('calcTipoIngrediente')?.value || 'custom-solid';
@@ -355,7 +355,7 @@
                 return;
             }
             var amount = parseFraction(amountText);
-            if (isNaN(amount) || amount <= 0) {
+            if (Number.isNaN(amount) || amount <= 0) {
                 if (window.COSTEO_showToast) window.COSTEO_showToast('Cantidad no válida', 'warning');
                 return;
             }
@@ -386,9 +386,9 @@
 
         document.getElementById('calcBtnGuardar')?.addEventListener('click', function () {
             var recetaId = document.getElementById('calcRecetaId')?.value?.trim();
-            var productoId = parseInt(document.getElementById('calcProductoId')?.value, 10);
+            var productoId = Number.parseInt(document.getElementById('calcProductoId')?.value, 10);
             var nombreReceta = (document.getElementById('calcNombreReceta')?.value || '').trim();
-            var porciones = parseFloat(document.getElementById('calcPorciones')?.value) || 1;
+            var porciones = Number.parseFloat(document.getElementById('calcPorciones')?.value) || 1;
             if (!nombreReceta) {
                 if (window.COSTEO_showToast) window.COSTEO_showToast('Nombre de receta es requerido', 'warning');
                 return;
@@ -397,11 +397,11 @@
                 return { insumo_id: i.insumo_id, cantidad: i.cantidad, unidad: i.unidad || 'g' };
             });
             var costosAdicionales = {
-                horas_trabajo: parseFloat(document.getElementById('calcHorasTrabajo')?.value) || 0,
-                valor_hora: parseFloat(document.getElementById('calcValorHora')?.value) || 0,
-                servicios: parseFloat(document.getElementById('calcServicios')?.value) || 0,
-                empaque: parseFloat(document.getElementById('calcEmpaque')?.value) || 0,
-                envio: parseFloat(document.getElementById('calcEnvio')?.value) || 0
+                horas_trabajo: Number.parseFloat(document.getElementById('calcHorasTrabajo')?.value) || 0,
+                valor_hora: Number.parseFloat(document.getElementById('calcValorHora')?.value) || 0,
+                servicios: Number.parseFloat(document.getElementById('calcServicios')?.value) || 0,
+                empaque: Number.parseFloat(document.getElementById('calcEmpaque')?.value) || 0,
+                envio: Number.parseFloat(document.getElementById('calcEnvio')?.value) || 0
             };
             var api = window.COSTEO_api;
             var showToast = window.COSTEO_showToast;
@@ -447,7 +447,7 @@
             var med = document.getElementById('convMedida')?.value || 'cup';
             var tipo = document.getElementById('convTipo')?.value || 'flour';
             var amount = parseFraction(amountText);
-            if (isNaN(amount)) {
+            if (Number.isNaN(amount)) {
                 document.getElementById('convResultado').textContent = 'Cantidad no válida';
                 return;
             }

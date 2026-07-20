@@ -26,13 +26,13 @@ window.DashboardModule = {
     }
     var s = String(str).trim();
     if (s.length >= 10 && s.charAt(4) === '-' && s.charAt(7) === '-') {
-      var y = parseInt(s.slice(0, 4), 10);
-      var m = parseInt(s.slice(5, 7), 10) - 1;
-      var d = parseInt(s.slice(8, 10), 10);
-      if (!isNaN(y) && !isNaN(m) && !isNaN(d)) return new Date(y, m, d);
+      var y = Number.parseInt(s.slice(0, 4), 10);
+      var m = Number.parseInt(s.slice(5, 7), 10) - 1;
+      var d = Number.parseInt(s.slice(8, 10), 10);
+      if (!Number.isNaN(y) && !Number.isNaN(m) && !Number.isNaN(d)) return new Date(y, m, d);
     }
     var d2 = new Date(str);
-    return isNaN(d2.getTime()) ? null : new Date(d2.getFullYear(), d2.getMonth(), d2.getDate());
+    return Number.isNaN(d2.getTime()) ? null : new Date(d2.getFullYear(), d2.getMonth(), d2.getDate());
   },
 
   dateToKey(d) {

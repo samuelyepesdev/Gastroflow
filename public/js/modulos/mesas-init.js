@@ -9,7 +9,7 @@ $(document).ready(function () {
     });
 
     $('#btnConfirmarCrearMasivas').on('click', async function () {
-        const cantidad = parseInt($('#cantidadMesas').val());
+        const cantidad = Number.parseInt($('#cantidadMesas').val());
         const prefijo = $('#prefijoMesas').val().trim();
 
         if (!cantidad || cantidad < 1 || cantidad > 100) {

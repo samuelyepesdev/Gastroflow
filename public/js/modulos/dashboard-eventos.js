@@ -4,9 +4,9 @@ document.addEventListener('DOMContentLoaded', function () {
         const eventosProx = [];
 
         document.querySelectorAll('.event-card-item').forEach(el => {
-            const nombre = el.getAttribute('data-nombre');
-            const enCurso = el.getAttribute('data-curso') === 'true';
-            const fecha = el.getAttribute('data-inicio');
+            const nombre = el.dataset.nombre;
+            const enCurso = el.dataset.curso === 'true';
+            const fecha = el.dataset.inicio;
 
             if (enCurso) eventosHoy.push(nombre);
             else eventosProx.push(`${nombre} (${fecha})`);

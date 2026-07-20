@@ -61,7 +61,7 @@ window.CosteoModule = {
   },
 
   formatMoney(n) {
-    if (n == null || isNaN(n)) return '-';
+    if (n == null || Number.isNaN(n)) return '-';
     return new Intl.NumberFormat('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
   },
 

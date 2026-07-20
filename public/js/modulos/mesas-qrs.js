@@ -1,7 +1,7 @@
 document.addEventListener('DOMContentLoaded', function () {
     const canvases = document.querySelectorAll('.qr-canvas');
     canvases.forEach(canvas => {
-        const url = canvas.getAttribute('data-url');
+        const url = canvas.dataset.url;
         if (url) {
             new QRious({
                 element: canvas,

@@ -7,7 +7,7 @@ $(function () {
     // Allow opening tab directly with ?tab=listos
     function activarTabDesdeQuery() {
         // For mesero role, always show "Listos" tab
-        const userRole = document.body.getAttribute('data-user-role') || '';
+        const userRole = document.body.dataset.userRole || '';
         if (userRole === 'mesero') {
             const triggerEl = document.querySelector('#tabListos-tab');
             if (triggerEl) {
@@ -149,8 +149,8 @@ $(function () {
             // Sort by mesa number (numeric)
             [...porMesaEnCocina.entries()]
                 .sort((a, b) => {
-                    const numA = parseInt(a[0]) || 0;
-                    const numB = parseInt(b[0]) || 0;
+                    const numA = Number.parseInt(a[0]) || 0;
+                    const numB = Number.parseInt(b[0]) || 0;
                     return numA - numB;
                 })
                 .forEach(([mesa, arr]) => {
@@ -174,8 +174,8 @@ $(function () {
             // Sort by mesa number (numeric)
             [...porMesaListos.entries()]
                 .sort((a, b) => {
-                    const numA = parseInt(a[0]) || 0;
-                    const numB = parseInt(b[0]) || 0;
+                    const numA = Number.parseInt(a[0]) || 0;
+                    const numB = Number.parseInt(b[0]) || 0;
                     return numA - numB;
                 })
                 .forEach(([mesa, arr]) => {

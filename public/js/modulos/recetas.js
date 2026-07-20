@@ -32,19 +32,19 @@ document.getElementById('btnGuardarReceta').addEventListener('click', async () =
     const id = document.getElementById('recetaId').value;
     const producto_id = document.getElementById('recetaProductoId').value;
     const nombre_receta = document.getElementById('recetaNombre').value.trim();
-    const porciones = parseFloat(document.getElementById('recetaPorciones').value) || 1;
+    const porciones = Number.parseFloat(document.getElementById('recetaPorciones').value) || 1;
     const rows = document.querySelectorAll('#recetaIngredientesContainer tr');
     const ingredientes = [];
     rows.forEach(row => {
         const insumoId = row.querySelector('.insumo-select').value;
         const cantidad = row.querySelector('.cantidad-input').value;
-        if (insumoId && cantidad) ingredientes.push({ insumo_id: parseInt(insumoId, 10), cantidad: parseFloat(cantidad), unidad: row.querySelector('.unidad-input').value || 'g' });
+        if (insumoId && cantidad) ingredientes.push({ insumo_id: Number.parseInt(insumoId, 10), cantidad: Number.parseFloat(cantidad), unidad: row.querySelector('.unidad-input').value || 'g' });
     });
     if (!producto_id || !nombre_receta) {
         Swal.fire({ icon: 'warning', title: 'Campos requeridos', text: 'Debes seleccionar un producto y escribir el nombre de la receta.', timer: 2500, showConfirmButton: false });
         return;
     }
-    const payload = { producto_id: parseInt(producto_id, 10), nombre_receta, porciones, ingredientes };
+    const payload = { producto_id: Number.parseInt(producto_id, 10), nombre_receta, porciones, ingredientes };
     const url = id ? base + '/api/recetas/' + id : base + '/api/recetas';
     const method = id ? 'PUT' : 'POST';
     const r = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(id ? { nombre_receta, porciones, ingredientes } : payload), credentials: 'same-origin' });
@@ -89,8 +89,8 @@ async function editarReceta(recetaId) {
 function eliminarReceta(idOrBtn, nombre) {
     var id, nom;
     if (typeof idOrBtn === 'object' && idOrBtn && idOrBtn.getAttribute) {
-        id = idOrBtn.getAttribute('data-id');
-        nom = (idOrBtn.getAttribute('data-nombre') || '').replace(/&quot;/g, '"');
+        id = idOrBtn.dataset.id;
+        nom = (idOrBtn.dataset.nombre || '').replaceAll('&quot;', '"');
     } else {
         id = idOrBtn;
         nom = nombre || '';
@@ -109,7 +109,7 @@ document.addEventListener('click', function (e) {
     var btnEditar = e.target.closest('.btn-editar-receta');
     if (btnEditar) {
         e.preventDefault();
-        var id = btnEditar.getAttribute('data-id');
+        var id = btnEditar.dataset.id;
         editarReceta(id);
         return;
     }
@@ -127,8 +127,8 @@ document.addEventListener('click', function (e) {
             row.style.display = match ? '' : 'none';
         });
         document.querySelectorAll('#listaRecetasMobile .receta-card-item').forEach(card => {
-            const prod = (card.getAttribute('data-producto') || '').toLowerCase();
-            const nom = (card.getAttribute('data-nombre') || '').toLowerCase();
+            const prod = (card.dataset.producto || '').toLowerCase();
+            const nom = (card.dataset.nombre || '').toLowerCase();
             const match = !term || prod.includes(term) || nom.includes(term);
             card.style.display = match ? '' : 'none';
         });

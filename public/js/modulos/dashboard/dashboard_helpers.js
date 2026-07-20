@@ -6,7 +6,7 @@ $(function () {
   function hx(h) {
     h = h.replace('#', '');
     if (h.length === 3) h = h.split('').map(c => c + c).join('');
-    return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+    return [Number.parseInt(h.slice(0, 2), 16), Number.parseInt(h.slice(2, 4), 16), Number.parseInt(h.slice(4, 6), 16)];
   }
 
   function toHex(a) {
@@ -39,7 +39,7 @@ $(function () {
     }
     values = values.map(v => {
       const num = Number(v);
-      return isNaN(num) ? 0 : num;
+      return Number.isNaN(num) ? 0 : num;
     });
 
     const len = values.length;
@@ -216,7 +216,7 @@ $(function () {
       if (hasEvent) cls += ' dia-evento';
       if (isToday) cls += ' dia-hoy';
       const titulo = hasEvent ? ('Evento' + (nombres.length > 1 ? 's' : '') + ': ' + nombres.join(', ')) : '';
-      const attrTooltip = titulo ? ' data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="' + titulo.replace(/"/g, '&quot;') + '" title="' + titulo.replace(/"/g, '&quot;') + '"' : '';
+      const attrTooltip = titulo ? ' data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="' + titulo.replaceAll('"', '&quot;') + '" title="' + titulo.replaceAll('"', '&quot;') + '"' : '';
 
       let style = '';
       if (isToday) {

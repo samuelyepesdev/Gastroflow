@@ -13,11 +13,11 @@ function showProductDetails(card, event) {
         return;
     }
 
-    const id = card.getAttribute('data-id');
-    const nombre = card.getAttribute('data-nombre');
-    const precio = card.getAttribute('data-precio');
-    const descripcion = card.getAttribute('data-descripcion') || 'No hay descripción disponible para este producto.';
-    const imagen = card.getAttribute('data-imagen');
+    const id = card.dataset.id;
+    const nombre = card.dataset.nombre;
+    const precio = card.dataset.precio;
+    const descripcion = card.dataset.descripcion || 'No hay descripción disponible para este producto.';
+    const imagen = card.dataset.imagen;
 
     document.getElementById('modalProductName').textContent = nombre;
     document.getElementById('modalProductPrice').textContent = '$' + Number(precio).toLocaleString('es-CO');
@@ -51,8 +51,8 @@ function addToCart(id) {
     const card = document.querySelector(`.product-card[data-id="${id}"]`);
     cart[id] = {
         id: id,
-        nombre: card.getAttribute('data-nombre'),
-        precio: parseFloat(card.getAttribute('data-precio')),
+        nombre: card.dataset.nombre,
+        precio: Number.parseFloat(card.dataset.precio),
         qty: 1
     };
     updateUI();

@@ -59,7 +59,7 @@ class ProductManager {
         return res.json();
       });
       this._costeoData = data;
-      const fmt = (n) => n != null && !isNaN(n) ? new Intl.NumberFormat('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n) : '-';
+      const fmt = (n) => n != null && !Number.isNaN(n) ? new Intl.NumberFormat('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n) : '-';
       document.getElementById('costeoDirecto').textContent = '$' + fmt(data.costo_materia_prima_porcion ?? data.costo_directo_porcion);
       const mermaPctEl = document.getElementById('costeoMermaPct');
       if (mermaPctEl) mermaPctEl.textContent = data.merma_pct != null ? data.merma_pct : '0';
@@ -97,7 +97,7 @@ class ProductManager {
       codigo: data.codigo || document.getElementById('codigo').value,
       nombre: data.nombre || document.getElementById('nombre').value,
       categoria_id: data.categoriaId || document.getElementById('categoriaId').value,
-      precio_unidad: parseFloat(data.precioUnidad || document.getElementById('precioUnidad').value) || 0,
+      precio_unidad: Number.parseFloat(data.precioUnidad || document.getElementById('precioUnidad').value) || 0,
       descripcion: document.getElementById('descripcion') ? document.getElementById('descripcion').value : '',
       imagen_url: document.getElementById('imagenUrl')?.value || null,
       tributo: document.getElementById('tributo')?.value || null
@@ -110,7 +110,7 @@ class ProductManager {
         try {
           const checkboxes = document.querySelectorAll('#productoParametrosCheckboxes .producto-parametro-cb:checked');
           if (checkboxes.length > 0 || document.getElementById('productoParametrosCheckboxes')) {
-            const parametroIds = Array.from(checkboxes).map(cb => parseInt(cb.value, 10));
+            const parametroIds = Array.from(checkboxes).map(cb => Number.parseInt(cb.value, 10));
             const r = await fetch('/costeo/api/productos/' + id + '/parametros', {
               method: 'PUT',
               headers: { 'Content-Type': 'application/json' },
@@ -248,7 +248,7 @@ class ProductManager {
 
     const searchTerm = (document.getElementById('buscarProducto')?.value || '').toLowerCase();
     const activeBtn = document.querySelector('.category-filter-btn.active');
-    const categoriaId = activeBtn ? (activeBtn.getAttribute('data-categoria-id') || '') : '';
+    const categoriaId = activeBtn ? (activeBtn.dataset.categoriaId || '') : '';
 
     let visibleCount = 0;
     let totalCount = 0;
@@ -258,7 +258,7 @@ class ProductManager {
       let visible = true;
 
       if (categoriaId) {
-        const rowCategoriaId = row.getAttribute('data-categoria-id') || '';
+        const rowCategoriaId = row.dataset.categoriaId || '';
         if (rowCategoriaId !== categoriaId) {
           visible = false;
         }

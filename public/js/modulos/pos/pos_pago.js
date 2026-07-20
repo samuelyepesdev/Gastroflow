@@ -50,7 +50,7 @@ window.POS_PAGO = {
 
         // Delegación de eventos — CSP safe (sin onclick inline)
         container.querySelectorAll('.pos-quick-amt').forEach(btn => {
-            btn.addEventListener('click', () => POS_PAGO._setRecibido(parseInt(btn.dataset.amt)));
+            btn.addEventListener('click', () => POS_PAGO._setRecibido(Number.parseInt(btn.dataset.amt)));
         });
     },
 
@@ -61,7 +61,7 @@ window.POS_PAGO = {
 
     calcularVuelto() {
         const total = POS.getTotal();
-        const recibido = parseFloat(document.getElementById('posEfectivoRecibido')?.value) || 0;
+        const recibido = Number.parseFloat(document.getElementById('posEfectivoRecibido')?.value) || 0;
         const vuelto = Math.max(0, recibido - total);
         document.getElementById('posVueltoAmount').textContent = '$ ' + vuelto.toLocaleString('es-CO');
         document.getElementById('posConfirmarPagoBtn').disabled = (recibido < total);
@@ -91,7 +91,7 @@ window.POS_PAGO = {
         try {
             const payload = {
                 // El servidor resuelve el cliente si no hay ID
-                cliente_id: clienteId ? parseInt(clienteId) : null,
+                cliente_id: clienteId ? Number.parseInt(clienteId) : null,
                 nombre_cliente: nombreCliente,
                 total,
                 forma_pago: formaPago,

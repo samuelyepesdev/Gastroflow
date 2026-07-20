@@ -102,7 +102,7 @@ window.POS_UI = {
 
         // Delegación de eventos — CSP safe (sin onclick inline)
         grid.querySelectorAll('.pos-product-card[data-pid]').forEach(btn => {
-            btn.addEventListener('click', () => POS.addToCart(parseInt(btn.dataset.pid)));
+            btn.addEventListener('click', () => POS.addToCart(Number.parseInt(btn.dataset.pid)));
         });
     },
 
@@ -171,7 +171,7 @@ window.POS_UI = {
             container.querySelectorAll('[data-pci-action]').forEach(btn => {
                 btn.addEventListener('click', () => {
                     const action = btn.dataset.pciAction;
-                    const idx = parseInt(btn.dataset.pciIdx);
+                    const idx = Number.parseInt(btn.dataset.pciIdx);
                     const item = POS.state.cart[idx];
                     if (action === 'minus' && item) POS.updateQty(idx, item.cantidad - 1);
                     else if (action === 'plus' && item) POS.updateQty(idx, item.cantidad + 1);
@@ -236,7 +236,7 @@ window.POS_UI = {
             </div>`).join('');
         dropdown.querySelectorAll('[data-cli-idx]').forEach(el => {
             el.addEventListener('click', () => {
-                const c = POS_UI._clienteCache[parseInt(el.dataset.cliIdx)];
+                const c = POS_UI._clienteCache[Number.parseInt(el.dataset.cliIdx)];
                 if (c) POS_UI._seleccionarCliente(c);
             });
         });
@@ -299,13 +299,13 @@ window.POS_UI = {
 
         tbody.querySelectorAll('[data-bor-idx]').forEach(btn => {
             btn.addEventListener('click', () => {
-                const b = POS_UI._borradoresCache[parseInt(btn.dataset.borIdx)];
+                const b = POS_UI._borradoresCache[Number.parseInt(btn.dataset.borIdx)];
                 if (b) POS.cargarBorrador(b);
             });
         });
 
         tbody.querySelectorAll('[data-bor-del]').forEach(btn => {
-            btn.addEventListener('click', () => POS_UI._eliminarBorrador(parseInt(btn.dataset.borDel), btn));
+            btn.addEventListener('click', () => POS_UI._eliminarBorrador(Number.parseInt(btn.dataset.borDel), btn));
         });
     },
 

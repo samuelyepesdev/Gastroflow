@@ -46,7 +46,7 @@ window.MesasModule = {
     } finally {
       this.isProgrammaticHide = false;
       if (wasOpen) {
-        try { this.canvas.show(); } catch (_) {}
+        try { this.canvas.show(); } catch (err) { console.warn('No se pudo reabrir el panel:', err); }
       }
     }
   }

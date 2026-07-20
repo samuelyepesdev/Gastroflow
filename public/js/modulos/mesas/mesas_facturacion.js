@@ -9,18 +9,22 @@ $(function () {
       const list = await r.json();
       const cf = list.find(c => (c.nombre || '').toLowerCase() === 'consumidor final');
       if (cf) return cf;
-    } catch (_) {}
+    } catch (err) {
+      console.warn('No se pudo buscar consumidor final existente:', err);
+    }
     try {
       const r = await fetch('/api/clientes', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nombre: 'Consumidor final' }) });
       if (r.ok) { const cf = await r.json(); return { id: cf.id, nombre: 'Consumidor final' }; }
-    } catch (_) {}
+    } catch (err) {
+      console.warn('No se pudo crear consumidor final:', err);
+    }
     return { id: null, nombre: 'Consumidor final' };
   }
 
   $('#btnFacturarPedido').on('click', async function () {
     try {
       // --- GENERAR LLAVE DE IDEMPOTENCIA ÚNICA PARA ESTE INTENTO ---
-      const keyIdemp = 'intent_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+      const keyIdemp = 'intent_' + Date.now() + '_' + Math.random().toString(36).slice(2, 11);
 
       if (!mod.pedidoActual || !mod.pedidoActual.id) {
         Swal.fire({ icon: 'error', title: 'No hay pedido activo' });
@@ -394,7 +398,7 @@ $(function () {
                   input: 'number',
                   inputAttributes: { min: subtotalAPagar, step: 100, style: 'font-size: 1.25rem; text-align: center;' },
                   inputValidator: (value) => {
-                    if (!value || parseFloat(value) < subtotalAPagar) return `El monto recibido debe ser mayor o igual a ${mod.formatear(subtotalAPagar)}`;
+                    if (!value || Number.parseFloat(value) < subtotalAPagar) return `El monto recibido debe ser mayor o igual a ${mod.formatear(subtotalAPagar)}`;
                   },
                   showCancelButton: true,
                   confirmButtonText: 'Confirmar Pago <i class="bi bi-check-circle"></i>',
@@ -404,7 +408,7 @@ $(function () {
                   customClass: { popup: 'rounded-4 shadow' }
                 });
                 if (!recibido) return;
-                montoRecibido = parseFloat(recibido);
+                montoRecibido = Number.parseFloat(recibido);
                 cambioADevolver = montoRecibido - subtotalAPagar;
               }
 
@@ -487,14 +491,14 @@ $(function () {
     $('.denominacion-btn').off('click').on('click', function () {
       $('.denominacion-btn').removeClass('selected');
       $(this).addClass('selected');
-      montoRecibido = parseFloat($(this).data('valor'));
+      montoRecibido = Number.parseFloat($(this).data('valor'));
       $('#montoManual').val(montoRecibido);
       calcularCambio(total, montoRecibido);
       $('#btnConfirmarPago').prop('disabled', false);
     });
 
     function usarMontoManual() {
-      const valor = parseFloat($('#montoManual').val()) || 0;
+      const valor = Number.parseFloat($('#montoManual').val()) || 0;
       if (valor < total) {
         Swal.fire({ icon: 'warning', title: 'El monto debe ser mayor o igual al total' });
         return;
@@ -506,7 +510,7 @@ $(function () {
     }
 
     $('#montoManual').off('input keypress').on('input', function () {
-      const valor = parseFloat($(this).val()) || 0;
+      const valor = Number.parseFloat($(this).val()) || 0;
       if (valor > 0) {
         $('.denominacion-btn').removeClass('selected');
         if (valor >= total) {
