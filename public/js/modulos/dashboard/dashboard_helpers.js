@@ -231,26 +231,26 @@ $(function () {
       cellCount++;
       if (cellCount % 7 === 0 && day < daysInMonth) html += '</tr><tr>';
     }
-    var rest = 7 - (cellCount % 7);
+    const rest = 7 - (cellCount % 7);
     if (rest < 7) for (let i = 0; i < rest; i++) html += '<td></td>';
     html += '</tr></tbody></table>';
     container.innerHTML = html;
 
-    var tooltipTriggerList = container.querySelectorAll('[data-bs-toggle="tooltip"]');
+    const tooltipTriggerList = container.querySelectorAll('[data-bs-toggle="tooltip"]');
     tooltipTriggerList.forEach(function (el) {
       new bootstrap.Tooltip(el, { trigger: 'hover click' });
     });
 
     const self = this;
     document.getElementById('calPrevMonth').addEventListener('click', function () {
-      var m = self.calendarViewMonth - 1;
-      var y = self.calendarViewYear;
+      let m = self.calendarViewMonth - 1;
+      let y = self.calendarViewYear;
       if (m < 0) { m = 11; y--; }
       self.fetchCalendarMonth(y, m);
     });
     document.getElementById('calNextMonth').addEventListener('click', function () {
-      var m = self.calendarViewMonth + 1;
-      var y = self.calendarViewYear;
+      let m = self.calendarViewMonth + 1;
+      let y = self.calendarViewYear;
       if (m > 11) { m = 0; y++; }
       self.fetchCalendarMonth(y, m);
     });
@@ -267,7 +267,7 @@ $(function () {
     fetch('/api/dashboard/eventos-calendario?mes=' + mesParam, { credentials: 'same-origin' })
       .then(function (r) { return r.ok ? r.json() : Promise.reject(new Error('Error al cargar eventos')); })
       .then(function (data) {
-        var list = data.eventosCalendario || data.eventos || [];
+        let list = data.eventosCalendario || data.eventos || [];
         if (!Array.isArray(list)) list = [];
         self.calendarEventosCache[mesParam] = list;
         self.updateMiniCalendarioEventos(list, year, month);

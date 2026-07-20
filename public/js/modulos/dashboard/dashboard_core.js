@@ -24,21 +24,21 @@ window.DashboardModule = {
     if (typeof str === 'object' && str instanceof Date) {
       return new Date(str.getFullYear(), str.getMonth(), str.getDate());
     }
-    var s = String(str).trim();
+    const s = String(str).trim();
     if (s.length >= 10 && s.charAt(4) === '-' && s.charAt(7) === '-') {
-      var y = Number.parseInt(s.slice(0, 4), 10);
-      var m = Number.parseInt(s.slice(5, 7), 10) - 1;
-      var d = Number.parseInt(s.slice(8, 10), 10);
+      const y = Number.parseInt(s.slice(0, 4), 10);
+      const m = Number.parseInt(s.slice(5, 7), 10) - 1;
+      const d = Number.parseInt(s.slice(8, 10), 10);
       if (!Number.isNaN(y) && !Number.isNaN(m) && !Number.isNaN(d)) return new Date(y, m, d);
     }
-    var d2 = new Date(str);
+    const d2 = new Date(str);
     return Number.isNaN(d2.getTime()) ? null : new Date(d2.getFullYear(), d2.getMonth(), d2.getDate());
   },
 
   dateToKey(d) {
-    var y = d.getFullYear();
-    var m = String(d.getMonth() + 1).padStart(2, '0');
-    var day = String(d.getDate()).padStart(2, '0');
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
     return y + '-' + m + '-' + day;
   },
 

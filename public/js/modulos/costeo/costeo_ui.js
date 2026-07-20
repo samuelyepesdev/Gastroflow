@@ -129,7 +129,7 @@ $(function () {
 
   if (window.COSTEO_PLANTILLA_REPOSTERIA && document.getElementById('modalCalculadoraReposteria')) {
     window.COSTEO_openCalculadoraReposteria = window.COSTEO_openCalculadoraReposteria || function () {
-      var modal = document.getElementById('modalCalculadoraReposteria');
+      const modal = document.getElementById('modalCalculadoraReposteria');
       if (modal && typeof bootstrap !== 'undefined' && bootstrap.Modal) {
         bootstrap.Modal.getOrCreateInstance(modal).show();
       }
@@ -137,7 +137,7 @@ $(function () {
   }
 
   document.getElementById('btnNuevaReceta')?.addEventListener('click', function (e) {
-    var modalCalc = document.getElementById('modalCalculadoraReposteria');
+    const modalCalc = document.getElementById('modalCalculadoraReposteria');
     if (window.COSTEO_PLANTILLA_REPOSTERIA && modalCalc && typeof window.COSTEO_openCalculadoraReposteria === 'function') {
       e.preventDefault();
       e.stopPropagation();
@@ -284,7 +284,7 @@ $(function () {
     const unidad = unidadEl ? unidadEl.value : 'g';
     if (!insumoId || cantidad <= 0) return;
     const ins = mod.insumosList.find(i => i.id === insumoId);
-    var unidadGuardar = ins ? getUnidadBaseReceta(ins.unidad_compra) : unidad;
+    const unidadGuardar = ins ? getUnidadBaseReceta(ins.unidad_compra) : unidad;
     mod.recetaIngredientes.push({
       insumo_id: insumoId,
       cantidad: cantidad,

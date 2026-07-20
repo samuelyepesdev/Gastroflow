@@ -56,8 +56,8 @@
     };
 
     document.getElementById('btnGuardarEvento').addEventListener('click', function () {
-        var id = idInp.value;
-        var payload = {
+        const id = idInp.value;
+        const payload = {
             nombre: nombreInp.value.trim(),
             fecha_inicio: fechaInicio.value,
             fecha_fin: fechaFin.value,
@@ -69,16 +69,16 @@
             Swal.fire({ icon: 'warning', title: 'Completa nombre, fecha inicio y fecha fin.' });
             return;
         }
-        var url = id ? '/eventos/' + id : '/eventos';
-        var method = id ? 'PUT' : 'POST';
+        const url = id ? '/eventos/' + id : '/eventos';
+        const method = id ? 'PUT' : 'POST';
         fetch(url, { method: method, credentials: 'same-origin', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' }, body: JSON.stringify(payload) })
             .then(function (res) {
-                var ct = res.headers.get('content-type');
+                const ct = res.headers.get('content-type');
                 if (ct && ct.indexOf('json') !== -1) return res.json().then(function (data) { return { ok: res.ok, data }; });
                 return { ok: false, data: { error: 'Respuesta no válida del servidor' } };
             })
             .then(function (o) {
-                var modalInstance = bootstrap.Modal.getInstance(modal);
+                const modalInstance = bootstrap.Modal.getInstance(modal);
                 if (modalInstance) modalInstance.hide();
                 if (o.ok) {
                     setTimeout(function () {
@@ -89,7 +89,7 @@
                 }
             })
             .catch(function () {
-                var modalInstance = bootstrap.Modal.getInstance(modal);
+                const modalInstance = bootstrap.Modal.getInstance(modal);
                 if (modalInstance) modalInstance.hide();
                 setTimeout(function () { Swal.fire({ icon: 'error', title: 'Error de conexión' }); }, 150);
             });

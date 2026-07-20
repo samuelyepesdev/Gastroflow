@@ -1,15 +1,15 @@
 function getFacturaModal() {
-    var el = document.getElementById('facturaModal');
+    const el = document.getElementById('facturaModal');
     return el ? bootstrap.Modal.getOrCreateInstance(el) : null;
 }
 function getDetallesModal() {
-    var el = document.getElementById('detallesModal');
+    const el = document.getElementById('detallesModal');
     return el ? bootstrap.Modal.getOrCreateInstance(el) : null;
 }
 
 function mostrarAlerta(mensaje, tipo) {
     tipo = tipo || 'success';
-    var alertaDiv = document.createElement('div');
+    const alertaDiv = document.createElement('div');
     alertaDiv.className = 'custom-alert ' + tipo;
     alertaDiv.innerHTML = '<div class="alert-content"><i class="bi ' + (tipo === 'success' ? 'bi-check-circle' : tipo === 'error' ? 'bi-x-circle' : 'bi-exclamation-triangle') + ' me-2"></i>' + mensaje + '</div><button type="button" class="btn-close ms-3" onclick="this.parentElement.remove()"></button>';
     document.body.appendChild(alertaDiv);
@@ -17,13 +17,13 @@ function mostrarAlerta(mensaje, tipo) {
 }
 
 function mostrarFactura(id, numeroDisplay) {
-    var modalEl = document.getElementById('facturaModal');
-    var frameEl = document.getElementById('facturaFrame');
-    var titleEl = modalEl && modalEl.querySelector('.modal-title');
+    const modalEl = document.getElementById('facturaModal');
+    const frameEl = document.getElementById('facturaFrame');
+    const titleEl = modalEl && modalEl.querySelector('.modal-title');
     if (!modalEl || !frameEl) return;
     if (titleEl) titleEl.textContent = 'Factura #' + (numeroDisplay != null ? numeroDisplay : id);
     frameEl.src = '/api/facturas/' + id + '/imprimir?return=' + encodeURIComponent('/ventas');
-    var modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
     modal.show();
 }
 
@@ -35,23 +35,23 @@ function mostrarDetalles(id) {
                 mostrarAlerta('No se encontraron detalles de la factura', 'error');
                 return;
             }
-            var cliente = data.cliente || {};
-            var factura = data.factura || {};
+            const cliente = data.cliente || {};
+            const factura = data.factura || {};
             $('#detallesCliente').html('<p><strong>Nombre:</strong> ' + (cliente.nombre || '-') + '</p><p><strong>Dirección:</strong> ' + (cliente.direccion || 'No especificada') + '</p><p><strong>Teléfono:</strong> ' + (cliente.telefono || 'No especificado') + '</p>');
-            var facturaHtml = '<p><strong>Factura #:</strong> ' + (factura.numero != null ? factura.numero : factura.id) + '</p><p><strong>Fecha:</strong> ' + ((factura.fechaISO || factura.fecha) ? new Date(factura.fechaISO || factura.fecha).toLocaleString('es-CO', { timeZone: 'America/Bogota', dateStyle: 'short', timeStyle: 'medium' }) : '-') + '</p><p><strong>Forma de Pago:</strong> ' + (factura.forma_pago ? (factura.forma_pago.charAt(0).toUpperCase() + factura.forma_pago.slice(1)) : '-') + '</p>';
+            let facturaHtml = '<p><strong>Factura #:</strong> ' + (factura.numero != null ? factura.numero : factura.id) + '</p><p><strong>Fecha:</strong> ' + ((factura.fechaISO || factura.fecha) ? new Date(factura.fechaISO || factura.fecha).toLocaleString('es-CO', { timeZone: 'America/Bogota', dateStyle: 'short', timeStyle: 'medium' }) : '-') + '</p><p><strong>Forma de Pago:</strong> ' + (factura.forma_pago ? (factura.forma_pago.charAt(0).toUpperCase() + factura.forma_pago.slice(1)) : '-') + '</p>';
             if (factura.propina != null && Number(factura.propina) > 0) {
                 facturaHtml += '<p><strong>Propina:</strong> $' + (Number(factura.propina) || 0).toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '</p>';
             }
             $('#detallesFactura').html(facturaHtml);
-            var tbody = $('#detallesProductos');
+            const tbody = $('#detallesProductos');
             tbody.empty();
-            var totalGeneral = 0;
-            var productos = data.productos || [];
-            var fmtNum = function (n) { return (Number(n) || 0).toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
+            let totalGeneral = 0;
+            const productos = data.productos || [];
+            const fmtNum = function (n) { return (Number(n) || 0).toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
             productos.forEach(function (producto) {
-                var cantidad = Number(producto.cantidad) || 0;
-                var precio = Number(producto.precio) || 0;
-                var subtotal = Number(producto.subtotal) || 0;
+                const cantidad = Number(producto.cantidad) || 0;
+                const precio = Number(producto.precio) || 0;
+                const subtotal = Number(producto.subtotal) || 0;
                 totalGeneral += subtotal;
                 const serviceBadge = producto.es_servicio ? ' <span class="badge bg-info text-dark" style="font-size: 0.6rem;">Servicio</span>' : '';
                 tbody.append('<tr>' +
@@ -64,7 +64,7 @@ function mostrarDetalles(id) {
                     '</tr>');
             });
             $('#detallesTotal').text('$' + fmtNum(totalGeneral));
-            var modal = getDetallesModal();
+            const modal = getDetallesModal();
             if (modal) modal.show();
         },
         error: function () {
@@ -74,7 +74,7 @@ function mostrarDetalles(id) {
 }
 
 function imprimirFactura() {
-    var frame = document.getElementById('facturaFrame');
+    const frame = document.getElementById('facturaFrame');
     if (frame && frame.contentWindow) frame.contentWindow.print();
 }
 
@@ -82,15 +82,15 @@ function imprimirFactura() {
 const tableBody = document.getElementById('ventasTablaGrouped');
 if (tableBody) {
     tableBody.addEventListener('click', function (e) {
-        var btnDet = e.target.closest('.btn-detalles');
-        var btnReim = e.target.closest('.btn-reimprimir');
+        const btnDet = e.target.closest('.btn-detalles');
+        const btnReim = e.target.closest('.btn-reimprimir');
         if (btnDet) {
-            var id = btnDet.dataset.facturaId;
+            const id = btnDet.dataset.facturaId;
             if (id) mostrarDetalles(id);
         }
         if (btnReim) {
-            var id = btnReim.dataset.facturaId;
-            var numero = btnReim.dataset.facturaNumero;
+            const id = btnReim.dataset.facturaId;
+            const numero = btnReim.dataset.facturaNumero;
             if (id) mostrarFactura(id, numero != null && numero !== '' ? numero : undefined);
         }
     });

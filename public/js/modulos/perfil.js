@@ -1,6 +1,6 @@
 function previewImage(input) {
     if (input.files && input.files[0]) {
-        var reader = new FileReader();
+        const reader = new FileReader();
         reader.onload = function (e) {
             const plc = document.getElementById('previewLogoPlaceholder');
             if (plc) plc.classList.add('d-none');

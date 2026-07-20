@@ -91,9 +91,9 @@ $(function () {
       updateStatsUI(stats);
       updateChartsUI(stats);
 
-      var eventosMes = stats.eventosCalendario || [];
+      let eventosMes = stats.eventosCalendario || [];
       if (!Array.isArray(eventosMes)) eventosMes = [];
-      var now = new Date();
+      const now = new Date();
       mod.calendarEventosCache[mod.getMesKey(now.getFullYear(), now.getMonth())] = eventosMes;
       mod.updateMiniCalendarioEventos(eventosMes, null, null);
       mod.updateInvoicesTable(stats.eventosEnRango);
@@ -348,17 +348,17 @@ $(function () {
       $('#modalPromedioCantidad').text(cant);
       $('#modalPromedioValor').text(mod.formatCurrency(avg));
       $('#modalPromedioFormula').text('Total ventas ÷ Cantidad de facturas = ' + mod.formatCurrency(avg));
-      var modalEl = document.getElementById('modalDetallePromedio');
+      const modalEl = document.getElementById('modalDetallePromedio');
       if (modalEl) bootstrap.Modal.getOrCreateInstance(modalEl).show();
     });
     $(document).on('click', '.clickable[data-action="modal-ventas-eventos"]', function (e) {
       e.stopPropagation();
       if (!mod.lastStats) return;
-      var total = mod.lastStats.ventas_eventos_total != null ? mod.lastStats.ventas_eventos_total : 0;
-      var cant = mod.lastStats.ventas_eventos_cantidad != null ? mod.lastStats.ventas_eventos_cantidad : 0;
+      const total = mod.lastStats.ventas_eventos_total != null ? mod.lastStats.ventas_eventos_total : 0;
+      const cant = mod.lastStats.ventas_eventos_cantidad != null ? mod.lastStats.ventas_eventos_cantidad : 0;
       $('#modalVentasEventosTotal').text(mod.formatCurrency(total));
       $('#modalVentasEventosCantidad').text(cant);
-      var modalEl = document.getElementById('modalDetalleVentasEventos');
+      const modalEl = document.getElementById('modalDetalleVentasEventos');
       if (modalEl) bootstrap.Modal.getOrCreateInstance(modalEl).show();
     });
   }

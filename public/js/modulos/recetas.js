@@ -52,9 +52,9 @@ document.getElementById('btnGuardarReceta').addEventListener('click', async () =
 });
 
 document.getElementById('modalReceta').addEventListener('show.bs.modal', async (e) => {
-    var trigger = e.relatedTarget;
-    var abrioNueva = trigger && (trigger.id === 'btnNuevaReceta' || (trigger.closest && trigger.closest('#btnNuevaReceta')));
-    var id = document.getElementById('recetaId').value;
+    const trigger = e.relatedTarget;
+    const abrioNueva = trigger && (trigger.id === 'btnNuevaReceta' || (trigger.closest && trigger.closest('#btnNuevaReceta')));
+    const id = document.getElementById('recetaId').value;
     if (abrioNueva || !id) {
         document.getElementById('recetaId').value = '';
         document.getElementById('recetaProductoId').value = '';
@@ -87,7 +87,7 @@ async function editarReceta(recetaId) {
 }
 
 function eliminarReceta(idOrBtn, nombre) {
-    var id, nom;
+    let id, nom;
     if (typeof idOrBtn === 'object' && idOrBtn && idOrBtn.getAttribute) {
         id = idOrBtn.dataset.id;
         nom = (idOrBtn.dataset.nombre || '').replaceAll('&quot;', '"');
@@ -100,16 +100,16 @@ function eliminarReceta(idOrBtn, nombre) {
 }
 
 document.addEventListener('click', function (e) {
-    var btnEliminar = e.target.closest('.btn-eliminar-receta');
+    const btnEliminar = e.target.closest('.btn-eliminar-receta');
     if (btnEliminar) {
         e.preventDefault();
         eliminarReceta(btnEliminar);
         return;
     }
-    var btnEditar = e.target.closest('.btn-editar-receta');
+    const btnEditar = e.target.closest('.btn-editar-receta');
     if (btnEditar) {
         e.preventDefault();
-        var id = btnEditar.dataset.id;
+        const id = btnEditar.dataset.id;
         editarReceta(id);
         return;
     }

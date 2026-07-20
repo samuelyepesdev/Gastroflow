@@ -1,10 +1,10 @@
 (function () {
-    var el = document.getElementById('analitica-data');
+    const el = document.getElementById('analitica-data');
     if (!el) return;
-    var d = JSON.parse(el.textContent);
-    var fmtCOP = function (v) { return Number(v || 0).toLocaleString('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }); };
+    const d = JSON.parse(el.textContent);
+    const fmtCOP = function (v) { return Number(v || 0).toLocaleString('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }); };
 
-    var mesesData = d.meses;
+    const mesesData = d.meses;
     if (mesesData.length && document.getElementById('chartMensual')) {
         new Chart(document.getElementById('chartMensual'), {
             type: 'bar',
@@ -66,17 +66,17 @@
         });
     }
 
-    var predData = d.predMesesUsados;
-    var predValor = d.predValor;
-    var predMin = d.predMin;
-    var predMax = d.predMax;
+    const predData = d.predMesesUsados;
+    const predValor = d.predValor;
+    const predMin = d.predMin;
+    const predMax = d.predMax;
 
     if (predData.length && document.getElementById('chartPrediccion')) {
-        var labels = predData.map(function (m) { return m.nombreMes + ' ' + m.year; });
+        const labels = predData.map(function (m) { return m.nombreMes + ' ' + m.year; });
         labels.push('Estimado');
-        var valores = predData.map(function (m) { return Number.parseFloat(m.total_ventas) || 0; });
+        const valores = predData.map(function (m) { return Number.parseFloat(m.total_ventas) || 0; });
         valores.push(predValor);
-        var colores = predData.map(function () { return 'rgba(99,102,241,0.65)'; });
+        const colores = predData.map(function () { return 'rgba(99,102,241,0.65)'; });
         colores.push('rgba(245,158,11,0.8)');
 
         new Chart(document.getElementById('chartPrediccion'), {
@@ -98,14 +98,14 @@
                     tooltip: {
                         callbacks: {
                             label: function (ctx) {
-                                var isLast = ctx.dataIndex === valores.length - 1;
+                                const isLast = ctx.dataIndex === valores.length - 1;
                                 if (isLast) {
                                     return [
                                         ' Estimado: ' + fmtCOP(predValor),
                                         ' Rango: ' + fmtCOP(predMin) + ' – ' + fmtCOP(predMax)
                                     ];
                                 }
-                                return ' ' + fmtCOP(ctx.parsed.y);
+                                return [' ' + fmtCOP(ctx.parsed.y)];
                             }
                         }
                     }

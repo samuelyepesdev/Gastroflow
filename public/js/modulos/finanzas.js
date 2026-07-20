@@ -1,10 +1,10 @@
 (function () {
-    var el = document.getElementById('finanzas-data');
+    const el = document.getElementById('finanzas-data');
     if (!el) return;
-    var pageData = JSON.parse(el.textContent);
+    const pageData = JSON.parse(el.textContent);
 
-    var ctxTendencia = document.getElementById('chartTendencia').getContext('2d');
-    var historico = pageData.historico;
+    const ctxTendencia = document.getElementById('chartTendencia').getContext('2d');
+    const historico = pageData.historico;
 
     new Chart(ctxTendencia, {
         type: 'line',
@@ -42,8 +42,8 @@
         }
     });
 
-    var ctxCat = document.getElementById('chartCategorias').getContext('2d');
-    var dataCat = pageData.gastosPorCategoria;
+    const ctxCat = document.getElementById('chartCategorias').getContext('2d');
+    const dataCat = pageData.gastosPorCategoria;
 
     new Chart(ctxCat, {
         type: 'bar',
@@ -68,7 +68,7 @@
     });
 
     async function guardarGasto() {
-        var payload = {
+        const payload = {
             monto: document.getElementById('gastoMonto').value,
             motivo: document.getElementById('gastoMotivo').value,
             categoria: document.getElementById('gastoCategoria').value,
@@ -78,7 +78,7 @@
         if (!payload.monto) return Swal.fire('Aviso', 'Ingrese un monto válido', 'warning');
 
         try {
-            var r = await fetch('/caja/api/movimientos', {
+            const r = await fetch('/caja/api/movimientos', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)

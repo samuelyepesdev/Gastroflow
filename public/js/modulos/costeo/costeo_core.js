@@ -1,9 +1,9 @@
 // Shared states, utility methods and API wrapper for the Costeo module
 
 (function () {
-    var el = document.getElementById('costeo-data');
+    const el = document.getElementById('costeo-data');
     if (el) {
-        var d = JSON.parse(el.textContent);
+        const d = JSON.parse(el.textContent);
         window.USER_PERMISOS = d.userPermisos;
         window.USER_ROL = d.userRol;
         window.COSTEO_TENANT_ID = d.tenantId;

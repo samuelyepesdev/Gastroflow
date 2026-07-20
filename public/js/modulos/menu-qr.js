@@ -1,5 +1,5 @@
-var _qrPageData = (function () {
-    var el = document.getElementById('qr-page-data');
+const _qrPageData = (function () {
+    const el = document.getElementById('qr-page-data');
     return el ? JSON.parse(el.textContent) : {};
 })();
 window.QR_TOKEN = _qrPageData.qrToken || '';
