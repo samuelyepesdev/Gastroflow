@@ -30,8 +30,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -64,9 +62,3 @@ jobs:
           name: coverage-report
           path: coverage/
           retention-days: 7
-
-      - name: SonarCloud Scan
-        if: always()
-        uses: SonarSource/sonarqube-scan-action@v4
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
