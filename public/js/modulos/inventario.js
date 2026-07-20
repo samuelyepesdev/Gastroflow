@@ -53,6 +53,7 @@ async function verMovimientos(id, nombre) {
             });
         }
     } catch (e) {
+        console.error('Error al cargar movimientos de inventario:', e);
         tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger py-3">Error al cargar historial.</td></tr>';
     } finally {
         loading.style.display = 'none';
@@ -526,7 +527,7 @@ document.getElementById('editCategoriaId')?.addEventListener('change', function 
         });
     }
     async function cargarListaMercado() {
-        const incluir = incluirCerca && incluirCerca.checked;
+        const incluir = incluirCerca?.checked;
         const r = await fetch(base + '/api/lista-mercado?incluir_cerca=' + (incluir ? '1' : '0'), { credentials: 'same-origin' });
         if (!r.ok) { renderLista([]); return; }
         const data = await r.json();
@@ -575,8 +576,8 @@ document.getElementById('editCategoriaId')?.addEventListener('change', function 
         const titulo = 'Lista de mercado - ' + (new Date().toLocaleDateString('es-CO'));
         const html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>' + titulo + '</title><style>body{font-family:sans-serif;padding:1rem;} h1{font-size:1.25rem;} ul{list-style:none;padding:0;} li{padding:0.25rem 0;border-bottom:1px solid #eee;}</style></head><body><h1>' + titulo + '</h1><ul><li>' + (lineas.length ? lineas.join('</li><li>') : 'Nada por reponer.') + '</li></ul></body></html>';
         const w = window.open('', '_blank');
-        w.document.write(html);
-        w.document.close();
+        const doc = new DOMParser().parseFromString(html, 'text/html');
+        w.document.replaceChild(doc.documentElement, w.document.documentElement);
         w.print();
         w.close();
     });
