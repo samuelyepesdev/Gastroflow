@@ -140,8 +140,12 @@ class SuscripcionService {
         };
     }
 
-    /** Reintento manual (botón superadmin o botón del propio tenant). */
-    static async cobrarAhora(tenantId, userId = null) {
+    /**
+     * Reintento manual (botón superadmin o botón del propio tenant).
+     * `fingerprint` ({ sessionId, deviceId }) llega solo cuando el cobro se
+     * dispara desde el navegador (WompiJs); el cron llama sin él.
+     */
+    static async cobrarAhora(tenantId, userId = null, fingerprint = null) {
         const [rows] = await db.query(
             `SELECT id, nombre, email, plan_id, tamano, wompi_payment_source_id, intentos_fallidos_pago
              FROM tenants WHERE id = ?`,
@@ -154,11 +158,11 @@ class SuscripcionService {
         if (!tenant.wompi_payment_source_id) {
             throw new Error('El tenant no tiene un método de pago registrado');
         }
-        await SuscripcionService._intentarCobro(tenant, userId);
+        await SuscripcionService._intentarCobro(tenant, userId, fingerprint);
     }
 
     /** Crea el intento de cobro en Wompi y la fila `pendiente` correspondiente. No decide éxito/fracaso -- eso lo resuelve finalizarPago (webhook o reconciliación). */
-    static async _intentarCobro(tenant, userId = null) {
+    static async _intentarCobro(tenant, userId = null, fingerprint = null) {
         const { total } = await AddonService.calcularTotalTenant(tenant.id, tenant.plan_id, tenant.tamano);
         if (!total || total <= 0) {
             return; // Sin plan/monto asignado: nada que cobrar.
@@ -182,7 +186,9 @@ class SuscripcionService {
                 paymentSourceId: tenant.wompi_payment_source_id,
                 amountInCents: Math.round(total * 100),
                 customerEmail: tenant.email,
-                reference
+                reference,
+                sessionId: fingerprint?.sessionId || null,
+                deviceId: fingerprint?.deviceId || null
             });
             // Algunos métodos (tarjeta) pueden resolver sincrónicamente.
             if (status && status !== 'PENDING') {

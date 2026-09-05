@@ -2,12 +2,19 @@
  * facturacion.js - Registro del método de pago para el cobro automático de la
  * suscripción (página /facturacion).
  *
- * Flujo de tokenización de Wompi (no usa el Widget de Checkout, que es de pago
- * único y no devuelve un payment_source reutilizable):
- *   1. GET  {api}/merchants/{PUBLIC_KEY}  -> acceptance_token
- *   2. POST {api}/tokens/cards  (Bearer PUBLIC_KEY)  -> token de tarjeta (tok_...)
- *   3. POST /facturacion/metodo-pago  { cardToken, acceptanceToken }
- *      -> el backend lo cambia por un payment_source_id con la llave privada.
+ * Flujo oficial de Wompi para "fuentes de pago" (pago recurrente). No usa el
+ * Widget de Checkout, que es de pago único y no devuelve un payment_source
+ * reutilizable:
+ *   1. GET  {api}/merchants/{PUBLIC_KEY}
+ *        -> presigned_acceptance.acceptance_token       (política de privacidad)
+ *        -> presigned_personal_data_auth.acceptance_token (autorización de datos)
+ *   2. POST {api}/tokens/cards  (Bearer PUBLIC_KEY)     -> token de tarjeta (tok_...)
+ *   3. POST /facturacion/metodo-pago { cardToken, acceptanceToken, personalAuthToken }
+ *        -> el backend lo cambia por un payment_source_id con la llave privada.
+ *
+ * WompiJs (window.$wompi, cargado en la vista desde
+ * https://wompijs.wompi.com/libs/js/v1.js) aporta la huella de dispositivo
+ * (sessionId / deviceID) para el scoring antifraude de Wompi.
  *
  * Los datos de tarjeta cruda solo viajan del navegador a Wompi (paso 2);
  * nunca pasan por este servidor.
@@ -19,6 +26,20 @@
         cfg = el ? JSON.parse(el.textContent) : {};
     } catch (e) {
         cfg = {};
+    }
+
+    // Huella de dispositivo de WompiJs (se rellena de forma asíncrona).
+    const fingerprint = { sessionId: null, deviceId: null };
+    function initWompiJs() {
+        if (typeof window.$wompi === 'undefined' || typeof window.$wompi.initialize !== 'function') {
+            return;
+        }
+        window.$wompi.initialize(function (data, error) {
+            if (error === null && data) {
+                fingerprint.sessionId = data.sessionId || null;
+                fingerprint.deviceId = (data.deviceData && data.deviceData.deviceID) || null;
+            }
+        });
     }
 
     function mostrarFormularioTarjeta() {
@@ -52,14 +73,16 @@
         return { exp_month: mes, exp_year: anio };
     }
 
-    async function obtenerAcceptanceToken() {
+    async function obtenerTokensAceptacion() {
         const res = await fetch(`${cfg.wompiApiBase}/merchants/${cfg.wompiPublicKey}`);
         const json = await res.json().catch(() => ({}));
-        const token = json && json.data && json.data.presigned_acceptance && json.data.presigned_acceptance.acceptance_token;
-        if (!res.ok || !token) {
-            throw new Error('No se pudo obtener el token de aceptación de Wompi.');
+        const d = (json && json.data) || {};
+        const acceptanceToken = d.presigned_acceptance && d.presigned_acceptance.acceptance_token;
+        const personalAuthToken = d.presigned_personal_data_auth && d.presigned_personal_data_auth.acceptance_token;
+        if (!res.ok || !acceptanceToken || !personalAuthToken) {
+            throw new Error('No se pudieron obtener los tokens de aceptación de Wompi.');
         }
-        return token;
+        return { acceptanceToken, personalAuthToken };
     }
 
     async function tokenizarTarjeta(datos) {
@@ -97,7 +120,7 @@
         if (btn) btn.disabled = true;
         setMensaje('Procesando...', false);
         try {
-            const acceptanceToken = await obtenerAcceptanceToken();
+            const { acceptanceToken, personalAuthToken } = await obtenerTokensAceptacion();
             const cardToken = await tokenizarTarjeta({
                 number: numero.replace(/\s/g, ''),
                 cvc: cvc.trim(),
@@ -109,7 +132,7 @@
             const res = await fetch('/facturacion/metodo-pago', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ cardToken, acceptanceToken })
+                body: JSON.stringify({ cardToken, acceptanceToken, personalAuthToken })
             });
             const data = await res.json().catch(() => ({}));
             if (data.ok) {
@@ -135,7 +158,11 @@
             if (!res.isConfirmed) {
                 return;
             }
-            fetch('/facturacion/cobrar-ahora', { method: 'POST' })
+            fetch('/facturacion/cobrar-ahora', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sessionId: fingerprint.sessionId, deviceId: fingerprint.deviceId })
+            })
                 .then(r => r.json())
                 .then(data => {
                     if (data.ok) {
@@ -149,6 +176,7 @@
     }
 
     document.addEventListener('DOMContentLoaded', function () {
+        initWompiJs();
         const btnActivar = document.getElementById('btnActivarCobroAutomatico');
         const btnActualizar = document.getElementById('btnActualizarTarjeta');
         const btnGuardar = document.getElementById('btnGuardarTarjeta');

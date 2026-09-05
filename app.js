@@ -111,15 +111,18 @@ app.use((req, res, next) => {
 
     const cspDirectives = [
         "default-src 'self'",
-        "script-src 'self' 'unsafe-inline' https://code.jquery.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://cdn.tailwindcss.com",
+        // wompijs.wompi.com: librería oficial WompiJs (huella de dispositivo
+        // antifraude, ver public/js/modulos/facturacion.js)
+        "script-src 'self' 'unsafe-inline' https://code.jquery.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://cdn.tailwindcss.com https://wompijs.wompi.com",
         "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://fonts.googleapis.com",
         "font-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://fonts.gstatic.com",
         "img-src 'self' data: blob: https:",
         // wss/ws localhost: websocket local de QZ Tray (puente de impresión térmica
         // y apertura de cajón — ver public/js/modulos/pos/pos_qz.js)
-        // *.wompi.co: tokenización de tarjeta desde el navegador para el cobro
-        // automático de la suscripción (ver public/js/modulos/facturacion.js)
-        "connect-src 'self' https://cdn.jsdelivr.net https://sandbox.wompi.co https://production.wompi.co wss://localhost:8181 wss://localhost:8282 ws://localhost:8182 ws://localhost:8283",
+        // *.wompi.co / wompijs.wompi.com: tokenización de tarjeta + huella de
+        // dispositivo desde el navegador para el cobro automático de la
+        // suscripción (ver public/js/modulos/facturacion.js)
+        "connect-src 'self' https://cdn.jsdelivr.net https://sandbox.wompi.co https://production.wompi.co https://wompijs.wompi.com wss://localhost:8181 wss://localhost:8282 ws://localhost:8182 ws://localhost:8283",
         "object-src 'none'",
         "base-uri 'self'",
         "form-action 'self'"

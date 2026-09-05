@@ -70,16 +70,22 @@ class WompiService {
      * Crea una fuente de pago reutilizable (tarjeta tokenizada) a partir de un
      * token de tarjeta ya generado en el frontend con Wompi
      * (WOMPI_PUBLIC_KEY, nunca toca este backend con datos de tarjeta cruda).
-     * @returns {Promise<string>} payment_source_id
+     *
+     * Wompi exige los DOS tokens de aceptación (política de privacidad +
+     * autorización de datos personales), ambos vienen de
+     * GET /v1/merchants/{public_key} -> presigned_acceptance /
+     * presigned_personal_data_auth.
+     * @returns {Promise<string|number>} payment_source_id
      */
-    static async crearFuenteDePago({ token, customerEmail, acceptanceToken }) {
+    static async crearFuenteDePago({ token, customerEmail, acceptanceToken, personalAuthToken }) {
         const data = await request('/payment_sources', {
             method: 'POST',
             body: {
                 type: 'CARD',
                 token,
                 customer_email: customerEmail,
-                acceptance_token: acceptanceToken
+                acceptance_token: acceptanceToken,
+                accept_personal_auth: personalAuthToken
             }
         });
         const id = data?.data?.id;
@@ -93,19 +99,32 @@ class WompiService {
      * Cobra una fuente de pago ya guardada, sin interacción del cliente
      * (cobro recurrente). El resultado inmediato puede ser PENDING -- el
      * estado final llega por webhook (o por reconciliación de respaldo).
+     *
+     * Wompi exige la firma de integridad en TODA creación de transacción
+     * (no solo en el widget). `recurrent: true` activa COF (Credential On
+     * File) para Visa/Mastercard, requerido para cobros recurrentes.
+     * `sessionId`/`deviceId` (huella de dispositivo de WompiJs) son
+     * opcionales: mejoran el scoring antifraude cuando el cobro se dispara
+     * desde el navegador; el cron los omite.
      * @returns {Promise<{ id: string, status: string }>}
      */
-    static async cobrar({ paymentSourceId, amountInCents, customerEmail, reference }) {
-        const data = await request('/transactions', {
-            method: 'POST',
-            body: {
-                amount_in_cents: amountInCents,
-                currency: 'COP',
-                customer_email: customerEmail,
-                payment_source_id: paymentSourceId,
-                reference
-            }
-        });
+    static async cobrar({ paymentSourceId, amountInCents, customerEmail, reference, sessionId, deviceId }) {
+        const body = {
+            amount_in_cents: amountInCents,
+            currency: 'COP',
+            signature: WompiService.firmarIntegridad({ reference, amountInCents, currency: 'COP' }),
+            customer_email: customerEmail,
+            payment_source_id: paymentSourceId,
+            reference,
+            recurrent: true
+        };
+        if (sessionId) {
+            body.session_id = sessionId;
+        }
+        if (deviceId) {
+            body.customer_data = { device_id: deviceId };
+        }
+        const data = await request('/transactions', { method: 'POST', body });
         return { id: data?.data?.id, status: data?.data?.status };
     }
 
@@ -116,10 +135,10 @@ class WompiService {
     }
 
     /**
-     * Firma de integridad para el Widget de Checkout: evita que alguien
-     * intercepte la página y cambie el monto/referencia antes de que se abra
-     * el widget. Fórmula (Wompi): SHA256(reference + amountInCents + currency + Integrity Secret).
-     * El secreto nunca sale del backend -- solo se envía al frontend el hash resultante.
+     * Firma de integridad de Wompi, obligatoria en toda creación de
+     * transacción (POST /transactions). Fórmula (Wompi):
+     * SHA256(reference + amountInCents + currency + Integrity Secret).
+     * Requiere WOMPI_INTEGRITY_SECRET. El secreto nunca sale del backend.
      */
     static firmarIntegridad({ reference, amountInCents, currency = 'COP' }) {
         const integritySecret = process.env.WOMPI_INTEGRITY_SECRET;

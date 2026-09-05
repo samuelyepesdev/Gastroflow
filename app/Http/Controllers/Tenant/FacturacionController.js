@@ -27,24 +27,26 @@ class FacturacionController {
     }
 
     // POST /facturacion/metodo-pago
-    // Body: { cardToken, acceptanceToken } -- el token de tarjeta (tok_...) y el
-    // acceptance_token los genera el frontend contra la API de Wompi con la
-    // llave pública (ver public/js/modulos/facturacion.js). Este backend nunca
-    // ve datos de tarjeta cruda: solo cambia el token por un payment_source_id
-    // reutilizable usando la llave privada.
+    // Body: { cardToken, acceptanceToken, personalAuthToken } -- el token de
+    // tarjeta (tok_...) y los DOS tokens de aceptación los genera el frontend
+    // contra la API de Wompi con la llave pública (ver
+    // public/js/modulos/facturacion.js). Este backend nunca ve datos de tarjeta
+    // cruda: solo cambia el token por un payment_source_id reutilizable usando
+    // la llave privada.
     static async guardarMetodoPago(req, res) {
         try {
             const tenantId = req.tenant.id;
-            const { cardToken, acceptanceToken } = req.body;
-            if (!cardToken || !acceptanceToken) {
-                return res.status(400).json({ error: 'cardToken y acceptanceToken requeridos' });
+            const { cardToken, acceptanceToken, personalAuthToken } = req.body;
+            if (!cardToken || !acceptanceToken || !personalAuthToken) {
+                return res.status(400).json({ error: 'cardToken, acceptanceToken y personalAuthToken requeridos' });
             }
 
             const customerEmail = req.tenant.email || req.user?.email || null;
             const paymentSourceId = await WompiService.crearFuenteDePago({
                 token: cardToken,
                 customerEmail,
-                acceptanceToken
+                acceptanceToken,
+                personalAuthToken
             });
 
             await SuscripcionService.registrarMetodoPago(tenantId, { paymentSourceId });
@@ -56,10 +58,13 @@ class FacturacionController {
     }
 
     // POST /facturacion/cobrar-ahora
+    // Body opcional: { sessionId, deviceId } -- huella de dispositivo de WompiJs
+    // para el scoring antifraude (el cobro se dispara desde el navegador).
     static async cobrarAhora(req, res) {
         try {
             const tenantId = req.tenant.id;
-            await SuscripcionService.cobrarAhora(tenantId, req.user?.id || null);
+            const { sessionId, deviceId } = req.body || {};
+            await SuscripcionService.cobrarAhora(tenantId, req.user?.id || null, { sessionId, deviceId });
             res.json({ ok: true, mensaje: 'Cobro iniciado. El resultado se actualizará en unos segundos.' });
         } catch (error) {
             console.error('Error al cobrar ahora:', error);

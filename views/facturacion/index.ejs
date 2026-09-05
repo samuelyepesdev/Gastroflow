@@ -105,9 +105,12 @@
                                 <i class="bi bi-shield-lock me-1"></i>Guardar tarjeta
                             </button>
                             <p id="wompiCardMsg" class="small text-muted mt-2 mb-0"></p>
-                            <p class="text-muted mt-2 mb-0" style="font-size:.75rem;">
-                                <i class="bi bi-lock me-1"></i>Los datos de tu tarjeta se envían directamente a Wompi. GastroFlow no los almacena.
-                            </p>
+                            <div class="d-flex align-items-center gap-2 mt-2 text-muted" style="font-size:.75rem;">
+                                <i class="bi bi-lock-fill"></i>
+                                <span>Pagos procesados de forma segura por
+                                    <a href="https://wompi.co" target="_blank" rel="noopener" class="fw-bold text-decoration-none">Wompi</a>.
+                                    Los datos de tu tarjeta se envían directamente a Wompi; GastroFlow no los almacena.</span>
+                            </div>
                         </div>
                         <% } %>
                     </div>
@@ -160,6 +163,9 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <% if (wompiPublicKey) { %>
+    <script src="https://wompijs.wompi.com/libs/js/v1.js" data-public-key="<%= wompiPublicKey %>"></script>
+    <% } %>
     <script type="application/json" id="facturacion-data"><%- JSON.stringify({ wompiPublicKey: wompiPublicKey || null, wompiApiBase: wompiApiBase || null, tenantEmail: (tenant && tenant.email) || (user && user.email) || '' }) %></script>
     <script src="/js/modulos/facturacion.js"></script>
 </body>
