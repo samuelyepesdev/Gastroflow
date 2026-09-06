@@ -347,6 +347,33 @@ body {
     background: #fde8c8;
 }
 
+/* Toggle "pedir nota para cocina" */
+.btn-premium-nota {
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+    border: 1px solid #dbe3f0;
+    background: #f4f7fc;
+    color: #64748b;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    transition: all 0.15s ease;
+}
+
+.btn-premium-nota:hover {
+    background: #e6edf9;
+    color: #3b82f6;
+}
+
+.btn-premium-nota.active {
+    border-color: #2563eb;
+    background: #2563eb;
+    color: #fff;
+}
+
 /* Category Badge chip */
 .category-badge-chip {
     display: inline-flex;

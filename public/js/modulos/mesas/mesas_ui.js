@@ -75,8 +75,11 @@ function evitarPropagacionEnInputSwal() {
 window.MesasModule.seleccionarProducto = async function(p) {
   await this.runWithOffcanvasHidden(async () => {
     let nota = '';
-    const isComida = (p.categoria_nombre || '').trim().toLowerCase() === 'comidas';
-    if (isComida) {
+    // Pide nota si el producto lo tiene marcado (pide_nota) o —compatibilidad—
+    // si pertenece a la categoría "Comidas".
+    const pideNota = Number(p.pide_nota) === 1
+      || (p.categoria_nombre || '').trim().toLowerCase() === 'comidas';
+    if (pideNota) {
       const notaRes = await Swal.fire({
         title: 'Nota para cocina (opcional)',
         input: 'text', inputPlaceholder: 'Ej: sin cebolla, sin queso...', showCancelButton: true,
@@ -426,7 +429,8 @@ $(function () {
       id: $(this).data('id'),
       nombre: $(this).data('nombre'),
       precio_unidad: $(this).data('precio'),
-      categoria_nombre: $(this).data('categoria-nombre')
+      categoria_nombre: $(this).data('categoria-nombre'),
+      pide_nota: Number($(this).data('pide-nota')) === 1 ? 1 : 0
     };
     mod.seleccionarProducto(p);
   });
