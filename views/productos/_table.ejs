@@ -48,7 +48,7 @@
                     </td>
                     <td data-label="Acciones" style="text-align: center;">
                         <div class="d-flex gap-2 justify-content-center">
-                            <% if (user && user.permisos && user.permisos.includes('productos.editar')) { %>
+                            <% if (user && user.permisos && user.permisos.includes('productos.pide_nota')) { %>
                                 <button class="btn-premium-nota btn-toggle-pidenota <%= producto.pide_nota ? 'active' : '' %>" data-id="<%= producto.id %>" data-pidenota="<%= producto.pide_nota ? 1 : 0 %>" title="<%= producto.pide_nota ? 'Pide nota para cocina al ordenarlo (clic para desactivar)' : 'Activar: pedir nota para cocina al ordenar este producto' %>">
                                     <i class="bi <%= producto.pide_nota ? 'bi-chat-left-text-fill' : 'bi-chat-left-text' %>"></i>
                                 </button>

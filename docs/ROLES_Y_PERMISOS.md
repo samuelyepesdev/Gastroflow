@@ -84,6 +84,7 @@ Los siguientes usuarios han sido creados para pruebas. **IMPORTANTE**: Cambiar l
 | `productos.editar` | Editar productos existentes |
 | `productos.eliminar` | Eliminar productos |
 | `productos.importar` | Importar productos desde Excel |
+| `productos.pide_nota` | Activar/desactivar "pedir nota para cocina" en cada producto |
 | `clientes.ver` | Ver lista de clientes |
 | `clientes.crear` | Crear nuevos clientes |
 | `clientes.editar` | Editar clientes existentes |
