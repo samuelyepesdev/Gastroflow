@@ -23,6 +23,13 @@ class AbrirPedidoService {
             );
 
             if (existentes.length > 0) {
+                // Re-asegurar que la mesa refleje que tiene un pedido vivo. Si quedó
+                // en 'libre' (p. ej. otro pedido de la misma mesa se facturó y liberó
+                // la mesa sin cancelar este), el vigilante de refreshMesas lo tomaría
+                // como "facturada por otro" y cerraría el panel al instante.
+                await connection.query("UPDATE mesas SET estado = 'ocupada' WHERE id = ? AND estado <> 'ocupada'", [
+                    mesa_id
+                ]);
                 await connection.commit();
                 return existentes[0];
             }

@@ -146,10 +146,37 @@ class FacturarPedidoService {
                 totalConPropina,
                 pedidoId
             ]);
+
+            // Cancelar pedidos "hermanos" que quedaron vivos pero vacíos en esta
+            // misma mesa (p. ej. doble "Abrir pedido" desde dos dispositivos). Si no,
+            // quedan huérfanos: pedido 'abierto' + mesa 'libre', y al reabrir la mesa
+            // el vigilante de refreshMesas los interpreta como "facturada por otro".
             await connection.query(
-                `UPDATE mesas SET estado = 'libre', qr_session_id = NULL, last_qr_activity = NULL WHERE id = ?`,
+                `UPDATE pedidos p
+                 SET p.estado = 'cancelado'
+                 WHERE p.mesa_id = ?
+                   AND p.id <> ?
+                   AND p.estado NOT IN ('cerrado','cancelado')
+                   AND NOT EXISTS (
+                     SELECT 1 FROM pedido_items pi
+                     WHERE pi.pedido_id = p.id AND pi.estado <> 'cancelado'
+                   )`,
+                [pedido.mesa_id, pedidoId]
+            );
+
+            // Liberar la mesa solo si ya no queda ningún pedido vivo (mismo criterio
+            // que EliminarItemService / MoverItemsService).
+            const [vivosRows] = await connection.query(
+                `SELECT COUNT(*) AS vivos FROM pedidos
+                 WHERE mesa_id = ? AND estado NOT IN ('cerrado','cancelado')`,
                 [pedido.mesa_id]
             );
+            if (Number(vivosRows[0]?.vivos || 0) === 0) {
+                await connection.query(
+                    `UPDATE mesas SET estado = 'libre', qr_session_id = NULL, last_qr_activity = NULL WHERE id = ?`,
+                    [pedido.mesa_id]
+                );
+            }
 
             await connection.commit();
 

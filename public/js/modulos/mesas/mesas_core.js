@@ -9,6 +9,11 @@ window.MesasModule = {
   descuentosPorItem: {},
   propinaPedido: 0,
   currentMesaEstado: 'libre',
+  // Marca de tiempo del último abrirPedido y contador de ciclos seguidos en los
+  // que /listar reporta la mesa como cerrada. Los usa el vigilante de
+  // refreshMesas para no disparar falsos "Mesa Facturada".
+  pedidoAbiertoAt: 0,
+  cerradaStreak: 0,
 
   formatear(valor) {
     return `$${Number(valor || 0).toLocaleString('es-CO')}`;
@@ -111,6 +116,7 @@ function limpiarMesaPorEventoExterno(icon, title, text) {
   window.MesasModule.pedidoActual = null;
   window.MesasModule.items = [];
   window.MesasModule.propinaPedido = 0;
+  window.MesasModule.cerradaStreak = 0;
   if (typeof window.MesasModule.renderItems === 'function') {
     window.MesasModule.renderItems();
   }
