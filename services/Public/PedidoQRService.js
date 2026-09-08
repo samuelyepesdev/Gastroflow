@@ -201,6 +201,147 @@ class PedidoQRService {
             connection.release();
         }
     }
+
+    /**
+     * Resuelve la mesa a partir del qr_token para operaciones de solo lectura o
+     * acciones ligeras (consultar estado, llamar al mesero). No aplica la expiración
+     * por inactividad de procesarPedido: solo dice si la cookie de sesión coincide.
+     */
+    static async _resolverMesaParaLectura(qrToken, cookies = {}) {
+        if (!qrToken) {
+            throw Object.assign(new Error('Falta el código QR.'), { status: 400 });
+        }
+        const [mesas] = await db.query(
+            `SELECT m.id, m.tenant_id, m.numero, m.qr_session_id, t.activo
+             FROM mesas m
+             JOIN tenants t ON t.id = m.tenant_id
+             WHERE m.qr_token = ? AND m.tipo = 'fisica'`,
+            [qrToken]
+        );
+        if (mesas.length === 0) {
+            throw Object.assign(new Error('Código QR inválido o mesa no encontrada.'), { status: 404 });
+        }
+        const mesa = mesas[0];
+        if (!mesa.activo) {
+            throw Object.assign(new Error('El restaurante se encuentra inactivo actualmente.'), { status: 403 });
+        }
+        const clientSession = cookies ? cookies[`qr_session_${mesa.id}`] : null;
+        const sesionValida = !mesa.qr_session_id || clientSession === mesa.qr_session_id;
+        return { mesa, sesionValida };
+    }
+
+    /**
+     * Devuelve el pedido abierto de la mesa (si lo hay) con sus items y el estado de
+     * cada uno, para que el cliente vea "cómo va" su pedido y el total acumulado.
+     */
+    static async getEstadoMesa(qrToken, cookies = {}) {
+        const { mesa, sesionValida } = await this._resolverMesaParaLectura(qrToken, cookies);
+        const vacio = { mesa: { numero: mesa.numero }, pedido: null, items: [], resumen: null };
+        if (!sesionValida) {
+            return vacio;
+        }
+
+        const [pedidos] = await db.query(
+            `SELECT id, numero, total, estado
+             FROM pedidos
+             WHERE mesa_id = ? AND estado NOT IN ('cerrado', 'cancelado')
+             ORDER BY id DESC LIMIT 1`,
+            [mesa.id]
+        );
+        if (pedidos.length === 0) {
+            return vacio;
+        }
+        const pedido = pedidos[0];
+
+        const [items] = await db.query(
+            `SELECT pi.id, pi.cantidad, pi.subtotal, pi.estado, pi.nota, p.nombre AS producto_nombre
+             FROM pedido_items pi
+             LEFT JOIN productos p ON p.id = pi.producto_id
+             WHERE pi.pedido_id = ?
+             ORDER BY pi.created_at ASC, pi.id ASC`,
+            [pedido.id]
+        );
+
+        let modificadores = [];
+        if (items.length > 0) {
+            const itemIds = items.map(i => i.id);
+            [modificadores] = await db.query(
+                'SELECT pedido_item_id, opcion_nombre FROM pedido_item_modificadores WHERE pedido_item_id IN (?)',
+                [itemIds]
+            );
+        }
+
+        const resumen = { pendiente: 0, enviado: 0, preparando: 0, listo: 0, servido: 0, cancelado: 0 };
+        const itemsOut = items.map(i => {
+            if (resumen[i.estado] !== undefined) {
+                resumen[i.estado] += 1;
+            }
+            return {
+                producto_nombre: i.producto_nombre || 'Producto',
+                cantidad: Number(i.cantidad),
+                subtotal: Number(i.subtotal),
+                estado: i.estado,
+                nota: i.nota || null,
+                modificadores: modificadores.filter(m => m.pedido_item_id === i.id).map(m => m.opcion_nombre)
+            };
+        });
+
+        return {
+            mesa: { numero: mesa.numero },
+            pedido: { numero: pedido.numero, total: Number(pedido.total), estado: pedido.estado },
+            items: itemsOut,
+            resumen
+        };
+    }
+
+    /**
+     * El cliente llama al mesero o pide la cuenta desde el menú. Deja una traza en
+     * las notas del pedido abierto (si existe) y emite un evento para el panel del
+     * personal en tiempo real.
+     */
+    static async registrarSolicitud(qrToken, tipo, cookies = {}) {
+        const textos = {
+            mesero: 'El cliente solicita al mesero',
+            cuenta: 'El cliente pide la cuenta'
+        };
+        if (!textos[tipo]) {
+            throw Object.assign(new Error('Tipo de solicitud inválido.'), { status: 400 });
+        }
+
+        const { mesa, sesionValida } = await this._resolverMesaParaLectura(qrToken, cookies);
+        if (!sesionValida) {
+            throw Object.assign(
+                new Error('Tu sesión ha expirado. Escanea el código nuevamente.'),
+                { status: 403 }
+            );
+        }
+
+        const [pedidos] = await db.query(
+            `SELECT id FROM pedidos
+             WHERE mesa_id = ? AND estado NOT IN ('cerrado', 'cancelado')
+             ORDER BY id DESC LIMIT 1`,
+            [mesa.id]
+        );
+        let pedidoId = null;
+        if (pedidos.length > 0) {
+            pedidoId = pedidos[0].id;
+            const hora = new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
+            await db.query(
+                `UPDATE pedidos SET notas = CONCAT_WS('\\n', notas, ?) WHERE id = ?`,
+                [`[Solicitud QR ${hora}]: ${textos[tipo]}`, pedidoId]
+            );
+        }
+
+        WhatsAppService.events.emit('mesaSolicitud', {
+            tenantId: mesa.tenant_id,
+            mesaId: mesa.id,
+            mesaNumero: mesa.numero,
+            pedidoId,
+            tipo
+        });
+
+        return { ok: true };
+    }
 }
 
 module.exports = PedidoQRService;

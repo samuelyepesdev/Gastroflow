@@ -29,8 +29,15 @@
                 <h4 class="mb-0 fw-bold" style="color: var(--navbar-text);"><%= tenant.nombre %></h4>
             <% } %>
         </div>
-        <div class="table-badge" style="color: var(--navbar-text);">
-            <i class="bi bi-geo-alt-fill me-1"></i> Mesa <%= mesa.numero %>
+        <div class="d-flex align-items-center gap-2">
+            <button type="button" id="btnEstadoMesa" class="header-icon-btn" style="color: var(--navbar-text);"
+                    data-bs-toggle="offcanvas" data-bs-target="#estadoOffcanvas" aria-label="Estado de tu mesa">
+                <i class="bi bi-receipt"></i>
+                <span class="estado-dot" id="estadoMesaDot" hidden></span>
+            </button>
+            <div class="table-badge" style="color: var(--navbar-text);">
+                <i class="bi bi-geo-alt-fill me-1"></i> Mesa <%= mesa.numero %>
+            </div>
         </div>
     </div>
 
@@ -104,8 +111,9 @@
             <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
         </div>
         <div class="offcanvas-body">
+            <div id="mesaEnCursoHint" class="alert alert-light border small mb-3" hidden></div>
             <div id="cartList"></div>
-            
+
             <div class="mt-4 pt-3 border-top">
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <span class="fs-5 fw-bold text-secondary">Total a Pagar:</span>
@@ -118,6 +126,36 @@
                 </div>
                 <button class="btn btn-ver-pedido w-100 py-3" id="btnEnviarPedido">
                     <i class="bi bi-send-fill me-2"></i> Confirmar y Pedir
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Offcanvas Estado de la Mesa -->
+    <div class="offcanvas offcanvas-bottom" tabindex="-1" id="estadoOffcanvas">
+        <div class="offcanvas-header border-bottom">
+            <h5 class="offcanvas-title"><i class="bi bi-receipt me-2"></i>Tu mesa · Mesa <%= mesa.numero %></h5>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+        </div>
+        <div class="offcanvas-body">
+            <div id="estadoMesaEmpty" class="text-center py-4 text-muted">
+                <i class="bi bi-cup-straw fs-1 d-block mb-2"></i>
+                Aún no hay pedidos registrados en esta mesa.
+            </div>
+            <div id="estadoMesaContent" hidden>
+                <div class="estado-resumen" id="estadoResumen"></div>
+                <div id="estadoItemsList" class="mt-3"></div>
+                <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
+                    <span class="fs-5 fw-bold text-secondary">Total de la mesa:</span>
+                    <span id="estadoMesaTotal" style="color: var(--primary-color); font-weight: 900; font-size: 1.6rem;">$0</span>
+                </div>
+            </div>
+            <div class="d-flex gap-2 mt-4">
+                <button class="btn btn-outline-secondary flex-grow-1 py-3" id="btnLlamarMesero" style="border-radius: 12px; font-weight: 600;">
+                    <i class="bi bi-bell me-1"></i> Llamar al mesero
+                </button>
+                <button class="btn btn-primary flex-grow-1 py-3" id="btnPedirCuenta" style="border-radius: 12px; font-weight: 600; background-color: var(--primary-color); border-color: var(--primary-color);">
+                    <i class="bi bi-cash-coin me-1"></i> Pedir la cuenta
                 </button>
             </div>
         </div>

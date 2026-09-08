@@ -355,6 +355,138 @@ function renderOffcanvasList(total) {
     document.getElementById('offcanvasTotal').textContent = formatPrice(total);
 }
 
+// ----- Estado de la mesa (pedido acumulado + seguimiento) -----
+
+const MESA_ESTADO = {
+    _timer: null,
+    _ultimaSolicitud: {},
+
+    CHIP: {
+        pendiente: { txt: 'Recibido', cls: 'chip-gray' },
+        enviado: { txt: 'En cocina', cls: 'chip-blue' },
+        preparando: { txt: 'Preparando', cls: 'chip-amber' },
+        listo: { txt: 'Listo', cls: 'chip-green' },
+        servido: { txt: 'Servido', cls: 'chip-green-o' },
+        cancelado: { txt: 'Cancelado', cls: 'chip-red' }
+    },
+
+    async fetchEstado() {
+        if (!window.QR_TOKEN) { return; }
+        try {
+            const res = await fetch(`/api/qr/pedidos/estado?qr_token=${encodeURIComponent(window.QR_TOKEN)}`, {
+                headers: { Accept: 'application/json' }
+            });
+            if (!res.ok) { return; }
+            const json = await res.json();
+            if (json && json.success) { this.render(json.data); }
+        } catch (_) {
+            // Silencioso: es polling de fondo, no molestar al cliente.
+        }
+    },
+
+    render(data) {
+        const empty = document.getElementById('estadoMesaEmpty');
+        const content = document.getElementById('estadoMesaContent');
+        const dot = document.getElementById('estadoMesaDot');
+        const hint = document.getElementById('mesaEnCursoHint');
+
+        if (!data || !data.pedido) {
+            if (empty) { empty.hidden = false; }
+            if (content) { content.hidden = true; }
+            if (dot) { dot.hidden = true; }
+            if (hint) { hint.hidden = true; }
+            return;
+        }
+
+        if (empty) { empty.hidden = true; }
+        if (content) { content.hidden = false; }
+
+        const listEl = document.getElementById('estadoItemsList');
+        if (listEl) {
+            listEl.innerHTML = (data.items || []).map(it => {
+                const chip = this.CHIP[it.estado] || this.CHIP.pendiente;
+                const extras = (it.modificadores || []).join(', ');
+                return `
+                    <div class="estado-item">
+                        <div class="estado-item-main">
+                            <span class="estado-item-qty">${it.cantidad}×</span>
+                            <div>
+                                <div class="estado-item-name">${escapeHtml(it.producto_nombre)}</div>
+                                ${extras ? `<div class="estado-item-extra">${escapeHtml(extras)}</div>` : ''}
+                                ${it.nota ? `<div class="estado-item-extra"><i class="bi bi-chat-left-text me-1"></i>${escapeHtml(it.nota)}</div>` : ''}
+                            </div>
+                        </div>
+                        <span class="estado-chip ${chip.cls}">${chip.txt}</span>
+                    </div>`;
+            }).join('');
+        }
+
+        const r = data.resumen || {};
+        const partes = [];
+        if (r.pendiente) { partes.push(`${r.pendiente} por confirmar`); }
+        if (r.enviado + r.preparando) { partes.push(`${r.enviado + r.preparando} en cocina`); }
+        if (r.listo) { partes.push(`${r.listo} listo${r.listo > 1 ? 's' : ''}`); }
+        if (r.servido) { partes.push(`${r.servido} servido${r.servido > 1 ? 's' : ''}`); }
+        const resumenEl = document.getElementById('estadoResumen');
+        if (resumenEl) { resumenEl.textContent = partes.join('  ·  ') || 'Pedido en curso'; }
+
+        const totalEl = document.getElementById('estadoMesaTotal');
+        if (totalEl) { totalEl.textContent = formatPrice(data.pedido.total); }
+
+        if (dot) { dot.hidden = !(r.listo > 0); }
+
+        if (hint) {
+            hint.hidden = false;
+            hint.innerHTML = `<i class="bi bi-info-circle me-1"></i> Esta mesa ya tiene un pedido en curso por <strong>${formatPrice(data.pedido.total)}</strong>. Lo que agregues se sumará a esa cuenta.`;
+        }
+    },
+
+    async solicitar(tipo, btn) {
+        const ahora = Date.now();
+        if (this._ultimaSolicitud[tipo] && ahora - this._ultimaSolicitud[tipo] < 60000) {
+            Swal.fire({ icon: 'info', title: 'Ya avisamos', text: 'El personal fue notificado hace un momento.' });
+            return;
+        }
+        const original = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+        try {
+            const res = await fetch('/api/qr/mesa/solicitud', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ qr_token: window.QR_TOKEN, tipo: tipo })
+            });
+            const json = await res.json();
+            if (!res.ok) { throw new Error(json.error || 'No se pudo enviar la solicitud.'); }
+            this._ultimaSolicitud[tipo] = ahora;
+            Swal.fire({
+                icon: 'success',
+                title: tipo === 'cuenta' ? 'Cuenta solicitada' : 'Mesero en camino',
+                text: tipo === 'cuenta'
+                    ? 'El personal preparará tu cuenta.'
+                    : 'Un mesero se acercará a tu mesa.',
+                confirmButtonColor: 'var(--primary-color)'
+            });
+        } catch (err) {
+            Swal.fire({ icon: 'error', title: 'Oops...', text: err.message });
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = original;
+        }
+    },
+
+    start() {
+        this.fetchEstado();
+        this._timer = setInterval(() => {
+            if (document.visibilityState === 'visible') { this.fetchEstado(); }
+        }, 30000);
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') { this.fetchEstado(); }
+        });
+    }
+};
+window.MESA_ESTADO = MESA_ESTADO;
+
 // ----- Init -----
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -440,6 +572,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 cart = {};
                 document.getElementById('pedidoNotas').value = '';
                 updateUI();
+                setTimeout(() => MESA_ESTADO.fetchEstado(), 1500);
             });
         } catch (err) {
             Swal.fire({ icon: 'error', title: 'Oops...', text: err.message });
@@ -448,6 +581,16 @@ document.addEventListener('DOMContentLoaded', function () {
             btn.innerHTML = originalText;
         }
     });
+
+    // Estado de la mesa: solicitudes al personal + polling
+    document.getElementById('btnLlamarMesero')?.addEventListener('click', (e) => {
+        MESA_ESTADO.solicitar('mesero', e.currentTarget);
+    });
+    document.getElementById('btnPedirCuenta')?.addEventListener('click', (e) => {
+        MESA_ESTADO.solicitar('cuenta', e.currentTarget);
+    });
+    document.getElementById('estadoOffcanvas')?.addEventListener('show.bs.offcanvas', () => MESA_ESTADO.fetchEstado());
+    MESA_ESTADO.start();
 
     // Ocultar carrito flotante cuando el Offcanvas está abierto
     const cartOffcanvas = document.getElementById('cartOffcanvas');

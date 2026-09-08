@@ -32,8 +32,19 @@ class NotificationController {
             }
         };
 
-        // Suscribirse al evento en el servicio
+        // Callback para solicitudes del cliente desde el menú QR (llamar mesero / pedir cuenta)
+        const onMesaSolicitud = data => {
+            if (String(data.tenantId) === String(tenantId)) {
+                res.write(`data: ${JSON.stringify({ event: 'mesaSolicitud', ...data })}\n\n`);
+                if (typeof res.flush === 'function') {
+                    res.flush();
+                }
+            }
+        };
+
+        // Suscribirse a los eventos en el servicio
         WhatsAppService.events.on('orderCreated', onOrderCreated);
+        WhatsAppService.events.on('mesaSolicitud', onMesaSolicitud);
 
         // Mantener la conexión enviando keep-alive cada 30 segundos
         const keepAlive = setInterval(() => {
@@ -56,6 +67,7 @@ class NotificationController {
             cleaned = true;
             // console.log(`[SSE] Cliente desconectado para Tenant ${tenantId}`);
             WhatsAppService.events.removeListener('orderCreated', onOrderCreated);
+            WhatsAppService.events.removeListener('mesaSolicitud', onMesaSolicitud);
             clearInterval(keepAlive);
         };
         req.on('close', cleanup);

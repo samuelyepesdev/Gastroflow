@@ -242,3 +242,66 @@ body {
 
 /* Stepper de cantidad dentro del modal */
 .qr-modal-qty { position: static; background: #f0f2f5; box-shadow: none; }
+
+/* ---- Estado de la mesa ---- */
+.header-icon-btn {
+    position: relative;
+    background: rgba(0, 0, 0, 0.05);
+    border: none;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.15rem;
+    flex-shrink: 0;
+}
+.header-icon-btn:active { transform: scale(0.9); }
+.header-icon-btn .estado-dot {
+    position: absolute;
+    top: 3px;
+    right: 3px;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: #22c55e;
+    box-shadow: 0 0 0 2px #fff;
+}
+
+.estado-resumen {
+    background: #f0f2f5;
+    border-radius: 12px;
+    padding: 10px 14px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: #444;
+}
+.estado-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 0;
+    border-bottom: 1px solid #f4f4f4;
+}
+.estado-item:last-child { border-bottom: none; }
+.estado-item-main { display: flex; gap: 10px; }
+.estado-item-qty { font-weight: 800; color: var(--primary-color); }
+.estado-item-name { font-weight: 700; color: #222; }
+.estado-item-extra { font-size: 0.8rem; color: #888; }
+.estado-chip {
+    font-size: 0.7rem;
+    font-weight: 800;
+    padding: 4px 10px;
+    border-radius: 20px;
+    white-space: nowrap;
+    text-transform: uppercase;
+    flex-shrink: 0;
+}
+.chip-gray { background: #eceff1; color: #607d8b; }
+.chip-blue { background: #e3f2fd; color: #1565c0; }
+.chip-amber { background: #fff3cd; color: #8a6d00; }
+.chip-green { background: #d7f5dd; color: #1b7d33; }
+.chip-green-o { background: #fff; color: #1b7d33; border: 1px solid #1b7d33; }
+.chip-red { background: #fde8e8; color: #b71c1c; }
