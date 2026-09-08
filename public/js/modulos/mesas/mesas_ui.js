@@ -14,8 +14,8 @@ window.MesasModule.renderItems = function() {
       totalRestante += subtotal;
     }
 
-    const descBadge = (this.descuentosPorItem[it.id] != null && this.descuentosPorItem[it.id] > 0)
-      ? ' <span class="badge bg-success">-' + this.descuentosPorItem[it.id] + '%</span>' : '';
+    const descTxt = this.descuentoBadge(it.id);
+    const descBadge = descTxt ? ' <span class="badge bg-success">' + descTxt + '</span>' : '';
     const badgePagado = it.pagado ? '<br><span class="badge bg-success mt-1"><i class="bi bi-check2-circle me-1"></i>Pagado</span>' : '';
     const modsTexto = (it.modificadores && it.modificadores.length)
       ? '<div class="pedido-item-mods">' + it.modificadores.map(m => m.opcion_nombre).join(', ') + '</div>' : '';
@@ -75,8 +75,11 @@ function evitarPropagacionEnInputSwal() {
 window.MesasModule.seleccionarProducto = async function(p) {
   await this.runWithOffcanvasHidden(async () => {
     let nota = '';
-    const isComida = (p.categoria_nombre || '').trim().toLowerCase() === 'comidas';
-    if (isComida) {
+    // Pide nota si el producto lo tiene marcado (pide_nota) o —compatibilidad—
+    // si pertenece a la categoría "Comidas".
+    const pideNota = Number(p.pide_nota) === 1
+      || (p.categoria_nombre || '').trim().toLowerCase() === 'comidas';
+    if (pideNota) {
       const notaRes = await Swal.fire({
         title: 'Nota para cocina (opcional)',
         input: 'text', inputPlaceholder: 'Ej: sin cebolla, sin queso...', showCancelButton: true,
@@ -130,6 +133,7 @@ function limpiarMesaFacturadaDetectadaPorPolling(openMesaId) {
   window.MesasModule.pedidoActual = null;
   window.MesasModule.items = [];
   window.MesasModule.propinaPedido = 0;
+  window.MesasModule.cerradaStreak = 0;
   if (typeof window.MesasModule.renderItems === 'function') {
     window.MesasModule.renderItems();
   }
@@ -246,9 +250,25 @@ window.refreshMesas = async function() {
       const mesaData = mesas.find(m => Number(m.id) === Number(openMesaId));
 
       // Si la mesa física ahora está libre, o si no está en la lista (para mesas virtuales que al estar libres se omiten),
-      // o si tiene 0 pedidos abiertos, significa que el pedido actual fue cerrado, facturado o cancelado.
-      if (!mesaData || mesaData.estado === 'libre' || Number(mesaData.pedidos_abiertos || 0) === 0) {
-        limpiarMesaFacturadaDetectadaPorPolling(openMesaId);
+      // o si tiene 0 pedidos abiertos, el pedido actual pudo haber sido cerrado, facturado o cancelado.
+      const pareceCerrada = !mesaData
+        || mesaData.estado === 'libre'
+        || Number(mesaData.pedidos_abiertos || 0) === 0;
+
+      // Ignorar durante los primeros 6 s tras abrir (la BD puede no reflejar aún
+      // el pedido recién creado) y exigir 2 ciclos seguidos: una respuesta de
+      // /listar momentáneamente desfasada no debe cerrar el panel.
+      const recienAbierto = window.MesasModule.pedidoAbiertoAt
+        && (Date.now() - window.MesasModule.pedidoAbiertoAt < 6000);
+
+      if (pareceCerrada && !recienAbierto) {
+        window.MesasModule.cerradaStreak = (window.MesasModule.cerradaStreak || 0) + 1;
+        if (window.MesasModule.cerradaStreak >= 2) {
+          window.MesasModule.cerradaStreak = 0;
+          limpiarMesaFacturadaDetectadaPorPolling(openMesaId);
+        }
+      } else {
+        window.MesasModule.cerradaStreak = 0;
       }
     }
 
@@ -426,7 +446,8 @@ $(function () {
       id: $(this).data('id'),
       nombre: $(this).data('nombre'),
       precio_unidad: $(this).data('precio'),
-      categoria_nombre: $(this).data('categoria-nombre')
+      categoria_nombre: $(this).data('categoria-nombre'),
+      pide_nota: Number($(this).data('pide-nota')) === 1 ? 1 : 0
     };
     mod.seleccionarProducto(p);
   });

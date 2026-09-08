@@ -117,6 +117,24 @@ $(document).ready(function () {
         }
     }
 
+    function handleMesaSolicitud(data) {
+        const texto = data.tipo === 'cuenta'
+            ? `Mesa ${data.mesaNumero}: el cliente pide la cuenta`
+            : `Mesa ${data.mesaNumero}: el cliente llama al mesero`;
+
+        Swal.mixin({
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: true,
+            confirmButtonText: 'Entendido',
+            timer: 15000,
+            timerProgressBar: true
+        }).fire({
+            icon: data.tipo === 'cuenta' ? 'warning' : 'info',
+            title: texto
+        });
+    }
+
     const source = new EventSource('/api/notifications/subscribe');
 
     source.addEventListener('message', function (e) {
@@ -124,6 +142,8 @@ $(document).ready(function () {
             const data = JSON.parse(e.data);
             if (data.event === 'orderCreated') {
                 handleOrderCreated(data);
+            } else if (data.event === 'mesaSolicitud') {
+                handleMesaSolicitud(data);
             }
         } catch (err) {
             console.error('Error procesando notificación:', err);

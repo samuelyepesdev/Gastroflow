@@ -77,14 +77,14 @@ class ProductRepository {
 
         // Buscamos productos reales y opcionalmente insumos de la categoría 'Cerámicas'
         const sql = `
-            (SELECT p.id, p.codigo, p.nombre, p.precio_unidad, c.nombre AS categoria_nombre, 0 AS is_insumo
+            (SELECT p.id, p.codigo, p.nombre, p.precio_unidad, c.nombre AS categoria_nombre, p.pide_nota, 0 AS is_insumo
             FROM productos p
             LEFT JOIN categorias c ON p.categoria_id = c.id
             WHERE p.tenant_id = ? AND p.activo = 1 AND (p.nombre LIKE ? OR p.codigo LIKE ?)
             ORDER BY p.nombre
             LIMIT ?)
             UNION ALL
-            (SELECT i.id + 1000000 AS id, i.codigo, i.nombre, COALESCE(i.precio_venta, 0) AS precio_unidad, pc.name AS categoria_nombre, 1 AS is_insumo
+            (SELECT i.id + 1000000 AS id, i.codigo, i.nombre, COALESCE(i.precio_venta, 0) AS precio_unidad, pc.name AS categoria_nombre, 0 AS pide_nota, 1 AS is_insumo
             FROM insumos i
             INNER JOIN parametros pc ON i.categoria_id = pc.id
             WHERE i.tenant_id = ? AND pc.name = 'Cerámicas' AND (i.nombre LIKE ? OR i.codigo LIKE ?)
@@ -242,6 +242,21 @@ class ProductRepository {
     static async toggleFavorite(id, tenantId, esFavorito) {
         const [result] = await db.query('UPDATE productos SET es_favorito = ? WHERE id = ? AND tenant_id = ?', [
             esFavorito ? 1 : 0,
+            id,
+            tenantId
+        ]);
+        return result;
+    }
+
+    /**
+     * Activa/desactiva el pedir nota para cocina al ordenar el producto.
+     * @param {number} id - Product ID
+     * @param {number} tenantId - Tenant ID
+     * @param {boolean} pideNota
+     */
+    static async togglePideNota(id, tenantId, pideNota) {
+        const [result] = await db.query('UPDATE productos SET pide_nota = ? WHERE id = ? AND tenant_id = ?', [
+            pideNota ? 1 : 0,
             id,
             tenantId
         ]);

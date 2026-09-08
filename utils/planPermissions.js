@@ -10,6 +10,7 @@ const PERMISSION_TO_MODULE = {
     'productos.editar': 'productos',
     'productos.eliminar': 'productos',
     'productos.importar': 'importar_exportar',
+    'productos.pide_nota': 'productos',
     'clientes.ver': 'clientes',
     'clientes.crear': 'clientes',
     'clientes.editar': 'clientes',

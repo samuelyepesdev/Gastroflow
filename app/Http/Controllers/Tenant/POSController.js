@@ -121,7 +121,8 @@ class POSController {
     static async vender(req, res) {
         try {
             const tenantId = req.tenant?.id;
-            const { nombre_cliente, forma_pago, productos, total, pedido_cocina_id, borrador_id } = req.body;
+            const { nombre_cliente, forma_pago, productos, total, pedido_cocina_id, borrador_id, efectivo_recibido } =
+                req.body;
             let { cliente_id } = req.body;
 
             const nombreLimpio = (nombre_cliente || '').trim();
@@ -148,7 +149,8 @@ class POSController {
                 forma_pago,
                 productos,
                 usuario_id: req.user.id,
-                puedeUsarModificadores
+                puedeUsarModificadores,
+                efectivo_recibido
             });
 
             // Si esta venta viene de una orden que ya se había guardado (y por lo tanto

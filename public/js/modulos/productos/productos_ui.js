@@ -168,6 +168,14 @@ ProductManager.prototype.init = function() {
     const esFav = btn.data('favorito');
     this.toggleFavorite(id, !esFav, btn);
   });
+
+  // "Pedir nota para cocina": toggle
+  $(document).on('click', '.btn-toggle-pidenota', (e) => {
+    const btn = $(e.currentTarget);
+    const id = btn.data('id');
+    const actual = Number(btn.data('pidenota')) === 1;
+    this.togglePideNota(id, !actual, btn);
+  });
 };
 
 ProductManager.prototype.setupKeyboardShortcuts = function() {

@@ -128,6 +128,118 @@ describe('FacturarPedidoService', () => {
         ).rejects.toThrow('Pedido sin items');
     });
 
+    describe('_procesarLineasFactura (descuentos por línea)', () => {
+        const tasas = new Map();
+        const item = (over = {}) => ({
+            id: 1,
+            producto_id: 7,
+            es_servicio: 0,
+            cantidad: 2,
+            precio_unitario: 5000,
+            pagado: 0,
+            unidad_medida: 'UND',
+            ...over
+        });
+
+        it('descuento en % (número suelto, retrocompat)', () => {
+            const { total, lineasFactura } = FacturarPedidoService._procesarLineasFactura(
+                [item()],
+                { 1: 10 },
+                tasas,
+                0,
+                'efectivo'
+            );
+            expect(total).toBe(9000);
+            expect(lineasFactura[0].descuento_porcentaje).toBe(10);
+            expect(lineasFactura[0].descuento_valor).toBeNull();
+        });
+
+        it('descuento en $ ({ tipo: "valor" }) resta del total de la línea', () => {
+            const { total, lineasFactura } = FacturarPedidoService._procesarLineasFactura(
+                [item()],
+                { 1: { tipo: 'valor', valor: 3000 } },
+                tasas,
+                0,
+                'efectivo'
+            );
+            expect(total).toBe(7000);
+            expect(lineasFactura[0].descuento_valor).toBe(3000);
+            expect(lineasFactura[0].descuento_porcentaje).toBeNull();
+            expect(lineasFactura[0].precio_unitario).toBe(3500);
+        });
+
+        it('descuento en $ mayor que el bruto se recorta al bruto', () => {
+            const { total, lineasFactura } = FacturarPedidoService._procesarLineasFactura(
+                [item()],
+                { 1: { tipo: 'valor', valor: 999999 } },
+                tasas,
+                0,
+                'efectivo'
+            );
+            expect(total).toBe(0);
+            expect(lineasFactura[0].descuento_valor).toBe(10000);
+        });
+
+        it('sin descuento deja ambas columnas en null', () => {
+            const { lineasFactura } = FacturarPedidoService._procesarLineasFactura([item()], {}, tasas, 0, 'efectivo');
+            expect(lineasFactura[0].descuento_porcentaje).toBeNull();
+            expect(lineasFactura[0].descuento_valor).toBeNull();
+        });
+    });
+
+    describe('_procesarLineasFactura (servicios externos → salida de caja)', () => {
+        const tasas = new Map();
+        const producto = { id: 1, producto_id: 7, es_servicio: 0, cantidad: 1, precio_unitario: 30000, pagado: 0 };
+        const domicilioExterno = {
+            id: 2,
+            servicio_id: 99,
+            es_servicio: 1,
+            cantidad: 1,
+            precio_unitario: 6000,
+            pagado: 0
+        };
+
+        it('acumula el servicio externo en montoServiciosExternos (pago en efectivo)', () => {
+            const res = FacturarPedidoService._procesarLineasFactura(
+                [producto, domicilioExterno],
+                {},
+                tasas,
+                0,
+                'efectivo',
+                new Set([99])
+            );
+            expect(res.montoServiciosExternos).toBe(6000);
+            // el monto sigue sumando al efectivo de la factura (se compensa aparte con la salida)
+            expect(res.montoEfectivo).toBe(36000);
+        });
+
+        it('acumula el servicio externo AUNQUE la factura se pague por transferencia', () => {
+            const res = FacturarPedidoService._procesarLineasFactura(
+                [producto, domicilioExterno],
+                {},
+                tasas,
+                0,
+                'transferencia',
+                new Set([99])
+            );
+            // al domiciliario se le paga en efectivo de la gaveta -> se compensa igual
+            expect(res.montoServiciosExternos).toBe(6000);
+            expect(res.montoEfectivo).toBe(0);
+        });
+
+        it('NO acumula si el servicio no es externo', () => {
+            const res = FacturarPedidoService._procesarLineasFactura(
+                [producto, domicilioExterno],
+                {},
+                tasas,
+                0,
+                'efectivo',
+                new Set() // 99 no está marcado como externo
+            );
+            expect(res.montoServiciosExternos).toBe(0);
+        });
+    });
+
     it('factura correctamente y emite el evento SSE "billed"', async () => {
         mockConn.query
             .mockResolvedValueOnce([[{ id: 10, estado: 'abierto', mesa_id: 2, total: 5000 }]]) // SELECT pedidos

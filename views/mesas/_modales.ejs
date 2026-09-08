@@ -96,6 +96,8 @@
                 <span>Propina:</span>
                 <span id="propinaMonto">$0</span>
             </div>
+            <% const puedeFacturarMesa = user && user.permisos && user.permisos.includes('mesas.facturar'); %>
+            <% if (puedeFacturarMesa) { %>
             <div class="row g-2 mb-2">
                 <div class="col-6 col-sm-3">
                     <button type="button" id="btnAplicarDescuentoMesa" class="btn btn-sm btn-outline-primary w-100" title="Descuento">
@@ -118,58 +120,47 @@
                     </button>
                 </div>
             </div>
+            <% } %>
             <div class="d-grid gap-2">
                 <button id="btnEnviarCocina" class="btn btn-warning py-2 fw-bold"><i class="bi bi-send me-1"></i>Enviar a Cocina</button>
+                <% if (puedeFacturarMesa) { %>
                 <button id="btnFacturarPedido" class="btn btn-success py-2 fw-bold"><i class="bi bi-cash-coin me-1"></i>Facturar</button>
+                <% } %>
             </div>
         </div>
     </div>
 </div>
 
 <!-- Panel de Favoritos Lateral (Aparece junto al offcanvas en Tablet/PC) -->
-<div id="sidePanelFavoritos" class="d-none d-md-block shadow-lg">
-    <div class="p-3">
-        <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-2">
-            <h6 class="fw-bold mb-0 text-white">
-                <i class="bi bi-star-fill me-2 text-warning"></i>Favoritos
+<div id="sidePanelFavoritos" class="d-none d-md-block">
+    <div class="fav-panel-inner">
+        <div class="fav-panel-header">
+            <h6 class="fav-panel-title">
+                <i class="bi bi-star-fill me-2"></i>Favoritos
             </h6>
-            <select id="filtroCategoriaFav" class="form-select form-select-sm border-0 bg-white"
-                style="width: auto; font-size: 0.75rem; border-radius: 8px;">
-                <option value="todos">Todos</option>
+            <select id="filtroCategoriaFav" class="fav-panel-select">
+                <option value="todos">Todas las categorías</option>
                 <% (typeof categorias !=='undefined' ? categorias : []).forEach(cat=> { %>
-                    <option value="<%= cat.id %>">
-                        <%= cat.nombre %>
-                    </option>
-                    <% }) %>
+                    <option value="<%= cat.id %>"><%= cat.nombre %></option>
+                <% }) %>
             </select>
         </div>
-        <div id="gridFavoritos" class="row g-2 overflow-auto"
-            style="max-height: calc(100vh - 120px); align-content: flex-start;">
+        <div id="gridFavoritos" class="fav-grid">
             <% (typeof productos !=='undefined' ? productos : []).filter(p=> p.es_favorito).forEach(p => { %>
-                <div class="col-6 col-lg-4 col-xl-3 mb-2">
-                    <div class="card p-2 text-center producto-fav-card shadow-sm border-0 h-100" data-id="<%= p.id %>"
-                        data-nombre="<%= p.nombre %>" data-precio="<%= p.precio_unidad %>"
-                        data-categoria="<%= p.categoria_id %>" data-categoria-nombre="<%= p.categoria_nombre %>">
-                        <div class="producto-fav-initials">
-                            <%= p.nombre.substring(0,2).toUpperCase() %>
-                        </div>
-                        <div class="small fw-bold text-truncate w-100 mt-1" style="font-size: 0.7rem;">
-                            <%= p.nombre %>
-                        </div>
-                        <div class="badge bg-primary-subtle text-primary border-0 mt-1" style="font-size: 0.65rem;">$<%=
-                                Number(p.precio_unidad).toLocaleString('es-CO') %>
-                        </div>
-                    </div>
+                <button type="button" class="producto-fav-card" data-id="<%= p.id %>"
+                    data-nombre="<%= p.nombre %>" data-precio="<%= p.precio_unidad %>"
+                    data-categoria="<%= p.categoria_id %>" data-categoria-nombre="<%= p.categoria_nombre %>"
+                    data-pide-nota="<%= p.pide_nota ? 1 : 0 %>">
+                    <span class="fav-card-name"><%= p.nombre %></span>
+                    <span class="fav-card-price">$<%= Number(p.precio_unidad).toLocaleString('es-CO') %></span>
+                </button>
+            <% }) %>
+            <% if ((typeof productos !=='undefined' ? productos : []).filter(p=> p.es_favorito).length === 0) { %>
+                <div class="fav-grid-empty">
+                    <i class="bi bi-star"></i>
+                    <p>Marca productos como favoritos en el menú de productos para que aparezcan aquí.</p>
                 </div>
-                <% }) %>
-                    <% if ((typeof productos !=='undefined' ? productos : []).filter(p=> p.es_favorito).length === 0) {
-                        %>
-                        <div class="col-12 text-center text-white-50 py-5">
-                            <i class="bi bi-star d-block fs-1 mb-2"></i>
-                            <p class="small">Marca productos como favoritos en el menú de productos para que aparezcan
-                                aquí.</p>
-                        </div>
-                        <% } %>
+            <% } %>
         </div>
     </div>
 </div>
@@ -192,12 +183,12 @@
                     <div id="descuentoMesaListaProductos" class="list-group list-group-flush"
                         style="max-height: 280px; overflow-y: auto;"></div>
                 </div>
-                <!-- Paso 2: Elegir porcentaje -->
+                <!-- Paso 2: Elegir porcentaje o monto en $ -->
                 <div id="descuentoMesaPaso2" style="display: none;">
                     <p class="text-muted small mb-2" id="descuentoModalProductoMesa">Producto</p>
                     <p class="small text-info mb-3"><i class="bi bi-info-circle me-1"></i>El descuento es solo
                         para esta venta.</p>
-                    <p class="mb-3">Elija el porcentaje de descuento:</p>
+                    <p class="mb-2">Descuento en porcentaje:</p>
                     <div class="d-flex flex-wrap gap-2 justify-content-center">
                         <button type="button" class="btn btn-outline-primary btn-descuento-mesa"
                             data-pct="5">5%</button>
@@ -209,6 +200,14 @@
                             data-pct="20">20%</button>
                         <button type="button" class="btn btn-outline-primary btn-descuento-mesa"
                             data-pct="30">30%</button>
+                    </div>
+                    <hr class="my-3">
+                    <p class="mb-2">O descuento en pesos:</p>
+                    <div class="input-group">
+                        <span class="input-group-text">$</span>
+                        <input type="text" inputmode="decimal" id="descuentoValorMesaInput"
+                            class="form-control money-input" placeholder="Monto a descontar">
+                        <button type="button" class="btn btn-primary" id="aplicarDescuentoValorMesaBtn">Aplicar</button>
                     </div>
                     <div class="mt-3 text-center">
                         <button type="button" class="btn btn-sm btn-outline-secondary"
@@ -442,7 +441,7 @@
         color: #0d6efd;
     }
 
-    /* Panel de Favoritos Lateral */
+    /* ===== Panel de Favoritos Lateral ===== */
     #sidePanelFavoritos {
         position: fixed;
         top: 0;
@@ -450,15 +449,13 @@
         /* Ancho del offcanvas de pedido */
         width: calc(100vw - 420px);
         height: 100vh;
-        background: rgba(33, 37, 41, 0.95);
-        backdrop-filter: blur(10px);
+        background: #171a1f;
         z-index: 1050;
-        /* Un poco por debajo del offcanvas pero sobre casi todo */
-        transition: all 0.3s ease-in-out;
+        transition: opacity .25s ease, visibility .25s ease;
         opacity: 0;
         visibility: hidden;
         pointer-events: none;
-        border-right: 1px solid rgba(255, 255, 255, 0.1);
+        border-right: 1px solid rgba(255, 255, 255, .06);
     }
 
     body.offcanvas-open #sidePanelFavoritos {
@@ -467,63 +464,152 @@
         pointer-events: auto;
     }
 
-    .bg-white-opacity {
-        background: rgba(255, 255, 255, 0.1) !important;
-        color: white !important;
+    .fav-panel-inner {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        padding: 16px 18px;
     }
 
-    .bg-white-opacity option {
-        background: white;
-        color: black;
+    .fav-panel-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding-bottom: 12px;
+        margin-bottom: 14px;
+        border-bottom: 1px solid rgba(255, 255, 255, .08);
+        flex-shrink: 0;
+    }
+
+    .fav-panel-title {
+        margin: 0;
+        font-weight: 700;
+        font-size: .95rem;
+        color: #fff;
+        letter-spacing: .2px;
+    }
+
+    .fav-panel-title .bi {
+        color: #f5c518;
+    }
+
+    .fav-panel-select {
+        appearance: none;
+        background: #23272e url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23a0a6b0' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E") no-repeat right 10px center;
+        color: #e6e8eb;
+        border: 1px solid rgba(255, 255, 255, .12);
+        border-radius: 8px;
+        font-size: .78rem;
+        padding: 6px 28px 6px 12px;
+        max-width: 190px;
+        cursor: pointer;
+        outline: none;
+    }
+
+    .fav-panel-select:focus {
+        border-color: #4c8bf5;
+    }
+
+    .fav-panel-select option {
+        background: #23272e;
+        color: #e6e8eb;
+    }
+
+    .fav-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+        gap: 10px;
+        align-content: start;
+        overflow-y: auto;
+        padding-right: 4px;
+        flex: 1;
+        min-height: 0;
     }
 
     .producto-fav-card {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        gap: 6px;
+        min-height: 78px;
+        padding: 10px 12px;
+        text-align: left;
+        background: #262b33;
+        border: 1px solid rgba(255, 255, 255, .06);
+        border-radius: 10px;
         cursor: pointer;
-        transition: all 0.2s;
-        border-radius: 12px;
-        background: white;
-        border: 2px solid transparent !important;
+        transition: transform .12s ease, border-color .12s ease, background .12s ease;
     }
 
     .producto-fav-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2) !important;
-        border-color: #0d6efd !important;
+        background: #2d333d;
+        border-color: #4c8bf5;
+        transform: translateY(-2px);
     }
 
-    .producto-fav-initials {
-        width: 35px;
-        height: 35px;
-        background: #f1f5f9;
-        color: #64748b;
-        border-radius: 8px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin: 0 auto;
+    .producto-fav-card:active {
+        transform: translateY(0) scale(.98);
+    }
+
+    .fav-card-name {
+        font-size: .74rem;
+        font-weight: 600;
+        line-height: 1.25;
+        color: #eef0f2;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .fav-card-price {
+        font-size: .8rem;
         font-weight: 800;
-        font-size: 0.8rem;
+        color: #34d399;
+        letter-spacing: .2px;
+    }
+
+    .fav-grid-empty {
+        grid-column: 1 / -1;
+        text-align: center;
+        color: rgba(255, 255, 255, .45);
+        padding: 48px 20px;
+    }
+
+    .fav-grid-empty .bi {
+        font-size: 2rem;
+        display: block;
+        margin-bottom: 10px;
+    }
+
+    .fav-grid-empty p {
+        font-size: .8rem;
+        margin: 0;
     }
 
     @media (max-width: 992px) {
         #sidePanelFavoritos {
             right: 400px;
             width: 300px;
-            /* Panel más estrecho en tablets */
+        }
+
+        .fav-grid {
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
         }
     }
 
     /* Scrollbar personalizado */
-    #gridFavoritos::-webkit-scrollbar {
-        width: 5px;
+    .fav-grid::-webkit-scrollbar {
+        width: 6px;
     }
 
-    #gridFavoritos::-webkit-scrollbar-track {
+    .fav-grid::-webkit-scrollbar-track {
         background: transparent;
     }
 
-    #gridFavoritos::-webkit-scrollbar-thumb {
-        background: rgba(255, 255, 255, 0.2);
+    .fav-grid::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, .18);
         border-radius: 10px;
     }
 </style>

@@ -18,6 +18,7 @@ const PERMISSIONS = {
     PRODUCTOS_EDITAR: 'productos.editar',
     PRODUCTOS_ELIMINAR: 'productos.eliminar',
     PRODUCTOS_IMPORTAR: 'productos.importar',
+    PRODUCTOS_PIDE_NOTA: 'productos.pide_nota',
 
     // Clients
     CLIENTES_VER: 'clientes.ver',
@@ -85,7 +86,14 @@ const PERMISSIONS = {
 
 // Secciones para agrupar permisos en el panel (clave = título, valor = prefijo o permisos)
 const PERMISSION_SECTIONS = {
-    Productos: ['productos.ver', 'productos.crear', 'productos.editar', 'productos.eliminar', 'productos.importar'],
+    Productos: [
+        'productos.ver',
+        'productos.crear',
+        'productos.editar',
+        'productos.eliminar',
+        'productos.importar',
+        'productos.pide_nota'
+    ],
     Clientes: ['clientes.ver', 'clientes.crear', 'clientes.editar', 'clientes.eliminar'],
     Mesas: ['mesas.ver', 'mesas.gestionar', 'mesas.editar', 'mesas.qr'],
     Cocina: ['cocina.ver', 'cocina.ver_todo', 'cocina.ver_listos', 'cocina.gestionar'],

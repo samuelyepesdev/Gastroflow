@@ -3,6 +3,16 @@
 $(function () {
   const mod = window.FacturasModule;
 
+  function badgeDescuento(it) {
+    if (it.descuento_valor > 0) {
+      return `<span class="badge bg-success">-$${Number(it.descuento_valor).toLocaleString('es-CO')}</span>`;
+    }
+    if (it.descuento_porcentaje > 0) {
+      return `<span class="badge bg-success">-${it.descuento_porcentaje}%</span>`;
+    }
+    return '';
+  }
+
   mod.actualizarTablaProductos = function() {
     const tbody = $('#productosTabla').empty();
     mod.totalFactura = 0;
@@ -16,7 +26,7 @@ $(function () {
       it.subtotal = mod.subtotalLinea(it);
       mod.totalFactura += it.subtotal;
       tbody.append(`<tr>
-        <td>${it.nombre} ${it.descuento_porcentaje > 0 ? `<span class="badge bg-success">-${it.descuento_porcentaje}%</span>` : ''}</td>
+        <td>${it.nombre} ${badgeDescuento(it)}</td>
         <td class="text-center text-nowrap">
           <button class="btn btn-sm btn-outline-secondary" onclick="cambiarCant(${idx},-1)"><i class="bi bi-dash"></i></button>
           <input type="number" class="form-control form-control-sm text-center d-inline-block mx-1" style="width: 70px;" value="${it.cantidad}" onchange="setCant(${idx}, this.value)" min="1">
@@ -40,7 +50,7 @@ $(function () {
     let html = '';
     mod.productosFactura.forEach((it, idx) => {
       html += `<div class="producto-mobile-card p-2 mb-2 bg-white border rounded">
-        <div class="fw-bold small">${it.nombre}</div>
+        <div class="fw-bold small">${it.nombre} ${badgeDescuento(it)}</div>
         <div class="d-flex align-items-center gap-2 my-1">
           <button class="btn btn-sm btn-outline-secondary" onclick="cambiarCant(${idx},-1)"><i class="bi bi-dash"></i></button>
           <input type="number" class="form-control form-control-sm text-center d-inline-block" style="width: 60px;" value="${it.cantidad}" onchange="setCant(${idx}, this.value)" min="1">
@@ -166,7 +176,7 @@ $(function () {
 
   function agregarProductoALista(p) {
     const precio = Number(p.precio_unidad) || 0;
-    const item = { producto_id: p.id, nombre: p.nombre, cantidad: 1, unidad: 'UND', precio_original: precio, precio, descuento_porcentaje: 0 };
+    const item = { producto_id: p.id, nombre: p.nombre, cantidad: 1, unidad: 'UND', precio_original: precio, precio, descuento_porcentaje: 0, descuento_valor: 0 };
     mod.productosFactura.push(item);
     mod.actualizarTablaProductos();
     $('#producto').val('').focus();
@@ -202,15 +212,16 @@ $(function () {
     $('#descuentoModalProducto').text(it.nombre);
     $('#descuentoModalPrecioActual').text(it.precio.toLocaleString('es-CO'));
     $('#descuentoPorcentajeManual').val(it.descuento_porcentaje || '');
-    $('#nuevoPrecioManual').val(MoneyInput.format(String(it.precio)));
+    $('#descuentoValorManual').val(it.descuento_valor ? MoneyInput.format(String(it.descuento_valor)) : '');
     new bootstrap.Modal(document.getElementById('descuentoModal')).show();
   };
 
   $(document).on('click', '.btn-descuento-quick', function () { aplicarDescPct($(this).data('pct')); });
   $('#btnAplicarPctManual').click(() => aplicarDescPct($('#descuentoPorcentajeManual').val()));
-  $('#btnAplicarPrecioFijo').click(() => {
+  $('#btnAplicarDescValor').click(() => {
     const it = mod.productosFactura[window._descIdx];
-    it.precio = MoneyInput.parse($('#nuevoPrecioManual').val()) || it.precio;
+    const bruto = it.cantidad * it.precio;
+    it.descuento_valor = Math.min(Math.max(MoneyInput.parse($('#descuentoValorManual').val()) || 0, 0), bruto);
     it.descuento_porcentaje = 0;
     mod.actualizarTablaProductos();
     bootstrap.Modal.getInstance(document.getElementById('descuentoModal')).hide();
@@ -219,6 +230,7 @@ $(function () {
   function aplicarDescPct(p) {
     const it = mod.productosFactura[window._descIdx];
     it.descuento_porcentaje = Number.parseFloat(p) || 0;
+    it.descuento_valor = 0;
     mod.actualizarTablaProductos();
     bootstrap.Modal.getInstance(document.getElementById('descuentoModal')).hide();
   }
@@ -227,6 +239,7 @@ $(function () {
     const it = mod.productosFactura[window._descIdx];
     it.precio = it.precio_original;
     it.descuento_porcentaje = 0;
+    it.descuento_valor = 0;
     mod.actualizarTablaProductos();
     bootstrap.Modal.getInstance(document.getElementById('descuentoModal')).hide();
   });
@@ -246,15 +259,22 @@ $(function () {
         total: mod.totalFactura,
         forma_pago: $('#formaPago').val(),
         evento_id: $('#eventoId').val() || null,
-        productos: mod.productosFactura.map(p => ({
-          producto_id: p.producto_id,
-          cantidad: p.cantidad,
-          precio: p.precio * (1 - (p.descuento_porcentaje || 0) / 100),
-          precio_original: p.precio_original,
-          unidad: p.unidad,
-          subtotal: mod.subtotalLinea(p),
-          descuento_porcentaje: p.descuento_porcentaje || null
-        }))
+        productos: mod.productosFactura.map(p => {
+          const bruto = p.cantidad * p.precio;
+          const neto = p.descuento_valor > 0
+            ? Math.max(0, bruto - p.descuento_valor)
+            : bruto * (1 - (p.descuento_porcentaje || 0) / 100);
+          return {
+            producto_id: p.producto_id,
+            cantidad: p.cantidad,
+            precio: p.cantidad > 0 ? neto / p.cantidad : p.precio,
+            precio_original: p.precio_original,
+            unidad: p.unidad,
+            subtotal: mod.subtotalLinea(p),
+            descuento_porcentaje: p.descuento_valor > 0 ? null : (p.descuento_porcentaje || null),
+            descuento_valor: p.descuento_valor > 0 ? p.descuento_valor : null
+          };
+        })
       }),
       success: res => {
         Swal.close();

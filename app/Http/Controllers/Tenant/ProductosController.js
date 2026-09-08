@@ -331,6 +331,23 @@ class ProductosController {
         }
     }
 
+    // PATCH /productos/:id/pide-nota
+    static async togglePideNota(req, res) {
+        try {
+            const tenantId = req.tenant?.id;
+            if (!tenantId) {
+                return res.status(403).json({ error: 'Contexto de tenant no disponible' });
+            }
+            const id = parseInt(req.params.id, 10);
+            const { pide_nota } = req.body;
+            await ProductService.togglePideNota(id, tenantId, pide_nota);
+            res.json({ message: 'Preferencia de nota actualizada' });
+        } catch (error) {
+            console.error('Error al actualizar pide_nota:', error);
+            res.status(500).json({ error: 'Error al actualizar la preferencia de nota' });
+        }
+    }
+
     // POST /productos/upload-image
     static async uploadImage(req, res) {
         try {

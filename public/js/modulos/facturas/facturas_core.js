@@ -62,6 +62,10 @@ window.FacturasModule = {
   },
 
   subtotalLinea(item) {
-    return item.cantidad * item.precio * (1 - (item.descuento_porcentaje || 0) / 100);
+    const bruto = item.cantidad * item.precio;
+    if (item.descuento_valor > 0) {
+      return Math.max(0, bruto - item.descuento_valor);
+    }
+    return bruto * (1 - (item.descuento_porcentaje || 0) / 100);
   }
 };

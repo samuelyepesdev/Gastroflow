@@ -14,34 +14,37 @@ let facturasHoyCount = 0;
 });
 
 const fmtNum = (n) => '$ ' + (Number(n) || 0).toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+// Los montos son SIEMPRE del día de hoy (neto = venta − servicios externos),
+// independientes del rango de fechas de arriba (que solo filtra la tabla).
+const vHoy = (typeof ventasHoy !== 'undefined' && ventasHoy) ? ventasHoy : { efectivo: 0, transferencia: 0, total: 0 };
 %>
 
 <div class="kpis-grid">
-    <!-- Total Efectivo -->
+    <!-- Efectivo (hoy) -->
     <div class="kpi-card">
         <div class="kpi-card-header">
             <span class="kpi-card-icon" style="background: var(--accentSoft); color: var(--accent);"><i class="bi bi-cash"></i></span>
-            <span class="kpi-card-title">Efectivo</span>
+            <span class="kpi-card-title">Efectivo (hoy)</span>
         </div>
-        <div class="kpi-card-value" id="totalEfectivoVal"><%= fmtNum(totalEfectivo) %></div>
+        <div class="kpi-card-value" id="totalEfectivoVal"><%= fmtNum(vHoy.efectivo) %></div>
     </div>
 
-    <!-- Total Transferencia -->
+    <!-- Transferencia (hoy) -->
     <div class="kpi-card">
         <div class="kpi-card-header">
             <span class="kpi-card-icon" style="background: #eef2fb; color: #3257b0;"><i class="bi bi-bank"></i></span>
-            <span class="kpi-card-title">Transferencia</span>
+            <span class="kpi-card-title">Transferencia (hoy)</span>
         </div>
-        <div class="kpi-card-value" id="totalTransferenciaVal"><%= fmtNum(totalTransferencia) %></div>
+        <div class="kpi-card-value" id="totalTransferenciaVal"><%= fmtNum(vHoy.transferencia) %></div>
     </div>
 
-    <!-- Total General (Venta Neta) -->
+    <!-- Total Neto (hoy) -->
     <div class="kpi-card-gradient">
         <div class="kpi-card-header">
             <span class="kpi-card-icon" style="background: rgba(255, 255, 255, 0.18); color: #fff;"><i class="bi bi-wallet2"></i></span>
-            <span class="kpi-card-title">Total Neto</span>
+            <span class="kpi-card-title">Total Neto (hoy)</span>
         </div>
-        <div class="kpi-card-value" id="totalGeneralVal"><%= fmtNum(totalGeneral) %></div>
+        <div class="kpi-card-value" id="totalGeneralVal"><%= fmtNum(vHoy.total) %></div>
     </div>
 
     <!-- Facturas Hoy -->

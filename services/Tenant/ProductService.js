@@ -273,6 +273,10 @@ class ProductService {
     static async toggleFavorite(id, tenantId, esFavorito) {
         return await ProductRepository.toggleFavorite(id, tenantId, esFavorito);
     }
+
+    static async togglePideNota(id, tenantId, pideNota) {
+        return await ProductRepository.togglePideNota(id, tenantId, pideNota);
+    }
 }
 
 module.exports = ProductService;

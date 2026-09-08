@@ -147,59 +147,35 @@ function rowMatchesSearch(row) {
 }
 
 function recalculateVisibleStats() {
-    let visibleEfectivo = 0;
-    let visibleTransferencia = 0;
-    let visibleTotal = 0;
-    let visibleCount = 0;
-    
+    // Las tarjetas Efectivo / Transferencia / Total Neto son fijas del día de hoy
+    // (render del servidor) y NO se recalculan con los filtros de la tabla; estos
+    // solo afectan los subtotales por grupo y el contador "Facturas Hoy".
     const groupHeaders = document.querySelectorAll('.table-group-header');
     groupHeaders.forEach(header => {
         let next = header.nextElementSibling;
         let groupTotal = 0;
         let groupCount = 0;
-        
+
         while (next && !next.classList.contains('table-group-header')) {
             if (next.style.display !== 'none') {
-                const total = Number(next.dataset.total || 0);
-                const fp = next.dataset.formaPago || '';
-                
-                groupTotal += total;
+                groupTotal += Number(next.dataset.total || 0);
                 groupCount++;
-                
-                visibleTotal += total;
-                visibleCount++;
-                if (fp === 'efectivo') {
-                    visibleEfectivo += total;
-                } else {
-                    visibleTransferencia += total;
-                }
             }
             next = next.nextElementSibling;
         }
-        
+
         const summarySpan = header.querySelector('.group-summary');
         if (summarySpan) {
             summarySpan.innerHTML = groupCount + ' facturas · <b>$ ' + Math.round(groupTotal).toLocaleString('es-CO') + '</b>';
         }
-        
+
         if (groupCount === 0) {
             header.style.setProperty('display', 'none', 'important');
         } else {
             header.style.setProperty('display', 'table-row', 'important');
         }
     });
-    
-    const fmt = (n) => '$ ' + Math.round(n).toLocaleString('es-CO');
-    
-    const elEfectivo = document.getElementById('totalEfectivoVal');
-    if (elEfectivo) elEfectivo.textContent = fmt(visibleEfectivo);
-    
-    const elTransf = document.getElementById('totalTransferenciaVal');
-    if (elTransf) elTransf.textContent = fmt(visibleTransferencia);
-    
-    const elTotal = document.getElementById('totalGeneralVal');
-    if (elTotal) elTotal.textContent = fmt(visibleTotal);
-    
+
     const elCount = document.getElementById('facturasHoyVal');
     if (elCount) {
         let hoyCount = 0;

@@ -91,6 +91,11 @@ window.POS_QZ = {
             text(`${item.cantidad} x ${item.producto_nombre}`.slice(0, cols));
             const sub = item.subtotal !== undefined ? money(item.subtotal) : '';
             if (sub) text(sub.padStart(cols));
+            if (item.descuento_valor != null && Number(item.descuento_valor) > 0) {
+                text(`  Desc: -${money(item.descuento_valor)}`.slice(0, cols));
+            } else if (item.descuento_porcentaje != null && Number(item.descuento_porcentaje) > 0) {
+                text(`  Desc: -${Number(item.descuento_porcentaje)}%`.slice(0, cols));
+            }
             (item.modificadores || []).forEach(mod => {
                 text(`  + ${mod.opcion_nombre}`.slice(0, cols));
             });
@@ -101,6 +106,11 @@ window.POS_QZ = {
         if (factura.total_impuestos) text(`Impuestos:`.padEnd(cols - 12) + money(factura.total_impuestos).padStart(12));
         if (factura.propina) text(`Propina:`.padEnd(cols - 12) + money(factura.propina).padStart(12));
         text(`TOTAL:`.padEnd(cols - 12) + money(factura.total).padStart(12), { bold: true });
+
+        if (factura.efectivo_recibido != null && Number(factura.efectivo_recibido) > Number(factura.total)) {
+            text(`Recibido:`.padEnd(cols - 12) + money(factura.efectivo_recibido).padStart(12));
+            text(`Cambio:`.padEnd(cols - 12) + money(Number(factura.efectivo_recibido) - Number(factura.total)).padStart(12));
+        }
 
         if (factura.forma_pago === 'mixto') {
             text(`Efectivo: ${money(factura.monto_efectivo)}`);

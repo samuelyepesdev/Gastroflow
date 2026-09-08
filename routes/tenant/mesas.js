@@ -38,7 +38,7 @@ router.get('/pedidos/:pedidoId', Pedido.show);
 router.patch('/pedidos/:pedidoId/propina', queueForSync('pedidos.actualizar_propina'), Pedido.updatePropina);
 router.put('/pedidos/:pedidoId/cliente', Pedido.updateCliente);
 router.delete('/pedidos/:pedidoId/limpiar', Pedido.limpiar);
-router.post('/pedidos/:pedidoId/facturar', Pedido.facturar);
+router.post('/pedidos/:pedidoId/facturar', requirePermission('mesas.facturar'), Pedido.facturar);
 
 // --- ITEMS DEL PEDIDO ---
 router.post('/pedidos/:pedidoId/items', queueForSync('pedido_items.agregar'), Items.store);
@@ -48,8 +48,8 @@ router.patch('/items/:itemId/cantidad', queueForSync('pedido_items.actualizar_ca
 router.delete('/items/:itemId', queueForSync('pedido_items.eliminar'), Items.destroy);
 router.put('/items/:itemId/enviar', Items.enviar);
 router.put('/items/:itemId/estado', Items.updateEstado);
-router.put('/items/:itemId/pagar', Items.pagar);
-router.post('/items/pagar-multiples', Items.pagarMultiples);
+router.put('/items/:itemId/pagar', requirePermission('mesas.facturar'), Items.pagar);
+router.post('/items/pagar-multiples', requirePermission('mesas.facturar'), Items.pagarMultiples);
 
 // --- ACCIONES OPERATIVAS ---
 router.put('/pedidos/:pedidoId/mover', Actions.moverPedido);

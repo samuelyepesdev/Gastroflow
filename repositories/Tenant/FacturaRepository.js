@@ -7,6 +7,7 @@
 const db = require('../../config/database');
 const { toFechaISOUtc } = require('../../utils/dateHelpers');
 const TaxService = require('../../services/Shared/TaxService');
+const CajaRepository = require('./CajaRepository');
 
 class FacturaRepository {
     /**
@@ -86,13 +87,27 @@ class FacturaRepository {
 
             // Buscar sesión de caja abierta para vincular la venta
             const [sesiones] = await connection.query(
-                'SELECT id FROM caja_sesiones WHERE tenant_id = ? AND estado = "abierta" LIMIT 1',
+                'SELECT id, usuario_id FROM caja_sesiones WHERE tenant_id = ? AND estado = "abierta" LIMIT 1',
                 [tenantId]
             );
             const cajaSesionId = sesiones.length > 0 ? sesiones[0].id : null;
+            const cajaSesionUsuarioId = sesiones.length > 0 ? sesiones[0].usuario_id : null;
+
+            // Desglose efectivo/transferencia para el arqueo de caja. El POS/eventos
+            // envían un solo forma_pago (sin split), así que el total va íntegro al
+            // método usado; 'mixto' u otros quedan en 0/0 (no rompe: la caja usa 0).
+            const totalNum = Number.parseFloat(facturaData.total) || 0;
+            const montoEfectivo = facturaData.forma_pago === 'efectivo' ? totalNum : 0;
+            const montoTransferencia = facturaData.forma_pago === 'transferencia' ? totalNum : 0;
+
+            // Efectivo recibido: solo informativo (Recibido/Cambio en ticket y caja).
+            // Se guarda únicamente si es un pago en efectivo y cubre el total.
+            const efectivoRecibidoNum = Number.parseFloat(facturaData.efectivo_recibido) || 0;
+            const efectivoRecibido =
+                facturaData.forma_pago === 'efectivo' && efectivoRecibidoNum >= totalNum ? efectivoRecibidoNum : null;
 
             const [result] = await connection.query(
-                'INSERT INTO facturas (tenant_id, numero, cliente_id, total, forma_pago, evento_id, fecha, caja_sesion_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+                'INSERT INTO facturas (tenant_id, numero, cliente_id, total, forma_pago, evento_id, fecha, caja_sesion_id, monto_efectivo, monto_transferencia, efectivo_recibido) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
                 [
                     tenantId,
                     numero,
@@ -101,7 +116,10 @@ class FacturaRepository {
                     facturaData.forma_pago,
                     evento_id,
                     fechaEmisionUtc,
-                    cajaSesionId
+                    cajaSesionId,
+                    montoEfectivo,
+                    montoTransferencia,
+                    efectivoRecibido
                 ]
             );
 
@@ -129,6 +147,18 @@ class FacturaRepository {
                     descuentoFactura += Math.round((precioOriginal - p.precio) * p.cantidad * 100) / 100;
                 }
 
+                const descuentoValorLinea =
+                    p.descuento_valor !== null && p.descuento_valor !== undefined && p.descuento_valor > 0
+                        ? p.descuento_valor
+                        : null;
+                const descuentoPorcentajeLinea =
+                    descuentoValorLinea === null &&
+                    p.descuento_porcentaje !== null &&
+                    p.descuento_porcentaje !== undefined &&
+                    p.descuento_porcentaje > 0
+                        ? p.descuento_porcentaje
+                        : null;
+
                 return [
                     factura_id,
                     p.producto_id || null,
@@ -139,11 +169,8 @@ class FacturaRepository {
                     precioOriginal, // Guardar precio original (catálogo)
                     p.unidad || (p.es_servicio ? 'SERV' : 'UND'),
                     p.subtotal,
-                    p.descuento_porcentaje !== null &&
-                    p.descuento_porcentaje !== undefined &&
-                    p.descuento_porcentaje > 0
-                        ? p.descuento_porcentaje
-                        : null,
+                    descuentoPorcentajeLinea,
+                    descuentoValorLinea,
                     base_gravable,
                     tasa,
                     valor_impuesto
@@ -151,7 +178,7 @@ class FacturaRepository {
             });
 
             const [detalleResult] = await connection.query(
-                'INSERT INTO detalle_factura (factura_id, producto_id, servicio_id, es_servicio, cantidad, precio_unitario, precio_original, unidad_medida, subtotal, descuento_porcentaje, base_gravable, tasa_impuesto, valor_impuesto) VALUES ?',
+                'INSERT INTO detalle_factura (factura_id, producto_id, servicio_id, es_servicio, cantidad, precio_unitario, precio_original, unidad_medida, subtotal, descuento_porcentaje, descuento_valor, base_gravable, tasa_impuesto, valor_impuesto) VALUES ?',
                 [detallesValues]
             );
 
@@ -190,6 +217,30 @@ class FacturaRepository {
                 ]
             );
 
+            // Servicios externos (ej. domicilio de un tercero): el dinero entra con
+            // la factura pero se le entrega al proveedor en efectivo, así que se
+            // compensa con una salida de caja, sin importar cómo pagó el cliente.
+            if (cajaSesionId) {
+                const montoExternos = await FacturaRepository._calcularServiciosExternos(
+                    connection,
+                    tenantId,
+                    facturaData.productos
+                );
+                if (montoExternos > 0) {
+                    await CajaRepository.registrarSalidaServicioExterno(
+                        {
+                            tenantId,
+                            sesionId: cajaSesionId,
+                            usuarioId: facturaData.usuario_id || cajaSesionUsuarioId,
+                            facturaId: factura_id,
+                            numeroFactura: numero,
+                            monto: montoExternos
+                        },
+                        connection
+                    );
+                }
+            }
+
             await connection.commit();
             connection.release();
 
@@ -202,6 +253,32 @@ class FacturaRepository {
     }
 
     /**
+     * Suma el subtotal de las líneas que son servicios externos (servicios.es_externo = 1)
+     * dentro de un arreglo de productos de factura. Usado para compensar el arqueo de caja.
+     * @returns {Promise<number>} monto total de servicios externos (0 si no hay)
+     */
+    static async _calcularServiciosExternos(connection, tenantId, productos) {
+        const servicioIds = [
+            ...new Set((productos || []).filter(p => p.es_servicio && p.servicio_id).map(p => Number(p.servicio_id)))
+        ];
+        if (servicioIds.length === 0) {
+            return 0;
+        }
+        const [rows] = await connection.query(
+            'SELECT id FROM servicios WHERE tenant_id = ? AND id IN (?) AND es_externo = 1',
+            [tenantId, servicioIds]
+        );
+        const externos = new Set(rows.map(r => Number(r.id)));
+        if (externos.size === 0) {
+            return 0;
+        }
+        const monto = (productos || [])
+            .filter(p => p.es_servicio && p.servicio_id && externos.has(Number(p.servicio_id)))
+            .reduce((sum, p) => sum + (Number.parseFloat(p.subtotal) || 0), 0);
+        return Math.round(monto * 100) / 100;
+    }
+
+    /**
      * Find invoice by ID with client data
      * @param {number} id - Invoice ID
      * @returns {Promise<Object|null>} Invoice object or null
@@ -210,7 +287,7 @@ class FacturaRepository {
         const [facturas] = await db.query(
             `
             SELECT f.id, f.tenant_id, f.numero, f.cliente_id, f.total, f.forma_pago, f.propina, f.evento_id,
-                   f.subtotal, f.descuento, f.total_impuestos, f.monto_efectivo, f.monto_transferencia,
+                   f.subtotal, f.descuento, f.total_impuestos, f.monto_efectivo, f.monto_transferencia, f.efectivo_recibido,
                    DATE_FORMAT(f.fecha, '%Y-%m-%d %H:%i:%s') AS fecha,
                    c.nombre AS cliente_nombre, c.direccion, c.telefono,
                    e.nombre AS evento_nombre

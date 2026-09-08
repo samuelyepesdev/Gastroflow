@@ -246,16 +246,38 @@
             <div class="modal-body p-3">
                 <p class="fw-semibold small mb-1" id="posDescNombre"></p>
                 <p class="text-muted small mb-3">Precio unitario: <span id="posDescPrecio"></span></p>
-                <div class="d-flex flex-wrap gap-1 mb-3">
-                    <button class="btn btn-outline-primary btn-sm pos-desc-quick" data-pct="5">5%</button>
-                    <button class="btn btn-outline-primary btn-sm pos-desc-quick" data-pct="10">10%</button>
-                    <button class="btn btn-outline-primary btn-sm pos-desc-quick" data-pct="15">15%</button>
-                    <button class="btn btn-outline-primary btn-sm pos-desc-quick" data-pct="20">20%</button>
-                    <button class="btn btn-outline-primary btn-sm pos-desc-quick" data-pct="50">50%</button>
+
+                <div class="btn-group btn-group-sm w-100 mb-3" role="group">
+                    <button type="button" class="btn btn-outline-primary pos-desc-tipo-btn active" data-tipo="porcentaje">
+                        <i class="bi bi-percent me-1"></i>Porcentaje
+                    </button>
+                    <button type="button" class="btn btn-outline-primary pos-desc-tipo-btn" data-tipo="valor">
+                        <i class="bi bi-currency-dollar me-1"></i>Monto $
+                    </button>
                 </div>
-                <div class="input-group input-group-sm mb-2">
-                    <input type="number" id="posDescPct" class="form-control" placeholder="Otro %" min="0" max="100">
-                    <button class="btn btn-primary" type="button" id="posDescAplicar">Aplicar</button>
+
+                <div id="posDescPanelPct">
+                    <div class="d-flex flex-wrap gap-1 mb-3">
+                        <button class="btn btn-outline-primary btn-sm pos-desc-quick" data-pct="5">5%</button>
+                        <button class="btn btn-outline-primary btn-sm pos-desc-quick" data-pct="10">10%</button>
+                        <button class="btn btn-outline-primary btn-sm pos-desc-quick" data-pct="15">15%</button>
+                        <button class="btn btn-outline-primary btn-sm pos-desc-quick" data-pct="20">20%</button>
+                        <button class="btn btn-outline-primary btn-sm pos-desc-quick" data-pct="50">50%</button>
+                    </div>
+                    <div class="input-group input-group-sm mb-2">
+                        <input type="number" id="posDescPct" class="form-control" placeholder="Otro %" min="0" max="100">
+                        <button class="btn btn-primary" type="button" id="posDescAplicar">Aplicar</button>
+                    </div>
+                </div>
+
+                <div id="posDescPanelValor" class="d-none">
+                    <div class="input-group input-group-sm mb-2">
+                        <span class="input-group-text">$</span>
+                        <input type="text" inputmode="decimal" id="posDescValor" class="form-control money-input"
+                            placeholder="Descuento en pesos">
+                        <button class="btn btn-primary" type="button" id="posDescAplicarValor">Aplicar</button>
+                    </div>
+                    <p class="text-muted small mb-0">Se resta del total de la línea (solo esta venta).</p>
                 </div>
             </div>
             <div class="modal-footer py-2 border-0">

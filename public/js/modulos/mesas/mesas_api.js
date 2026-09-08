@@ -11,6 +11,8 @@ window.MesasModule.abrirPedido = async function(mesaId, mesaNumero) {
     const data = await resp.json();
     if (!resp.ok) throw new Error(data.error || 'Error al abrir pedido');
     this.pedidoActual = data.pedido;
+    this.pedidoAbiertoAt = Date.now();
+    this.cerradaStreak = 0;
     $('#pedidoMesa').text(mesaNumero);
 
     const $btnLiberar = $('#btnLiberarMesaHeader');

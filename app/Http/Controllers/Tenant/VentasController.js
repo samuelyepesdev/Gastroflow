@@ -1,6 +1,7 @@
 const VentaService = require('../../../../services/Tenant/VentaService');
 const ConfiguracionService = require('../../../../services/Tenant/ConfiguracionService');
 const EventoService = require('../../../../services/Tenant/EventoService');
+const SalesStatsRepository = require('../../../../repositories/Tenant/Stats/SalesStatsRepository');
 const { toFechaISOUtc } = require('../../../../utils/dateHelpers');
 let ExcelJS;
 
@@ -27,10 +28,21 @@ class VentasController {
                     eventoFiltro = { id: ev.id, nombre: ev.nombre };
                 }
             }
-            const [ventas, mesasListas] = await Promise.all([
+            // "Ventas hoy" (siempre el día actual en zona Colombia, independiente del
+            // rango de filtro de arriba), desglosado por medio de pago igual que el dashboard.
+            const hoyColombia = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Bogota' });
+
+            const [ventas, mesasListas, hoyTotals] = await Promise.all([
                 VentaService.getWithFilters(tenantId, filters),
-                VentaService.getTablesReadyToPay(tenantId)
+                VentaService.getTablesReadyToPay(tenantId),
+                SalesStatsRepository.getTotalsByPaymentMethod(tenantId, { desde: hoyColombia, hasta: hoyColombia })
             ]);
+            const ventasHoy = {
+                efectivo: hoyTotals.efectivo || 0,
+                transferencia: hoyTotals.transferencia || 0,
+                serviciosExternos: hoyTotals.serviciosExternos || 0,
+                total: (hoyTotals.efectivo || 0) + (hoyTotals.transferencia || 0)
+            };
             let totalEfectivo = 0,
                 totalTransferencia = 0,
                 totalGeneral = 0,
@@ -64,6 +76,7 @@ class VentasController {
                 totalTransferencia,
                 totalGeneral, // Ahora es el total de solo productos
                 totalServiciosExternos,
+                ventasHoy,
                 user: req.user,
                 tenant: req.tenant,
                 allowedByPlan: res.locals.allowedByPlan || {}

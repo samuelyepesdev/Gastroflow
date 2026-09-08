@@ -54,12 +54,8 @@
                                         <% sesiones.forEach(sesion=> { %>
                                             <tr>
                                                 <td class="ps-4">
-                                                    <div class="fw-bold">
-                                                        <%= new Date(sesion.fecha_cierre).toLocaleDateString() %>
-                                                    </div>
-                                                    <div class="small text-muted">
-                                                        <%= new Date(sesion.fecha_cierre).toLocaleTimeString() %>
-                                                    </div>
+                                                    <div class="fw-bold"><%= sesion.cierre_fecha %></div>
+                                                    <div class="small text-muted"><%= sesion.cierre_hora %></div>
                                                 </td>
                                                 <td>
                                                     <div class="d-flex align-items-center">

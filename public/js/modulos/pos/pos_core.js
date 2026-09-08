@@ -93,6 +93,7 @@ window.POS = {
                 precio_original: precio,
                 cantidad: 1,
                 descuento_porcentaje: 0,
+                descuento_valor: 0,
                 categoria_id: producto.categoria_id,
                 unidad: 'UND',
                 modificadores_seleccion: [],
@@ -122,6 +123,7 @@ window.POS = {
                 precio_original: precio,
                 cantidad: 1,
                 descuento_porcentaje: 0,
+                descuento_valor: 0,
                 categoria_id: producto.categoria_id,
                 unidad: 'UND',
                 modificadores_seleccion: seleccion,
@@ -147,6 +149,7 @@ window.POS = {
             precio_original: precio,
             cantidad: 1,
             descuento_porcentaje: 0,
+            descuento_valor: 0,
             unidad: 'SERV',
             modificadores_seleccion: [],
             modificadores_preview: [],
@@ -186,10 +189,19 @@ window.POS = {
         }
     },
 
-    setDescuento(idx, pct) {
+    // desc: número (retrocompat = %) o { tipo: 'porcentaje'|'valor', valor: N }
+    setDescuento(idx, desc) {
         const item = this.state.cart[idx];
         if (!item) return;
-        item.descuento_porcentaje = Math.min(Math.max(Number.parseFloat(pct) || 0, 0), 100);
+        const obj = typeof desc === 'object' && desc !== null ? desc : { tipo: 'porcentaje', valor: desc };
+        const valor = Math.max(Number.parseFloat(obj.valor) || 0, 0);
+        if (obj.tipo === 'valor') {
+            item.descuento_valor = Math.min(valor, item.cantidad * item.precio);
+            item.descuento_porcentaje = 0;
+        } else {
+            item.descuento_porcentaje = Math.min(valor, 100);
+            item.descuento_valor = 0;
+        }
         POS_UI.renderCart();
     },
 
@@ -212,7 +224,10 @@ window.POS = {
 
     // ─── Totales ──────────────────────────────────────────────────
     itemSubtotal(item) {
-        const base = item.cantidad * item.precio * (1 - (item.descuento_porcentaje || 0) / 100);
+        const bruto = item.cantidad * item.precio;
+        const base = item.descuento_valor > 0
+            ? Math.max(0, bruto - item.descuento_valor)
+            : bruto * (1 - (item.descuento_porcentaje || 0) / 100);
         const adicionales = item.cantidad * (item.modificadores_total || 0);
         return base + adicionales;
     },

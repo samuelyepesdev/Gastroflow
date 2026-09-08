@@ -58,7 +58,8 @@ $(function () {
       const cantidad = Number(it.cantidad || 0);
       const precio = Number((it.precio_unitario != null ? it.precio_unitario : it.precio) || 0);
       const subtotal = mod.subtotalConDescuento(cantidad, precio, it.id);
-      const descTexto = (mod.descuentosPorItem[it.id] != null && mod.descuentosPorItem[it.id] > 0) ? ' <span class="badge bg-success">-' + mod.descuentosPorItem[it.id] + '%</span>' : '';
+      const descBadgeTxt = mod.descuentoBadge(it.id);
+      const descTexto = descBadgeTxt ? ' <span class="badge bg-success">' + descBadgeTxt + '</span>' : '';
       const $a = $('<a href="#" class="list-group-item list-group-item-action"></a>')
         .html('<div><strong>' + nombre + '</strong>' + descTexto + '</div><div class="small text-muted">Cant: ' + cantidad + ' · ' + mod.formatear(subtotal) + '</div>')
         .on('click', function (e) { e.preventDefault(); elegirProductoParaDescuento(it.id, nombre); });
@@ -81,6 +82,8 @@ $(function () {
     }
     $('#descuentoModalProductoMesa').text(nombre + ' — ' + subtotal);
     $('#descuentoModalMesaTitulo').text('Aplicar descuento');
+    const desc = mod.descuentoNormalizado(itemId);
+    $('#descuentoValorMesaInput').val(desc.tipo === 'valor' && desc.valor > 0 ? MoneyInput.format(String(desc.valor)) : '');
     $('#descuentoMesaPaso1').hide();
     $('#descuentoMesaPaso2').show();
   }
@@ -88,10 +91,27 @@ $(function () {
   $(document).on('click', '.btn-descuento-mesa', function () {
     const pct = Number.parseInt($(this).data('pct'), 10);
     const itemId = window._descuentoItemIdMesa;
-    if (itemId != null) { mod.descuentosPorItem[itemId] = pct; mod.renderItems(); }
+    if (itemId != null) {
+      mod.descuentosPorItem[itemId] = { tipo: 'porcentaje', valor: pct };
+      mod.renderItems();
+    }
     bootstrap.Modal.getInstance(document.getElementById('descuentoModalMesa')).hide();
   });
-  
+
+  $('#aplicarDescuentoValorMesaBtn').on('click', function () {
+    const itemId = window._descuentoItemIdMesa;
+    if (itemId == null) return;
+    const it = mod.items.find(i => i.id === itemId);
+    const precio = Number((it && (it.precio_unitario != null ? it.precio_unitario : it.precio)) || 0);
+    const bruto = Number((it && it.cantidad) || 0) * precio;
+    const valor = Math.min(Math.max(MoneyInput.parse($('#descuentoValorMesaInput').val()) || 0, 0), bruto);
+    if (valor > 0) {
+      mod.descuentosPorItem[itemId] = { tipo: 'valor', valor };
+      mod.renderItems();
+    }
+    bootstrap.Modal.getInstance(document.getElementById('descuentoModalMesa')).hide();
+  });
+
   $('#quitarDescuentoMesaBtn').on('click', function () {
     const itemId = window._descuentoItemIdMesa;
     if (itemId != null) { delete mod.descuentosPorItem[itemId]; mod.renderItems(); }

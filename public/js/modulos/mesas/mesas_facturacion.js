@@ -617,7 +617,8 @@ $(function () {
             cliente_id: clienteId,
             forma_pago: formaPagoSeleccionada,
             descuentos: mod.descuentosPorItem,
-            propina: mod.propinaPedido
+            propina: mod.propinaPedido,
+            efectivo_recibido: formaPagoSeleccionada === 'efectivo' ? montoRecibido : null
           })
         });
         const data = await resp.json();

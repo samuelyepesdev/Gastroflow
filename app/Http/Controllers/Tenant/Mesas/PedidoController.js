@@ -73,11 +73,18 @@ class PedidoController {
         try {
             const tenantId = req.tenant?.id;
             const { pedidoId } = req.params;
-            const { cliente_id, forma_pago, descuentos, propina } = req.body;
+            const { cliente_id, forma_pago, descuentos, propina, efectivo_recibido } = req.body;
             const descuentosMap = descuentos && typeof descuentos === 'object' ? descuentos : {};
 
             const resultado = await FacturarPedidoService.execute({
-                tenantId, pedidoId, cliente_id, forma_pago, descuentosMap, propinaBody: propina
+                tenantId,
+                pedidoId,
+                cliente_id,
+                forma_pago,
+                descuentosMap,
+                propinaBody: propina,
+                usuarioId: req.user?.id || null,
+                efectivoRecibido: efectivo_recibido ?? null
             });
             return res.status(201).json(resultado);
         } catch (error) {

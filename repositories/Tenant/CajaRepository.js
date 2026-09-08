@@ -1,5 +1,13 @@
 const db = require('../../config/database');
 
+// Los movimientos con referencia_tipo = 'venta' los crea FinanzasService por
+// CADA factura (para el módulo de Finanzas). El arqueo de caja NO debe sumarlos
+// como "entradas manuales": las ventas ya se cuentan desde la tabla `facturas`
+// (monto_efectivo / monto_transferencia / total). Sumarlos aquí las contaría
+// dos veces. Los demás movimientos (manuales, compra_inventario, servicio_externo)
+// sí son flujo de caja real y se mantienen.
+const EXCLUIR_ENTRADAS_VENTA = `(referencia_tipo IS NULL OR referencia_tipo <> 'venta')`;
+
 class CajaRepository {
     /**
      * Obtiene la sesión abierta actual para un tenant
@@ -51,7 +59,7 @@ class CajaRepository {
             [sesionId]
         );
         const [entradas] = await db.query(
-            `SELECT SUM(monto) as total FROM caja_movimientos WHERE sesion_id = ? AND tipo = 'entrada'`,
+            `SELECT SUM(monto) as total FROM caja_movimientos WHERE sesion_id = ? AND tipo = 'entrada' AND ${EXCLUIR_ENTRADAS_VENTA}`,
             [sesionId]
         );
         const [salidas] = await db.query(
@@ -128,6 +136,52 @@ class CajaRepository {
     }
 
     /**
+     * Registra la SALIDA de caja que compensa el cobro de un servicio externo
+     * (ej. domicilio de un tercero): el dinero entra con la factura pero se le
+     * entrega al proveedor del servicio, así que no debe quedar en el arqueo.
+     *
+     * Idempotente: usa (referencia_tipo='servicio_externo', referencia_id=facturaId)
+     * como llave lógica y no vuelve a insertar si ya existe.
+     *
+     * @param {object} [conn] Conexión/transacción opcional (si no, usa el pool).
+     * @returns {Promise<number|null>} id del movimiento creado, o null si no aplica / ya existía.
+     */
+    static async registrarSalidaServicioExterno(
+        { tenantId, sesionId, usuarioId, facturaId, monto, numeroFactura },
+        conn = db
+    ) {
+        const montoNum = Math.round((Number.parseFloat(monto) || 0) * 100) / 100;
+        if (!sesionId || !usuarioId || montoNum <= 0) {
+            return null;
+        }
+
+        const [existe] = await conn.query(
+            `SELECT id FROM caja_movimientos
+             WHERE tenant_id = ? AND referencia_tipo = 'servicio_externo' AND referencia_id = ?
+             LIMIT 1`,
+            [tenantId, facturaId]
+        );
+        if (existe.length > 0) {
+            return null;
+        }
+
+        const [result] = await conn.query(
+            `INSERT INTO caja_movimientos
+                (tenant_id, sesion_id, usuario_id, tipo, monto, motivo, categoria_gasto, referencia_tipo, referencia_id)
+             VALUES (?, ?, ?, 'salida', ?, ?, 'Servicio externo', 'servicio_externo', ?)`,
+            [
+                tenantId,
+                sesionId,
+                usuarioId,
+                montoNum,
+                `Pago servicio externo (ej. domicilio) - Factura #${numeroFactura ?? facturaId}`,
+                facturaId
+            ]
+        );
+        return result.insertId;
+    }
+
+    /**
      * Obtiene estadísticas rápidas de la sesión actual
      */
     static async getEstadisticasSesion(sesionId) {
@@ -144,13 +198,25 @@ class CajaRepository {
             sesionId
         ]);
 
-        // Sumar movimientos manuales
+        // Sumar movimientos manuales (excluye las entradas 'venta' de FinanzasService,
+        // que duplicarían las ventas ya contadas desde la tabla facturas).
         const [entradas] = await db.query(
-            `SELECT SUM(monto) as total FROM caja_movimientos WHERE sesion_id = ? AND tipo = 'entrada'`,
+            `SELECT SUM(monto) as total FROM caja_movimientos WHERE sesion_id = ? AND tipo = 'entrada' AND ${EXCLUIR_ENTRADAS_VENTA}`,
             [sesionId]
         );
         const [salidas] = await db.query(
             `SELECT SUM(monto) as total FROM caja_movimientos WHERE sesion_id = ? AND tipo = 'salida'`,
+            [sesionId]
+        );
+
+        // Efectivo recibido / cambio entregado (solo informativo, no afecta el
+        // arqueo). El cambio = efectivo_recibido - total de cada factura en efectivo.
+        const [efectivoFlujo] = await db.query(
+            `SELECT
+                 COALESCE(SUM(efectivo_recibido), 0) AS recibido,
+                 COALESCE(SUM(GREATEST(efectivo_recibido - total, 0)), 0) AS cambio
+             FROM facturas
+             WHERE caja_sesion_id = ? AND efectivo_recibido IS NOT NULL`,
             [sesionId]
         );
 
@@ -159,7 +225,9 @@ class CajaRepository {
             ventas_transferencia: parseFloat(ventasTransferencia[0]?.total || 0),
             ventas: parseFloat(ventas[0]?.total || 0),
             entradas: parseFloat(entradas[0]?.total || 0),
-            salidas: parseFloat(salidas[0]?.total || 0)
+            salidas: parseFloat(salidas[0]?.total || 0),
+            efectivo_recibido_total: parseFloat(efectivoFlujo[0]?.recibido || 0),
+            cambio_entregado_total: parseFloat(efectivoFlujo[0]?.cambio || 0)
         };
     }
 }

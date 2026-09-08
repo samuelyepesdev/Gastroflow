@@ -1,4 +1,27 @@
 const CajaRepository = require('../../repositories/Tenant/CajaRepository');
+const { toFechaISOUtc } = require('../../utils/dateHelpers');
+
+// Las fechas de la BD llegan como string UTC (dateStrings + timezone 'Z'); hay
+// que formatearlas explícitamente en la zona horaria de Colombia, no en la del
+// servidor (que en producción es UTC y hacía que "Apertura" saliera corrida).
+function fmtHoraBogota(fecha) {
+    const iso = toFechaISOUtc(fecha);
+    if (!iso) {
+        return '';
+    }
+    return new Date(iso).toLocaleTimeString('es-CO', {
+        timeZone: 'America/Bogota',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+}
+function fmtFechaBogota(fecha) {
+    const iso = toFechaISOUtc(fecha);
+    if (!iso) {
+        return '';
+    }
+    return new Date(iso).toLocaleDateString('es-CO', { timeZone: 'America/Bogota' });
+}
 
 class CajaService {
     static async getEstadoCaja(tenantId) {
@@ -23,6 +46,8 @@ class CajaService {
             sesion: {
                 ...sesion,
                 ...stats,
+                apertura_hora: fmtHoraBogota(sesion.fecha_apertura),
+                apertura_fecha: fmtFechaBogota(sesion.fecha_apertura),
                 monto_final_teorico_efectivo: teoricoEfectivo,
                 monto_final_teorico_transferencia: teoricoTransferencia,
                 monto_final_teorico: montoTeorico
@@ -58,7 +83,14 @@ class CajaService {
     }
 
     static async getHistorial(tenantId) {
-        return await CajaRepository.getHistorial(tenantId);
+        const sesiones = await CajaRepository.getHistorial(tenantId);
+        return (sesiones || []).map(s => ({
+            ...s,
+            apertura_hora: fmtHoraBogota(s.fecha_apertura),
+            apertura_fecha: fmtFechaBogota(s.fecha_apertura),
+            cierre_hora: fmtHoraBogota(s.fecha_cierre),
+            cierre_fecha: fmtFechaBogota(s.fecha_cierre)
+        }));
     }
 
     /**

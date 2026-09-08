@@ -135,8 +135,10 @@ window.POS_UI = {
             container.innerHTML = cart.map((item, idx) => {
                 const sub = POS.itemSubtotal(item);
                 const isOne = item.cantidad === 1;
-                const descBadge = item.descuento_porcentaje > 0
-                    ? `<span class="pci-disc-badge">-${item.descuento_porcentaje}%</span>` : '';
+                const descBadge = item.descuento_valor > 0
+                    ? `<span class="pci-disc-badge">-$${Number(item.descuento_valor).toLocaleString('es-CO')}</span>`
+                    : (item.descuento_porcentaje > 0
+                        ? `<span class="pci-disc-badge">-${item.descuento_porcentaje}%</span>` : '');
                 const modText = (item.modificadores_preview && item.modificadores_preview.length)
                     ? `<div class="pci-mods">${item.modificadores_preview.map(m => m.opcion_nombre).join(', ')}</div>` : '';
                 return `<div class="pos-cart-item">

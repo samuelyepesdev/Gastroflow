@@ -92,6 +92,30 @@ class ProductManager {
     }
   }
 
+  async togglePideNota(id, nuevoEstado, btn) {
+    try {
+      await fetch(`/api/productos/${id}/pide-nota`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pide_nota: nuevoEstado })
+      }).then(res => { if (!res.ok) throw new Error('Error al actualizar la preferencia de nota'); });
+
+      btn.data('pidenota', nuevoEstado ? 1 : 0);
+      btn.toggleClass('active', !!nuevoEstado);
+      btn.attr('title', nuevoEstado
+        ? 'Pide nota para cocina al ordenarlo (clic para desactivar)'
+        : 'Activar: pedir nota para cocina al ordenar este producto');
+      const icon = btn.find('i');
+      if (nuevoEstado) {
+        icon.removeClass('bi-chat-left-text').addClass('bi-chat-left-text-fill');
+      } else {
+        icon.removeClass('bi-chat-left-text-fill').addClass('bi-chat-left-text');
+      }
+    } catch (error) {
+      AlertManager.alert(error.message, 'error');
+    }
+  }
+
   async showCosteoModal(productoId) {
     const modalEl = document.getElementById('costeoProductoModal');
     const loadingEl = document.getElementById('costeoLoading');

@@ -103,6 +103,19 @@
                                                         <span class="fw-bold text-dark">Efectivo en Caja:</span>
                                                         <span class="h4 fw-bold text-success mb-0">$<%= new Intl.NumberFormat('es-CO').format(estado.sesion.monto_final_teorico_efectivo) %></span>
                                                     </div>
+                                                    <% if (Number(estado.sesion.cambio_entregado_total || 0) > 0) { %>
+                                                    <div class="mt-2 pt-2 border-top small text-muted">
+                                                        <div class="d-flex justify-content-between">
+                                                            <span>Vuelto entregado en el turno:</span>
+                                                            <span>$<%= new Intl.NumberFormat('es-CO').format(estado.sesion.cambio_entregado_total) %></span>
+                                                        </div>
+                                                        <div class="fst-italic opacity-75" style="font-size:.72rem;">
+                                                            Suma del cambio devuelto a clientes en ventas de efectivo. Es informativo:
+                                                            NO afecta el arqueo (la venta ya se guarda por su valor neto, no por lo recibido).
+                                                            Solo cuenta las ventas donde el cajero tecleó el efectivo recibido.
+                                                        </div>
+                                                    </div>
+                                                    <% } %>
                                                 </div>
                                             </div>
                                         </div>
@@ -171,16 +184,8 @@
                                             <tbody>
                                                 <tr>
                                                     <td class="ps-4">
-                                                        <div class="fw-bold">
-                                                            <%= new
-                                                                Date(estado.sesion.fecha_apertura).toLocaleTimeString()
-                                                                %>
-                                                        </div>
-                                                        <div class="small text-muted">
-                                                            <%= new
-                                                                Date(estado.sesion.fecha_apertura).toLocaleDateString()
-                                                                %>
-                                                        </div>
+                                                        <div class="fw-bold"><%= estado.sesion.apertura_hora %></div>
+                                                        <div class="small text-muted"><%= estado.sesion.apertura_fecha %></div>
                                                     </td>
                                                     <td>
                                                         <%= user.nombre %>
