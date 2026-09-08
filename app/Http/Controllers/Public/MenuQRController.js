@@ -20,6 +20,7 @@ class MenuQRController {
                 tenant: data.tenant,
                 mesa: data.mesa,
                 categorias: data.categorias,
+                modificadores: data.modificadores || {},
                 qrToken,
                 qrSessionId: data.mesa.qr_session_id
             });

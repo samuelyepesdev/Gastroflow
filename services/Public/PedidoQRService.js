@@ -2,6 +2,7 @@ const db = require('../../config/database');
 const MenuQRRepository = require('../../repositories/Public/MenuQRRepository');
 const WhatsAppService = require('../Tenant/WhatsAppService');
 const InventarioService = require('../Tenant/InventarioService'); // Para validación de stock
+const ModificadorService = require('../Tenant/ModificadorService'); // Toppings/modificadores
 
 class PedidoQRService {
     static async procesarPedido(qrToken, itemsInput, notasGlobales, clientIp, cookies = {}) {
@@ -72,15 +73,17 @@ class PedidoQRService {
 
             // 3. Buscar si hay pedido abierto en esa mesa
             const [existentes] = await connection.query(
-                `SELECT id, total FROM pedidos WHERE mesa_id = ? AND estado NOT IN ('cerrado','cancelado') LIMIT 1`,
+                `SELECT id, total, numero FROM pedidos WHERE mesa_id = ? AND estado NOT IN ('cerrado','cancelado') LIMIT 1`,
                 [mesaId]
             );
 
             let pedidoId;
+            let pedidoNumero;
             let currentTotal = 0;
 
             if (existentes.length > 0) {
                 pedidoId = existentes[0].id;
+                pedidoNumero = existentes[0].numero;
                 currentTotal = Number(existentes[0].total) || 0;
                 
                 // Opcional: si ya hay pedido abierto y envían notas desde el QR, podríamos agregarlas (appended) o ignorarlas.
@@ -97,6 +100,7 @@ class PedidoQRService {
                     [tenantId]
                 );
                 const siguienteNumero = numResult[0].siguiente;
+                pedidoNumero = siguienteNumero;
 
                 const [insert] = await connection.query(
                     `INSERT INTO pedidos (tenant_id, mesa_id, estado, total, notas, numero, origen, sesion_cliente) 
@@ -114,7 +118,31 @@ class PedidoQRService {
             for (const item of itemsInput) {
                 const prod = productosMap.get(Number(item.producto_id));
                 const cantidad = parseFloat(item.cantidad);
-                if (isNaN(cantidad) || cantidad <= 0) {continue;}
+                if (!prod || isNaN(cantidad) || cantidad <= 0) {continue;}
+
+                // Nota por producto (opcional): el cliente puede escribir indicaciones para
+                // cocina en cada línea desde el modal de personalización.
+                const notaItem =
+                    typeof item.nota === 'string' && item.nota.trim() ? item.nota.trim().slice(0, 255) : null;
+
+                // Toppings/modificadores: el catálogo en BD es la fuente de verdad del precio
+                // y de las reglas (obligatorio, mínimo/máximo). Nunca se confía en lo que
+                // manda el cliente salvo los ids elegidos.
+                let precioAdicionalTotal = 0;
+                let lineasSnapshot = [];
+                let modificadoresHash = null;
+                try {
+                    ({ precioAdicionalTotal, lineasSnapshot, modificadoresHash } =
+                        await ModificadorService.validarYCalcularSeleccion(
+                            tenantId,
+                            prod.id,
+                            item.modificadores || []
+                        ));
+                } catch (e) {
+                    throw Object.assign(new Error(e.message || 'Selección de acompañamientos inválida.'), {
+                        status: 400
+                    });
+                }
 
                 // Validación de stock (Soft validation, registramos warning si no hay)
                 const check = await InventarioService.checkStockParaProducto(tenantId, prod.id, cantidad);
@@ -122,14 +150,32 @@ class PedidoQRService {
                     console.warn(`[Menu QR] Venta sin stock suficiente: Producto ID ${prod.id} en Tenant ${tenantId}`);
                 }
 
-                const subtotal = cantidad * Number(prod.precio_unidad);
+                const precioUnitario = Number(prod.precio_unidad) + precioAdicionalTotal;
+                const subtotal = cantidad * precioUnitario;
                 totalItemsNuevos += subtotal;
 
-                await connection.query(
-                    `INSERT INTO pedido_items (tenant_id, pedido_id, producto_id, cantidad, unidad_medida, precio_unitario, subtotal, estado, nota)
-                     VALUES (?, ?, ?, ?, 'UND', ?, ?, 'pendiente', NULL)`,
-                    [tenantId, pedidoId, prod.id, cantidad, prod.precio_unidad, subtotal]
+                const [itemRes] = await connection.query(
+                    `INSERT INTO pedido_items (tenant_id, pedido_id, producto_id, cantidad, unidad_medida, precio_unitario, subtotal, estado, nota, modificadores_hash)
+                     VALUES (?, ?, ?, ?, 'UND', ?, ?, 'pendiente', ?, ?)`,
+                    [tenantId, pedidoId, prod.id, cantidad, precioUnitario, subtotal, notaItem, modificadoresHash]
                 );
+
+                if (lineasSnapshot.length > 0) {
+                    const pedidoItemId = itemRes.insertId;
+                    const modificadoresValues = lineasSnapshot.map(m => [
+                        pedidoItemId,
+                        m.opcion_modificador_id,
+                        m.grupo_nombre,
+                        m.opcion_nombre,
+                        m.precio_adicional,
+                        m.cantidad || 1
+                    ]);
+                    await connection.query(
+                        `INSERT INTO pedido_item_modificadores (pedido_item_id, opcion_modificador_id, grupo_nombre, opcion_nombre, precio_adicional, cantidad)
+                         VALUES ?`,
+                        [modificadoresValues]
+                    );
+                }
             }
 
             // 5. Actualizar el total del pedido
@@ -146,7 +192,7 @@ class PedidoQRService {
                 origen: 'qr'
             });
 
-            return { pedidoId, nuevoTotalGlobal };
+            return { pedidoId, numero: pedidoNumero, nuevoTotalGlobal };
 
         } catch (error) {
             await connection.rollback();

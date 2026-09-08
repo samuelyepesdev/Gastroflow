@@ -68,14 +68,39 @@ class MenuQRRepository {
 
     static async getCategoriasYProductosActivos(tenantId) {
         const [rows] = await db.query(`
-            SELECT 
+            SELECT
                 c.id as categoria_id, c.nombre as categoria_nombre,
-                p.id as producto_id, p.nombre, p.descripcion, p.precio_unidad, p.imagen_url, p.codigo
+                p.id as producto_id, p.nombre, p.descripcion, p.precio_unidad, p.imagen_url, p.codigo, p.pide_nota
             FROM productos p
             JOIN categorias c ON p.categoria_id = c.id
             WHERE p.tenant_id = ? AND p.activo = 1 AND p.mostrar_en_qr = 1
             ORDER BY c.nombre ASC, p.nombre ASC
         `, [tenantId]);
+        return rows;
+    }
+
+    /**
+     * Grupos de modificadores/toppings (con sus opciones activas) de un conjunto de
+     * productos, en una sola consulta. Devuelve filas planas producto+grupo+opcion
+     * que el Service agrupa. Solo grupos y opciones activos.
+     */
+    static async getModificadoresParaProductos(tenantId, productoIds) {
+        if (!productoIds || productoIds.length === 0) {
+            return [];
+        }
+        const [rows] = await db.query(`
+            SELECT
+                pmg.producto_id,
+                g.id AS grupo_id, g.nombre AS grupo_nombre, g.descripcion AS grupo_descripcion,
+                g.tipo_seleccion, g.obligatorio, g.minimo_selecciones, g.maximo_selecciones,
+                pmg.orden AS grupo_orden,
+                o.id AS opcion_id, o.nombre AS opcion_nombre, o.precio_adicional, o.orden AS opcion_orden
+            FROM producto_modificador_grupo pmg
+            JOIN grupos_modificadores g ON g.id = pmg.grupo_id AND g.tenant_id = ? AND g.activo = 1
+            LEFT JOIN opciones_modificador o ON o.grupo_id = g.id AND o.activo = 1
+            WHERE pmg.producto_id IN (?)
+            ORDER BY pmg.producto_id, pmg.orden, g.nombre, o.orden, o.id
+        `, [tenantId, productoIds]);
         return rows;
     }
 }

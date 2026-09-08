@@ -196,3 +196,49 @@ body {
 .cart-item { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
 .cart-item-name { font-weight: 700; font-size: 1.05rem; color: #222; margin-bottom: 2px; }
 .cart-item-price { color: var(--primary-color); font-weight: 800; font-size: 1rem;}
+.cart-item-extra { font-size: 0.8rem; color: #777; margin-bottom: 2px; }
+.cart-item-nota { font-size: 0.8rem; color: #999; font-style: italic; margin-bottom: 2px; }
+
+/* Badge de cantidad sobre el botón "+" (productos con toppings / nota) */
+.qr-add-count {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 5px;
+    border-radius: 10px;
+    background: var(--primary-color);
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+
+/* Grupos de modificadores dentro del modal de personalización */
+.qr-mod-grupo { border-top: 1px solid #eee; padding-top: 14px; margin-top: 14px; }
+.qr-mod-grupo:first-child { border-top: none; padding-top: 0; margin-top: 0; }
+.qr-mod-grupo-head { display: flex; align-items: center; gap: 8px; font-size: 1rem; color: #1a1a1a; }
+.qr-mod-grupo-sub { font-size: 0.8rem; color: #999; margin-bottom: 8px; }
+.qr-mod-badge { font-size: 0.68rem; font-weight: 700; padding: 2px 8px; border-radius: 10px; text-transform: uppercase; }
+.qr-mod-badge.req { background: #fff3cd; color: #8a6d00; }
+.qr-mod-badge.opt { background: #f0f2f5; color: #777; }
+.qr-mod-opcion {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 4px;
+    border-bottom: 1px solid #f4f4f4;
+    cursor: pointer;
+}
+.qr-mod-opcion:last-child { border-bottom: none; }
+.qr-mod-opcion-nombre { display: flex; align-items: center; gap: 10px; font-size: 0.95rem; color: #333; }
+.qr-mod-opcion-nombre input { width: 20px; height: 20px; accent-color: var(--primary-color); flex-shrink: 0; }
+.qr-mod-opcion-precio { font-size: 0.9rem; font-weight: 700; color: var(--primary-color); white-space: nowrap; }
+.qr-mod-opcion input:disabled + span { opacity: 0.4; }
+
+/* Stepper de cantidad dentro del modal */
+.qr-modal-qty { position: static; background: #f0f2f5; box-shadow: none; }
