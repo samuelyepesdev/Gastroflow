@@ -411,12 +411,15 @@ class FacturarPedidoService {
                         m.grupo_nombre,
                         m.opcion_nombre,
                         m.precio_adicional,
-                        m.cantidad
+                        m.cantidad,
+                        m.insumo_id || null,
+                        m.cantidad_insumo || null,
+                        m.unidad_insumo || null
                     ]);
                 });
         });
         await connection.query(
-            'INSERT INTO detalle_factura_modificadores (detalle_factura_id, opcion_modificador_id, grupo_nombre, opcion_nombre, precio_adicional, cantidad) VALUES ?',
+            'INSERT INTO detalle_factura_modificadores (detalle_factura_id, opcion_modificador_id, grupo_nombre, opcion_nombre, precio_adicional, cantidad, insumo_id, cantidad_insumo, unidad_insumo) VALUES ?',
             [modificadoresValuesFinal]
         );
     }
@@ -483,6 +486,12 @@ class FacturarPedidoService {
             });
         } catch (finErr) {
             console.error('CRÍTICO: Error al registrar ingreso en finanzas (pedido):', finErr);
+        }
+
+        try {
+            await InventarioService.descontarPorModificadoresFactura(tenantId, facturaId);
+        } catch (invErr) {
+            console.error('Error al descontar inventario por modificadores (pedido):', invErr);
         }
 
         try {

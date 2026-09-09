@@ -20,7 +20,11 @@ class ModificadoresController {
                 tenant: req.tenant,
                 grupos: grupos || [],
                 productos: productos || [],
-                insumos: insumos || [],
+                insumos: (insumos || []).map(i => ({
+                    id: i.id,
+                    nombre: i.nombre,
+                    unidad_base: i.unidad_base || 'g'
+                })),
                 allowedByPlan: res.locals.allowedByPlan || {}
             });
         } catch (e) {

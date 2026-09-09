@@ -57,6 +57,7 @@ class ModificadorService {
             descripcion: data.descripcion ? data.descripcion.trim() : null,
             tipo_seleccion: tipoSeleccion,
             obligatorio: !!data.obligatorio,
+            descuenta_inventario: !!data.descuenta_inventario,
             minimo_selecciones: minimo,
             maximo_selecciones: maximo,
             activo: data.activo
@@ -210,15 +211,19 @@ class ModificadorService {
             const precioAdicional = Number.parseFloat(opcion.precio_adicional) || 0;
             subtotal += precioAdicional;
             opcionIds.push(opcion.id);
+            // El enlace a inventario solo cuenta si el grupo tiene el descuento activado
+            // (opt-in). Así una opción con insumo_id viejo en un grupo sin el flag no
+            // mueve stock por accidente.
+            const ligaInventario = !!grupo.descuenta_inventario && opcion.insumo_id;
             lineas.push({
                 opcion_modificador_id: opcion.id,
                 grupo_nombre: grupo.nombre,
                 opcion_nombre: opcion.nombre,
                 precio_adicional: precioAdicional,
                 cantidad: 1,
-                insumo_id: opcion.insumo_id || null,
-                cantidad_insumo: opcion.cantidad_insumo || null,
-                unidad_insumo: opcion.unidad_insumo || null
+                insumo_id: ligaInventario ? opcion.insumo_id : null,
+                cantidad_insumo: ligaInventario ? opcion.cantidad_insumo || null : null,
+                unidad_insumo: ligaInventario ? opcion.unidad_insumo || null : null
             });
         }
         return { subtotal, lineas, opcionIds };

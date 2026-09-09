@@ -306,6 +306,52 @@ class InventarioService {
         );
     }
 
+    /**
+     * Descuenta inventario por los toppings/modificadores vendidos en una factura.
+     * Lee el snapshot de insumo guardado en detalle_factura_modificadores (columnas
+     * insumo_id / cantidad_insumo / unidad_insumo) y genera una salida por insumo.
+     * Cantidad = cantidad_insumo de la opción * cantidad de la línea de factura.
+     * Igual que las recetas: si no hay stock suficiente, avisa (warn) y permite negativo.
+     * @param {number} tenantId
+     * @param {number} facturaId
+     */
+    static async descontarPorModificadoresFactura(tenantId, facturaId) {
+        const [filas] = await db.query(
+            `SELECT dfm.insumo_id, dfm.cantidad_insumo, dfm.unidad_insumo, df.cantidad AS cantidad_linea
+             FROM detalle_factura_modificadores dfm
+             JOIN detalle_factura df ON df.id = dfm.detalle_factura_id
+             WHERE df.factura_id = ? AND dfm.insumo_id IS NOT NULL AND dfm.cantidad_insumo > 0`,
+            [facturaId]
+        );
+        if (filas.length === 0) {
+            return;
+        }
+
+        // Varias opciones pueden apuntar al mismo insumo: se acumula y se hace una
+        // sola salida por insumo (menos movimientos, mismo resultado).
+        const porInsumo = new Map();
+        for (const f of filas) {
+            const cantidadTotal =
+                (Number.parseFloat(f.cantidad_insumo) || 0) * (Number.parseFloat(f.cantidad_linea) || 1);
+            const enBase = cantidadABase(cantidadTotal, f.unidad_insumo || 'g');
+            if (enBase > 0) {
+                porInsumo.set(f.insumo_id, (porInsumo.get(f.insumo_id) || 0) + enBase);
+            }
+        }
+
+        await Promise.all(
+            [...porInsumo.entries()].map(([insumoId, cantidad]) =>
+                this.registrarSalida(tenantId, {
+                    insumo_id: insumoId,
+                    cantidad,
+                    referencia: `factura_${facturaId} (toppings)`
+                }).catch(err => {
+                    console.error('Error al descontar insumo de topping:', err);
+                })
+            )
+        );
+    }
+
     static async getResumenValorizacion(tenantId) {
         const insumos = await InsumoRepository.findAll(tenantId, {});
 

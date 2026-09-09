@@ -6,7 +6,7 @@
 const db = require('../../config/database');
 
 const GRUPO_COLUMNS =
-    'g.id, g.tenant_id, g.nombre, g.descripcion, g.tipo_seleccion, g.obligatorio, ' +
+    'g.id, g.tenant_id, g.nombre, g.descripcion, g.tipo_seleccion, g.obligatorio, g.descuenta_inventario, ' +
     'g.minimo_selecciones, g.maximo_selecciones, g.activo, g.created_at, g.updated_at';
 
 class ModificadorRepository {
@@ -35,17 +35,26 @@ class ModificadorRepository {
     }
 
     static async createGrupo(tenantId, data) {
-        const { nombre, descripcion, tipo_seleccion, obligatorio, minimo_selecciones, maximo_selecciones } = data;
+        const {
+            nombre,
+            descripcion,
+            tipo_seleccion,
+            obligatorio,
+            descuenta_inventario,
+            minimo_selecciones,
+            maximo_selecciones
+        } = data;
         const [result] = await db.query(
             `INSERT INTO grupos_modificadores
-                (tenant_id, nombre, descripcion, tipo_seleccion, obligatorio, minimo_selecciones, maximo_selecciones)
-             VALUES (?, ?, ?, ?, ?, ?, ?)`,
+                (tenant_id, nombre, descripcion, tipo_seleccion, obligatorio, descuenta_inventario, minimo_selecciones, maximo_selecciones)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
             [
                 tenantId,
                 nombre,
                 descripcion || null,
                 tipo_seleccion,
                 obligatorio ? 1 : 0,
+                descuenta_inventario ? 1 : 0,
                 minimo_selecciones || 0,
                 maximo_selecciones ?? null
             ]
@@ -54,11 +63,19 @@ class ModificadorRepository {
     }
 
     static async updateGrupo(id, tenantId, data) {
-        const { nombre, descripcion, tipo_seleccion, obligatorio, minimo_selecciones, maximo_selecciones, activo } =
-            data;
+        const {
+            nombre,
+            descripcion,
+            tipo_seleccion,
+            obligatorio,
+            descuenta_inventario,
+            minimo_selecciones,
+            maximo_selecciones,
+            activo
+        } = data;
         const [result] = await db.query(
             `UPDATE grupos_modificadores
-             SET nombre = ?, descripcion = ?, tipo_seleccion = ?, obligatorio = ?,
+             SET nombre = ?, descripcion = ?, tipo_seleccion = ?, obligatorio = ?, descuenta_inventario = ?,
                  minimo_selecciones = ?, maximo_selecciones = ?, activo = ?
              WHERE id = ? AND tenant_id = ?`,
             [
@@ -66,6 +83,7 @@ class ModificadorRepository {
                 descripcion || null,
                 tipo_seleccion,
                 obligatorio ? 1 : 0,
+                descuenta_inventario ? 1 : 0,
                 minimo_selecciones || 0,
                 maximo_selecciones ?? null,
                 activo === undefined ? 1 : activo ? 1 : 0,

@@ -83,10 +83,13 @@ class AgregarItemService {
                 m.grupo_nombre,
                 m.opcion_nombre,
                 m.precio_adicional,
-                m.cantidad || 1
+                m.cantidad || 1,
+                m.insumo_id || null,
+                m.cantidad_insumo || null,
+                m.unidad_insumo || null
             ]);
             await db.query(
-                'INSERT INTO pedido_item_modificadores (pedido_item_id, opcion_modificador_id, grupo_nombre, opcion_nombre, precio_adicional, cantidad) VALUES ?',
+                'INSERT INTO pedido_item_modificadores (pedido_item_id, opcion_modificador_id, grupo_nombre, opcion_nombre, precio_adicional, cantidad, insumo_id, cantidad_insumo, unidad_insumo) VALUES ?',
                 [modificadoresValues]
             );
         }

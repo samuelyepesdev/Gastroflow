@@ -1,5 +1,46 @@
 const base = '/modificadores';
 
+// Lista de insumos del tenant, para el selector cuando el grupo descuenta inventario.
+const INSUMOS = (function () {
+    const el = document.getElementById('modificadores-insumos-data');
+    try {
+        return el ? JSON.parse(el.textContent) : [];
+    } catch (_) {
+        return [];
+    }
+})();
+const INSUMOS_POR_ID = new Map(INSUMOS.map(i => [String(i.id), i]));
+
+function escapeHtml(s) {
+    return String(s == null ? '' : s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function buildInsumoOptions(selectedId) {
+    const sel = selectedId != null ? String(selectedId) : '';
+    const opts = ['<option value="">— Sin insumo —</option>'];
+    INSUMOS.forEach(i => {
+        const s = String(i.id) === sel ? ' selected' : '';
+        opts.push(`<option value="${i.id}"${s}>${escapeHtml(i.nombre)}</option>`);
+    });
+    return opts.join('');
+}
+
+function inventarioActivo() {
+    return !!document.getElementById('grupoDescuentaInventario')?.checked;
+}
+
+// Muestra/oculta las columnas de insumo/cantidad según el check del grupo.
+function toggleInventarioCols(on) {
+    document
+        .querySelectorAll('#grupoOpcionesTabla .col-inventario')
+        .forEach(el => el.classList.toggle('d-none', !on));
+}
+
 // Plantillas rápidas: para no empezar de cero, el usuario elige una y ajusta
 // nombres/precios a su gusto antes de guardar.
 const PLANTILLAS = {
@@ -50,24 +91,44 @@ const PLANTILLAS = {
 
 function addOpcionRow(nombre = '', precioAdicional = '', insumoId = null, cantidadInsumo = null, unidadInsumo = null) {
     const tbody = document.getElementById('grupoOpcionesContainer');
+    const hidden = inventarioActivo() ? '' : ' d-none';
+    const insumo = insumoId != null ? INSUMOS_POR_ID.get(String(insumoId)) : null;
+    const unidad = unidadInsumo || (insumo ? insumo.unidad_base : '');
     const tr = document.createElement('tr');
     tr.innerHTML = `
-        <td><input type="text" class="form-control form-control-sm opcion-nombre-input" placeholder="Ej: Queso extra" value="${nombre}"></td>
+        <td><input type="text" class="form-control form-control-sm opcion-nombre-input" placeholder="Ej: Queso extra" value="${escapeHtml(nombre)}"></td>
         <td><input type="text" inputmode="decimal" class="form-control form-control-sm opcion-precio-input money-input" placeholder="0" value="${MoneyInput.format(String(Math.round(Number(precioAdicional) || 0)))}"></td>
+        <td class="col-inventario${hidden}">
+            <select class="form-select form-select-sm opcion-insumo-input">${buildInsumoOptions(insumoId)}</select>
+        </td>
+        <td class="col-inventario${hidden}">
+            <div class="input-group input-group-sm">
+                <input type="number" step="0.0001" min="0" class="form-control opcion-cantidad-input" placeholder="0" value="${cantidadInsumo ?? ''}">
+                <span class="input-group-text opcion-unidad-label">${escapeHtml(unidad || '—')}</span>
+            </div>
+        </td>
         <td><button type="button" class="btn btn-sm btn-outline-danger quitar-opcion" title="Quitar"><i class="bi bi-trash"></i></button></td>
     `;
     // Fila creada después del DOMContentLoaded inicial: money-input.js no la
     // detectó automáticamente, hay que engancharla a mano.
     MoneyInput.attach(tr.querySelector('.opcion-precio-input'));
-    // No hay UI todavía para vincular insumo/inventario a una opción; si el grupo
-    // ya tenía ese vínculo (creado por API u otra vía), se conserva tal cual al guardar.
-    tr.dataset.insumoId = insumoId || '';
-    tr.dataset.cantidadInsumo = cantidadInsumo ?? '';
-    tr.dataset.unidadInsumo = unidadInsumo || '';
+
+    // Al elegir insumo, la unidad de la cantidad es la unidad base de ese insumo.
+    const selInsumo = tr.querySelector('.opcion-insumo-input');
+    const lblUnidad = tr.querySelector('.opcion-unidad-label');
+    selInsumo.addEventListener('change', () => {
+        const it = INSUMOS_POR_ID.get(selInsumo.value);
+        lblUnidad.textContent = it ? it.unidad_base : '—';
+    });
+
     tr.querySelector('.quitar-opcion').onclick = () => tr.remove();
     tbody.appendChild(tr);
 }
 document.getElementById('btnAgregarOpcion').addEventListener('click', () => addOpcionRow());
+
+document.getElementById('grupoDescuentaInventario').addEventListener('change', function () {
+    toggleInventarioCols(this.checked);
+});
 
 function setTipoSeleccion(valor) {
     document.getElementById('grupoTipoSeleccion').value = valor;
@@ -107,17 +168,35 @@ document.getElementById('btnGuardarGrupo').addEventListener('click', async () =>
     const maximoRaw = document.getElementById('grupoMaximo').value;
     const maximo_selecciones = maximoRaw ? Number.parseInt(maximoRaw, 10) : null;
 
+    const descuenta_inventario = inventarioActivo();
     const rows = document.querySelectorAll('#grupoOpcionesContainer tr');
     const opciones = [];
+    let faltaInsumo = false;
     rows.forEach(row => {
         const opcionNombre = row.querySelector('.opcion-nombre-input').value.trim();
         if (!opcionNombre) return;
+
+        let insumoId = null;
+        let cantidadInsumo = null;
+        let unidadInsumo = null;
+        if (descuenta_inventario) {
+            const selVal = row.querySelector('.opcion-insumo-input').value;
+            const cantVal = Number.parseFloat(row.querySelector('.opcion-cantidad-input').value);
+            if (selVal && cantVal > 0) {
+                insumoId = Number.parseInt(selVal, 10);
+                cantidadInsumo = cantVal;
+                unidadInsumo = (INSUMOS_POR_ID.get(selVal) || {}).unidad_base || null;
+            } else {
+                faltaInsumo = true;
+            }
+        }
+
         opciones.push({
             nombre: opcionNombre,
             precio_adicional: MoneyInput.parse(row.querySelector('.opcion-precio-input').value),
-            insumo_id: row.dataset.insumoId ? Number.parseInt(row.dataset.insumoId, 10) : null,
-            cantidad_insumo: row.dataset.cantidadInsumo ? Number.parseFloat(row.dataset.cantidadInsumo) : null,
-            unidad_insumo: row.dataset.unidadInsumo || null
+            insumo_id: insumoId,
+            cantidad_insumo: cantidadInsumo,
+            unidad_insumo: unidadInsumo
         });
     });
 
@@ -129,8 +208,17 @@ document.getElementById('btnGuardarGrupo').addEventListener('click', async () =>
         Swal.fire({ icon: 'warning', title: 'Agrega al menos una opción', text: 'Ej: si es "Elige tu salsa", agrega BBQ, Piña, etc.', timer: 3000, showConfirmButton: false });
         return;
     }
+    if (descuenta_inventario && faltaInsumo) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Faltan datos de inventario',
+            text: 'Este grupo descuenta inventario: cada opción necesita un insumo y una cantidad mayor a 0. Corrige las opciones marcadas o desactiva "Descontar del inventario".',
+            confirmButtonColor: '#d33'
+        });
+        return;
+    }
 
-    const payload = { nombre, tipo_seleccion, obligatorio, minimo_selecciones, maximo_selecciones, opciones };
+    const payload = { nombre, tipo_seleccion, obligatorio, descuenta_inventario, minimo_selecciones, maximo_selecciones, opciones };
     const url = id ? base + '/api/grupos/' + id : base + '/api/grupos';
     const method = id ? 'PUT' : 'POST';
     const r = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload), credentials: 'same-origin' });
@@ -146,6 +234,8 @@ document.getElementById('modalGrupo').addEventListener('show.bs.modal', (e) => {
         document.getElementById('grupoNombre').value = '';
         setTipoSeleccion('unica');
         document.getElementById('grupoObligatorio').checked = false;
+        document.getElementById('grupoDescuentaInventario').checked = false;
+        toggleInventarioCols(false);
         document.getElementById('grupoMinimo').value = '0';
         document.getElementById('grupoMaximo').value = '';
         document.getElementById('grupoOpcionesContainer').innerHTML = '';
@@ -165,6 +255,8 @@ async function editarGrupo(grupoId) {
     document.getElementById('grupoNombre').value = g.nombre || '';
     setTipoSeleccion(g.tipo_seleccion || 'unica');
     document.getElementById('grupoObligatorio').checked = !!g.obligatorio;
+    document.getElementById('grupoDescuentaInventario').checked = !!g.descuenta_inventario;
+    toggleInventarioCols(!!g.descuenta_inventario);
     document.getElementById('grupoMinimo').value = g.minimo_selecciones || 0;
     document.getElementById('grupoMaximo').value = g.maximo_selecciones ?? '';
     document.getElementById('grupoOpcionesContainer').innerHTML = '';

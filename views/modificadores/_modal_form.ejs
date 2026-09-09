@@ -58,6 +58,18 @@
                                         </div>
                                 </div>
 
+                                <div class="mb-3">
+                                        <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="grupoDescuentaInventario">
+                                                <label class="form-check-label" for="grupoDescuentaInventario">
+                                                        Descontar del inventario al vender (ligar cada opción con un insumo)
+                                                </label>
+                                        </div>
+                                        <div class="form-text">Si lo activas, cada opción de abajo pedirá qué insumo
+                                                consume y cuánto. Si no, los toppings funcionan como siempre (solo nombre
+                                                y precio).</div>
+                                </div>
+
                                 <div class="mb-3" id="grupoAvanzadoTrigger">
                                         <button class="btn btn-link btn-sm px-0" type="button" data-bs-toggle="collapse"
                                                 data-bs-target="#grupoAvanzado">
@@ -96,11 +108,13 @@
                                 </div>
 
                                 <div class="table-responsive">
-                                        <table class="table table-sm mb-0">
+                                        <table class="table table-sm mb-0" id="grupoOpcionesTabla">
                                                 <thead>
                                                         <tr class="table-light small text-muted">
                                                                 <th>Nombre</th>
                                                                 <th style="width:120px">Precio extra</th>
+                                                                <th class="col-inventario d-none" style="width:190px">Insumo</th>
+                                                                <th class="col-inventario d-none" style="width:130px">Cantidad</th>
                                                                 <th style="width:60px"></th>
                                                         </tr>
                                                 </thead>
@@ -108,6 +122,8 @@
                                         </table>
                                 </div>
                         </div>
+
+                        <script type="application/json" id="modificadores-insumos-data"><%- JSON.stringify(typeof insumos !== 'undefined' ? insumos : []) %></script>
                         <div class="modal-footer">
                                 <button type="button" class="btn btn-secondary"
                                         data-bs-dismiss="modal">Cancelar</button>

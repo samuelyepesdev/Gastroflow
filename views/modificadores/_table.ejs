@@ -35,6 +35,9 @@
                                 <% } else { %>
                                     <span class="badge bg-light text-dark">Opcional</span>
                                 <% } %>
+                                <% if (g.descuenta_inventario) { %>
+                                    <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle" title="Descuenta insumos del inventario al vender"><i class="bi bi-box-seam me-1"></i>Inventario</span>
+                                <% } %>
                             </td>
                             <td><small>
                                     <%= (g.opciones && g.opciones.length) ? g.opciones.map(o=> o.nombre + (o.precio_adicional > 0 ? ' (+$' + Number(o.precio_adicional).toLocaleString('es-CO') + ')' : '')).join(', ') : '-' %>

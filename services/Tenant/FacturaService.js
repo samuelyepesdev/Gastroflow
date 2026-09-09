@@ -175,6 +175,13 @@ class FacturaService {
                 })
         );
 
+        // Descuento por toppings/modificadores ligados a inventario (opt-in por grupo).
+        try {
+            await InventarioService.descontarPorModificadoresFactura(tenantId, facturaId);
+        } catch (err) {
+            console.error('Error al descontar inventario por modificadores:', err);
+        }
+
         // --- INVALIDAR CACHÉ DE ESTADÍSTICAS (Actualización instantánea del Dashboard) ---
         try {
             const cacheService = require('../Shared/CacheService');
