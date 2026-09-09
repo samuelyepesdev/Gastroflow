@@ -643,4 +643,16 @@ body {
     margin-bottom: 6px; cursor: pointer; font-size: 14px;
 }
 .pos-mod-opcion:hover { background: #f8f9fa; }
-.pedido-item-mods { font-size: 11.5px; color: #b45309; margin-top: 1px; }
+.pedido-item-mods { font-size: 11.5px; color: #b45309; margin-top: 1px; }
+.pedido-item-nota {
+    font-size: 11px;
+    color: #a50202;
+    font-style: italic;
+    margin-top: 1px;
+    line-height: 1.25;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+.pedido-item-nota .bi { font-style: normal; margin-right: 2px; opacity: 0.7; }

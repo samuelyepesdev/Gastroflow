@@ -1,5 +1,11 @@
 // UI rendering, Search, and Event bindings for Mesas module
 
+function escMesas(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c => (
+    { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+  ));
+}
+
 window.MesasModule.renderItems = function() {
   const tbody = $('#tbodyItems');
   tbody.empty();
@@ -18,7 +24,10 @@ window.MesasModule.renderItems = function() {
     const descBadge = descTxt ? ' <span class="badge bg-success">' + descTxt + '</span>' : '';
     const badgePagado = it.pagado ? '<br><span class="badge bg-success mt-1"><i class="bi bi-check2-circle me-1"></i>Pagado</span>' : '';
     const modsTexto = (it.modificadores && it.modificadores.length)
-      ? '<div class="pedido-item-mods">' + it.modificadores.map(m => m.opcion_nombre).join(', ') + '</div>' : '';
+      ? '<div class="pedido-item-mods">' + it.modificadores.map(m => escMesas(m.opcion_nombre)).join(', ') + '</div>' : '';
+    const notaTxt = (it.nota != null && String(it.nota).trim() !== '')
+      ? '<div class="pedido-item-nota" title="' + escMesas(it.nota) + '"><i class="bi bi-chat-left-text"></i> ' + escMesas(it.nota) + '</div>'
+      : '';
 
     const buttonsHtml = it.pagado
       ? `<div class="text-success text-center px-1" title="Este ítem ya está pago"><i class="bi bi-check2-all fs-5"></i></div>`
@@ -34,7 +43,7 @@ window.MesasModule.renderItems = function() {
 
     tbody.append(`
       <tr>
-        <td class="td-producto align-middle">${(it.producto_nombre || it.nombre || it.producto_id) + descBadge + badgePagado + modsTexto}</td>
+        <td class="td-producto align-middle">${(it.producto_nombre || it.nombre || it.producto_id) + descBadge + badgePagado + modsTexto + notaTxt}</td>
         <td class="text-center align-middle">${inputHtml}</td>
         <td class="text-end d-none d-sm-table-cell align-middle">${this.formatear(precio)}</td>
         <td class="text-end td-subtotal align-middle">${it.pagado ? '<span class="text-muted text-decoration-line-through small">' + this.formatear(subtotal) + '</span>' : this.formatear(subtotal)}</td>
