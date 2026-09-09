@@ -1,6 +1,6 @@
 const ejs = require('ejs');
 const path = require('node:path');
-const puppeteer = require('puppeteer');
+const { renderPdf } = require('../Shared/PdfBrowser');
 const MailerService = require('../Shared/MailerService');
 const StatsRepository = require('../../repositories/Tenant/StatsRepository');
 const TenantService = require('../Admin/TenantService');
@@ -78,18 +78,15 @@ class ReporteMensualService {
 
         const html = await ejs.renderFile(templatePath, data);
 
-        const browser = await puppeteer.launch({ headless: 'new', args: ['--no-sandbox', '--disable-setuid-sandbox'] });
-        try {
-            const page = await browser.newPage();
-            await page.setContent(html, { waitUntil: 'networkidle0' });
-            return await page.pdf({
+        return renderPdf(
+            html,
+            {
                 format: 'A4',
                 printBackground: true,
                 margin: { top: '20px', bottom: '20px', left: '20px', right: '20px' }
-            });
-        } finally {
-            await browser.close();
-        }
+            },
+            { waitUntil: 'networkidle0' }
+        );
     }
 
     /**

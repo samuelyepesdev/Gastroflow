@@ -1,12 +1,15 @@
 /**
- * PlanesPdfService - Genera el PDF de portafolio de planes (puppeteer).
+ * PlanesPdfService - Genera el PDF de portafolio de planes.
  * Extraído de PlanesController.exportPdf para poder llamarlo tanto desde el
  * controller (compatibilidad) como desde JobWorkerService (generación async).
+ *
+ * El render (Chromium headless de un solo uso + cierre garantizado + watchdog)
+ * vive en services/Shared/PdfBrowser.js.
  */
 
 const ejs = require('ejs');
 const path = require('path');
-const puppeteer = require('puppeteer');
+const { renderPdf } = require('../Shared/PdfBrowser');
 const PlanService = require('./PlanService');
 
 class PlanesPdfService {
@@ -18,33 +21,11 @@ class PlanesPdfService {
         const templatePath = path.join(__dirname, '../../views/admin/planes/pdf_export.ejs');
         const html = await ejs.renderFile(templatePath, { plans });
 
-        let browser = null;
-        try {
-            browser = await puppeteer.launch({
-                headless: true,
-                args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu']
-            });
-            const page = await browser.newPage();
-            await page.setContent(html, { waitUntil: 'load', timeout: 30000 });
-
-            const pdfBuffer = await page.pdf({
-                format: 'A4',
-                printBackground: true,
-                margin: { top: '15mm', bottom: '15mm', left: '15mm', right: '15mm' }
-            });
-
-            await browser.close();
-            return pdfBuffer;
-        } catch (error) {
-            if (browser) {
-                try {
-                    await browser.close();
-                } catch (_e) {
-                    /* intentional */
-                }
-            }
-            throw error;
-        }
+        return renderPdf(html, {
+            format: 'A4',
+            printBackground: true,
+            margin: { top: '15mm', bottom: '15mm', left: '15mm', right: '15mm' }
+        });
     }
 }
 

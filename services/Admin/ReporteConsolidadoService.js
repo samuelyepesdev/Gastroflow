@@ -1,6 +1,6 @@
 const ejs = require('ejs');
 const path = require('path');
-const puppeteer = require('puppeteer');
+const { renderPdf } = require('../Shared/PdfBrowser');
 const TenantService = require('./TenantService');
 const StatsRepository = require('../../repositories/Tenant/StatsRepository');
 
@@ -221,32 +221,18 @@ class ReporteConsolidadoService {
 
         const html = await ejs.renderFile(templatePath, data);
 
-        let browser = null;
         try {
-            browser = await puppeteer.launch({
-                headless: true,
-                args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu']
-            });
-            const page = await browser.newPage();
-            await page.setContent(html, { waitUntil: 'networkidle0' });
-
-            const pdfBuffer = await page.pdf({
-                format: 'A4',
-                printBackground: true,
-                margin: { top: '15mm', bottom: '15mm', left: '15mm', right: '15mm' }
-            });
-
-            await browser.close();
-            return pdfBuffer;
+            return await renderPdf(
+                html,
+                {
+                    format: 'A4',
+                    printBackground: true,
+                    margin: { top: '15mm', bottom: '15mm', left: '15mm', right: '15mm' }
+                },
+                { waitUntil: 'networkidle0' }
+            );
         } catch (puppeteerError) {
             console.error('[CONSOLIDADO_PDF_EXPORT_ERROR]:', puppeteerError);
-            if (browser) {
-                try {
-                    await browser.close();
-                } catch (_e) {
-                    /* intentional */
-                }
-            }
             throw puppeteerError;
         }
     }

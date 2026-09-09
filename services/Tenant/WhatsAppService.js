@@ -5,6 +5,31 @@ const path = require('path');
 const fs = require('fs');
 const EventEmitter = require('events');
 
+// Flags de Chromium para bajar RAM. Este navegador vive horas (no es de un solo
+// uso como el de los PDF), así que NO se usa `--single-process` -- da cierres
+// inesperados con whatsapp-web.js. `--disable-dev-shm-usage` es lo más
+// importante en contenedores chicos: sin él, /dev/shm (64 MB) se llena y
+// Chromium empuja a swap o muere por OOM.
+const WA_CHROMIUM_ARGS = [
+    '--no-sandbox',
+    '--disable-setuid-sandbox',
+    '--disable-gpu',
+    '--disable-dev-shm-usage',
+    '--no-zygote',
+    '--disable-extensions',
+    '--disable-background-networking',
+    '--disable-background-timer-throttling',
+    '--disable-backgrounding-occluded-windows',
+    '--disable-renderer-backgrounding',
+    '--disable-features=site-per-process',
+    '--renderer-process-limit=1',
+    '--disable-crash-reporter',
+    '--disable-breakpad',
+    '--mute-audio',
+    '--no-first-run',
+    '--js-flags=--max-old-space-size=256'
+];
+
 class WhatsAppService {
     constructor() {
         this.clients = new Map(); // client_id -> WhatsApp Client
@@ -45,7 +70,7 @@ class WhatsAppService {
             }),
             puppeteer: {
                 headless: true,
-                args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu']
+                args: WA_CHROMIUM_ARGS
             }
         });
 
