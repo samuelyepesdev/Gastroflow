@@ -54,8 +54,6 @@ module.exports = function navbarLocals(req, res, next) {
                 configuracion: hp('configuracion.ver') && cs('configuracion'),
                 perfil: hp('perfil.ver'),
                 facturacion: hp('facturacion.ver'),
-                whatsapp: hp('whatsapp.ver') && cs('configuracion'),
-                whatsappAjustes: hp('whatsapp.ajustes') && cs('configuracion'),
                 proveedores: hp('proveedores.ver') && cs('proveedores'),
                 caja: hp('caja.ver') && cs('caja'),
                 finanzas: hp('finanzas.ver'),
@@ -69,7 +67,6 @@ module.exports = function navbarLocals(req, res, next) {
                 can.modificadores ||
                 can.eventos ||
                 can.analitica ||
-                can.whatsapp ||
                 can.proveedores ||
                 can.servicios ||
                 can.clasificacion;

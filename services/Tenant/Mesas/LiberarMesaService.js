@@ -44,8 +44,8 @@ class LiberarMesaService {
 
             // Emitir evento SSE para notificar en tiempo real que se liberó la mesa
             try {
-                const WhatsAppService = require('../WhatsAppService');
-                WhatsAppService.events.emit('orderCreated', {
+                const RealtimeEvents = require('../../Shared/RealtimeEvents');
+                RealtimeEvents.emit('orderCreated', {
                     tenantId,
                     mesaId,
                     action: 'cancelled'

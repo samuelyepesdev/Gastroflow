@@ -105,8 +105,8 @@ class PagarItemIndividualService {
         if (!skipEvent) {
             // Emitir evento SSE
             try {
-                const WhatsAppService = require('../WhatsAppService');
-                WhatsAppService.events.emit('orderCreated', {
+                const RealtimeEvents = require('../../Shared/RealtimeEvents');
+                RealtimeEvents.emit('orderCreated', {
                     tenantId,
                     pedidoId: item.pedido_id,
                     mesaId: item.mesa_id,

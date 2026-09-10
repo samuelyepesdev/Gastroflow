@@ -38,8 +38,8 @@ class LimpiarPedidoService {
 
             // Emitir evento SSE para notificar en tiempo real que se limpió/canceló el pedido
             try {
-                const WhatsAppService = require('../WhatsAppService');
-                WhatsAppService.events.emit('orderCreated', {
+                const RealtimeEvents = require('../../Shared/RealtimeEvents');
+                RealtimeEvents.emit('orderCreated', {
                     tenantId,
                     pedidoId,
                     mesaId,

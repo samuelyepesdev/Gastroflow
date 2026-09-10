@@ -4,7 +4,6 @@ const { renderPdf } = require('../Shared/PdfBrowser');
 const MailerService = require('../Shared/MailerService');
 const StatsRepository = require('../../repositories/Tenant/StatsRepository');
 const TenantService = require('../Admin/TenantService');
-const WhatsAppService = require('./WhatsAppService');
 
 function formatMoney(amount) {
     return new Intl.NumberFormat('es-CO', {
@@ -99,40 +98,6 @@ class ReporteMensualService {
         return tenant.email || tenant.config?.correo || process.env.ADMIN_EMAIL || 'contacto@ejemplo.com';
     }
 
-    /**
-     * Intenta enviar la notificación por WhatsApp del PDF generado.
-     */
-    static async enviarNotificacionWhatsApp(tenant, pdfBuffer, mesNombre) {
-        if (!tenant.telefono) {
-            return false;
-        }
-
-        try {
-            const filename = `Reporte_${mesNombre.replaceAll(' ', '_')}_${tenant.nombre.replaceAll(' ', '_')}.pdf`;
-            const caption = `Hola *${tenant.nombre}*! 👋\n\nAquí tienes el resumen de ventas de *${mesNombre}*.\n\n_Tu Sistema GastroFlow_`;
-
-            let waSent = await WhatsAppService.sendMediaMessage(
-                tenant.id,
-                tenant.telefono,
-                pdfBuffer,
-                filename,
-                caption
-            );
-
-            if (!waSent && tenant.id !== 1) {
-                waSent = await WhatsAppService.sendMediaMessage(1, tenant.telefono, pdfBuffer, filename, caption);
-            }
-
-            if (waSent) {
-                console.log(`[WhatsApp] Reporte mensual enviado a ${tenant.nombre} (${tenant.telefono})`);
-            }
-            return waSent;
-        } catch (waError) {
-            console.error('[WhatsApp] Error enviando reporte mensual:', waError.message);
-            return false;
-        }
-    }
-
     static async generarYEnviar(tenant, options = {}) {
         const rango = this.calcularRangoFechas(options);
         console.log(`Generando reporte para ${tenant.nombre} - Rango: ${rango.firstDay} a ${rango.lastDayStr}...`);
@@ -158,9 +123,7 @@ class ReporteMensualService {
                 ]
             });
 
-            const waSent = await this.enviarNotificacionWhatsApp(tenant, pdfBuffer, mesUpper);
-
-            return { ...mailResult, emailValido: to, whatsappEnviado: waSent, pdfBuffer };
+            return { ...mailResult, emailValido: to, pdfBuffer };
         } catch (mailError) {
             console.error('Error enviando el correo desde ReporteMensual:', mailError);
             throw mailError;

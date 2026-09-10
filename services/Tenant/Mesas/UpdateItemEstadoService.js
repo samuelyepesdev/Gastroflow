@@ -44,8 +44,8 @@ class UpdateItemEstadoService {
 
         // Emitir evento SSE
         try {
-            const WhatsAppService = require('../WhatsAppService');
-            WhatsAppService.events.emit('orderCreated', {
+            const RealtimeEvents = require('../../Shared/RealtimeEvents');
+            RealtimeEvents.emit('orderCreated', {
                 tenantId,
                 pedidoId: pedido_id,
                 mesaId: mesa_id,

@@ -57,8 +57,8 @@ class CocinaService {
         }
 
         try {
-            const WhatsAppService = require('./WhatsAppService');
-            WhatsAppService.events.emit('orderCreated', {
+            const RealtimeEvents = require('../Shared/RealtimeEvents');
+            RealtimeEvents.emit('orderCreated', {
                 tenantId,
                 pedidoId: pedido.id,
                 mesaId: pedido.mesa_id,
@@ -92,8 +92,8 @@ class CocinaService {
         }
 
         try {
-            const WhatsAppService = require('./WhatsAppService');
-            WhatsAppService.events.emit('orderCreated', {
+            const RealtimeEvents = require('../Shared/RealtimeEvents');
+            RealtimeEvents.emit('orderCreated', {
                 tenantId,
                 pedidoId: pedido.id,
                 mesaId: pedido.mesa_id,

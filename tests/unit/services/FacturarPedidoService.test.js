@@ -1,7 +1,7 @@
 const FacturarPedidoService = require('../../../services/Tenant/Mesas/FacturarPedidoService');
 const db = require('../../../config/database');
 const FacturaRepository = require('../../../repositories/Tenant/FacturaRepository');
-const WhatsAppService = require('../../../services/Tenant/WhatsAppService');
+const RealtimeEvents = require('../../../services/Shared/RealtimeEvents');
 
 jest.mock('../../../config/database', () => {
     const mockConnection = {
@@ -36,10 +36,11 @@ jest.mock('../../../services/Shared/CacheService', () => ({
     delete: jest.fn()
 }));
 
-jest.mock('../../../services/Tenant/WhatsAppService', () => ({
-    events: {
-        emit: jest.fn()
-    }
+jest.mock('../../../services/Shared/RealtimeEvents', () => ({
+    emit: jest.fn(),
+    on: jest.fn(),
+    removeListener: jest.fn(),
+    setMaxListeners: jest.fn()
 }));
 
 describe('FacturarPedidoService', () => {
@@ -270,7 +271,7 @@ describe('FacturarPedidoService', () => {
         expect(mockConn.release).toHaveBeenCalled();
 
         // Verificar que se emitió el evento SSE
-        expect(WhatsAppService.events.emit).toHaveBeenCalledWith(
+        expect(RealtimeEvents.emit).toHaveBeenCalledWith(
             'orderCreated',
             expect.objectContaining({
                 tenantId: 1,

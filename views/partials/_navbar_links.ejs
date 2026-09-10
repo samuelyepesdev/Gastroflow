@@ -32,10 +32,6 @@
         <li class="nav-item"><a
                 class="nav-link <%= (typeof currentAdminPage!=='undefined'&&currentAdminPage==='soporte')?'active':'' %>"
                 href="/admin/soporte"><i class="bi bi-headset"></i>Soporte</a></li>
-        <% if (nav.can.whatsapp) { %>
-            <li class="nav-item"><a class="nav-link" href="/whatsapp"><i
-                        class="bi bi-whatsapp text-success"></i>WhatsApp</a></li>
-            <% } %>
                 <% } else { %>
 
                     <% if (nav.can.dashboard) { %>
@@ -180,8 +176,6 @@
                                                                                                                                     <% if
                                                                                                                                         (nav.can.analitica
                                                                                                                                         ||
-                                                                                                                                        nav.can.whatsapp
-                                                                                                                                        ||
                                                                                                                                         nav.can.eventos ||
                                                                                                                                         nav.can.clasificacion)
                                                                                                                                         {
@@ -198,17 +192,6 @@
                                                                                                                                                 Análisis
                                                                                                                                             </h6>
                                                                                                                                         </li>
-                                                                                                                                        <% if
-                                                                                                                                            (nav.can.whatsapp)
-                                                                                                                                            {
-                                                                                                                                            %>
-                                                                                                                                            <li><a class="dropdown-item"
-                                                                                                                                                    href="/whatsapp"><i
-                                                                                                                                                        class="bi bi-whatsapp text-success"></i>WhatsApp
-                                                                                                                                                    Bot</a>
-                                                                                                                                            </li>
-                                                                                                                                            <% }
-                                                                                                                                                %>
                                                                                                                                                 <% if
                                                                                                                                                     (nav.can.eventos)
                                                                                                                                                     {

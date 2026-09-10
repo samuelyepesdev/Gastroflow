@@ -49,7 +49,6 @@ const recetasRoutes = require('./tenant/recetas');
 const modificadoresRoutes = require('./tenant/modificadores');
 const perfilRoutes = require('./tenant/perfil');
 const facturacionRoutes = require('./tenant/facturacion');
-const whatsappRoutes = require('./tenant/whatsapp');
 const proveedoresRoutes = require('./tenant/proveedores');
 const finanzasRoutes = require('./tenant/finanzas');
 const cajaRoutes = require('./tenant/caja');
@@ -144,13 +143,6 @@ router.use(
 router.use('/dashboard', requireAuthWithTenant, requirePlanFeature('dashboard'), dashboardRoutes);
 router.use('/analitica', requireAuthWithTenant, requirePlanFeature('analitica'), analiticaRoutes);
 router.use('/clasificacion', requireAuthWithTenant, requirePermission('clasificacion.ver'), clasificacionRoutes);
-router.use(
-    '/whatsapp',
-    requireAuthWithTenant,
-    requirePlanFeature('configuracion'),
-    requirePermission('whatsapp.ver'),
-    whatsappRoutes
-);
 router.use(
     '/costeo',
     requireAuth,

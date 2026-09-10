@@ -1,4 +1,4 @@
-const WhatsAppService = require('../../../../services/Tenant/WhatsAppService');
+const RealtimeEvents = require('../../../../services/Shared/RealtimeEvents');
 
 class NotificationController {
     /**
@@ -43,8 +43,8 @@ class NotificationController {
         };
 
         // Suscribirse a los eventos en el servicio
-        WhatsAppService.events.on('orderCreated', onOrderCreated);
-        WhatsAppService.events.on('mesaSolicitud', onMesaSolicitud);
+        RealtimeEvents.on('orderCreated', onOrderCreated);
+        RealtimeEvents.on('mesaSolicitud', onMesaSolicitud);
 
         // Mantener la conexión enviando keep-alive cada 30 segundos
         const keepAlive = setInterval(() => {
@@ -66,8 +66,8 @@ class NotificationController {
             }
             cleaned = true;
             // console.log(`[SSE] Cliente desconectado para Tenant ${tenantId}`);
-            WhatsAppService.events.removeListener('orderCreated', onOrderCreated);
-            WhatsAppService.events.removeListener('mesaSolicitud', onMesaSolicitud);
+            RealtimeEvents.removeListener('orderCreated', onOrderCreated);
+            RealtimeEvents.removeListener('mesaSolicitud', onMesaSolicitud);
             clearInterval(keepAlive);
         };
         req.on('close', cleanup);

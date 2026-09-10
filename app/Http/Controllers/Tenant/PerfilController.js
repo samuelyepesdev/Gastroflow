@@ -78,18 +78,11 @@ class PerfilController {
                 testMesActual: !mes && !anio
             });
 
-            let msg = `Reporte de ${mes ? 'mes solicitado' : 'mes actual'} enviado con éxito vía Email.`;
-            if (result.whatsappEnviado) {
-                msg += ' ¡También llegó a tu WhatsApp!';
-            } else if (tenant.telefono) {
-                msg +=
-                    ' **Nota:** No se pudo enviar por WhatsApp. Asegúrate de que el bot de tu negocio o el bot principal estén conectados.';
-            }
+            const msg = `Reporte de ${mes ? 'mes solicitado' : 'mes actual'} enviado con éxito vía Email.`;
 
             res.json({
                 success: true,
                 message: msg,
-                whatsapp: result.whatsappEnviado,
                 // Forzamos conversión a Buffer de Node para asegurar un Base64 limpio
                 pdfBase64: result.pdfBuffer ? Buffer.from(result.pdfBuffer).toString('base64') : null,
                 fileName: `Reporte_${mes || 'Actual'}_${anio || ''}.pdf`

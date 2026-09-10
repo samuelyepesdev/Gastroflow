@@ -1,6 +1,6 @@
 const db = require('../../config/database');
 const MenuQRRepository = require('../../repositories/Public/MenuQRRepository');
-const WhatsAppService = require('../Tenant/WhatsAppService');
+const RealtimeEvents = require('../Shared/RealtimeEvents');
 const InventarioService = require('../Tenant/InventarioService'); // Para validación de stock
 const ModificadorService = require('../Tenant/ModificadorService'); // Toppings/modificadores
 
@@ -188,7 +188,7 @@ class PedidoQRService {
             await connection.commit();
 
             // Emitir evento para notificaciones en tiempo real en el panel administrativo
-            WhatsAppService.events.emit('orderCreated', { 
+            RealtimeEvents.emit('orderCreated', { 
                 tenantId, 
                 pedidoId, 
                 mesaId,
@@ -335,7 +335,7 @@ class PedidoQRService {
             );
         }
 
-        WhatsAppService.events.emit('mesaSolicitud', {
+        RealtimeEvents.emit('mesaSolicitud', {
             tenantId: mesa.tenant_id,
             mesaId: mesa.id,
             mesaNumero: mesa.numero,

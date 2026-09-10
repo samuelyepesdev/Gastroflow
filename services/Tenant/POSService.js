@@ -148,8 +148,8 @@ class POSService {
                 clienteId
             });
             if (result) {
-                const WhatsAppService = require('./WhatsAppService');
-                WhatsAppService.events.emit('orderCreated', {
+                const RealtimeEvents = require('../Shared/RealtimeEvents');
+                RealtimeEvents.emit('orderCreated', {
                     tenantId,
                     pedidoId: result.pedidoId,
                     mesaId: result.mesaId,
@@ -175,8 +175,8 @@ class POSService {
             const itemsResueltos = await this._resolverItems(tenantId, productos, puedeUsarModificadores);
             const result = await POSRepository.resincronizarItemsPedido(tenantId, pedidoCocinaId, itemsResueltos);
             if (result) {
-                const WhatsAppService = require('./WhatsAppService');
-                WhatsAppService.events.emit('orderCreated', {
+                const RealtimeEvents = require('../Shared/RealtimeEvents');
+                RealtimeEvents.emit('orderCreated', {
                     tenantId,
                     pedidoId: result.pedidoId,
                     action: 'items_updated'
