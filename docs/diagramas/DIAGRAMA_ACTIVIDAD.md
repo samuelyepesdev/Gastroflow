@@ -40,11 +40,11 @@ graph TD
     
     %% Ejecución en paralelo
     CreateInvoice --> fork_actions{Acciones en Paralelo}
-    fork_actions --> DeductInventory[Deducir Stock por Insumos de Receta]
+    fork_actions --> DeductInventory[Deducir Stock por Receta y por Toppings ligados a insumo]
     fork_actions --> RegisterIncome[Registrar Dinero en Finanzas]
-    fork_actions --> SendWhatsApp[WhatsApp Bot: Enviar PDF de Factura]
+    fork_actions --> EmitEvent["RealtimeEvents.emit('orderCreated') → SSE al panel"]
     
-    DeductInventory & RegisterIncome & SendWhatsApp --> join_actions{Unión de Flujos}
+    DeductInventory & RegisterIncome & EmitEvent --> join_actions{Unión de Flujos}
     
     %% Cierre de Caja
     join_actions --> DayEnded{¿Fin de Turno?}
@@ -66,6 +66,6 @@ Cuando se envía una comanda a cocina, el backend no obliga a recargar la págin
 
 ### C. Post-procesamiento Asíncrono de Facturas
 Al cerrar un pago con éxito, se ejecutan de manera inmediata tres subprocesos:
-1. **Deducción de Stock:** Se consulta la ficha técnica del producto. Si posee ingredientes asociados, se restan las cantidades correspondientes a cada insumo en base al factor de desperdicio configurado.
+1. **Deducción de Stock:** Se consulta la ficha técnica del producto. Si posee ingredientes asociados, se restan las cantidades correspondientes a cada insumo según el rendimiento configurado. Además, si la venta lleva toppings de un grupo con `descuenta_inventario`, se descuenta también el insumo de cada opción (`descontarPorModificadoresFactura`).
 2. **Registro de Flujo de Caja:** Se suma el valor al arqueo total teórico esperado de la caja del turno activo.
-3. **Notificación Digital:** El bot de WhatsApp toma el PDF autogenerado de la factura y lo despacha al móvil del cliente.
+3. **Notificación en Tiempo Real:** Se emite el evento `orderCreated` en `RealtimeEvents`; el `NotificationController` lo reenvía por SSE a las pantallas conectadas (Cocina, Mesas, POS, Dashboard).

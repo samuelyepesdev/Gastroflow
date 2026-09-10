@@ -1,30 +1,23 @@
-# 🤖 Módulo 10: Integración de WhatsApp Bot
+# 🤖 Módulo 10: Integración de WhatsApp Bot — ❌ ELIMINADO (2026-09)
 
-### 1. Descripción Funcional
-Envía de forma automatizada comprobantes digitales de consumo a los clientes. Al facturar una compra, este servicio genera un archivo PDF y simula un cliente web en segundo plano para enviar el archivo al número de WhatsApp del cliente registrado.
+> **Este módulo fue removido del sistema.** Se documenta aquí solo como referencia histórica.
 
----
+### ¿Por qué se eliminó?
+La integración usaba `whatsapp-web.js`, que levanta un **Chromium headless por cada tenant conectado** (~150–350 MB de RAM cada uno). En un despliegue tipo Railway la memoria era ~96 % del costo del servidor, y el bot ya prácticamente no se usaba. Se decidió quitarlo por completo para reducir el gasto de infraestructura.
 
-### 2. Componentes del Código
-* **Controlador:** [WhatsAppController.js](file:///c:/laragon/www/Sistema-Restaurante-Node/app/Http/Controllers/Tenant/WhatsAppController.js)
-* **Servicio:** [WhatsAppService.js](file:///c:/laragon/www/Sistema-Restaurante-Node/services/Tenant/WhatsAppService.js)
-* **Integración externa:** `whatsapp-web.js`
+### Qué se borró
+* `services/Tenant/WhatsAppService.js`
+* `app/Http/Controllers/Tenant/WhatsAppController.js`
+* `routes/tenant/whatsapp.js`, mount `/whatsapp` en `routes/web.js`
+* `public/js/modulos/whatsapp.js`, `views/configuracion/whatsapp.ejs`
+* Dependencia `whatsapp-web.js` del `package.json`
+* Entradas de menú y `nav.can.whatsapp` en `middleware/navbarLocals.js`
 
----
+### Qué lo reemplazó / a dónde se movió
+* **Bus de eventos en tiempo real (SSE):** el `EventEmitter` global vivía dentro de `WhatsAppService.events` por razones históricas (nunca dependió de WhatsApp). Se movió a **`services/Shared/RealtimeEvents.js`**. Todos los emisores (`PedidoQRService`, `CocinaService`, `POSService`, `FacturarPedidoService`, servicios de `Mesas/`) y el consumidor (`NotificationController`, SSE en `GET /api/notifications/subscribe`) apuntan ahí. **El funcionamiento de las notificaciones no cambió.**
+* **Reporte mensual:** `ReporteMensualService` ya no intenta enviar el PDF por WhatsApp; ahora se envía **solo por correo** (y queda disponible para descarga en el panel de perfil).
 
-### 3. Tablas de Base de Datos Relacionadas
-* `configuracion_impresion`: Almacena si el bot está encendido/apagado y credenciales o estado del cliente web.
-* `clientes`: Mantiene los números de teléfono móviles de destino en formato internacional.
-
----
-
-### 4. Diagrama del Flujo de Notificaciones
-```mermaid
-graph TD
-    A[Facturación finalizada con éxito] --> B{¿Bot de WhatsApp Activo y QR enlazado?}
-    B -->|No| C[Saltar envío]
-    B -->|Sí| D[Generar factura digital en PDF mediante Puppeteer]
-    D --> E[Formatear número de teléfono del cliente]
-    E --> F[whatsapp-web.js envía mensaje con el PDF adjunto]
-    F --> G[Registrar estado de envío en logs]
-```
+### Restos inofensivos (no se limpiaron)
+* Tablas `whatsapp_configs` / `whatsapp_conversations` y migraciones `037`–`044` (históricas).
+* Permisos `whatsapp.*` en la BD (muertos).
+* Etiquetas "WhatsApp / Domicilios" en la grilla de mesas virtuales (esa UI sirve también para domicilios).

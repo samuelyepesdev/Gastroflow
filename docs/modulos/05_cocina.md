@@ -9,12 +9,13 @@ Una interfaz gráfica en tiempo real optimizada para tablets e instalada en la c
 * **Controlador:** [CocinaController.js](file:///c:/laragon/www/Sistema-Restaurante-Node/app/Http/Controllers/Tenant/CocinaController.js)
 * **Servicio:** [CocinaService.js](file:///c:/laragon/www/Sistema-Restaurante-Node/services/Tenant/CocinaService.js)
 * **Repositorio:** [CocinaRepository.js](file:///c:/laragon/www/Sistema-Restaurante-Node/repositories/Tenant/CocinaRepository.js)
-* **Notificaciones en Vivo:** Server-Sent Events (SSE) en `/api/notificaciones`
+* **Notificaciones en Vivo:** Server-Sent Events (SSE) en `GET /api/notifications/subscribe`, alimentado por el evento `orderCreated` de `services/Shared/RealtimeEvents.js`.
 
 ---
 
 ### 3. Tablas de Base de Datos Relacionadas
-* `pedido_items`: Lectura de los estados (`enviado`, `preparando`, `listo`, `entregado`) y notas de preparación añadidas por los meseros.
+* `pedido_items`: estados (`pendiente`, `enviado`, `preparando`, `listo`, `servido`, `cancelado`), `nota` por ítem y `modificadores_hash`.
+* `pedido_item_modificadores`: toppings de cada ítem; la cola agrupa por `nota` + `modificadores_hash` para no mezclar el mismo producto con distinta personalización.
 
 ---
 

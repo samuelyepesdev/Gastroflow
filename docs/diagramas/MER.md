@@ -1,6 +1,6 @@
 # 📊 Modelo Entidad-Relación (MER / DER) Exhaustivo
 
-Este documento detalla la estructura física completa de la base de datos de GastroFlow. Contiene las **38 tablas** del sistema con sus respectivos campos, tipos de datos, llaves primarias/foráneas y relaciones relacionales.
+Este documento detalla la estructura física de la base de datos de GastroFlow: campos, tipos de datos, llaves primarias/foráneas y relaciones. El esquema real se materializa por 90+ migraciones en `database/migrations/` (última: `090_modificadores_descuenta_inventario.sql`); este MER cubre las tablas principales.
 
 ---
 
@@ -68,6 +68,7 @@ erDiagram
     PRODUCTOS ||--o{ PRODUCTO_PARAMETRO : "categoriza"
     PARAMETROS ||--o{ PRODUCTO_PARAMETRO : "clasifica_en"
 
+    %% WHATSAPP_* son tablas LEGADO: la integración se eliminó en 2026-09 (ver módulo 10)
     WHATSAPP_CONFIGS ||--o{ WHATSAPP_CONVERSATIONS : "mantiene"
     TENANTS ||--o{ TENANT_AUDIT : "registra"
     TENANTS ||--o{ MOVI_INV : "descuenta"
@@ -442,6 +443,79 @@ erDiagram
         string key PK
         string value
     }
+
+    %% ---- Modificadores / Toppings (migraciones 077, 090) ----
+    PRODUCTOS ||--o{ PRODUCTO_MODIFICADOR_GRUPO : "ofrece"
+    GRUPOS_MODIFICADORES ||--o{ PRODUCTO_MODIFICADOR_GRUPO : "asignado_a"
+    GRUPOS_MODIFICADORES ||--o{ OPCIONES_MODIFICADOR : "contiene"
+    INSUMOS ||--o{ OPCIONES_MODIFICADOR : "descuenta (opt-in)"
+    PEDIDO_ITEMS ||--o{ PEDIDO_ITEM_MODIFICADORES : "snapshot"
+    DETALLE_FACTURA ||--o{ DETALLE_FACTURA_MODIFICADORES : "snapshot"
+    OPCIONES_MODIFICADOR ||--o{ PEDIDO_ITEM_MODIFICADORES : "referencia (SET NULL)"
+    OPCIONES_MODIFICADOR ||--o{ DETALLE_FACTURA_MODIFICADORES : "referencia (SET NULL)"
+
+    GRUPOS_MODIFICADORES {
+        int id PK
+        int tenant_id FK
+        string nombre
+        enum tipo_seleccion "unica|multiple"
+        boolean obligatorio
+        boolean descuenta_inventario
+        tinyint minimo_selecciones
+        tinyint maximo_selecciones
+    }
+    OPCIONES_MODIFICADOR {
+        int id PK
+        int grupo_id FK
+        int tenant_id FK
+        string nombre
+        decimal precio_adicional
+        int insumo_id FK "nullable"
+        decimal cantidad_insumo
+        string unidad_insumo
+    }
+    PRODUCTO_MODIFICADOR_GRUPO {
+        int id PK
+        int producto_id FK
+        int grupo_id FK
+        smallint orden
+    }
+    PEDIDO_ITEM_MODIFICADORES {
+        int id PK
+        int pedido_item_id FK
+        int opcion_modificador_id FK "nullable"
+        string grupo_nombre
+        string opcion_nombre
+        decimal precio_adicional
+        int insumo_id
+        decimal cantidad_insumo
+        string unidad_insumo
+    }
+    DETALLE_FACTURA_MODIFICADORES {
+        int id PK
+        int detalle_factura_id FK
+        int opcion_modificador_id FK "nullable"
+        string grupo_nombre
+        string opcion_nombre
+        decimal precio_adicional
+        int insumo_id
+        decimal cantidad_insumo
+        string unidad_insumo
+    }
+
+    %% ---- Suscripción SaaS / Wompi (migración 084) ----
+    TENANTS ||--o{ SUSCRIPCION_PAGOS : "es_cobrado_en"
+    SUSCRIPCION_PAGOS {
+        int id PK
+        int tenant_id FK
+        decimal monto
+        enum estado "pendiente|exitoso|fallido"
+        string wompi_transaction_id
+        string wompi_reference UK
+        date periodo_desde
+        date periodo_hasta
+        json respuesta_raw
+    }
 ```
 
 ---
@@ -471,20 +545,28 @@ erDiagram
 ### 7. `mesas` / `pedidos` / `pedido_items` / `servicios` (Operación de Salón)
 * Control de ocupación y flujo del salón. Soporta servicios externos (como cargos por delivery o montaje) que no afectan volumen de utilidad de cocina.
 
-### 8. `facturas` / `detalle_factura` (Facturación)
-* Consolidado fiscal. Almacena las ventas ejecutadas ya sea en salón o vía POS rápido.
+### 8. `facturas` / `detalle_factura` / `detalle_factura_modificadores` (Facturación)
+* Consolidado fiscal. Almacena las ventas ejecutadas en salón o vía POS. `detalle_factura_modificadores` guarda el snapshot de toppings por línea (nombre, precio y, si aplica, insumo/cantidad para el descuento de inventario).
 
 ### 9. `caja_sesiones` / `caja_movimientos` (Caja Chica)
 * Bitácora financiera diaria por cajero. Relaciona facturas y egresos menores para auditoría de descuadres.
 
-### 10. `whatsapp_configs` / `whatsapp_conversations` (Mensajería)
-* Automatización de notificaciones y machine learning de bot conversacional.
+### 10. `grupos_modificadores` / `opciones_modificador` / `producto_modificador_grupo` / `pedido_item_modificadores` (Modificadores / Toppings)
+* Grupos de opciones asignables a productos (N:M). `grupos_modificadores.descuenta_inventario` activa el descuento de stock; entonces cada `opciones_modificador` se enlaza a un `insumo_id` + cantidad. Las tablas `*_modificadores` son **snapshots** de la venta (FK a la opción con `ON DELETE SET NULL`). Ver módulo 12.
 
-### 11. `soporte_tickets` (Soporte Técnico)
+### 11. `tenants.*wompi*` / `suscripcion_pagos` (Suscripción SaaS)
+* Cobro recurrente de la suscripción de cada tenant vía Wompi. `tenants` gana `wompi_payment_source_id`, `proximo_cobro`, `intentos_fallidos_pago`, `suspendido_por_pago`, `ultimo_intento_cobro_at`. `suscripcion_pagos` es el historial de intentos. Ver módulo 13.
+
+### 12. `whatsapp_configs` / `whatsapp_conversations` (Mensajería) — ⚠️ LEGADO
+* La integración de WhatsApp fue **eliminada (2026-09)**. Las tablas siguen existiendo pero ningún código las escribe. Ver módulo 10.
+
+### 13. `soporte_tickets` (Soporte Técnico)
 * Tickets de soporte abiertos por los usuarios de locales dirigidos a los Superadmins de la plataforma.
 
-### 12. `pos_borradores` (POS Borradores)
+### 14. `pos_borradores` (POS Borradores)
 * Almacena en formato JSON carritos de compra pausados o aparcados para su posterior reanudación.
 
-### 13. `landing_settings` (CMS de Landing)
+### 15. `landing_settings` (CMS de Landing)
 * Parámetros estéticos globales (colores HSL), datos de contacto y textos legales de la página web de GastroFlow.
+
+> Tablas no listadas arriba pero presentes en migraciones: `eventos`, `servicios`, `job_queue`, `facturas_electronicas` + config fiscal, `tenant_audit`, `temas` / `parametros` / `tema_parametro` / `producto_parametro`, `sync_*`, entre otras.

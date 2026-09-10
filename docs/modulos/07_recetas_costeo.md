@@ -20,10 +20,12 @@ Permite estructurar las fichas técnicas (recetas) de los platos del menú para 
 ---
 
 ### 3. Tablas de Base de Datos Relacionadas
-* `recetas`: Cabecera de la receta asociada a un producto de venta.
-* `receta_detalles`: Especificación de ingredientes (`insumo_id`), cantidad neta consumida por plato y merma tolerable.
+* `recetas`: Cabecera de la receta asociada a un producto de venta (`porciones`).
+* `receta_ingredientes`: Especificación de ingredientes (`insumo_id`), `cantidad` neta consumida y `unidad`.
 * `costos_fijos`: Registros de gastos operativos fijos (alquiler, servicios públicos, nóminas).
 * `configuracion_costeo`: Margen de ganancia ideal por tipo o categoría de producto.
+
+> El descuento de inventario por **toppings/modificadores** es independiente de la receta y se procesa aparte al facturar (`InventarioService.descontarPorModificadoresFactura`). Ver módulos 6 y 12.
 
 ---
 

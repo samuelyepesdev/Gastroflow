@@ -20,10 +20,14 @@ El proyecto está diseñado bajo un ecosistema moderno basado en JavaScript/Node
 | **Interactividad Frontend**| Vanilla JS + jQuery v3.6.0 | Control dinámico del DOM y peticiones AJAX. |
 | **Alertas & Modales** | SweetAlert2 v11 | Reemplazo de diálogos nativos del navegador por modales premium. |
 | **Autenticación** | JWT (jsonwebtoken) & cookies | Manejo de sesión persistente mediante cookie `auth_token` y cabeceras Bearer. |
-| **Generación de PDFs** | Puppeteer v24 | Generación y maquetación de reportes de cierre mensual. |
-| **Exportación/Importación**| ExcelJS v3.4.0 | Carga masiva de productos y descarga de reportes de ventas a Excel. |
-| **Integración Telefónica** | whatsapp-web.js v1.34.6 | Bot de WhatsApp integrado que automatiza el envío de recibos. |
+| **Generación de PDFs** | Puppeteer v24 (vía `services/Shared/PdfBrowser.js`) | Chromium headless de un solo uso, con carga perezosa, cierre garantizado y watchdog. Reportes mensuales y consolidados. |
+| **Tiempo real** | Server-Sent Events (SSE) + `services/Shared/RealtimeEvents.js` | Bus de eventos en proceso (`orderCreated`, `mesaSolicitud`) que alimenta Cocina, Mesas, POS y Dashboard vía `GET /api/notifications/subscribe`. |
+| **Pasarela de pagos** | Wompi (cobro recurrente de la suscripción SaaS de cada tenant) | Opcional, configurable por `WOMPI_*`. Ver módulo 13. |
+| **Exportación/Importación**| ExcelJS v3.4.0 | Carga masiva de productos e insumos y descarga de reportes de ventas a Excel. |
+| **Impresión térmica** | QZ Tray (WebSocket local) | Ticket ESC/POS y apertura de cajón desde el navegador del cajero. |
 | **Pruebas Automatizadas** | Jest (Unitarias) & Playwright (E2E) | Cobertura de calidad en lógica y flujos visuales. |
+
+> **Nota (2026-09):** la integración de **WhatsApp** (`whatsapp-web.js`) fue **eliminada** por consumo de RAM. El bus de eventos SSE que vivía dentro de `WhatsAppService` se movió a `services/Shared/RealtimeEvents.js` sin cambio de comportamiento. Ver módulo 10.
 
 ---
 
@@ -103,7 +107,7 @@ GastroFlow cuenta con un robusto sistema híbrido de autorización basado en **P
 Cada restaurante tiene un plan asignado (`tenant.plan_id`). Los módulos habilitados están controlados por el array de características en la base de datos:
 * **Básico:** Dashboard, Productos (catálogo), Clientes, Mesas, Cocina y Ventas (POS estándar).
 * **Pro:** Módulos del plan Básico + Costeo, Recetas e Importación/Exportación masiva desde Excel.
-* **Premium / Definitivo:** Módulos de Pro + Analítica Avanzada, Predicción de ventas e integración con WhatsApp Bot.
+* **Premium / Definitivo:** Módulos de Pro + Analítica Avanzada y Predicción de ventas.
 
 ### Roles Predefinidos del Local
 Al autenticarse, el usuario hereda permisos globales por su rol asignado:
@@ -143,11 +147,14 @@ Optimizado para dispositivos tipo tablet instalados en cocina.
 * **Recetas:** Fórmulas de platos. Al vender un producto final, el sistema descuenta de forma automática la cantidad correspondiente de cada insumo utilizado.
 * **Costeo:** Compara los costos acumulados de los insumos y mano de obra con el precio de venta sugerido, alertando sobre platos con márgenes de ganancia críticos.
 
-### 5. Bot de WhatsApp Web
-* Utiliza una sesión local de navegador para emular un dispositivo móvil conectado.
-* Envía al cliente el recibo digital de su compra o la factura en formato PDF de manera automática.
+### 5. Menú QR y Modificadores
+* **Menú QR** (`/qr/:slug/:token`): carta digital de autoconsumo. El cliente arma líneas con toppings y nota por producto, sigue el estado de cada plato, ve el total de la mesa y puede llamar al mesero o pedir la cuenta. Actualización vía polling + SSE al panel.
+* **Modificadores/Toppings** (`/modificadores`): grupos de opciones asignables a productos, con precio adicional y **descuento de inventario opt-in** por grupo (cada opción se enlaza a un insumo). Reutilizados por POS, Mesas y Menú QR.
 
-### 6. Analítica y Predicciones de Ventas
+### 6. Suscripción SaaS (Wompi)
+* `/facturacion`: el admin de cada tenant registra una tarjeta (tokenizada en el navegador) y un cron diario cobra la suscripción mensual. 3 fallos consecutivos → suspensión automática; cobro exitoso → reactivación. No afecta la operación del restaurante ni sus ventas.
+
+### 7. Analítica y Predicciones de Ventas
 * Genera métricas financieras de ventas mensuales.
 * Incluye un modelo de predicción básico que analiza tendencias de los últimos meses para proyectar la demanda del mes siguiente.
 
@@ -202,5 +209,6 @@ ADMIN_NOMBRE="Administrador General"
 * `npm run build`: Genera un ejecutable binario autocontenido para Windows (`dist/gastroflow.exe`) utilizando la librería `pkg`.
 
 ### Despliegue en Plataformas en la Nube (ej. Railway / Render)
-* GastroFlow no es apto para entornos Serverless (como Vercel) debido al uso de sockets persistentes, el bot de WhatsApp Web y almacenamiento temporal en disco.
+* GastroFlow no es apto para entornos Serverless (como Vercel) debido al uso de conexiones SSE persistentes, crons en proceso y almacenamiento temporal en disco.
+* **Costo en la nube:** el consumo lo domina la **RAM**. Con la integración de WhatsApp ya retirada, el mayor pico restante es Chromium para PDFs (mitigado por `PdfBrowser`). Recomendado fijar `NODE_OPTIONS=--max-old-space-size` y medir el RSS real antes de dimensionar el plan.
 * **Railway** es la plataforma recomendada, ya que permite ejecutar el servidor Express de forma continua junto a una base de datos MySQL gestionada. Se recomienda conectar un bucket S3 compatible (`R2StorageService.js`) en producción para almacenar los logotipos y archivos multimedia de los restaurantes.

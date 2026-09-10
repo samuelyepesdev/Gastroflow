@@ -36,7 +36,7 @@ graph TD
         UC_Rec[Crear y Configurar Recetas]
         UC_CF[Gestionar Costos Fijos]
         UC_Param[Configurar Temas y Parámetros]
-        UC_WA[Configurar WhatsApp Bot y Plantillas]
+        UC_Mod[Configurar Modificadores y Toppings]
         UC_Sl[Disposición de Sala y Mesas]
         UC_Ser[Gestionar Catálogo de Servicios]
         UC_Fin[Ver Panel de Finanzas e Informes]
@@ -46,7 +46,7 @@ graph TD
     AL --> UC_Rec
     AL --> UC_CF
     AL --> UC_Param
-    AL --> UC_WA
+    AL --> UC_Mod
     AL --> UC_Sl
     AL --> UC_Ser
     AL --> UC_Fin
@@ -97,12 +97,12 @@ graph TD
         UC_Scan[Escanear QR de Mesa]
         UC_Menu[Ver Carta Interactiva]
         UC_Ord[Enviar Pedido Directo]
-        UC_WAP[Recibir Factura por WhatsApp]
+        UC_Est[Seguir Estado del Pedido y Llamar al Mesero]
     end
     CL --> UC_Scan
     CL --> UC_Menu
     CL --> UC_Ord
-    CL --> UC_WAP
+    CL --> UC_Est
 ```
 
 ---
@@ -126,7 +126,7 @@ graph TD
 * **UC-ADM-01: CRUD de Personal:** Gestión de usuarios de sucursal (`mesero`, `cajero`, `cocinero`).
 * **UC-ADM-02: Configurar Sala:** Creación y ordenamiento de `mesas` (físicas y virtuales).
 * **UC-ADM-03: Catálogo de Servicios:** Creación de cargos de servicio (`servicios`).
-* **UC-ADM-04: Configurar WhatsApp:** Escaneo del código QR para pareo de la instancia del bot.
+* **UC-ADM-04: Configurar Modificadores:** Grupos de toppings por producto, precio adicional y descuento de inventario opt-in.
 * **UC-ADM-05: Ejecutar Predicción ML:** Consulta del modelo predictivo para la demanda del fin de semana.
 
 ### Módulo: Menú y Productos
@@ -171,4 +171,4 @@ graph TD
 * **UC-CLI-01: Escaneo y Menú QR:** Lectura del catálogo de platos desde la mesa.
 * **UC-CLI-02: Auto-pedido QR:** Envío de comanda sin intervención de mesero.
 * **UC-CLI-03: Registro Fiscal:** Actualización de NIT y Razón Social del cliente para facturas.
-* **UC-CLI-04: Recepción de Ticket:** Notificación interactiva por WhatsApp al concretar el pago.
+* **UC-CLI-04: Seguimiento en Mesa:** El cliente ve el estado de cada plato, el total de la mesa y puede llamar al mesero o pedir la cuenta desde el Menú QR.

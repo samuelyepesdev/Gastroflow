@@ -14,9 +14,11 @@ Administra la distribución física y el estado de ocupación del salón. Los me
 ---
 
 ### 3. Tablas de Base de Datos Relacionadas
-* `mesas`: Lista de mesas físicas configuradas por local (número, capacidad, ubicación, estado_actual).
-* `pedidos`: Cabecera del pedido (vincular a mesa y usuario, total acumulado, estado: `abierto`, `cerrado`, `cancelado`).
-* `pedido_items`: Relación de platos agregados al pedido con cantidades, precios y estados de cocina.
+* `mesas`: mesas físicas (`qr_token` para el Menú QR) y virtuales (domicilios). Número, capacidad, ubicación, estado.
+* `pedidos`: cabecera (mesa, usuario, total, `estado`: `abierto`/`cerrado`/`cancelado`, `origen`: `mesero`/`qr`/`caja`, `propina`).
+* `pedido_items`: platos del pedido con cantidad, precio, `estado` de cocina, **`nota` por ítem** y `modificadores_hash`.
+* `pedido_item_modificadores`: toppings elegidos por ítem (ver módulo 12). En el carrito de Mesas se muestran los toppings y la nota bajo el nombre del producto.
+* Los pedidos creados desde el **Menú QR** (`origen = 'qr'`) aparecen en esta misma pantalla para que el mesero los valide y envíe a cocina.
 
 ---
 

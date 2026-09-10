@@ -16,8 +16,10 @@ Permite realizar ventas rápidas y directas en el mostrador. Los cajeros selecci
 ---
 
 ### 3. Tablas de Base de Datos Relacionadas
-* `facturas`: Guarda el encabezado de la venta (total facturado, método de pago, cliente, usuario de caja).
-* `factura_detalles`: Ítems vendidos con sus cantidades y precios históricos de venta.
+* `facturas`: Encabezado de la venta (total, método de pago, cliente, usuario de caja, efectivo recibido, sesión de caja).
+* `detalle_factura`: Ítems vendidos con cantidades, precios históricos, descuentos e impuestos por línea.
+* `detalle_factura_modificadores`: Snapshot de toppings elegidos por línea (ver módulo 12).
+* `pos_borradores`: Órdenes del POS aparcadas sin cobrar.
 
 ---
 
@@ -29,8 +31,7 @@ graph TD
     C --> D[Define Forma de Pago: Efectivo / Transferencia]
     D --> E[Ejecuta Venta: POST /api/facturas]
     E --> F[FacturaService: Registrar Factura en BD]
-    F --> G[InventarioService: Descontar por Receta en cascada]
+    F --> G[InventarioService: Descontar por Receta + por Toppings en cascada]
     G --> H[FinanzasService: Registrar Ingreso de Venta]
-    H --> I[Impresión de Ticket Térmico - Opcional]
-    I --> J[WhatsAppService: Enviar PDF al cliente - Opcional]
+    H --> I[Impresión de Ticket Térmico vía QZ Tray - Opcional]
 ```

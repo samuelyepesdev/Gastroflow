@@ -1,6 +1,8 @@
-# Sistema de Gestión para Restaurantes
+# GastroFlow — Sistema de Gestión para Restaurantes
 
-Sistema web multi-tenant para la gestión operativa y comercial de restaurantes: productos, clientes, mesas, pedidos, cocina, facturación, ventas, eventos y analítica. Incluye planes de suscripción (Básico, Pro, Premium), permisos por rol y por usuario, y costeo de platos.
+Plataforma web **multi-tenant (SaaS)** para la gestión operativa, comercial y administrativa de restaurantes, cafeterías y reposterías: productos, clientes, mesas, pedidos, cocina, **menú QR**, **modificadores/toppings**, inventario, recetas y costeo, caja y turnos, finanzas, facturación (POS y electrónica), ventas, eventos y analítica. Incluye planes de suscripción (Básico, Pro, Premium), permisos por rol y por usuario, y **cobro automático de la suscripción vía Wompi**.
+
+> **Documentación completa:** [`docs/DOCUMENTACION_SISTEMA.md`](docs/DOCUMENTACION_SISTEMA.md) · módulos en [`docs/modulos/`](docs/modulos/README.md) · diagramas y MER en [`docs/diagramas/`](docs/diagramas/README.md).
 
 ---
 
@@ -19,21 +21,28 @@ Está pensado para uso en local (LAN), en un servidor privado o en despliegues t
 
 ## Características principales
 
-| Módulo | Descripción |
-|--------|-------------|
-| **Productos** | CRUD, categorías, precios por unidad/kg/libra, importación masiva desde Excel. |
-| **Clientes** | CRUD de clientes para facturación y ventas. |
-| **Mesas** | Mesas virtuales, pedidos por mesa, mover pedidos entre mesas, liberar mesas. |
-| **Cocina** | Cola de pedidos, estados (enviado, preparando, listo, servido), notas por ítem. |
-| **Facturación** | POS (punto de venta), facturas con cliente, forma de pago (efectivo/transferencia). |
-| **Ventas** | Listado y filtros de ventas, exportación a Excel con logo y totales. |
-| **Eventos** | Eventos por fechas, ventas asociadas a evento, listado de ventas por evento. *(Asignación por permiso.)* |
-| **Dashboard** | Resumen de ventas, gráficas, mini calendario de días con evento. |
-| **Configuración** | Datos de empresa, impresión (logo, QR, ancho de papel). |
-| **Costeo** | Recetas, insumos, costos por plato, márgenes y alertas. *(Plan Pro/Premium.)* |
-| **Analítica** | Resumen de ventas últimos 3 meses, predicción próximo mes. *(Asignación por permiso o plan Premium.)* |
-| **Planes** | Básico, Pro, Premium; el superadmin asigna el plan a cada restaurante. |
-| **Permisos** | Por restaurante y usuario: secciones (Productos, Clientes, Eventos, Analítica, etc.) con checkbox “marcar todos”. |
+| Módulo | Descripción | Doc |
+|--------|-------------|-----|
+| **Productos** | CRUD, categorías, precios por unidad/kg/libra, favorito, `pide_nota`, `mostrar_en_qr`, import masivo desde Excel. | — |
+| **Modificadores / Toppings** | Grupos de opciones (salsa, extras, tamaño) por producto, precio adicional y **descuento de inventario opt-in**. | [12](docs/modulos/12_modificadores_toppings.md) |
+| **Mesas y Pedidos** | Salón en tiempo real, pedidos por mesa, mover consumos, facturación parcial, liberar mesas, nota y toppings por ítem. | [03](docs/modulos/03_mesas_pedidos.md) |
+| **POS** | Punto de venta sin mesa; borradores, formas de pago (efectivo/transferencia), impresión térmica vía QZ Tray. | [02](docs/modulos/02_pos.md) |
+| **Menú QR** | Carta digital de autoconsumo con toppings, nota por producto, seguimiento de estado de la mesa y llamada al mesero / pedir cuenta. | [04](docs/modulos/04_menu_qr.md) |
+| **Cocina (KDS)** | Cola de comandas, estados (enviado, preparando, listo, servido), agrupación por nota/toppings, SSE. | [05](docs/modulos/05_cocina.md) |
+| **Inventario e Insumos** | Stock, mínimos y alertas, costo promedio ponderado, movimientos, lista de mercado, proveedores y facturas de proveedor. | [06](docs/modulos/06_inventario_insumos.md) |
+| **Recetas y Costeo** | Fichas técnicas, descuento automático de insumos al vender, ingeniería de menú y márgenes. *(Pro/Premium.)* | [07](docs/modulos/07_recetas_costeo.md) |
+| **Caja y Turnos** | Apertura/cierre de turno, arqueo de caja física, movimientos y auditoría de flujo de efectivo. | [08](docs/modulos/08_caja_turnos.md) |
+| **Finanzas** | Ingresos vs egresos, gastos de inventario y nómina, dashboard financiero. | [09](docs/modulos/09_finanzas_analitica.md) |
+| **Facturación electrónica** | Emisión a través de Factus (cola de trabajos). *(Opcional por tenant.)* | [Factus](docs/facturacion-electronica/plan-integracion-factus.md) |
+| **Ventas / Eventos / Dashboard** | Listados y filtros, export a Excel, ventas por evento, resumen y gráficas. | [09](docs/modulos/09_finanzas_analitica.md) |
+| **Analítica** | Ventas de los últimos 3 meses + predicción del próximo. *(Permiso o plan Premium.)* | [09](docs/modulos/09_finanzas_analitica.md) |
+| **Superadmin** | Multi-tenant: crea restaurantes, asigna planes y permisos por usuario, bloquea locales. | [11](docs/modulos/11_superadmin.md) |
+| **Suscripción (Wompi)** | Cobro mensual automático de la suscripción de cada tenant; suspensión y reactivación automáticas. | [13](docs/modulos/13_suscripcion_wompi.md) |
+| **Permisos** | Por restaurante y usuario: secciones con checkbox "marcar todos"; el plan o un permiso individual desbloquean un módulo. | [Roles](docs/ROLES_Y_PERMISOS.md) |
+
+**Tiempo real:** notificaciones vía Server-Sent Events (`GET /api/notifications/subscribe`) alimentadas por un bus de eventos en proceso (`services/Shared/RealtimeEvents.js`).
+
+> El **bot de WhatsApp** fue **retirado (2026-09)** por consumo de RAM. Ver [`docs/modulos/10_whatsapp_bot.md`](docs/modulos/10_whatsapp_bot.md).
 
 ---
 
@@ -147,8 +156,12 @@ Está pensado para uso en local (LAN), en un servidor privado o en despliegues t
 | **Autenticación** | JWT (jsonwebtoken), cookie `auth_token` + header `Authorization: Bearer` |
 | **Contraseñas** | bcrypt |
 | **Validación** | express-validator |
-| **Archivos** | multer (subida de imágenes); exceljs (import/export Excel) |
-| **Variables de entorno** | dotenv |
+| **Archivos** | multer (subida de imágenes); exceljs (import/export Excel); `@aws-sdk/client-s3` (R2/S3 opcional para logos) |
+| **PDFs** | Puppeteer v24 vía `services/Shared/PdfBrowser.js` (Chromium de un solo uso, lazy + kill + watchdog) |
+| **Tiempo real** | Server-Sent Events + `services/Shared/RealtimeEvents.js` (EventEmitter en proceso) |
+| **Pagos** | Wompi (cobro recurrente de la suscripción del tenant), opcional |
+| **Observabilidad** | Winston (logs), Sentry (opcional vía `SENTRY_DSN`) |
+| **Variables de entorno** | dotenv; validación al arranque en `config/env.js` |
 
 ### Arquitectura
 
@@ -184,9 +197,15 @@ Está pensado para uso en local (LAN), en un servidor privado o en despliegues t
 
 ## Documentación adicional
 
+- **`docs/DOCUMENTACION_SISTEMA.md`** – Documentación técnica general (stack, arquitectura por capas, multi-tenant, migraciones).
+- **`docs/modulos/`** – Un documento por módulo (POS, Mesas, Menú QR, Cocina, Inventario, Recetas/Costeo, Caja, Finanzas, Superadmin, Modificadores, Suscripción Wompi).
+- **`docs/diagramas/`** – MER exhaustivo, casos de uso, diagrama de actividad y diagramas de flujo algorítmicos.
+- **`docs/api/openapi.yaml`** – Especificación OpenAPI de la API REST.
 - **`README-SETUP.md`** – Instalación detallada y solución de problemas.
+- **`docs/DESPLIEGUE.md`** / **`docs/RAILWAY-PASOS.md`** – Despliegue en la nube.
 - **`docs/ROLES_Y_PERMISOS.md`** – Roles (admin, mesero, cocinero, cajero) y lista de permisos.
-- **`docs/COSTEO-FLUJO-REFERENCIA.md`** – Flujo de costeo y recetas (si aplica).
+- **`docs/COSTEO-FLUJO-REFERENCIA.md`** – Flujo de costeo y recetas.
+- **`docs/facturacion-electronica/plan-integracion-factus.md`** – Integración de facturación electrónica (Factus).
 
 ---
 
