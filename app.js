@@ -13,9 +13,14 @@ const PlanService = require('./services/Admin/PlanService');
 const navbarLocals = require('./middleware/navbarLocals');
 const webRoutes = require('./routes/web');
 const cacheService = require('./services/Shared/CacheService');
+const IpBanService = require('./services/Shared/IpBanService');
 const logger = require('./utils/logger');
 
 const app = express();
+
+// Recarga a memoria los baneos de IP persistidos que aún no expiraron, para
+// que el bloqueo siga vigente de inmediato tras un redeploy (ver IpBanService).
+IpBanService.loadActiveBans();
 
 // Confíe en el primer proxy (necesario para express-rate-limit detrás de proxies como Nginx o Cloudflare)
 app.set('trust proxy', 1);
@@ -73,16 +78,15 @@ ${urls}
 });
 
 // Middleware de Seguridad: Bloquear escaneos maliciosos (.env, .git, .php, etc)
-// y banear temporalmente la IP si insiste (comportamiento típico de scanner automatizado).
+// y banear la IP por 30 días (persistido, ver IpBanService) si insiste
+// (comportamiento típico de scanner automatizado).
 const SCANNER_HIT_LIMIT = 4;
 const SCANNER_HIT_WINDOW_SECONDS = 5 * 60;
-const SCANNER_BAN_SECONDS = 15 * 60;
 
 app.use((req, res, next) => {
     const ip = req.ip || req.connection.remoteAddress;
-    const banKey = `scanner_ban_${ip}`;
 
-    if (cacheService.get(banKey)) {
+    if (IpBanService.isBanned(ip)) {
         return res.status(403).send('Forbidden: Access Denied');
     }
 
@@ -111,7 +115,7 @@ app.use((req, res, next) => {
         cacheService.set(hitsKey, hits, SCANNER_HIT_WINDOW_SECONDS);
 
         if (hits >= SCANNER_HIT_LIMIT) {
-            cacheService.set(banKey, true, SCANNER_BAN_SECONDS);
+            IpBanService.banIp(ip, { reason: req.path, hits });
             logger.audit('scanner.banned', { ip, path: req.path, hits, userAgent: req.headers['user-agent'] || '' });
         }
 
