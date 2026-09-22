@@ -12,6 +12,8 @@ const { optionalAuth } = require('./middleware/auth');
 const PlanService = require('./services/Admin/PlanService');
 const navbarLocals = require('./middleware/navbarLocals');
 const webRoutes = require('./routes/web');
+const cacheService = require('./services/Shared/CacheService');
+const logger = require('./utils/logger');
 
 const app = express();
 
@@ -71,7 +73,19 @@ ${urls}
 });
 
 // Middleware de Seguridad: Bloquear escaneos maliciosos (.env, .git, .php, etc)
+// y banear temporalmente la IP si insiste (comportamiento típico de scanner automatizado).
+const SCANNER_HIT_LIMIT = 4;
+const SCANNER_HIT_WINDOW_SECONDS = 5 * 60;
+const SCANNER_BAN_SECONDS = 15 * 60;
+
 app.use((req, res, next) => {
+    const ip = req.ip || req.connection.remoteAddress;
+    const banKey = `scanner_ban_${ip}`;
+
+    if (cacheService.get(banKey)) {
+        return res.status(403).send('Forbidden: Access Denied');
+    }
+
     const maliciousPatterns = [
         /^\/\.env/i,
         /^\/\.git/i,
@@ -92,6 +106,15 @@ app.use((req, res, next) => {
     const isMalicious = maliciousPatterns.some(pattern => pattern.test(req.path));
 
     if (isMalicious) {
+        const hitsKey = `scanner_hits_${ip}`;
+        const hits = (cacheService.get(hitsKey) || 0) + 1;
+        cacheService.set(hitsKey, hits, SCANNER_HIT_WINDOW_SECONDS);
+
+        if (hits >= SCANNER_HIT_LIMIT) {
+            cacheService.set(banKey, true, SCANNER_BAN_SECONDS);
+            logger.audit('scanner.banned', { ip, path: req.path, hits, userAgent: req.headers['user-agent'] || '' });
+        }
+
         // Enviamos 403 y terminamos la petición sin pasar al log de 404
         return res.status(403).send('Forbidden: Access Denied');
     }
