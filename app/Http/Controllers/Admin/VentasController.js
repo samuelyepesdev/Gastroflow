@@ -78,7 +78,8 @@ class VentasController {
                 return res.status(400).json({ error: 'ID inválido' });
             }
 
-            const { cliente_nombre, forma_pago, total, propina, fecha } = req.body || {};
+            const { cliente_nombre, forma_pago, total, propina, fecha, monto_efectivo, monto_transferencia } =
+                req.body || {};
 
             const formasValidas = ['efectivo', 'transferencia', 'mixto'];
             if (!formasValidas.includes(forma_pago)) {
@@ -96,12 +97,41 @@ class VentasController {
                 return res.status(400).json({ error: 'Fecha inválida' });
             }
 
+            // El desglose efectivo/transferencia siempre debe cuadrar con el total,
+            // sin importar qué forma_pago se elija (ver incidente: cambiar la etiqueta
+            // a "Mixto" sin tocar el desglose dejaba caja/analítica desincronizados).
+            let montoEfectivo;
+            let montoTransferencia;
+            if (forma_pago === 'efectivo') {
+                montoEfectivo = totalNum;
+                montoTransferencia = 0;
+            } else if (forma_pago === 'transferencia') {
+                montoEfectivo = 0;
+                montoTransferencia = totalNum;
+            } else {
+                montoEfectivo = Number(monto_efectivo);
+                montoTransferencia = Number(monto_transferencia);
+                if (!Number.isFinite(montoEfectivo) || montoEfectivo < 0) {
+                    return res.status(400).json({ error: 'Monto en efectivo inválido' });
+                }
+                if (!Number.isFinite(montoTransferencia) || montoTransferencia < 0) {
+                    return res.status(400).json({ error: 'Monto en transferencia inválido' });
+                }
+                if (Math.abs(montoEfectivo + montoTransferencia - totalNum) > 0.01) {
+                    return res.status(400).json({
+                        error: `Efectivo + transferencia (${(montoEfectivo + montoTransferencia).toFixed(2)}) debe sumar el total (${totalNum.toFixed(2)})`
+                    });
+                }
+            }
+
             const result = await FacturaRepository.updateAdmin(facturaId, {
                 cliente_nombre,
                 forma_pago,
                 total: totalNum,
                 propina: propinaNum,
-                fecha: fecha.replace('T', ' ') + ':00'
+                fecha: fecha.replace('T', ' ') + ':00',
+                montoEfectivo,
+                montoTransferencia
             });
             if (!result.updated) {
                 return res.status(404).json({ error: 'Venta no encontrada' });

@@ -468,6 +468,7 @@ class FacturaRepository {
     static async getEditableById(facturaId) {
         const [rows] = await db.query(
             `SELECT f.id, f.tenant_id, f.numero, f.cliente_id, f.forma_pago, f.total, f.propina,
+                    f.monto_efectivo, f.monto_transferencia,
                     DATE_FORMAT(f.fecha, '%Y-%m-%dT%H:%i') AS fecha,
                     c.nombre AS cliente_nombre, t.nombre AS tenant_nombre
              FROM facturas f
@@ -490,6 +491,8 @@ class FacturaRepository {
      * @param {number} data.total
      * @param {number} data.propina
      * @param {string} data.fecha - 'YYYY-MM-DD HH:mm:ss'
+     * @param {number} data.montoEfectivo - Parte pagada en efectivo (VentasController ya la calculó/validó)
+     * @param {number} data.montoTransferencia - Parte pagada por transferencia
      * @returns {Promise<{ updated: boolean }>}
      */
     static async updateAdmin(facturaId, data) {
@@ -518,8 +521,18 @@ class FacturaRepository {
         }
 
         const [result] = await db.query(
-            `UPDATE facturas SET cliente_id = COALESCE(?, cliente_id), forma_pago = ?, total = ?, propina = ?, fecha = ? WHERE id = ?`,
-            [clienteId, data.forma_pago, data.total, data.propina, data.fecha, facturaId]
+            `UPDATE facturas SET cliente_id = COALESCE(?, cliente_id), forma_pago = ?, total = ?, propina = ?,
+                    fecha = ?, monto_efectivo = ?, monto_transferencia = ? WHERE id = ?`,
+            [
+                clienteId,
+                data.forma_pago,
+                data.total,
+                data.propina,
+                data.fecha,
+                data.montoEfectivo,
+                data.montoTransferencia,
+                facturaId
+            ]
         );
         return { updated: result.affectedRows > 0 };
     }

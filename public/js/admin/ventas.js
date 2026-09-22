@@ -67,6 +67,43 @@
     var modalEditarEl = document.getElementById('modalEditarVenta');
     var modalEditar = modalEditarEl ? new bootstrap.Modal(modalEditarEl) : null;
     var formEditar = document.getElementById('formEditarVenta');
+    var formaPagoSelect = document.getElementById('editVentaFormaPago');
+    var mixtoWrap = document.getElementById('editVentaMixtoWrap');
+    var editEfectivo = document.getElementById('editVentaEfectivo');
+    var editTransferencia = document.getElementById('editVentaTransferencia');
+    var editTotal = document.getElementById('editVentaTotal');
+    var mixtoAyuda = document.getElementById('editVentaMixtoAyuda');
+
+    function actualizarAyudaMixto() {
+        if (!mixtoAyuda) return;
+        var total = parseFloat(editTotal.value) || 0;
+        var efectivo = parseFloat(editEfectivo.value) || 0;
+        var transferencia = parseFloat(editTransferencia.value) || 0;
+        var restante = total - efectivo - transferencia;
+        if (Math.abs(restante) <= 0.01) {
+            mixtoAyuda.textContent = 'Efectivo + transferencia cuadra con el total.';
+            mixtoAyuda.className = 'text-success';
+        } else {
+            mixtoAyuda.textContent = 'Falta $' + restante.toFixed(2) + ' para cuadrar con el total.';
+            mixtoAyuda.className = restante < 0 ? 'text-danger' : 'text-warning';
+        }
+    }
+
+    function toggleMixto() {
+        if (!mixtoWrap || !formaPagoSelect) return;
+        var esMixto = formaPagoSelect.value === 'mixto';
+        mixtoWrap.classList.toggle('d-none', !esMixto);
+        editEfectivo.required = esMixto;
+        editTransferencia.required = esMixto;
+        if (esMixto) actualizarAyudaMixto();
+    }
+
+    if (formaPagoSelect) {
+        formaPagoSelect.addEventListener('change', toggleMixto);
+    }
+    if (editEfectivo) editEfectivo.addEventListener('input', actualizarAyudaMixto);
+    if (editTransferencia) editTransferencia.addEventListener('input', actualizarAyudaMixto);
+    if (editTotal) editTotal.addEventListener('input', actualizarAyudaMixto);
 
     if (tbodyVentas) {
         tbodyVentas.addEventListener('click', function (e) {
@@ -91,6 +128,9 @@
                     document.getElementById('editVentaTotal').value = f.total;
                     document.getElementById('editVentaPropina').value = f.propina || 0;
                     document.getElementById('editVentaFecha').value = f.fecha;
+                    editEfectivo.value = f.monto_efectivo || 0;
+                    editTransferencia.value = f.monto_transferencia || 0;
+                    toggleMixto();
                     if (modalEditar) modalEditar.show();
                 })
                 .catch(function () {
@@ -113,7 +153,9 @@
                 forma_pago: document.getElementById('editVentaFormaPago').value,
                 total: document.getElementById('editVentaTotal').value,
                 propina: document.getElementById('editVentaPropina').value,
-                fecha: document.getElementById('editVentaFecha').value
+                fecha: document.getElementById('editVentaFecha').value,
+                monto_efectivo: editEfectivo.value,
+                monto_transferencia: editTransferencia.value
             };
 
             fetch('/admin/ventas/' + id, {
