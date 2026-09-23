@@ -110,7 +110,8 @@ class TenantCRUDService {
             'tributo_default',
             'tasa_impuesto_default',
             'logo_data',
-            'logo_tipo'
+            'logo_tipo',
+            'logo_url'
         ];
         fields.forEach(f => {
             if (data[f] !== undefined) {

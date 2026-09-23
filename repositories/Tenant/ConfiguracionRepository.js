@@ -54,6 +54,7 @@ class ConfiguracionRepository {
             font_size,
             logo_data,
             logo_tipo,
+            logo_url,
             qr_data,
             qr_tipo,
             qz_habilitado,
@@ -84,7 +85,10 @@ class ConfiguracionRepository {
             cajon_comando_hex || null
         ];
 
-        if (logo_data) {
+        if (logo_url) {
+            sql += ', logo_url';
+            values.push(logo_url);
+        } else if (logo_data) {
             sql += ', logo_data, logo_tipo';
             values.push(logo_data, logo_tipo);
         }
@@ -116,6 +120,7 @@ class ConfiguracionRepository {
             font_size,
             logo_data,
             logo_tipo,
+            logo_url,
             qr_data,
             qr_tipo,
             qz_habilitado,
@@ -146,7 +151,10 @@ class ConfiguracionRepository {
             cajon_comando_hex || null
         ];
 
-        if (logo_data) {
+        if (logo_url) {
+            sql += ', logo_url = ?, logo_data = NULL, logo_tipo = NULL';
+            values.push(logo_url);
+        } else if (logo_data) {
             sql += ', logo_data = ?, logo_tipo = ?';
             values.push(logo_data, logo_tipo);
         }

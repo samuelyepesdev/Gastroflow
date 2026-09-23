@@ -26,15 +26,16 @@ class R2StorageService {
      * @param {Buffer} fileBuffer - File content in buffer
      * @param {string} originalName - Original file name
      * @param {string} mimeType - File mime type
+     * @param {string} folder - Carpeta/prefijo destino dentro del bucket (ej. 'productos', 'logos')
      * @returns {Promise<string|null>} - Returns public URL of uploaded file
      */
-    async uploadFile(fileBuffer, originalName, mimeType) {
+    async uploadFile(fileBuffer, originalName, mimeType, folder = 'productos') {
         if (!this.s3Client) {
             throw new Error('Las credenciales de Cloudflare R2 no están configuradas correctamente.');
         }
 
         const ext = path.extname(originalName) || '.jpg';
-        const fileName = `productos/${Date.now()}-${Math.floor(Math.random() * 1000)}${ext}`;
+        const fileName = `${folder}/${Date.now()}-${Math.floor(Math.random() * 1000)}${ext}`;
 
         try {
             const command = new PutObjectCommand({

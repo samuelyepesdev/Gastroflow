@@ -46,8 +46,17 @@ class PerfilController {
             };
 
             if (req.file) {
-                updateData.logo_data = req.file.buffer;
-                updateData.logo_tipo = req.file.mimetype.split('/')[1];
+                const R2StorageService = require('../../../../services/Tenant/R2StorageService');
+                updateData.logo_url = await R2StorageService.uploadFile(
+                    req.file.buffer,
+                    req.file.originalname,
+                    req.file.mimetype,
+                    'logos'
+                );
+                // Limpiamos el BLOB viejo: de ahora en adelante logo_url es la fuente de
+                // verdad (ver repositories/Admin/TenantRepository._mapRow).
+                updateData.logo_data = null;
+                updateData.logo_tipo = null;
                 if (newConfig.logo) {
                     delete newConfig.logo;
                 }

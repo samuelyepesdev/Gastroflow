@@ -17,7 +17,7 @@ class TenantRepository {
             return null;
         }
         const [rows] = await db.query(
-            `SELECT t.id, t.nombre, t.email, t.slug, t.config, t.logo_data, t.logo_tipo, t.activo, t.plan_id, t.created_at, t.updated_at,
+            `SELECT t.id, t.nombre, t.email, t.slug, t.config, t.logo_data, t.logo_tipo, t.logo_url, t.activo, t.plan_id, t.created_at, t.updated_at,
                     t.nit, t.direccion, t.telefono, t.ciudad, t.regimen_fiscal,
                     t.estado_aprobacion, t.motivo_rechazo, t.tamano, t.suspendido_por_pago,
                     p.id AS plan_id_ref, p.nombre AS plan_nombre, p.slug AS plan_slug, p.descripcion AS plan_descripcion, p.caracteristicas AS plan_caracteristicas
@@ -43,7 +43,7 @@ class TenantRepository {
             return null;
         }
         const [rows] = await db.query(
-            `SELECT t.id, t.nombre, t.email, t.slug, t.config, t.logo_data, t.logo_tipo, t.activo, t.plan_id, t.created_at, t.updated_at,
+            `SELECT t.id, t.nombre, t.email, t.slug, t.config, t.logo_data, t.logo_tipo, t.logo_url, t.activo, t.plan_id, t.created_at, t.updated_at,
                     t.nit, t.direccion, t.telefono, t.ciudad, t.regimen_fiscal, t.tamano, t.suspendido_por_pago,
                     p.id AS plan_id_ref, p.nombre AS plan_nombre, p.slug AS plan_slug, p.descripcion AS plan_descripcion, p.caracteristicas AS plan_caracteristicas
              FROM tenants t LEFT JOIN planes p ON t.plan_id = p.id WHERE t.id = ? AND t.activo = TRUE`,
@@ -66,7 +66,7 @@ class TenantRepository {
             return null;
         }
         const [rows] = await db.query(
-            `SELECT t.id, t.nombre, t.email, t.slug, t.config, t.logo_data, t.logo_tipo, t.activo, t.plan_id, t.created_at, t.updated_at,
+            `SELECT t.id, t.nombre, t.email, t.slug, t.config, t.logo_data, t.logo_tipo, t.logo_url, t.activo, t.plan_id, t.created_at, t.updated_at,
                     t.nit, t.direccion, t.telefono, t.ciudad, t.regimen_fiscal, t.tamano, t.suspendido_por_pago,
                     p.id AS plan_id_ref, p.nombre AS plan_nombre, p.slug AS plan_slug, p.descripcion AS plan_descripcion, p.caracteristicas AS plan_caracteristicas
              FROM tenants t LEFT JOIN planes p ON t.plan_id = p.id WHERE t.slug = ? AND t.activo = TRUE`,
@@ -139,7 +139,10 @@ class TenantRepository {
             updated_at: row.updated_at
         };
 
-        if (row.logo_data && row.logo_tipo) {
+        if (row.logo_url) {
+            result.logo_src = row.logo_url;
+        } else if (row.logo_data && row.logo_tipo) {
+            // Fallback para tenants que aún no pasaron por scripts/migrate-logos-to-r2.js
             const buffer = Buffer.from(row.logo_data);
             result.logo_src = `data:image/${row.logo_tipo};base64,${buffer.toString('base64')}`;
         }

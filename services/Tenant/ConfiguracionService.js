@@ -29,7 +29,10 @@ class ConfiguracionService {
 
         // Convert images to data URLs if they exist
         const configSinImagenes = { ...config };
-        if (configSinImagenes.logo_data) {
+        if (configSinImagenes.logo_url) {
+            configSinImagenes.logo_src = configSinImagenes.logo_url;
+        } else if (configSinImagenes.logo_data) {
+            // Fallback para tenants que aún no pasaron por scripts/migrate-logos-to-r2.js
             const logoBuffer = Buffer.from(configSinImagenes.logo_data);
             configSinImagenes.logo_src = `data:image/${configSinImagenes.logo_tipo};base64,${logoBuffer.toString('base64')}`;
         }
@@ -68,7 +71,10 @@ class ConfiguracionService {
                   qr_tipo: null
               };
 
-        if (base.logo_data) {
+        if (base.logo_url) {
+            base.logo_src = base.logo_url;
+        } else if (base.logo_data) {
+            // Fallback para tenants que aún no pasaron por scripts/migrate-logos-to-r2.js
             const logoBuffer = Buffer.from(base.logo_data);
             base.logo_src = `data:image/${base.logo_tipo};base64,${logoBuffer.toString('base64')}`;
         } else {
@@ -140,8 +146,13 @@ class ConfiguracionService {
         };
 
         if (files?.logo) {
-            configToSave.logo_data = files.logo[0].buffer;
-            configToSave.logo_tipo = files.logo[0].mimetype.split('/')[1];
+            const R2StorageService = require('./R2StorageService');
+            configToSave.logo_url = await R2StorageService.uploadFile(
+                files.logo[0].buffer,
+                files.logo[0].originalname,
+                files.logo[0].mimetype,
+                'logos'
+            );
         }
         if (files?.qr) {
             configToSave.qr_data = files.qr[0].buffer;
