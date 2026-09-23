@@ -13,14 +13,9 @@ const PlanService = require('./services/Admin/PlanService');
 const navbarLocals = require('./middleware/navbarLocals');
 const webRoutes = require('./routes/web');
 const cacheService = require('./services/Shared/CacheService');
-const IpBanService = require('./services/Shared/IpBanService');
 const logger = require('./utils/logger');
 
 const app = express();
-
-// Recarga a memoria los baneos de IP persistidos que aún no expiraron, para
-// que el bloqueo siga vigente de inmediato tras un redeploy (ver IpBanService).
-IpBanService.loadActiveBans();
 
 // Confíe en el primer proxy (necesario para express-rate-limit detrás de proxies como Nginx o Cloudflare)
 app.set('trust proxy', 1);
@@ -78,31 +73,43 @@ ${urls}
 });
 
 // Middleware de Seguridad: Bloquear escaneos maliciosos (.env, .git, .php, etc)
-// y banear la IP por 30 días (persistido, ver IpBanService) si insiste
-// (comportamiento típico de scanner automatizado).
+//
+// INCIDENTE 2026-09-22: el baneo automático de IP (IpBanService) tumbó producción
+// para clientes reales. Causa raíz #1 (ya arreglada abajo): el patrón /vendor/i
+// sin anclar también hacía match con nuestra propia ruta /js/vendor/qz-tray.js
+// (el POS la pide en cada sesión), así que en segundos cualquier restaurante
+// activaba el umbral y quedaba baneado. Causa raíz #2 (bajo investigación, NO
+// resuelta): varios clientes reportaron el mismo bloqueo simultáneamente
+// incluyendo '/' y '/favicon.ico' -- ninguna de las dos matchea ningún patrón,
+// lo único que puede haber devuelto 403 ahí es el propio chequeo de baneo, lo
+// que sugiere que req.ip puede estar resolviendo al mismo valor para múltiples
+// clientes detrás del proxy de Railway (trust proxy=1 puede no ser suficiente
+// según cómo Railway encadene proxies). Mientras se confirma eso, el
+// ENFORCEMENT del baneo queda desactivado -- solo se detecta y audita, no se
+// bloquea nada -- para que un solo bug de patrón nunca vuelva a poder tumbar
+// a todos los clientes de un solo golpe. No reactivar sin antes verificar que
+// req.ip identifica correctamente al cliente real detrás del proxy de Railway.
 const SCANNER_HIT_LIMIT = 4;
 const SCANNER_HIT_WINDOW_SECONDS = 5 * 60;
 
 app.use((req, res, next) => {
     const ip = req.ip || req.connection.remoteAddress;
 
-    if (IpBanService.isBanned(ip)) {
-        return res.status(403).send('Forbidden: Access Denied');
-    }
-
+    // Todos anclados al inicio (o como nombre de archivo exacto) a propósito:
+    // un patrón suelto como /vendor/ sin ancla también hacía match con rutas
+    // legítimas propias como /js/vendor/qz-tray.js y terminó baneando un
+    // restaurante real -- ver incidente 2026-09-22.
     const maliciousPatterns = [
         /^\/\.env/i,
         /^\/\.git/i,
         /\.php$/i,
         /\.jsp$/i,
         /\.asp$/i,
-        /wp-admin/i,
-        /wp-content/i,
-        /wp-includes/i,
-        /wlwmanifest\.xml/i,
-        /vendor/i,
-        /composer\.json/i,
-        /package\.json/i,
+        /^\/wp-/i, // wp-admin, wp-content, wp-includes, wp-json, wp-login, etc.
+        /^\/wlwmanifest\.xml$/i,
+        /^\/vendor(\/|$)/i,
+        /^\/composer\.json$/i,
+        /^\/package\.json$/i,
         /\.bak$/i,
         /\.sql$/i
     ];
@@ -115,11 +122,16 @@ app.use((req, res, next) => {
         cacheService.set(hitsKey, hits, SCANNER_HIT_WINDOW_SECONDS);
 
         if (hits >= SCANNER_HIT_LIMIT) {
-            IpBanService.banIp(ip, { reason: req.path, hits });
-            logger.audit('scanner.banned', { ip, path: req.path, hits, userAgent: req.headers['user-agent'] || '' });
+            logger.audit('scanner.detected_not_banned', {
+                ip,
+                path: req.path,
+                hits,
+                userAgent: req.headers['user-agent'] || ''
+            });
         }
 
-        // Enviamos 403 y terminamos la petición sin pasar al log de 404
+        // Enviamos 403 solo a ESTA petición puntual (matcheó un patrón de
+        // escaneo real, ya anclado). No baneamos la IP -- ver nota arriba.
         return res.status(403).send('Forbidden: Access Denied');
     }
     next();
