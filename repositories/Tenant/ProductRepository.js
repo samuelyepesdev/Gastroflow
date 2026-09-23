@@ -81,11 +81,26 @@ class ProductRepository {
         // insumos (rama de abajo) no tienen categoría de producto real, van con
         // NULL, así que nunca les aplica una promo por categoría (sí podrían
         // llevar una promo por producto puntual, pero no es un caso de uso hoy).
+        //
+        // Un producto "espejo" de un insumo de Cerámicas (mismo codigo, ver
+        // AgregarItemService._getOrCreateMirrorProduct) se EXCLUYE de esta rama a
+        // propósito: si se listaran los dos, salían duplicados en el buscador y
+        // el del producto podía mostrar un precio viejo (solo se resincroniza al
+        // vender, no en cada búsqueda). Dejando que solo el insumo aparezca, el
+        // precio que se ve siempre es el vigente en Inventario, y seleccionarlo
+        // sigue pasando por el id virtual (+1000000) que dispara la
+        // resincronización del producto espejo en cada venta -- ver incidente
+        // 2026-09-22 (insumo a $16.000, producto espejo congelado en $15.000).
         const sql = `
             (SELECT p.id, p.codigo, p.nombre, p.precio_unidad, p.categoria_id, c.nombre AS categoria_nombre, p.pide_nota, 0 AS is_insumo
             FROM productos p
             LEFT JOIN categorias c ON p.categoria_id = c.id
             WHERE p.tenant_id = ? AND p.activo = 1 AND (p.nombre LIKE ? OR p.codigo LIKE ?)
+              AND NOT EXISTS (
+                  SELECT 1 FROM insumos i2
+                  INNER JOIN parametros pc2 ON i2.categoria_id = pc2.id
+                  WHERE i2.tenant_id = p.tenant_id AND i2.codigo = p.codigo AND pc2.name = 'Cerámicas'
+              )
             ORDER BY p.nombre
             LIMIT ?)
             UNION ALL

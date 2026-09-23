@@ -104,7 +104,7 @@ describe('AgregarItemService', () => {
     it('sincroniza con el producto REAL (espejo) cuando el id es un insumo virtual (>= 1.000.000)', async () => {
         db.query
             .mockResolvedValueOnce([[{ id: 3, codigo: 'CER1', nombre: 'Taza', precio_venta: 8000 }]]) // SELECT insumos
-            .mockResolvedValueOnce([[{ id: 42 }]]) // SELECT productos existente con ese código -> ya existe el espejo
+            .mockResolvedValueOnce([[{ id: 42, precio_unidad: 8000 }]]) // SELECT productos existente, ya con el precio al día
             .mockResolvedValueOnce([[{ id: 10, mesa_id: 1 }]]) // SELECT pedidos
             .mockResolvedValueOnce([[]]) // SELECT existentes -> ninguna
             .mockResolvedValueOnce([{ insertId: 60 }]) // INSERT pedido_items
@@ -119,6 +119,31 @@ describe('AgregarItemService', () => {
         });
 
         // La promo se resuelve sobre el producto espejo real (42), no sobre el id virtual.
+        expect(SincronizarPrecioPromoService.ejecutar).toHaveBeenCalledWith(1, 10, 42);
+        // El precio ya estaba al día -- no debe haber ningún UPDATE de productos.
+        expect(db.query.mock.calls.some(call => String(call[0]).startsWith('UPDATE productos'))).toBe(false);
+    });
+
+    it('re-sincroniza el precio del producto espejo si quedó desactualizado frente al insumo (incidente 2026-09-22)', async () => {
+        db.query
+            .mockResolvedValueOnce([[{ id: 3, codigo: 'CER1', nombre: 'Ardilla mochila', precio_venta: 16000 }]]) // SELECT insumos, precio actual
+            .mockResolvedValueOnce([[{ id: 42, precio_unidad: 15000 }]]) // SELECT productos existente, precio VIEJO
+            .mockResolvedValueOnce([{ affectedRows: 1 }]) // UPDATE productos SET precio_unidad -- la resincronización
+            .mockResolvedValueOnce([[{ id: 10, mesa_id: 1 }]]) // SELECT pedidos
+            .mockResolvedValueOnce([[]]) // SELECT existentes -> ninguna
+            .mockResolvedValueOnce([{ insertId: 61 }]) // INSERT pedido_items
+            .mockResolvedValueOnce([{ affectedRows: 1 }]); // UPDATE mesas
+
+        await AgregarItemService.execute({
+            tenantId: 1,
+            pedidoId: 10,
+            producto_id: 1000003,
+            cantidad: 1,
+            precio: 16000
+        });
+
+        const updateCall = db.query.mock.calls.find(call => String(call[0]).startsWith('UPDATE productos'));
+        expect(updateCall[1]).toEqual([16000, 42]);
         expect(SincronizarPrecioPromoService.ejecutar).toHaveBeenCalledWith(1, 10, 42);
     });
 });

@@ -160,14 +160,26 @@ class AgregarItemService {
             throw new Error('Insumo no encontrado');
         }
         const insumo = insumos[0];
+        const precioActual = insumo.precio_venta || precioSugerido || 0;
 
         // 1. Buscar si ya existe un producto con el mismo código de insumo
         const [existentes] = await db.query(
-            'SELECT id FROM productos WHERE tenant_id = ? AND codigo = ? AND activo = 1',
+            'SELECT id, precio_unidad FROM productos WHERE tenant_id = ? AND codigo = ? AND activo = 1',
             [tenantId, insumo.codigo]
         );
 
         if (existentes.length > 0) {
+            // El insumo es la fuente de verdad del precio de venta -- si cambió desde
+            // que se creó o se vendió por última vez este producto espejo, hay que
+            // resincronizarlo AHORA. SincronizarPrecioPromoService (llamado justo
+            // después de este método) lee productos.precio_unidad como "precio de
+            // catálogo" y sobreescribe con eso el precio del ítem recién agregado --
+            // si quedaba desactualizado, se le cobraba al cliente el precio viejo del
+            // producto en vez del precio actual del inventario. Ver incidente 2026-09-22
+            // (insumo a $16.000, producto espejo congelado en $15.000).
+            if (Number(existentes[0].precio_unidad) !== Number(precioActual)) {
+                await db.query('UPDATE productos SET precio_unidad = ? WHERE id = ?', [precioActual, existentes[0].id]);
+            }
             return existentes[0].id;
         }
 
@@ -190,7 +202,7 @@ class AgregarItemService {
         // 3. Crear el producto
         const [prodResult] = await db.query(
             'INSERT INTO productos (tenant_id, codigo, nombre, precio_unidad, categoria_id) VALUES (?, ?, ?, ?, ?)',
-            [tenantId, insumo.codigo, insumo.nombre, insumo.precio_venta || precioSugerido || 0, categoriaId]
+            [tenantId, insumo.codigo, insumo.nombre, precioActual, categoriaId]
         );
         const newProdId = prodResult.insertId;
 
