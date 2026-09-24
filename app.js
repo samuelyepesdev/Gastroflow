@@ -13,9 +13,14 @@ const PlanService = require('./services/Admin/PlanService');
 const navbarLocals = require('./middleware/navbarLocals');
 const webRoutes = require('./routes/web');
 const cacheService = require('./services/Shared/CacheService');
+const IpBanService = require('./services/Shared/IpBanService');
 const logger = require('./utils/logger');
 
 const app = express();
+
+// Recarga a memoria los baneos de IP persistidos que aún no expiraron, para
+// que el bloqueo siga vigente de inmediato tras un redeploy (ver IpBanService).
+IpBanService.loadActiveBans();
 
 // Confíe en el primer proxy (necesario para express-rate-limit detrás de proxies como Nginx o Cloudflare)
 app.set('trust proxy', 1);
@@ -75,25 +80,24 @@ ${urls}
 // Middleware de Seguridad: Bloquear escaneos maliciosos (.env, .git, .php, etc)
 //
 // INCIDENTE 2026-09-22: el baneo automático de IP (IpBanService) tumbó producción
-// para clientes reales. Causa raíz #1 (ya arreglada abajo): el patrón /vendor/i
-// sin anclar también hacía match con nuestra propia ruta /js/vendor/qz-tray.js
-// (el POS la pide en cada sesión), así que en segundos cualquier restaurante
-// activaba el umbral y quedaba baneado. Causa raíz #2 (bajo investigación, NO
-// resuelta): varios clientes reportaron el mismo bloqueo simultáneamente
-// incluyendo '/' y '/favicon.ico' -- ninguna de las dos matchea ningún patrón,
-// lo único que puede haber devuelto 403 ahí es el propio chequeo de baneo, lo
-// que sugiere que req.ip puede estar resolviendo al mismo valor para múltiples
-// clientes detrás del proxy de Railway (trust proxy=1 puede no ser suficiente
-// según cómo Railway encadene proxies). Mientras se confirma eso, el
-// ENFORCEMENT del baneo queda desactivado -- solo se detecta y audita, no se
-// bloquea nada -- para que un solo bug de patrón nunca vuelva a poder tumbar
-// a todos los clientes de un solo golpe. No reactivar sin antes verificar que
-// req.ip identifica correctamente al cliente real detrás del proxy de Railway.
+// para clientes reales. Causa raíz (ya arreglada): el patrón /vendor/i sin
+// anclar también hacía match con nuestra propia ruta /js/vendor/qz-tray.js (el
+// POS la pide en cada sesión), así que cualquier restaurante activaba el
+// umbral en segundos y quedaba baneado -- como esto le pasó de forma
+// independiente a varios locales casi al mismo tiempo (todos usando el POS esa
+// noche), pareció "se cayó para todos los clientes a la vez" sin que hiciera
+// falta ningún problema de resolución de IP detrás del proxy de Railway: cada
+// uno se baneó solo, por su cuenta, con el mismo bug. Con el patrón ya
+// anclado, se reactiva el enforcement del baneo.
 const SCANNER_HIT_LIMIT = 4;
 const SCANNER_HIT_WINDOW_SECONDS = 5 * 60;
 
 app.use((req, res, next) => {
     const ip = req.ip || req.connection.remoteAddress;
+
+    if (IpBanService.isBanned(ip)) {
+        return res.status(403).send('Forbidden: Access Denied');
+    }
 
     // Todos anclados al inicio (o como nombre de archivo exacto) a propósito:
     // un patrón suelto como /vendor/ sin ancla también hacía match con rutas
@@ -122,7 +126,8 @@ app.use((req, res, next) => {
         cacheService.set(hitsKey, hits, SCANNER_HIT_WINDOW_SECONDS);
 
         if (hits >= SCANNER_HIT_LIMIT) {
-            logger.audit('scanner.detected_not_banned', {
+            IpBanService.banIp(ip, { reason: req.path, hits });
+            logger.audit('scanner.banned', {
                 ip,
                 path: req.path,
                 hits,
@@ -130,8 +135,7 @@ app.use((req, res, next) => {
             });
         }
 
-        // Enviamos 403 solo a ESTA petición puntual (matcheó un patrón de
-        // escaneo real, ya anclado). No baneamos la IP -- ver nota arriba.
+        // Enviamos 403 y terminamos la petición sin pasar al log de 404
         return res.status(403).send('Forbidden: Access Denied');
     }
     next();
@@ -244,8 +248,40 @@ app.use(limiter);
 // Rutas de aplicación
 app.use('/', webRoutes);
 
-// Manejo de errores 404
+// Manejo de errores 404 + detección de escaneo de directorios genérico.
+//
+// Esto solo se ejecuta cuando NINGUNA ruta real de la app matcheó (es el
+// último middleware de la cadena) -- a diferencia del filtro de patrones de
+// arriba (firmas conocidas: .env, wp-*, etc.), esto detecta escaneo por
+// VOLUMEN de rutas inventadas, sin importar el nombre: un escáner de
+// directorios (dirsearch/gobuster/ffuf) prueba cientos de nombres de carpeta
+// DISTINTOS por minuto (/database, /customer_login, /sessions...), ninguno
+// de los cuales calza con las firmas conocidas.
+//
+// Se cuentan rutas DISTINTAS, no la cantidad bruta de 404s, a propósito: un
+// bug real del frontend (ej. un polling a una ruta vieja que ya no existe)
+// repetiría la MISMA ruta rota una y otra vez -- eso nunca debería banear a
+// nadie. Un escáner, en cambio, casi nunca repite la misma ruta dos veces.
+const NOT_FOUND_DISTINCT_LIMIT = 25;
+const NOT_FOUND_WINDOW_SECONDS = 60;
+
 app.use((req, res, next) => {
+    const ip = req.ip || req.connection.remoteAddress;
+    const key = `notfound_paths_${ip}`;
+    const rutas = cacheService.get(key) || new Set();
+    rutas.add(req.path);
+    cacheService.set(key, rutas, NOT_FOUND_WINDOW_SECONDS);
+
+    if (rutas.size >= NOT_FOUND_DISTINCT_LIMIT) {
+        IpBanService.banIp(ip, { reason: 'escaneo de directorios (muchas rutas 404 distintas)', hits: rutas.size });
+        logger.audit('scanner.banned_404_volume', {
+            ip,
+            path: req.path,
+            rutasDistintas: rutas.size,
+            userAgent: req.headers['user-agent'] || ''
+        });
+    }
+
     if (req.xhr || (req.headers.accept && req.headers.accept.indexOf('json') > -1)) {
         res.status(404).json({ error: 'Ruta no encontrada' });
     } else {
