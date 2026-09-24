@@ -2,10 +2,14 @@ jest.mock('../../../repositories/Tenant/BonoRepository');
 jest.mock('../../../services/Tenant/FinanzasService', () => ({
     registrarMovimientoManual: jest.fn().mockResolvedValue(undefined)
 }));
+jest.mock('../../../services/Tenant/BonoComprobanteService', () => ({
+    generar: jest.fn().mockResolvedValue('https://fake-r2/bonos/bono-test.pdf')
+}));
 
 const BonoService = require('../../../services/Tenant/BonoService');
 const BonoRepository = require('../../../repositories/Tenant/BonoRepository');
 const FinanzasService = require('../../../services/Tenant/FinanzasService');
+const BonoComprobanteService = require('../../../services/Tenant/BonoComprobanteService');
 
 describe('BonoService', () => {
     beforeEach(() => {
@@ -60,6 +64,35 @@ describe('BonoService', () => {
             await expect(BonoService.crear(1, { valor: 20000, origen: 'comprado' })).resolves.toEqual(
                 expect.objectContaining({ id: 44 })
             );
+        });
+
+        it('genera el comprobante y guarda su URL en el bono y en el resultado', async () => {
+            BonoRepository.findByCodigo.mockResolvedValue(null);
+            BonoRepository.create.mockResolvedValue(46);
+
+            const result = await BonoService.crear(1, { valor: 30000, origen: 'regalo' });
+
+            expect(BonoComprobanteService.generar).toHaveBeenCalledWith(
+                1,
+                expect.objectContaining({ valor_inicial: 30000, origen: 'regalo' })
+            );
+            expect(BonoRepository.actualizarImagenUrl).toHaveBeenCalledWith(
+                46,
+                1,
+                'https://fake-r2/bonos/bono-test.pdf'
+            );
+            expect(result.imagen_url).toBe('https://fake-r2/bonos/bono-test.pdf');
+        });
+
+        it('si falla el comprobante, el bono queda emitido igual (no bloqueante)', async () => {
+            BonoRepository.findByCodigo.mockResolvedValue(null);
+            BonoRepository.create.mockResolvedValue(47);
+            BonoComprobanteService.generar.mockRejectedValueOnce(new Error('R2 caído'));
+
+            await expect(BonoService.crear(1, { valor: 15000, origen: 'regalo' })).resolves.toEqual(
+                expect.objectContaining({ id: 47, imagen_url: null })
+            );
+            expect(BonoRepository.actualizarImagenUrl).not.toHaveBeenCalled();
         });
 
         it('reintenta generar código si el primero ya existe', async () => {

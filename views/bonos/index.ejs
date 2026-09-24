@@ -88,6 +88,9 @@
                                     </td>
                                     <td><%= b.fecha_vencimiento ? b.fecha_vencimiento : 'Sin vencimiento' %></td>
                                     <td class="text-end">
+                                        <% if (b.imagen_url) { %>
+                                            <a href="<%= b.imagen_url %>" target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary" title="Ver comprobante"><i class="bi bi-file-earmark-pdf"></i></a>
+                                        <% } %>
                                         <button class="btn btn-sm btn-outline-primary btn-ver-bono" title="Ver movimientos"><i class="bi bi-clock-history"></i></button>
                                         <% if (b.estado === 'activo' || b.estado === 'vencido') { %>
                                             <button class="btn btn-sm btn-outline-danger btn-anular-bono" title="Anular"><i class="bi bi-x-circle"></i></button>

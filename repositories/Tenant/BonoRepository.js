@@ -83,6 +83,10 @@ class BonoRepository {
         return rows;
     }
 
+    static async actualizarImagenUrl(id, tenantId, imagenUrl) {
+        await db.query('UPDATE bonos SET imagen_url = ? WHERE id = ? AND tenant_id = ?', [imagenUrl, id, tenantId]);
+    }
+
     static async anular(id, tenantId) {
         await db.query(`UPDATE bonos SET estado = 'anulado' WHERE id = ? AND tenant_id = ?`, [id, tenantId]);
     }

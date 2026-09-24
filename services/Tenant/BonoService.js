@@ -47,6 +47,25 @@ class BonoService {
             usuarioId
         });
 
+        // No bloqueante: si falla la generación del comprobante (PDF + subida a
+        // R2), el bono queda emitido igual, solo sin comprobante -- se puede
+        // regenerar más adelante si hace falta.
+        let imagenUrl = null;
+        try {
+            const BonoComprobanteService = require('./BonoComprobanteService');
+            imagenUrl = await BonoComprobanteService.generar(tenantId, {
+                codigo,
+                origen,
+                valor_inicial: valorRedondeado,
+                fecha_vencimiento: fecha_vencimiento || null
+            });
+            if (imagenUrl) {
+                await BonoRepository.actualizarImagenUrl(bonoId, tenantId, imagenUrl);
+            }
+        } catch (err) {
+            console.error('Error al generar el comprobante del bono (no bloqueante):', err.message);
+        }
+
         // Un bono "comprado" ya es plata real que entró a caja en este momento;
         // uno "regalo" nunca genera ingreso (al redimirse actúa como descuento
         // puro). No bloqueante: si Finanzas falla, el bono igual queda emitido
@@ -66,7 +85,13 @@ class BonoService {
             }
         }
 
-        return { id: bonoId, codigo, valor_inicial: valorRedondeado, saldo_actual: valorRedondeado };
+        return {
+            id: bonoId,
+            codigo,
+            valor_inicial: valorRedondeado,
+            saldo_actual: valorRedondeado,
+            imagen_url: imagenUrl
+        };
     }
 
     static async _generarCodigoUnico(tenantId) {
