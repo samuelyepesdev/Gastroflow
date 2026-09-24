@@ -92,12 +92,20 @@ ${urls}
 const SCANNER_HIT_LIMIT = 4;
 const SCANNER_HIT_WINDOW_SECONDS = 5 * 60;
 
+// INCIDENTE 2026-09-24: reactivamos el enforcement pensando que la causa
+// raíz anterior (patrón /vendor/i sin anclar) era la única explicación
+// posible de "se banea a todo el mundo" -- no lo era. Colombia tiene
+// carrier-grade NAT muy extendido (Movistar/Claro/Tigo): cientos de celulares
+// de clientes distintos, de restaurantes distintos, pueden compartir la MISMA
+// IP pública que ve Express. Ahí "una IP" no identifica a un atacante, y
+// cualquier baneo por IP arriesga bloquear a un montón de gente real de una
+// sola vez -- como pasó ahora, otra vez, con el detector nuevo de rutas 404
+// distintas (que en aislado probé exhaustivamente y nunca daba falso positivo,
+// pero nunca simulé "muchos usuarios reales sin relación compartiendo IP").
+// El enforcement queda desactivado DE NUEVO. No reactivar baneo por IP sin
+// antes resolver el problema de fondo (CGNAT), no solo el síntoma de turno.
 app.use((req, res, next) => {
     const ip = req.ip || req.connection.remoteAddress;
-
-    if (IpBanService.isBanned(ip)) {
-        return res.status(403).send('Forbidden: Access Denied');
-    }
 
     // Todos anclados al inicio (o como nombre de archivo exacto) a propósito:
     // un patrón suelto como /vendor/ sin ancla también hacía match con rutas
@@ -126,8 +134,8 @@ app.use((req, res, next) => {
         cacheService.set(hitsKey, hits, SCANNER_HIT_WINDOW_SECONDS);
 
         if (hits >= SCANNER_HIT_LIMIT) {
-            IpBanService.banIp(ip, { reason: req.path, hits });
-            logger.audit('scanner.banned', {
+            // No baneamos -- ver nota de incidente 2026-09-24 arriba (CGNAT).
+            logger.audit('scanner.detected_not_banned', {
                 ip,
                 path: req.path,
                 hits,
@@ -273,8 +281,8 @@ app.use((req, res, next) => {
     cacheService.set(key, rutas, NOT_FOUND_WINDOW_SECONDS);
 
     if (rutas.size >= NOT_FOUND_DISTINCT_LIMIT) {
-        IpBanService.banIp(ip, { reason: 'escaneo de directorios (muchas rutas 404 distintas)', hits: rutas.size });
-        logger.audit('scanner.banned_404_volume', {
+        // No baneamos -- ver nota de incidente 2026-09-24 arriba (CGNAT).
+        logger.audit('scanner.detected_not_banned_404_volume', {
             ip,
             path: req.path,
             rutasDistintas: rutas.size,
