@@ -675,22 +675,58 @@ $(function () {
     }
   });
 
-  async function mostrarModalPago(total, clienteId, keyIdemp) {
+  async function mostrarModalPago(totalOriginal, clienteId, keyIdemp) {
     const modal = new bootstrap.Modal(document.getElementById('modalPago'));
     let formaPagoSeleccionada = null;
     let montoRecibido = null;
+    // El bono se aplica ANTES de elegir método de pago -- `restante` es lo que
+    // de verdad hay que cobrar en efectivo/transferencia después de restarlo.
+    // Espejo del cálculo de FacturarPedidoService._calcularTotalesYFormaPago
+    // (min(saldo, total) se descuenta primero); el servidor sigue siendo la
+    // fuente de verdad, esto es solo para que la pantalla no le pida al
+    // cajero cobrar de más cuando ya hay un bono cubriendo parte de la cuenta.
+    let restante = totalOriginal;
+    let bonoAplicado = null; // { codigo, monto }
 
-    $('#modalTotalPago').text(mod.formatear(total));
-    generarDenominaciones(total);
+    function actualizarSegunRestante() {
+      $('#modalTotalPago').text(mod.formatear(restante));
+      if (bonoAplicado) {
+        $('#modalTotalOriginal').text(mod.formatear(totalOriginal));
+        $('#modalBonoAplicado').text('-' + mod.formatear(bonoAplicado.monto));
+        $('#modalTotalOriginalWrap').show();
+      } else {
+        $('#modalTotalOriginalWrap').hide();
+      }
 
-    $('.payment-card').removeClass('selected');
-    $('#panelEfectivo').hide();
-    $('#panelTransferencia').hide();
-    $('#btnConfirmarPago').prop('disabled', true);
-    $('#montoManual').val('');
-    $('#infoCambio').hide();
-    $('#codigoBonoInput').val('');
+      $('.payment-card').removeClass('selected');
+      $('#panelEfectivo').hide();
+      $('#panelTransferencia').hide();
+      $('#montoManual').val('');
+      $('#infoCambio').hide();
+      // Por si una ejecución previa dejó el botón en "Procesando..." (ver click handler).
+      $('#btnConfirmarPago').html('Confirmar Pago <i class="bi bi-check-circle"></i>');
+      formaPagoSeleccionada = null;
+      montoRecibido = null;
+
+      if (restante <= 0) {
+        // El bono cubre todo -- no hay que elegir efectivo/transferencia ni
+        // pedirle nada más al cliente.
+        $('#wrapMetodosPago').hide();
+        $('#avisoCubiertoPorBono').show();
+        $('#btnConfirmarPago').prop('disabled', false);
+      } else {
+        $('#wrapMetodosPago').show();
+        $('#avisoCubiertoPorBono').hide();
+        $('#btnConfirmarPago').prop('disabled', true);
+        generarDenominaciones(restante);
+      }
+    }
+
+    $('#codigoBonoInput').val('').prop('disabled', false);
+    $('#btnValidarBono').prop('disabled', false).show();
+    $('#btnQuitarBono').hide();
     $('#bonoValidacionInfo').text('').removeClass('text-success text-danger');
+    actualizarSegunRestante();
 
     async function validarBono() {
       const codigo = $('#codigoBonoInput').val().trim().toUpperCase();
@@ -704,14 +740,36 @@ $(function () {
         const r = await fetch(`/api/bonos/validar/${encodeURIComponent(codigo)}`);
         const d = await r.json();
         if (!r.ok) throw new Error(d.error || 'Código de bono inválido');
+
+        const montoBono = Math.min(Number(d.saldo_actual), totalOriginal);
+        bonoAplicado = { codigo, monto: montoBono };
+        restante = Math.round((totalOriginal - montoBono) * 100) / 100;
+
         $('#bonoValidacionInfo')
-          .text(`Bono válido · saldo disponible: ${mod.formatear(d.saldo_actual)}`)
+          .text(`Bono aplicado · saldo disponible: ${mod.formatear(d.saldo_actual)}`)
           .addClass('text-success').removeClass('text-danger');
+        $('#codigoBonoInput').prop('disabled', true);
+        $('#btnValidarBono').hide();
+        $('#btnQuitarBono').show();
+
+        actualizarSegunRestante();
       } catch (err) {
         $('#bonoValidacionInfo').text(err.message).addClass('text-danger').removeClass('text-success');
       }
     }
+
+    function quitarBono() {
+      bonoAplicado = null;
+      restante = totalOriginal;
+      $('#codigoBonoInput').val('').prop('disabled', false);
+      $('#btnValidarBono').show();
+      $('#btnQuitarBono').hide();
+      $('#bonoValidacionInfo').text('').removeClass('text-success text-danger');
+      actualizarSegunRestante();
+    }
+
     $('#btnValidarBono').off('click').on('click', validarBono);
+    $('#btnQuitarBono').off('click').on('click', quitarBono);
     $('#codigoBonoInput').off('keypress').on('keypress', function (e) {
       if (e.which === 13) {
         e.preventDefault();
@@ -732,7 +790,7 @@ $(function () {
         $('#panelTransferencia').slideDown();
         $('#panelEfectivo').slideUp();
         $('#btnConfirmarPago').prop('disabled', false);
-        montoRecibido = total;
+        montoRecibido = restante;
       }
     });
 
@@ -741,19 +799,19 @@ $(function () {
       $(this).addClass('selected');
       montoRecibido = Number.parseFloat($(this).data('valor'));
       $('#montoManual').val(MoneyInput.format(String(montoRecibido)));
-      calcularCambio(total, montoRecibido);
+      calcularCambio(restante, montoRecibido);
       $('#btnConfirmarPago').prop('disabled', false);
     });
 
     function usarMontoManual() {
       const valor = MoneyInput.parse($('#montoManual').val());
-      if (valor < total) {
+      if (valor < restante) {
         Swal.fire({ icon: 'warning', title: 'El monto debe ser mayor o igual al total' });
         return;
       }
       montoRecibido = valor;
       $('.denominacion-btn').removeClass('selected');
-      calcularCambio(total, valor);
+      calcularCambio(restante, valor);
       $('#btnConfirmarPago').prop('disabled', false);
     }
 
@@ -761,8 +819,8 @@ $(function () {
       const valor = MoneyInput.parse($(this).val());
       if (valor > 0) {
         $('.denominacion-btn').removeClass('selected');
-        if (valor >= total) {
-          calcularCambio(total, valor);
+        if (valor >= restante) {
+          calcularCambio(restante, valor);
           montoRecibido = valor;
           $('#btnConfirmarPago').prop('disabled', false);
         } else {
@@ -782,17 +840,16 @@ $(function () {
 
     $('#btnUsarMontoManual').off('click').on('click', usarMontoManual);
 
-    // Restablecer el botón de pago por si quedó deshabilitado en ejecuciones previas
-    $('#btnConfirmarPago').prop('disabled', true).html('Confirmar Pago <i class="bi bi-check-circle"></i>');
-
     $('#btnConfirmarPago').off('click').on('click', async function () {
-      if (!formaPagoSeleccionada) {
-        Swal.fire({ icon: 'warning', title: 'Seleccione una forma de pago' });
-        return;
-      }
-      if (formaPagoSeleccionada === 'efectivo' && (!montoRecibido || montoRecibido < total)) {
-        Swal.fire({ icon: 'warning', title: 'El monto recibido debe ser mayor o igual al total' });
-        return;
+      if (restante > 0) {
+        if (!formaPagoSeleccionada) {
+          Swal.fire({ icon: 'warning', title: 'Seleccione una forma de pago' });
+          return;
+        }
+        if (formaPagoSeleccionada === 'efectivo' && (!montoRecibido || montoRecibido < restante)) {
+          Swal.fire({ icon: 'warning', title: 'El monto recibido debe ser mayor o igual al total' });
+          return;
+        }
       }
 
       // --- PREVENCIÓN DE DOBLE CLIC FÍSICO ---
@@ -816,11 +873,14 @@ $(function () {
           },
           body: JSON.stringify({
             cliente_id: clienteId,
-            forma_pago: formaPagoSeleccionada,
+            // Si el bono cubre todo no se eligió tarjeta de pago -- no importa
+            // cuál se mande, el servidor solo cobra por ahí si queda algo
+            // pendiente tras el bono (ver _calcularTotalesYFormaPago).
+            forma_pago: formaPagoSeleccionada || 'efectivo',
             descuentos: mod.descuentosPorItem,
             propina: mod.propinaPedido,
             efectivo_recibido: formaPagoSeleccionada === 'efectivo' ? montoRecibido : null,
-            codigo_bono: $('#codigoBonoInput').val().trim() || null
+            codigo_bono: bonoAplicado ? bonoAplicado.codigo : null
           })
         });
         const data = await resp.json();
@@ -844,9 +904,12 @@ $(function () {
         mod.renderItems();
 
         let html = '<p><strong>Factura #' + (data.numero != null ? data.numero : data.factura_id) + '</strong> generada correctamente.</p>';
-        if (formaPagoSeleccionada === 'efectivo' && montoRecibido > total) {
-          const cambio = montoRecibido - total;
-          html += '<div class="text-start mt-2"><p><strong>Total:</strong> ' + mod.formatear(total) + '</p><p><strong>Recibido:</strong> ' + mod.formatear(montoRecibido) + '</p><p class="text-success fw-bold">Cambio: ' + mod.formatear(cambio) + '</p></div>';
+        if (bonoAplicado) {
+          html += '<p class="text-success small mb-1">Bono ' + bonoAplicado.codigo + ' aplicado: -' + mod.formatear(bonoAplicado.monto) + '</p>';
+        }
+        if (formaPagoSeleccionada === 'efectivo' && montoRecibido > restante) {
+          const cambio = montoRecibido - restante;
+          html += '<div class="text-start mt-2"><p><strong>Total cobrado:</strong> ' + mod.formatear(restante) + '</p><p><strong>Recibido:</strong> ' + mod.formatear(montoRecibido) + '</p><p class="text-success fw-bold">Cambio: ' + mod.formatear(cambio) + '</p></div>';
         }
         Swal.fire({
           icon: 'success',
