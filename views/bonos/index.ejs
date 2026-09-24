@@ -76,8 +76,8 @@
                                 <tr><td colspan="8" class="text-center text-muted py-4">Todavía no has emitido ningún bono.</td></tr>
                             <% } %>
                             <% bonos.forEach(function (b) { %>
-                                <tr data-id="<%= b.id %>">
-                                    <td><code><%= b.codigo %></code></td>
+                                <tr data-id="<%= b.id %>" class="<%= b.estado === 'anulado' ? 'text-muted' : '' %>">
+                                    <td><code class="<%= b.estado === 'anulado' ? 'text-decoration-line-through' : '' %>"><%= b.codigo %></code></td>
                                     <td><%= b.origen === 'comprado' ? 'Comprado' : 'Regalo' %></td>
                                     <td><%= b.cliente_nombre || '-' %></td>
                                     <td class="text-end">$<%= Number(b.valor_inicial).toLocaleString('es-CO', { minimumFractionDigits: 2 }) %></td>
