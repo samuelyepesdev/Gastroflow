@@ -37,9 +37,11 @@ class AbrirPedidoService {
             }
 
             // Obtener siguiente número de pedido para este tenant (correlativo interno,
-            // reiniciado cada día como un ticket de cocina)
+            // reiniciado cada día como un ticket de cocina). El día es el de Colombia:
+            // antes se usaba DATE(created_at) = CURDATE(), que con MySQL en UTC
+            // reiniciaba la numeración a las 7 p. m., en pleno servicio.
             const [numResult] = await connection.query(
-                `SELECT COALESCE(MAX(numero), 0) + 1 AS siguiente FROM pedidos WHERE tenant_id = ? AND DATE(created_at) = CURDATE()`,
+                `SELECT COALESCE(MAX(numero), 0) + 1 AS siguiente FROM pedidos WHERE tenant_id = ? AND created_at >= CONVERT_TZ(DATE(CONVERT_TZ(UTC_TIMESTAMP(), '+00:00', '-05:00')), '-05:00', '+00:00')`,
                 [tenantId]
             );
             const siguienteNumero = numResult[0].siguiente;

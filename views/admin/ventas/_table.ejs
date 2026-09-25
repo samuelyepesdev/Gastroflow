@@ -62,7 +62,7 @@ const getPaymentBadge = function(method) {
                             </div>
                         </td>
                         <td class="text-muted fw-semibold">
-                            <%= new Date(v.fecha).toLocaleString('es-CO', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) %>
+                            <%= new Date(v.fechaISO || v.fecha).toLocaleString('es-CO', { timeZone: 'America/Bogota', day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) %>
                         </td>
                         <td class="fw-semibold text-dark">
                             <%= v.cliente_nombre %>

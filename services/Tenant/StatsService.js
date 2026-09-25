@@ -7,6 +7,14 @@
 const StatsRepository = require('../../repositories/Tenant/StatsRepository');
 const InventarioService = require('./InventarioService');
 const cacheService = require('../Shared/CacheService');
+const RealtimeEvents = require('../Shared/RealtimeEvents');
+
+// Con una venta nueva, la caché de 2 min del dashboard queda desactualizada:
+// se borra en el acto para que el refresco disparado por el mismo evento (SSE)
+// traiga cifras reales, en vez de consultar cada 10 s esperando que expire.
+RealtimeEvents.on('ventaRegistrada', ({ tenantId }) => {
+    cacheService.deleteByPrefix(`tenant_dashboard_stats_${tenantId}_`);
+});
 
 class StatsService {
     /**

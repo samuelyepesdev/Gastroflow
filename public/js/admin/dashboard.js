@@ -393,7 +393,35 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    // Primer refresh a los 5 segundos, luego cada 60 segundos
-    setTimeout(refreshLiveStats, 5000);
-    setInterval(refreshLiveStats, 60 * 1000);
+    // Se refresca cuando algún tenant registra una venta (SSE /live-stream), en
+    // vez de consultar cada 60 s. Ráfagas de ventas se agrupan en una consulta.
+    // Respaldo cada 5 min (por si se pierde un evento) y nada con la pestaña oculta.
+    let liveTimer = null;
+    const scheduleLiveRefresh = delay => {
+        clearTimeout(liveTimer);
+        liveTimer = setTimeout(refreshLiveStats, delay);
+    };
+
+    if (window.EventSource) {
+        const source = new EventSource('/admin/dashboard/live-stream');
+        source.addEventListener('message', e => {
+            try {
+                const data = JSON.parse(e.data);
+                // 'connected' también: tras reconectar pudimos perdernos ventas.
+                if (data.event === 'ventaRegistrada' || data.event === 'connected') {
+                    scheduleLiveRefresh(2000);
+                }
+            } catch (err) {
+                console.warn('[Live] Error SSE:', err);
+            }
+        });
+        window.addEventListener('beforeunload', () => source.close());
+    }
+
+    setInterval(() => {
+        if (document.visibilityState === 'visible') refreshLiveStats();
+    }, 5 * 60 * 1000);
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') scheduleLiveRefresh(300);
+    });
 });

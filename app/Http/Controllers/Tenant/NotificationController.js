@@ -55,10 +55,21 @@ class NotificationController {
             }
         };
 
+        // Venta nueva: el dashboard del tenant refresca sus estadísticas.
+        const onVentaRegistrada = data => {
+            if (String(data.tenantId) === String(tenantId)) {
+                res.write(`data: ${JSON.stringify({ event: 'ventaRegistrada' })}\n\n`);
+                if (typeof res.flush === 'function') {
+                    res.flush();
+                }
+            }
+        };
+
         // Suscribirse a los eventos en el servicio
         RealtimeEvents.on('orderCreated', onOrderCreated);
         RealtimeEvents.on('mesaSolicitud', onMesaSolicitud);
         RealtimeEvents.on('mesasChanged', onMesasChanged);
+        RealtimeEvents.on('ventaRegistrada', onVentaRegistrada);
 
         // Mantener la conexión enviando keep-alive cada 30 segundos
         const keepAlive = setInterval(() => {
@@ -83,6 +94,7 @@ class NotificationController {
             RealtimeEvents.removeListener('orderCreated', onOrderCreated);
             RealtimeEvents.removeListener('mesaSolicitud', onMesaSolicitud);
             RealtimeEvents.removeListener('mesasChanged', onMesasChanged);
+            RealtimeEvents.removeListener('ventaRegistrada', onVentaRegistrada);
             clearInterval(keepAlive);
         };
         req.on('close', cleanup);

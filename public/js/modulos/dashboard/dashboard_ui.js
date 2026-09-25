@@ -459,9 +459,35 @@ $(function () {
     });
 
     // --- AUTO-REFRESH IN REAL-TIME ---
+    // Antes se consultaba /api/dashboard/stats cada 10 s, pero el servidor cachea
+    // esas cifras 2 min: la mayoría de consultas devolvían lo mismo. Ahora se
+    // refresca cuando entra una venta (SSE 'ventaRegistrada', que además borra
+    // esa caché en el servidor), con respaldo cada 2 min y nada con la pestaña oculta.
+    let statsTimer = null;
+    const scheduleStatsRefresh = delay => {
+      clearTimeout(statsTimer);
+      statsTimer = setTimeout(window.applyFilters, delay);
+    };
+
+    if (window.EventSource) {
+      const source = new EventSource('/api/notifications/subscribe');
+      source.addEventListener('message', e => {
+        try {
+          const data = JSON.parse(e.data);
+          if (data.event === 'ventaRegistrada') scheduleStatsRefresh(1500);
+        } catch (err) {
+          console.warn('Error SSE dashboard:', err);
+        }
+      });
+      window.addEventListener('beforeunload', () => source.close());
+    }
+
     setInterval(() => {
-      window.applyFilters();
-    }, 10000);
+      if (document.visibilityState === 'visible') window.applyFilters();
+    }, 120000);
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') scheduleStatsRefresh(300);
+    });
 
     // Test Report Handler
     $('#btnTestReporteMensual').on('click', async function () {

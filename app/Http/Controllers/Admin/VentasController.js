@@ -1,6 +1,7 @@
 const TenantService = require('../../../../services/Admin/TenantService');
 const VentaService = require('../../../../services/Tenant/VentaService');
 const FacturaRepository = require('../../../../repositories/Tenant/FacturaRepository');
+const { toFechaISOUtc } = require('../../../../utils/dateHelpers');
 
 class VentasController {
     // GET /admin/ventas
@@ -20,6 +21,11 @@ class VentasController {
                     desde: req.query.desde || undefined,
                     hasta: req.query.hasta || undefined,
                     q: req.query.q || undefined
+                });
+                // La vista formatea la fecha en el servidor (UTC en Railway): se pasa
+                // en ISO UTC explícito para convertirla a hora Colombia al mostrarla.
+                ventas.forEach(v => {
+                    v.fechaISO = toFechaISOUtc(v.fecha);
                 });
             }
             res.render('admin/ventas', {

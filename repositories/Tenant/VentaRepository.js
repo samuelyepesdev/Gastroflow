@@ -37,16 +37,17 @@ class VentaRepository {
         }
 
         if (filters.desde) {
-            // Sargable: DATE(f.fecha) >= ? impedía usar el índice de fecha (evalúa la
-            // función en cada fila). f.fecha >= '00:00:00' del día es equivalente.
-            query += ` AND f.fecha >= ?`;
+            // Sargable (sin función sobre f.fecha, usa el índice). El día del filtro es
+            // un día Colombia y f.fecha está en UTC: se convierte el límite, no la columna.
+            // Sin esto, lo vendido después de las 7 p. m. caía en el día siguiente.
+            query += ` AND f.fecha >= CONVERT_TZ(?, '-05:00', '+00:00')`;
             params.push(filters.desde);
         }
 
         if (filters.hasta) {
             // Igual que arriba: rango sargable en vez de DATE(f.fecha) <= ?. Incluye
             // todo el día "hasta" comparando contra el inicio del día siguiente.
-            query += ` AND f.fecha < DATE_ADD(?, INTERVAL 1 DAY)`;
+            query += ` AND f.fecha < CONVERT_TZ(DATE_ADD(?, INTERVAL 1 DAY), '-05:00', '+00:00')`;
             params.push(filters.hasta);
         }
 
@@ -99,16 +100,17 @@ class VentaRepository {
         }
 
         if (filters.desde) {
-            // Sargable: DATE(f.fecha) >= ? impedía usar el índice de fecha (evalúa la
-            // función en cada fila). f.fecha >= '00:00:00' del día es equivalente.
-            query += ` AND f.fecha >= ?`;
+            // Sargable (sin función sobre f.fecha, usa el índice). El día del filtro es
+            // un día Colombia y f.fecha está en UTC: se convierte el límite, no la columna.
+            // Sin esto, lo vendido después de las 7 p. m. caía en el día siguiente.
+            query += ` AND f.fecha >= CONVERT_TZ(?, '-05:00', '+00:00')`;
             params.push(filters.desde);
         }
 
         if (filters.hasta) {
             // Igual que arriba: rango sargable en vez de DATE(f.fecha) <= ?. Incluye
             // todo el día "hasta" comparando contra el inicio del día siguiente.
-            query += ` AND f.fecha < DATE_ADD(?, INTERVAL 1 DAY)`;
+            query += ` AND f.fecha < CONVERT_TZ(DATE_ADD(?, INTERVAL 1 DAY), '-05:00', '+00:00')`;
             params.push(filters.hasta);
         }
 
