@@ -2,6 +2,7 @@ const RegistroService = require('../../../services/Shared/RegistroService');
 const authService = require('../../../services/Shared/AuthService');
 const { validationResult } = require('express-validator');
 const logger = require('../../../utils/logger');
+const { getClientIp } = require('../../../utils/clientIp');
 
 class RegistroController {
     // GET /auth/registro
@@ -20,7 +21,7 @@ class RegistroController {
             const { nombre_completo, username, email, password } = req.body;
             await RegistroService.registrar({ nombre_completo, username, email, password });
 
-            logger.audit('registro.creado', { username, email, ip: req.ip });
+            logger.audit('registro.creado', { username, email, ip: getClientIp(req) });
 
             res.status(201).json({
                 success: true,
@@ -59,7 +60,11 @@ class RegistroController {
                 maxAge: 24 * 60 * 60 * 1000
             });
 
-            logger.audit('registro.email_verificado', { userId: usuario.id, username: usuario.username, ip: req.ip });
+            logger.audit('registro.email_verificado', {
+                userId: usuario.id,
+                username: usuario.username,
+                ip: getClientIp(req)
+            });
 
             res.redirect('/onboarding/crear-local');
         } catch (error) {

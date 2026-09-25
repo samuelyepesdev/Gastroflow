@@ -3,7 +3,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
 const compression = require('compression');
-const rateLimit = require('express-rate-limit');
+const { rateLimit, ipKeyGenerator } = require('express-rate-limit');
 const path = require('path');
 const fs = require('fs');
 
@@ -15,6 +15,7 @@ const webRoutes = require('./routes/web');
 const cacheService = require('./services/Shared/CacheService');
 const IpBanService = require('./services/Shared/IpBanService');
 const logger = require('./utils/logger');
+const { getClientIp } = require('./utils/clientIp');
 
 const app = express();
 
@@ -105,7 +106,7 @@ const SCANNER_HIT_WINDOW_SECONDS = 5 * 60;
 // El enforcement queda desactivado DE NUEVO. No reactivar baneo por IP sin
 // antes resolver el problema de fondo (CGNAT), no solo el síntoma de turno.
 app.use((req, res, next) => {
-    const ip = req.ip || req.connection.remoteAddress;
+    const ip = getClientIp(req);
 
     // Todos anclados al inicio (o como nombre de archivo exacto) a propósito:
     // un patrón suelto como /vendor/ sin ancla también hacía match con rutas
@@ -249,7 +250,9 @@ const limiter = rateLimit({
     max: 5000, // Aumentado a 5000 para evitar bloqueos por consultas repetitivas de mesas y múltiples dispositivos
     message: { error: 'Demasiadas peticiones desde esta IP, por favor intente más tarde.' },
     standardHeaders: true,
-    legacyHeaders: false
+    legacyHeaders: false,
+    // IP real del cliente (Cloudflare), no la del nodo de Cloudflare.
+    keyGenerator: req => ipKeyGenerator(getClientIp(req))
 });
 app.use(limiter);
 
@@ -274,7 +277,7 @@ const NOT_FOUND_DISTINCT_LIMIT = 25;
 const NOT_FOUND_WINDOW_SECONDS = 60;
 
 app.use((req, res, next) => {
-    const ip = req.ip || req.connection.remoteAddress;
+    const ip = getClientIp(req);
     const key = `notfound_paths_${ip}`;
     const rutas = cacheService.get(key) || new Set();
     rutas.add(req.path);

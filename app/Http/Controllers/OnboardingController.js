@@ -1,6 +1,7 @@
 const OnboardingService = require('../../../services/Shared/OnboardingService');
 const authService = require('../../../services/Shared/AuthService');
 const logger = require('../../../utils/logger');
+const { getClientIp } = require('../../../utils/clientIp');
 
 class OnboardingController {
     // GET /onboarding/crear-local
@@ -25,7 +26,7 @@ class OnboardingController {
                 userId: req.user.id,
                 tenantId: tenant.id,
                 slug: tenant.slug,
-                ip: req.ip
+                ip: getClientIp(req)
             });
 
             // El JWT en cookie todavía tiene tenant_id=null / rol pendiente; se
