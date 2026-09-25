@@ -1,4 +1,5 @@
 const db = require('../../../config/database');
+const RealtimeEvents = require('../../Shared/RealtimeEvents');
 
 class MoverItemsService {
     /**
@@ -71,6 +72,7 @@ class MoverItemsService {
             await connection.query('UPDATE mesas SET estado = "ocupada" WHERE id = ?', [mesa_destino_id]);
 
             await connection.commit();
+            RealtimeEvents.emitMesasChanged(tenantId);
 
             return { success: true, message: 'Productos movidos exitosamente' };
         } catch (error) {
