@@ -1,4 +1,5 @@
 const db = require('../../../config/database');
+const RealtimeEvents = require('../../Shared/RealtimeEvents');
 
 class CrearMesasMasivasService {
     /**
@@ -25,6 +26,7 @@ class CrearMesasMasivasService {
             });
 
             await connection.commit();
+            RealtimeEvents.emitMesasChanged(tenantId);
 
             return {
                 success: true,

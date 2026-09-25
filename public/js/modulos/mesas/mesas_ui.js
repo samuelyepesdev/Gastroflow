@@ -340,8 +340,28 @@ function crearItemResultadoProducto(mod, list, p) {
 $(function () {
   const mod = window.MesasModule;
 
-  // Set interval to refresh tables
-  setInterval(window.refreshMesas, 3000);
+  // La grilla se refresca por eventos SSE (ver mesas-init.js: orderCreated /
+  // mesasChanged llaman a scheduleRefreshMesas). Antes se consultaba
+  // /api/mesas/listar cada 3 s por pestaña abierta aunque nada cambiara; ahora
+  // solo queda un respaldo cada 30 s (por si se pierde un evento en un deploy o
+  // reconexión), y ni eso con la pestaña oculta.
+  let refreshTimer = null;
+  window.scheduleRefreshMesas = function () {
+    // Agrupa ráfagas de eventos (ej. agregar varios items seguidos) en una sola consulta.
+    clearTimeout(refreshTimer);
+    refreshTimer = setTimeout(window.refreshMesas, 300);
+  };
+
+  setInterval(() => {
+    if (document.visibilityState === 'visible') window.refreshMesas();
+  }, 30000);
+
+  // Al volver a la pestaña (tablet desbloqueada, cambio de app) pudo haberse
+  // perdido algo mientras estaba oculta: refrescar de inmediato.
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') window.scheduleRefreshMesas();
+  });
+
   window.refreshMesas();
 
   // +/- cantidad en items del pedido (mesa)

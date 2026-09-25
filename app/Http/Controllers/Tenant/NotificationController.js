@@ -42,9 +42,23 @@ class NotificationController {
             }
         };
 
+        // Cambios en la lista/estado de mesas: la pantalla de Mesas refresca la
+        // grilla al recibirlo en vez de consultar /api/mesas/listar cada 3 s.
+        const onMesasChanged = data => {
+            if (String(data.tenantId) === String(tenantId)) {
+                res.write(`data: ${JSON.stringify({ event: 'mesasChanged' })}
+
+`);
+                if (typeof res.flush === 'function') {
+                    res.flush();
+                }
+            }
+        };
+
         // Suscribirse a los eventos en el servicio
         RealtimeEvents.on('orderCreated', onOrderCreated);
         RealtimeEvents.on('mesaSolicitud', onMesaSolicitud);
+        RealtimeEvents.on('mesasChanged', onMesasChanged);
 
         // Mantener la conexión enviando keep-alive cada 30 segundos
         const keepAlive = setInterval(() => {
@@ -68,6 +82,7 @@ class NotificationController {
             // console.log(`[SSE] Cliente desconectado para Tenant ${tenantId}`);
             RealtimeEvents.removeListener('orderCreated', onOrderCreated);
             RealtimeEvents.removeListener('mesaSolicitud', onMesaSolicitud);
+            RealtimeEvents.removeListener('mesasChanged', onMesasChanged);
             clearInterval(keepAlive);
         };
         req.on('close', cleanup);

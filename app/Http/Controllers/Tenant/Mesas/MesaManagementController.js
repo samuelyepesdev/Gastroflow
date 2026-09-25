@@ -1,4 +1,5 @@
 const db = require('../../../../../config/database');
+const RealtimeEvents = require('../../../../../services/Shared/RealtimeEvents');
 const CrearMesasMasivasService = require('../../../../../services/Tenant/Mesas/CrearMesasMasivasService');
 
 class MesaManagementController {
@@ -22,6 +23,7 @@ class MesaManagementController {
                 'INSERT INTO mesas (tenant_id, numero, descripcion, estado) VALUES (?, ?, ?, ?)',
                 [tenantId, String(numero), String(descripcion).trim(), 'libre']
             );
+            RealtimeEvents.emitMesasChanged(tenantId);
             res.status(201).json({ id: result.insertId });
         } catch (error) {
             console.error('Error al crear mesa:', error);
@@ -64,6 +66,7 @@ class MesaManagementController {
             values.push(mesaId, tenantId);
 
             await db.query(`UPDATE mesas SET ${updates.join(', ')} WHERE id = ? AND tenant_id = ?`, values);
+            RealtimeEvents.emitMesasChanged(tenantId);
             res.json({ message: 'Mesa actualizada' });
         } catch (error) {
             console.error('Error al actualizar mesa:', error);
@@ -105,6 +108,7 @@ class MesaManagementController {
                 return res.status(404).json({ error: 'Mesa no encontrada' });
             }
 
+            RealtimeEvents.emitMesasChanged(tenantId);
             res.json({ success: true, message: 'Mesa eliminada' });
         } catch (error) {
             res.status(500).json({ error: 'Error al eliminar mesa' });

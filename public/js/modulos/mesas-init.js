@@ -140,6 +140,13 @@ $(document).ready(function () {
     source.addEventListener('message', function (e) {
         try {
             const data = JSON.parse(e.data);
+            // Cualquier cambio de pedidos/mesas refresca la grilla (reemplaza el
+            // polling de 3 s). 'connected' también: tras una reconexión del SSE
+            // pudimos habernos perdido eventos.
+            if (['orderCreated', 'mesasChanged', 'connected'].includes(data.event)
+                && typeof window.scheduleRefreshMesas === 'function') {
+                window.scheduleRefreshMesas();
+            }
             if (data.event === 'orderCreated') {
                 handleOrderCreated(data);
             } else if (data.event === 'mesaSolicitud') {

@@ -1,4 +1,5 @@
 const db = require('../../../config/database');
+const RealtimeEvents = require('../../Shared/RealtimeEvents');
 
 class AbrirPedidoService {
     /**
@@ -31,6 +32,7 @@ class AbrirPedidoService {
                     mesa_id
                 ]);
                 await connection.commit();
+                RealtimeEvents.emitMesasChanged(tenantId);
                 return existentes[0];
             }
 
@@ -50,6 +52,7 @@ class AbrirPedidoService {
             await connection.query("UPDATE mesas SET estado = 'ocupada' WHERE id = ?", [mesa_id]);
 
             await connection.commit();
+            RealtimeEvents.emitMesasChanged(tenantId);
 
             return {
                 id: insert.insertId,

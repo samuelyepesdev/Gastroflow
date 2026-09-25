@@ -10,6 +10,9 @@
  * Eventos que circulan:
  *  - 'orderCreated'  { tenantId, pedidoId, mesaId, origen?, action? }
  *  - 'mesaSolicitud' { tenantId, mesaId, mesaNumero, pedidoId, tipo }
+ *  - 'mesasChanged'  { tenantId } -- cambió el estado/lista de mesas (abrir, mover,
+ *    crear/editar/eliminar mesa). Solo lo consume la pantalla de Mesas para
+ *    refrescar la grilla sin polling agresivo; no dispara recargas en otras pantallas.
  *
  * Consumidores: app/Http/Controllers/Tenant/NotificationController.js (SSE).
  */
@@ -20,5 +23,18 @@ const events = new EventEmitter();
 // engancha un listener aquí; con varios tenants y pantallas se pasa fácil el
 // límite por defecto de Node (10) sin que sea una fuga real.
 events.setMaxListeners(100);
+
+/**
+ * Avisa a las pantallas de Mesas del tenant que deben refrescar la grilla.
+ * Nunca lanza: una falla notificando no debe tumbar la acción que ya se guardó.
+ */
+events.emitMesasChanged = tenantId => {
+    try {
+        events.emit('mesasChanged', { tenantId });
+    } catch (err) {
+        // eslint-disable-next-line no-console
+        console.error('Error al emitir mesasChanged:', err);
+    }
+};
 
 module.exports = events;
