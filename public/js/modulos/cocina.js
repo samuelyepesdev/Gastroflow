@@ -667,6 +667,13 @@ $(function () {
 
     // Auto-refresh every 5 seconds (fallback)
     cargarCola();
-    setInterval(cargarCola, 30000); // Aumentamos a 30s ya que tenemos SSE
+    // Respaldo del SSE: sin consultar con la pestaña oculta, y al volver a ella
+    // refresca de inmediato por si se perdió algún pedido mientras tanto.
+    setInterval(() => {
+        if (document.visibilityState === 'visible') cargarCola();
+    }, 30000);
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') cargarCola();
+    });
     activarTabDesdeQuery();
 });

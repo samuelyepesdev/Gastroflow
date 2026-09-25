@@ -10,4 +10,7 @@ router.get('/', DashboardController.index);
 // API Stats en vivo
 router.get('/live-stats', DashboardController.getLiveStats);
 
+// SSE: aviso de venta nueva en cualquier tenant (refresca live-stats)
+router.get('/live-stream', DashboardController.liveStream);
+
 module.exports = router;

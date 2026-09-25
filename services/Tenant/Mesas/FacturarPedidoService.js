@@ -537,6 +537,7 @@ class FacturarPedidoService {
                 mesaId,
                 action: 'billed'
             });
+            RealtimeEvents.emitVentaRegistrada(tenantId);
         } catch (err) {
             console.error('Error al emitir evento de facturación SSE:', err);
         }

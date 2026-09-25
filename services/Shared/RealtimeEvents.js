@@ -13,6 +13,9 @@
  *  - 'mesasChanged'  { tenantId } -- cambió el estado/lista de mesas (abrir, mover,
  *    crear/editar/eliminar mesa). Solo lo consume la pantalla de Mesas para
  *    refrescar la grilla sin polling agresivo; no dispara recargas en otras pantallas.
+ *  - 'ventaRegistrada' { tenantId } -- se creó una factura. Invalida la caché de
+ *    estadísticas del tenant (StatsService) y refresca el dashboard del tenant y
+ *    las estadísticas en vivo del superadmin.
  *
  * Consumidores: app/Http/Controllers/Tenant/NotificationController.js (SSE).
  */
@@ -34,6 +37,16 @@ events.emitMesasChanged = tenantId => {
     } catch (err) {
         // eslint-disable-next-line no-console
         console.error('Error al emitir mesasChanged:', err);
+    }
+};
+
+/** Igual que emitMesasChanged, para facturas nuevas. Nunca lanza. */
+events.emitVentaRegistrada = tenantId => {
+    try {
+        events.emit('ventaRegistrada', { tenantId });
+    } catch (err) {
+        // eslint-disable-next-line no-console
+        console.error('Error al emitir ventaRegistrada:', err);
     }
 };
 

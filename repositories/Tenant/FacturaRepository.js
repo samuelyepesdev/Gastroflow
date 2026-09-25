@@ -10,6 +10,7 @@ const TaxService = require('../../services/Shared/TaxService');
 const CajaRepository = require('./CajaRepository');
 const PedidoAbonoRepository = require('./PedidoAbonoRepository');
 const BonoRepository = require('./BonoRepository');
+const RealtimeEvents = require('../../services/Shared/RealtimeEvents');
 const PedidoItemPagoRepository = require('./PedidoItemPagoRepository');
 
 class FacturaRepository {
@@ -249,6 +250,7 @@ class FacturaRepository {
 
             await connection.commit();
             connection.release();
+            RealtimeEvents.emitVentaRegistrada(tenantId);
 
             return { insertId: factura_id, numero };
         } catch (error) {
