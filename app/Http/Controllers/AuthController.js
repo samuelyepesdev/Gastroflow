@@ -4,6 +4,7 @@ const { validationResult } = require('express-validator');
 const { ROLES } = require('../../../utils/constants');
 const { getTenantBlockedMessage } = require('../../../utils/tenantMessages');
 const logger = require('../../../utils/logger');
+const { getClientIp } = require('../../../utils/clientIp');
 
 class AuthController {
     // GET /auth/login
@@ -14,7 +15,7 @@ class AuthController {
 
     // POST /auth/login
     static async login(req, res) {
-        const ip = req.ip || req.connection.remoteAddress;
+        const ip = getClientIp(req);
         const userAgent = req.headers['user-agent'] || '';
 
         try {
@@ -80,7 +81,7 @@ class AuthController {
 
     // GET /auth/logout
     static async logout(req, res) {
-        const ip = req.ip || req.connection.remoteAddress;
+        const ip = getClientIp(req);
         if (req.user) {
             logger.audit('logout', { userId: req.user.id, username: req.user.username, ip });
         }
@@ -93,7 +94,7 @@ class AuthController {
 
     // POST /auth/logout
     static async logoutPost(req, res) {
-        const ip = req.ip || req.connection.remoteAddress;
+        const ip = getClientIp(req);
         if (req.user) {
             logger.audit('logout', { userId: req.user.id, username: req.user.username, ip });
         }
@@ -126,7 +127,7 @@ class AuthController {
 
     // POST /auth/cambiar-password
     static async changePassword(req, res) {
-        const ip = req.ip || req.connection.remoteAddress;
+        const ip = getClientIp(req);
 
         try {
             const errors = validationResult(req);

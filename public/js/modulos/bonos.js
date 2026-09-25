@@ -61,10 +61,13 @@
             const data = await r.json();
             if (!r.ok) throw new Error(data.error || 'No se pudo emitir el bono');
 
+            const comprobanteHtml = data.imagen_url
+                ? `<a href="${data.imagen_url}" target="_blank" rel="noopener" class="btn btn-outline-primary btn-sm mt-1"><i class="bi bi-file-earmark-pdf me-1"></i>Ver / descargar comprobante</a>`
+                : '';
             Swal.fire({
                 icon: 'success',
                 title: 'Bono emitido',
-                html: `<p>Código: <strong style="font-size:1.3rem">${data.codigo}</strong></p><p class="text-muted small">Entrégaselo al cliente -- lo va a necesitar para redimirlo.</p>`,
+                html: `<p>Código: <strong style="font-size:1.3rem">${data.codigo}</strong></p><p class="text-muted small">Entrégaselo al cliente -- lo va a necesitar para redimirlo.</p>${comprobanteHtml}`,
                 confirmButtonText: 'Listo'
             }).then(() => location.reload());
         } catch (error) {
@@ -89,10 +92,14 @@
                 })
                 .join('');
 
+            const comprobanteHtml = data.bono.imagen_url
+                ? `<p class="mb-2"><a href="${data.bono.imagen_url}" target="_blank" rel="noopener"><i class="bi bi-file-earmark-pdf me-1"></i>Ver comprobante</a></p>`
+                : '';
             Swal.fire({
                 title: `<h5 class="mb-0"><i class="bi bi-gift me-2"></i>${data.bono.codigo}</h5>`,
                 html: `
                     <p class="mb-2">Saldo actual: <strong>${fmt(data.bono.saldo_actual)}</strong> de ${fmt(data.bono.valor_inicial)}</p>
+                    ${comprobanteHtml}
                     <div class="table-responsive"><table class="table table-sm"><tbody>${filas || '<tr><td colspan="3" class="text-center text-muted py-3">Sin movimientos</td></tr>'}</tbody></table></div>
                 `,
                 width: '520px',
