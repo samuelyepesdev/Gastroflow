@@ -462,8 +462,8 @@ class FacturaRepository {
 
     /**
      * Datos editables de una factura para el modal de "Modificar venta" del superadmin.
-     * fecha se formatea directo del valor guardado (sin conversión de zona horaria) para
-     * que lo que se ve al abrir el formulario sea exactamente lo que hay en la BD.
+     * fecha se devuelve en hora Colombia (la BD guarda UTC), igual que se muestra en la
+     * tabla de ventas; updateAdmin hace la conversión inversa al guardar.
      * @param {number} facturaId - Invoice ID
      * @returns {Promise<Object|null>}
      */
@@ -471,7 +471,7 @@ class FacturaRepository {
         const [rows] = await db.query(
             `SELECT f.id, f.tenant_id, f.numero, f.cliente_id, f.forma_pago, f.total, f.propina,
                     f.monto_efectivo, f.monto_transferencia,
-                    DATE_FORMAT(f.fecha, '%Y-%m-%dT%H:%i') AS fecha,
+                    DATE_FORMAT(CONVERT_TZ(f.fecha, '+00:00', '-05:00'), '%Y-%m-%dT%H:%i') AS fecha,
                     c.nombre AS cliente_nombre, t.nombre AS tenant_nombre
              FROM facturas f
              JOIN tenants t ON f.tenant_id = t.id
@@ -524,7 +524,7 @@ class FacturaRepository {
 
         const [result] = await db.query(
             `UPDATE facturas SET cliente_id = COALESCE(?, cliente_id), forma_pago = ?, total = ?, propina = ?,
-                    fecha = ?, monto_efectivo = ?, monto_transferencia = ? WHERE id = ?`,
+                    fecha = CONVERT_TZ(?, '-05:00', '+00:00'), monto_efectivo = ?, monto_transferencia = ? WHERE id = ?`,
             [
                 clienteId,
                 data.forma_pago,

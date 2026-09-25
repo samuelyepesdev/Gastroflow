@@ -310,7 +310,7 @@ class POSRepository {
             // FOR UPDATE serializa contra otros envíos POS concurrentes del mismo tenant
             // mientras dure la transacción (ver AbrirPedidoService, mismo patrón).
             const [numResult] = await connection.query(
-                `SELECT COALESCE(MAX(numero), 0) + 1 AS siguiente FROM pedidos WHERE tenant_id = ? AND DATE(created_at) = CURDATE() FOR UPDATE`,
+                `SELECT COALESCE(MAX(numero), 0) + 1 AS siguiente FROM pedidos WHERE tenant_id = ? AND created_at >= CONVERT_TZ(DATE(CONVERT_TZ(UTC_TIMESTAMP(), '+00:00', '-05:00')), '-05:00', '+00:00') FOR UPDATE`,
                 [tenantId]
             );
             const siguienteNumero = numResult[0].siguiente;

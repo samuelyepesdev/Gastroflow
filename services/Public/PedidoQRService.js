@@ -97,7 +97,7 @@ class PedidoQRService {
             } else {
                 // Crear un nuevo pedido con origen='qr' (numeración reiniciada cada día)
                 const [numResult] = await connection.query(
-                    `SELECT COALESCE(MAX(numero), 0) + 1 AS siguiente FROM pedidos WHERE tenant_id = ? AND DATE(created_at) = CURDATE()`,
+                    `SELECT COALESCE(MAX(numero), 0) + 1 AS siguiente FROM pedidos WHERE tenant_id = ? AND created_at >= CONVERT_TZ(DATE(CONVERT_TZ(UTC_TIMESTAMP(), '+00:00', '-05:00')), '-05:00', '+00:00')`,
                     [tenantId]
                 );
                 const siguienteNumero = numResult[0].siguiente;
