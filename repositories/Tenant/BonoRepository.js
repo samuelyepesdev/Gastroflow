@@ -3,6 +3,10 @@
  * regalado, identificado por código) y su historial de movimientos.
  */
 const db = require('../../config/database');
+const { toFechaDia } = require('../../utils/dateHelpers');
+
+// fecha_vencimiento siempre como 'YYYY-MM-DD' (en producción llega como Date).
+const normalizar = fila => (fila ? { ...fila, fecha_vencimiento: toFechaDia(fila.fecha_vencimiento) } : null);
 
 class BonoRepository {
     static async create({
@@ -14,12 +18,17 @@ class BonoRepository {
         clienteId,
         fechaVencimiento,
         nota,
-        usuarioCreadorId
+        usuarioCreadorId,
+        plantilla,
+        destinatario,
+        remitente,
+        mensaje
     }) {
         const [result] = await db.query(
             `INSERT INTO bonos
-                (tenant_id, codigo, origen, valor_inicial, saldo_actual, cliente_id, fecha_vencimiento, nota, usuario_creador_id)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                (tenant_id, codigo, origen, valor_inicial, saldo_actual, cliente_id, fecha_vencimiento, nota,
+                 usuario_creador_id, plantilla, destinatario, remitente, mensaje)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
                 tenantId,
                 codigo,
@@ -29,7 +38,11 @@ class BonoRepository {
                 clienteId || null,
                 fechaVencimiento || null,
                 nota || null,
-                usuarioCreadorId || null
+                usuarioCreadorId || null,
+                plantilla || null,
+                destinatario || null,
+                remitente || null,
+                mensaje || null
             ]
         );
         return result.insertId;
@@ -37,7 +50,7 @@ class BonoRepository {
 
     static async findByCodigo(codigo, tenantId) {
         const [rows] = await db.query('SELECT * FROM bonos WHERE codigo = ? AND tenant_id = ?', [codigo, tenantId]);
-        return rows[0] || null;
+        return normalizar(rows[0]);
     }
 
     /** Igual que findByCodigo pero con FOR UPDATE: usar dentro de la transacción de facturación, justo antes de redimir. */
@@ -46,7 +59,7 @@ class BonoRepository {
             codigo,
             tenantId
         ]);
-        return rows[0] || null;
+        return normalizar(rows[0]);
     }
 
     static async findById(id, tenantId) {
@@ -57,7 +70,7 @@ class BonoRepository {
              WHERE b.id = ? AND b.tenant_id = ?`,
             [id, tenantId]
         );
-        return rows[0] || null;
+        return normalizar(rows[0]);
     }
 
     static async getAll(tenantId, filters = {}) {
@@ -80,11 +93,19 @@ class BonoRepository {
 
         query += ' ORDER BY b.created_at DESC';
         const [rows] = await db.query(query, params);
-        return rows;
+        return rows.map(normalizar);
     }
 
     static async actualizarImagenUrl(id, tenantId, imagenUrl) {
         await db.query('UPDATE bonos SET imagen_url = ? WHERE id = ? AND tenant_id = ?', [imagenUrl, id, tenantId]);
+    }
+
+    static async actualizarDiseno(id, tenantId, { plantilla, destinatario, remitente, mensaje, imagenUrl }) {
+        await db.query(
+            `UPDATE bonos SET plantilla = ?, destinatario = ?, remitente = ?, mensaje = ?, imagen_url = ?
+             WHERE id = ? AND tenant_id = ?`,
+            [plantilla, destinatario, remitente, mensaje, imagenUrl, id, tenantId]
+        );
     }
 
     static async anular(id, tenantId) {
@@ -152,12 +173,16 @@ class BonoRepository {
         return rows;
     }
 
-    /** Marca 'vencido' los bonos activos con saldo cuya fecha_vencimiento ya pasó (cron diario, todos los tenants). */
+    /**
+     * Marca 'vencido' los bonos activos con saldo cuya fecha_vencimiento ya pasó (cron diario, todos los tenants).
+     * "Hoy" es el día Colombia: CURDATE() con MySQL en UTC vencía los bonos a las 7 p. m. de su último día.
+     */
     static async marcarVencidos() {
         const [result] = await db.query(
             `UPDATE bonos SET estado = 'vencido'
              WHERE estado = 'activo' AND saldo_actual > 0
-               AND fecha_vencimiento IS NOT NULL AND fecha_vencimiento < CURDATE()`
+               AND fecha_vencimiento IS NOT NULL
+               AND fecha_vencimiento < DATE(CONVERT_TZ(UTC_TIMESTAMP(), '+00:00', '-05:00'))`
         );
         return result.affectedRows;
     }

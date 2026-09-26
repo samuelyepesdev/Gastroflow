@@ -37,4 +37,28 @@ function toFechaISOUtc(fecha) {
     }
 }
 
-module.exports = { toFechaISOUtc };
+/**
+ * Normaliza una columna DATE a 'YYYY-MM-DD'.
+ * En producción (MYSQL_URL) mysql2 devuelve las DATE como objetos Date (ver
+ * config/database.js: dateStrings nunca aplicó ahí) y en local como string;
+ * comparar un Date contra un string 'YYYY-MM-DD' siempre da false. mysql2 arma
+ * el Date a medianoche local, así que se leen las partes locales.
+ * @param {Date|string|null} valor
+ * @returns {string|null}
+ */
+function toFechaDia(valor) {
+    if (valor === null || valor === undefined || valor === '') {
+        return null;
+    }
+    if (valor instanceof Date) {
+        if (Number.isNaN(valor.getTime())) {
+            return null;
+        }
+        const m = String(valor.getMonth() + 1).padStart(2, '0');
+        const d = String(valor.getDate()).padStart(2, '0');
+        return `${valor.getFullYear()}-${m}-${d}`;
+    }
+    return String(valor).slice(0, 10);
+}
+
+module.exports = { toFechaISOUtc, toFechaDia };
