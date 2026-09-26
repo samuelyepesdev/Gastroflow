@@ -28,16 +28,55 @@ class BonosController {
     static async store(req, res) {
         try {
             const tenantId = req.tenant?.id;
-            const { valor, origen, cliente_id, fecha_vencimiento, nota } = req.body;
+            const { valor, origen, cliente_id, fecha_vencimiento, nota, plantilla, destinatario, remitente, mensaje } =
+                req.body;
             const bono = await BonoService.crear(tenantId, {
                 valor,
                 origen,
                 cliente_id: cliente_id || null,
                 fecha_vencimiento: fecha_vencimiento || null,
                 nota,
+                plantilla,
+                destinatario,
+                remitente,
+                mensaje,
                 usuarioId: req.user?.id || null
             });
             res.status(201).json(bono);
+        } catch (error) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+
+    // GET /bonos/plantillas - catálogo de diseños para el formulario de emisión
+    static plantillas(req, res) {
+        res.json(BonoService.listarPlantillas(req.tenant?.config?.colores?.primary));
+    }
+
+    // POST /bonos/vista-previa - PDF de muestra con el diseño elegido (no emite nada)
+    static async vistaPrevia(req, res) {
+        try {
+            const buffer = await BonoService.vistaPrevia(req.tenant?.id, req.body || {});
+            res.setHeader('Content-Type', 'application/pdf');
+            res.setHeader('Content-Disposition', 'inline; filename="vista-previa-bono.pdf"');
+            res.send(buffer);
+        } catch (error) {
+            console.error('Error en vista previa de bono:', error);
+            res.status(400).json({ error: 'No se pudo generar la vista previa' });
+        }
+    }
+
+    // POST /bonos/:id/comprobante - regenerar el comprobante (opcionalmente con otro diseño)
+    static async regenerarComprobante(req, res) {
+        try {
+            const { plantilla, destinatario, remitente, mensaje } = req.body || {};
+            const result = await BonoService.regenerarComprobante(Number.parseInt(req.params.id, 10), req.tenant?.id, {
+                plantilla,
+                destinatario,
+                remitente,
+                mensaje
+            });
+            res.json(result);
         } catch (error) {
             res.status(400).json({ error: error.message });
         }
