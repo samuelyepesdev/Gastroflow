@@ -1,5 +1,12 @@
 const request = require('supertest');
 const { app } = require('../../../server');
+const db = require('../../../config/database');
+
+// El pool de MySQL se crea al importar la app; sin cerrarlo, Jest no termina
+// cuando hay una BD real (CI) y el job se queda colgado.
+afterAll(async () => {
+    await db.end();
+});
 
 describe('Landing & Legal Routes Integration', () => {
     describe('GET /', () => {
