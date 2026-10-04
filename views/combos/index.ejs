@@ -1,0 +1,129 @@
+<%- include('../partials/layout/head', { titulo: 'Combos - ' + tenant.nombre }) %>
+</head>
+
+<body class="bg-light">
+    <%- include('../partials/navbar', { user: user, tenant: tenant }) %>
+
+    <div class="container py-4">
+        <div class="row mb-4">
+            <div class="col-md-8">
+                <h2 class="fw-bold"><i class="bi bi-box-seam me-2 text-primary"></i>Combos</h2>
+                <p class="text-muted">
+                    Un combo agrupa varios productos a un precio fijo. Se vende como una sola línea en Mesas, POS y
+                    el Menú QR, llega completo a la estación de cocina de su categoría, y al facturar descuenta el
+                    inventario de cada producto que lo compone. Las promociones también le aplican.
+                </p>
+            </div>
+            <div class="col-md-4 text-md-end">
+                <button class="btn btn-primary" id="btnNuevoCombo">
+                    <i class="bi bi-plus-lg me-1"></i>Nuevo combo
+                </button>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm rounded-4">
+            <div class="card-header bg-white"><strong>Combos configurados</strong></div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Nombre</th>
+                                <th>Categoría</th>
+                                <th>Productos</th>
+                                <th class="text-end">Precio combo</th>
+                                <th class="text-end">Suma individual</th>
+                                <th class="text-end">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="combosTbody">
+                            <% if (combos.length === 0) { %>
+                                <tr><td colspan="6" class="text-center text-muted py-4">Todavía no has creado ningún combo.</td></tr>
+                            <% } %>
+                            <% combos.forEach(function (c) { %>
+                                <tr data-id="<%= c.id %>">
+                                    <td class="fw-medium"><%= c.nombre %></td>
+                                    <td class="text-muted"><%= c.categoria_nombre || '—' %></td>
+                                    <td><%= c.componentes_count %></td>
+                                    <td class="text-end">$<%= Number(c.precio_unidad).toLocaleString('es-CO') %></td>
+                                    <td class="text-end text-muted">$<%= Number(c.precio_individual).toLocaleString('es-CO') %></td>
+                                    <td class="text-end">
+                                        <button class="btn btn-sm btn-outline-primary btn-editar-combo" title="Editar"><i class="bi bi-pencil"></i></button>
+                                        <button class="btn btn-sm btn-outline-danger btn-borrar-combo" title="Eliminar"><i class="bi bi-trash"></i></button>
+                                    </td>
+                                </tr>
+                            <% }) %>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Crear/Editar Combo -->
+    <div class="modal fade" id="modalCombo" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalComboTitulo">Nuevo combo</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="comboId">
+                    <div class="row g-3 mb-3">
+                        <div class="col-sm-6">
+                            <label for="comboNombre" class="form-label">Nombre</label>
+                            <input type="text" id="comboNombre" class="form-control" placeholder="Ej. Combo hamburguesa">
+                        </div>
+                        <div class="col-sm-3">
+                            <label for="comboPrecio" class="form-label">Precio del combo</label>
+                            <input type="number" id="comboPrecio" class="form-control" min="1" step="1" placeholder="Ej. 25000">
+                        </div>
+                        <div class="col-sm-3">
+                            <label for="comboCategoria" class="form-label">Categoría</label>
+                            <select id="comboCategoria" class="form-select">
+                                <option value="">Seleccionar…</option>
+                                <% categorias.forEach(function (c) { %>
+                                    <option value="<%= c.id %>"><%= c.nombre %></option>
+                                <% }) %>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-text mb-3">
+                        La categoría define a qué estación de cocina llega el combo completo.
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div class="fw-semibold">Productos del combo</div>
+                        <button type="button" class="btn btn-sm btn-outline-primary" id="btnAgregarComponente">
+                            <i class="bi bi-plus-lg me-1"></i>Agregar producto
+                        </button>
+                    </div>
+                    <div id="comboComponentes" class="d-flex flex-column gap-2"></div>
+                    <div class="text-muted small mt-2" id="comboResumenPrecio"></div>
+                    <template id="tplComponente">
+                        <div class="input-group combo-componente">
+                            <select class="form-select combo-componente-producto">
+                                <option value="">Producto…</option>
+                                <% productos.forEach(function (p) { %>
+                                    <option value="<%= p.id %>" data-precio="<%= Number(p.precio_unidad) %>"><%= p.nombre %></option>
+                                <% }) %>
+                            </select>
+                            <input type="number" class="form-control combo-componente-cantidad" style="max-width: 90px" min="0.01" step="any" value="1" title="Cantidad">
+                            <button type="button" class="btn btn-outline-danger combo-componente-quitar" title="Quitar"><i class="bi bi-x-lg"></i></button>
+                        </div>
+                    </template>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="btnGuardarCombo">Guardar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <%- include('../partials/layout/scripts', { jquery: true, swal: true }) %>
+    <script src="/js/modulos/combos.js?v=<%= assetV %>"></script>
+</body>
+
+</html>

@@ -87,7 +87,7 @@ routes/ (thin)  →  middleware (auth, tenant, planFeature)  →  app/Http/Contr
   Auth itself is JWT via cookie (`auth_token`) or `Authorization: Bearer`, verified in `AuthService`.
 
 - **Migrations**: plain numbered SQL files in `database/migrations/` (`NNN_description.sql`, zero-padded,
-  currently up to `095`). `scripts/run-migrations.js` runs every `.sql` not yet recorded in the
+  currently up to `110`). `scripts/run-migrations.js` runs every `.sql` not yet recorded in the
   `schema_migrations` table, in filename order — add a new one as the next number, don't edit past ones.
   `config/env.js` validates required env vars (`JWT_SECRET` ≥ 32 chars, DB vars unless `MYSQL_URL`/
   `DATABASE_URL` is set) at process boot and throws before the app starts if they're missing/weak.

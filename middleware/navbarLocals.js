@@ -59,6 +59,7 @@ module.exports = function navbarLocals(req, res, next) {
                 finanzas: hp('finanzas.ver'),
                 bonos: hp('bonos.ver'),
                 promociones: hp('promociones.ver'),
+                combos: hp('combos.ver'),
                 servicios: hp('servicios.ver') && cs('servicios'),
                 pos: hp('pos.ver') && cs('ventas'),
                 clasificacion: hp('clasificacion.ver'),

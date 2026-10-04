@@ -23,6 +23,7 @@ Este directorio contiene la documentación lógica y operativa detallada por cad
 * **[14. Órdenes de Compra a Proveedor](14_ordenes_compra.md):** OC → recepción con cantidad editable → entrada de inventario ligada al proveedor.
 * **[16. Bonos Redimibles](16_bonos_redimibles.md):** Saldo prepago o regalado, identificado por código, que se redime al facturar en Mesas (se compone con efectivo/transferencia como los abonos libres).
 * **[17. Promociones](17_promociones.md):** Descuento automático por día/hora sobre productos, categorías o todo el catálogo — visible en Mesas, POS y Menú QR, sin restricción de plan.
+* **[18. Combos](18_combos.md):** Combos fijos a precio fijo (un producto con componentes): una línea en Mesas/POS/QR, llega completo a una estación de cocina y descuenta el inventario de cada componente.
 
 ## 🌐 Integraciones y SaaS Global
 * **[11. Panel de Superadmin](11_superadmin.md):** Gestión multi-tenant, planes de suscripción globales, creación y bloqueo de sucursales.

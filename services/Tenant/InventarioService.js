@@ -7,6 +7,7 @@ const db = require('../../config/database');
 const InsumoRepository = require('../../repositories/Tenant/InsumoRepository');
 const MovimientoInventarioRepository = require('../../repositories/Tenant/MovimientoInventarioRepository');
 const RecetaRepository = require('../../repositories/Tenant/RecetaRepository');
+const ComboRepository = require('../../repositories/Tenant/ComboRepository');
 const { convertirABase } = require('../../utils/unidadesCosteo');
 
 // Conversión a unidad base para comparar con stock (stock está en unidad_base).
@@ -226,6 +227,24 @@ class InventarioService {
      * @returns {Promise<{ ok: boolean, faltantes?: Array<{ insumo_nombre, requerido, disponible }> }>}
      */
     static async checkStockParaProducto(tenantId, productoId, cantidad = 1) {
+        // Combo: se valida la receta de cada componente (cantidad del combo x cantidad del componente).
+        const componentes = await ComboRepository.getComponentes(productoId, tenantId);
+        if (componentes.length > 0) {
+            const faltantes = [];
+            for (const c of componentes) {
+                const r = await this._checkStockReceta(
+                    tenantId,
+                    c.producto_id,
+                    (Number.parseFloat(cantidad) || 1) * Number(c.cantidad)
+                );
+                faltantes.push(...(r.faltantes || []));
+            }
+            return { ok: faltantes.length === 0, faltantes };
+        }
+        return this._checkStockReceta(tenantId, productoId, cantidad);
+    }
+
+    static async _checkStockReceta(tenantId, productoId, cantidad = 1) {
         const receta = await RecetaRepository.findByProductoId(productoId, tenantId);
         if (!receta) {
             return { ok: true };
@@ -272,6 +291,23 @@ class InventarioService {
      * Procesado de forma concurrente y paralela para optimizar transacciones.
      */
     static async descontarPorReceta(tenantId, productoId, cantidad, referencia) {
+        // Combo: se descuenta la receta de cada componente (cantidad del combo x cantidad del componente).
+        const componentes = await ComboRepository.getComponentes(productoId, tenantId);
+        if (componentes.length > 0) {
+            for (const c of componentes) {
+                await this._descontarRecetaProducto(
+                    tenantId,
+                    c.producto_id,
+                    (Number.parseFloat(cantidad) || 1) * Number(c.cantidad),
+                    referencia
+                );
+            }
+            return;
+        }
+        await this._descontarRecetaProducto(tenantId, productoId, cantidad, referencia);
+    }
+
+    static async _descontarRecetaProducto(tenantId, productoId, cantidad, referencia) {
         const receta = await RecetaRepository.findByProductoId(productoId, tenantId);
         if (!receta) {
             return;
