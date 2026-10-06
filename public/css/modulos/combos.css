@@ -1,0 +1,182 @@
+/* Combos: listado y modal de creación/edición. Solo estilos; la lógica está en modulos/combos.js */
+
+.combos-seccion-titulo {
+    font-size: 0.75rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    font-weight: 600;
+    color: var(--bs-secondary-color);
+}
+
+/* Sin flechas del input numérico (el precio se escribe, no se "gira") */
+.combos-sin-spinner::-webkit-outer-spin-button,
+.combos-sin-spinner::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+.combos-sin-spinner {
+    -moz-appearance: textfield;
+    appearance: textfield;
+}
+
+/* Objetivos táctiles de 44px para los botones − / + / quitar */
+.combo-touch {
+    min-width: 44px;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.input-group > .combo-cantidad-input {
+    width: 64px;
+    flex: 0 0 64px;
+    text-align: center;
+}
+
+/* Buscador de productos */
+.combo-resultados {
+    max-height: 220px;
+    overflow-y: auto;
+}
+.combo-resultado {
+    min-height: 44px;
+    cursor: pointer;
+}
+.combo-resultado.activo,
+.combo-resultado:hover {
+    background-color: var(--bs-primary-bg-subtle);
+}
+
+/* Lista de productos ya agregados */
+.combo-vacio {
+    border: 1px dashed var(--bs-border-color);
+    border-radius: var(--bs-border-radius-lg);
+    padding: 1.5rem 1rem;
+    text-align: center;
+    color: var(--bs-secondary-color);
+}
+
+.combo-fila-nueva {
+    animation: comboFilaEntra 160ms ease-out;
+}
+@keyframes comboFilaEntra {
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .combo-fila-nueva {
+        animation: none;
+    }
+}
+
+/* Resumen de precio en el pie del modal */
+.combo-resumen {
+    font-size: 0.9rem;
+    line-height: 1.35;
+}
+
+/* Móvil: arriba nombre + quitar; debajo cantidad y subtotal */
+@media (max-width: 575.98px) {
+    .combo-fila {
+        flex-wrap: wrap;
+    }
+    .combo-fila-info {
+        order: 1;
+        flex: 1 1 calc(100% - 56px);
+        min-width: 0;
+    }
+    .combo-fila > [data-accion='quitar'] {
+        order: 2;
+    }
+    .combo-fila > .input-group {
+        order: 3;
+    }
+    .combo-fila-subtotal {
+        order: 4;
+        flex: 1 1 auto;
+    }
+    .combo-paso-texto {
+        font-size: 0.85rem;
+    }
+}
+
+/* Indicador de pasos */
+.combo-pasos {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    list-style: none;
+    margin: 0;
+    padding: 0.75rem 1rem;
+    background: var(--bs-tertiary-bg);
+    border-bottom: 1px solid var(--bs-border-color);
+}
+.combo-paso {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--bs-secondary-color);
+    font-weight: 500;
+}
+.combo-paso-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: 2px solid currentColor;
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+.combo-paso.activo {
+    color: var(--bs-primary);
+}
+.combo-paso.activo .combo-paso-num {
+    background: var(--bs-primary);
+    border-color: var(--bs-primary);
+    color: #fff;
+}
+.combo-paso.hecho {
+    color: var(--bs-success);
+}
+.combo-paso.hecho .combo-paso-num {
+    background: var(--bs-success);
+    border-color: var(--bs-success);
+    color: #fff;
+}
+.combo-paso-linea {
+    flex: 1 1 auto;
+    height: 2px;
+    background: var(--bs-border-color);
+}
+
+/* Resumen de los productos elegidos (paso 2) */
+.combo-recap {
+    border: 1px solid var(--bs-border-color);
+    border-radius: var(--bs-border-radius-lg);
+    background: var(--bs-tertiary-bg);
+    padding: 0.75rem 1rem;
+}
+.combo-recap-fila {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.15rem 0;
+}
+.combo-recap-total {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--bs-border-color);
+    font-weight: 700;
+}

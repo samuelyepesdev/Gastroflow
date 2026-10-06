@@ -21,7 +21,27 @@ class ComboRepository {
              ORDER BY p.nombre`,
             [tenantId]
         );
-        return rows;
+        if (rows.length === 0) {
+            return rows;
+        }
+
+        // Qué incluye cada combo (para mostrarlo en el listado sin abrir cada uno).
+        const [componentes] = await db.query(
+            `SELECT cc.combo_id, cc.cantidad, p.nombre
+             FROM combo_componentes cc
+             JOIN productos p ON p.id = cc.producto_id
+             WHERE cc.combo_id IN (?)
+             ORDER BY p.nombre`,
+            [rows.map(r => r.id)]
+        );
+        const porCombo = new Map();
+        for (const c of componentes) {
+            if (!porCombo.has(c.combo_id)) {
+                porCombo.set(c.combo_id, []);
+            }
+            porCombo.get(c.combo_id).push({ nombre: c.nombre, cantidad: Number(c.cantidad) });
+        }
+        return rows.map(r => ({ ...r, componentes: porCombo.get(r.id) || [] }));
     }
 
     static async findById(id, tenantId) {
