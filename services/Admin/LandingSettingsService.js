@@ -418,7 +418,7 @@ class LandingSettingsService {
                 // CTA Final
                 cta_title: '¿Listo para tomar el control de tu rentabilidad?',
                 cta_subtitle:
-                    'Únete a los más de 500 restaurantes que ya operan con GastroFlow. Agenda tu demo gratuita hoy.'
+                    'Crea tu cuenta gratis y empieza a conocer el costo real de cada plato. Si prefieres, agenda una demo por WhatsApp.'
             };
 
             return { ...defaults, ...settings };

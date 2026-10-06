@@ -106,6 +106,29 @@
     const ICONOS = { danger: 'error', primary: 'info', secondary: 'info', ok: 'success' };
     const icono = i => ICONOS[i] || i || 'info';
 
+    // Movimiento de los toasts (arquetipo "Corporate"): entra decelerando (280ms),
+    // sale acelerando y más rápido (180ms); el error añade un pequeño shake al llegar.
+    // Con prefers-reduced-motion solo hay fundido.
+    function inyectarEstilosToast() {
+        if (document.getElementById('gf-toast-motion')) return;
+        const css = document.createElement('style');
+        css.id = 'gf-toast-motion';
+        css.textContent = `
+@keyframes gf-toast-in { from { opacity: 0; transform: translate3d(24px, 0, 0) scale(.98); } to { opacity: 1; transform: none; } }
+@keyframes gf-toast-out { from { opacity: 1; transform: none; } to { opacity: 0; transform: translate3d(16px, 0, 0) scale(.98); } }
+@keyframes gf-toast-shake { 0%, 100% { translate: 0; } 20% { translate: -6px; } 40% { translate: 5px; } 60% { translate: -3px; } 80% { translate: 2px; } }
+@keyframes gf-toast-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes gf-toast-fade-out { from { opacity: 1; } to { opacity: 0; } }
+.swal2-popup.gf-toast-in { animation: gf-toast-in 280ms cubic-bezier(.2, 0, 0, 1) both; }
+.swal2-popup.gf-toast-out { animation: gf-toast-out 180ms cubic-bezier(.3, 0, 1, 1) both; }
+.swal2-popup.gf-toast-error.gf-toast-in { animation: gf-toast-in 280ms cubic-bezier(.2, 0, 0, 1) both, gf-toast-shake 320ms ease-in-out 280ms; }
+@media (prefers-reduced-motion: reduce) {
+  .swal2-popup.gf-toast-in, .swal2-popup.gf-toast-error.gf-toast-in { animation: gf-toast-fade-in 150ms linear both; }
+  .swal2-popup.gf-toast-out { animation: gf-toast-fade-out 120ms linear both; }
+}`;
+        document.head.appendChild(css);
+    }
+
     /** Aviso pequeño que se cierra solo. icono: success | error | warning | info */
     function toast(mensaje, tipo, opciones) {
         const S = swal();
@@ -113,14 +136,19 @@
             console.log(`[${icono(tipo)}] ${mensaje}`);
             return Promise.resolve();
         }
+        inyectarEstilosToast();
+        const ic = icono(tipo);
         return S.fire({
             toast: true,
             position: 'top-end',
             showConfirmButton: false,
             timer: 3000,
             timerProgressBar: true,
-            icon: icono(tipo),
+            icon: ic,
             title: mensaje,
+            showClass: { popup: 'gf-toast-in' },
+            hideClass: { popup: 'gf-toast-out' },
+            customClass: { popup: ic === 'error' ? 'gf-toast-error' : '' },
             ...(opciones || {})
         });
     }

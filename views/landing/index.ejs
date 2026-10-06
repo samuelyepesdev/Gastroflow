@@ -68,9 +68,8 @@
   <!-- Fonts & Icons -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
-  
   <style>
     :root {
       --color-primary: <%= settings.color_primary || '#3fc46d' %>;
@@ -79,369 +78,272 @@
       --color-text: <%= settings.color_text || '#e9efea' %>;
       --color-accent: <%= settings.color_accent || '#c2604f' %>;
     }
-
-    * { box-sizing: border-box; }
-    html { scroll-behavior: smooth; }
-    body { margin: 0; background: var(--color-background); color: var(--color-text); }
-    ::-webkit-scrollbar { width: 10px; height: 10px; }
-    ::-webkit-scrollbar-track { background: var(--color-background); }
-    ::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--color-primary) 30%, transparent); border-radius: 8px; border: 2px solid transparent; background-clip: content-box; }
-    a { text-decoration: none; }
-    @keyframes reveal { from { opacity: 0; transform: translateY(26px); } to { opacity: 1; transform: none; } }
-    @keyframes rise { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
-    @keyframes floaty { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-14px); } }
-    @keyframes pulseGlow { 0%, 100% { opacity: .55; } 50% { opacity: .9; } }
-    [data-reveal] { animation: reveal both linear; animation-timeline: view(); animation-range: entry 0% cover 24%; }
   </style>
+  <link rel="stylesheet" href="/css/core/landing.css?v=<%= assetV %>">
+  <script>document.documentElement.classList.add('js');</script>
 </head>
 <body>
-  <div style="min-height:100vh;background:radial-gradient(1200px 700px at 80% -5%,color-mix(in srgb, var(--color-primary) 10%, transparent),transparent 60%),radial-gradient(900px 600px at 0% 30%,color-mix(in srgb, var(--color-primary-hover) 8%, transparent),transparent 55%),var(--color-background);color:var(--color-text);font-family:'Plus Jakarta Sans',system-ui,-apple-system,sans-serif;overflow-x:hidden;position:relative;line-height:1.6;">
+  <% const wa = 'https://wa.me/' + settings.whatsapp_number + '?text=' + encodeURIComponent(settings.whatsapp_message); %>
+  <% const waPlan = (txt) => 'https://wa.me/' + settings.whatsapp_number + '?text=' + encodeURIComponent(txt); %>
+  <% const lista = (txt) => (txt || '').split('\n').filter(f => f.trim()); %>
+  <%
+    const titulo = settings.hero_title || 'Deja de adivinar. Empieza a controlar tu margen.';
+    const resaltado = settings.hero_highlight || '';
+    const idx = resaltado ? titulo.indexOf(resaltado) : -1;
+  %>
 
-    <!-- ambient glows -->
-    <div style="position:absolute;top:-160px;right:-120px;width:520px;height:520px;background:radial-gradient(circle,color-mix(in srgb, var(--color-primary) 16%, transparent),transparent 65%);filter:blur(40px);border-radius:50%;pointer-events:none;animation:pulseGlow 9s ease-in-out infinite;"></div>
-    <div style="position:absolute;top:620px;left:-180px;width:480px;height:480px;background:radial-gradient(circle,color-mix(in srgb, var(--color-primary-hover) 12%, transparent),transparent 65%);filter:blur(40px);border-radius:50%;pointer-events:none;"></div>
+  <a class="skip-link" href="#contenido">Saltar al contenido</a>
 
-    <!-- NAV -->
-    <header style="position:sticky;top:0;z-index:100;backdrop-filter:blur(14px);background:rgba(8,11,9,.72);border-bottom:1px solid rgba(255,255,255,.06);">
-      <nav style="max-width:1180px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;">
-        <a href="#top" style="display:flex;align-items:center;gap:10px;color:#fff;font-weight:800;font-size:19px;letter-spacing:-.02em;">
-          <span style="width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--color-primary-hover),var(--color-primary));display:flex;align-items:center;justify-content:center;font-size:17px;box-shadow:0 6px 16px -4px color-mix(in srgb, var(--color-primary) 60%, transparent);"><i class="bi bi-fire"></i></span>
-          GastroFlow
-        </a>
-        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
-          <a id="lnk-nav-funciones" href="#funciones" style="color:#9fb0a4;font-weight:600;font-size:14px;padding:8px 12px;border-radius:9px;transition:color .2s,background .2s;" style-hover="color:#fff;background:rgba(255,255,255,.05);">Funciones</a>
-          <a id="lnk-nav-resultados" href="#resultados" style="color:#9fb0a4;font-weight:600;font-size:14px;padding:8px 12px;border-radius:9px;transition:color .2s,background .2s;" style-hover="color:#fff;background:rgba(255,255,255,.05);">Resultados</a>
-          <a id="lnk-nav-precios" href="#precios" style="color:#9fb0a4;font-weight:600;font-size:14px;padding:8px 12px;border-radius:9px;transition:color .2s,background .2s;" style-hover="color:#fff;background:rgba(255,255,255,.05);">Planes</a>
-          <a id="lnk-nav-login" href="/auth/login" style="color:#cdd8d0;font-weight:600;font-size:14px;padding:9px 14px;border-radius:10px;border:1px solid rgba(255,255,255,.12);transition:all .2s;white-space:nowrap;" style-hover="background:rgba(255,255,255,.06);color:#fff;">Iniciar sesión</a>
-          <a id="lnk-nav-demo" href="https://wa.me/<%= settings.whatsapp_number %>?text=<%= encodeURIComponent(settings.whatsapp_message) %>" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:7px;background:linear-gradient(135deg,var(--color-primary-hover),var(--color-primary));color:#062012;font-weight:700;font-size:14px;padding:9px 16px;border-radius:10px;box-shadow:0 8px 20px -8px color-mix(in srgb, var(--color-primary) 70%, transparent);transition:transform .2s,box-shadow .2s;" style-hover="transform:translateY(-2px);box-shadow:0 12px 26px -8px color-mix(in srgb, var(--color-primary) 85%, transparent);"><i class="bi bi-whatsapp"></i>Agendar demo</a>
-        </div>
-      </nav>
-    </header>
+  <header class="nav">
+    <nav class="wrap nav__in" aria-label="Principal">
+      <a class="brand" href="#top"><span class="brand__mark"><i class="bi bi-fire" aria-hidden="true"></i></span>GastroFlow</a>
+      <div class="nav__links">
+        <a id="lnk-nav-funciones" class="nav__link" href="#funciones">Funciones</a>
+        <a id="lnk-nav-empezar" class="nav__link" href="#empezar">Cómo empezar</a>
+        <a id="lnk-nav-precios" class="nav__link" href="#precios">Planes</a>
+      </div>
+      <div class="nav__cta">
+        <a id="lnk-nav-login" class="btn btn--ghost btn--sm" href="/auth/login">Iniciar sesión</a>
+        <a id="lnk-nav-registro" class="btn btn--primary btn--sm" href="/auth/registro">Crear cuenta gratis</a>
+      </div>
+    </nav>
+    <div class="progress" aria-hidden="true"><i id="progreso"></i></div>
+  </header>
 
-    <main id="top" style="position:relative;z-index:1;">
+  <main id="top">
+    <span id="contenido"></span>
 
-      <!-- HERO: split -->
-      <section style="max-width:1180px;margin:0 auto;padding:clamp(48px,8vw,92px) 24px 30px;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,330px),1fr));gap:clamp(32px,5vw,60px);align-items:center;">
-        <div style="">
-          <span style="display:inline-flex;align-items:center;gap:8px;background:color-mix(in srgb, var(--color-primary) 10%, transparent);color:var(--color-primary);border:1px solid color-mix(in srgb, var(--color-primary) 28%, transparent);padding:7px 15px;border-radius:30px;font-size:13px;font-weight:700;"><span style="width:7px;height:7px;border-radius:50%;background:var(--color-primary);box-shadow:0 0 8px var(--color-primary);"></span>El sistema operativo de tu cocina</span>
-          <% 
-            let heroTitleHtml = settings.hero_title || 'Deja de adivinar. Empieza a controlar tu margen.';
-            if (settings.hero_highlight && heroTitleHtml.includes(settings.hero_highlight)) {
-              const replacement = `<span style="background:linear-gradient(120deg,var(--color-primary),color-mix(in srgb, var(--color-primary) 60%, #fff));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;">${settings.hero_highlight}</span>`;
-              heroTitleHtml = heroTitleHtml.replace(settings.hero_highlight, replacement);
-            }
-          %>
-          <h1 style="margin:22px 0 0;font-size:clamp(2.2rem,5.4vw,3.9rem);line-height:1.05;font-weight:800;letter-spacing:-.03em;color:#f4f8f5;"><%- heroTitleHtml %></h1>
-          <p style="margin:22px 0 0;max-width:52ch;font-size:clamp(1.02rem,2vw,1.18rem);color:#9fb0a4;"><%= settings.hero_subtitle %></p>
-          <div style="display:flex;flex-wrap:wrap;gap:13px;margin-top:30px;">
-            <a id="btn-hero-demo" href="https://wa.me/<%= settings.whatsapp_number %>?text=<%= encodeURIComponent(settings.whatsapp_message) %>" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:9px;background:linear-gradient(135deg,var(--color-primary-hover),var(--color-primary));color:#052010;font-weight:700;font-size:16px;padding:15px 26px;border-radius:13px;box-shadow:0 14px 34px -12px color-mix(in srgb, var(--color-primary) 75%, transparent);transition:transform .25s,box-shadow .25s;" style-hover="transform:translateY(-3px);box-shadow:0 20px 42px -12px color-mix(in srgb, var(--color-primary) 90%, transparent);"><i class="bi bi-whatsapp" style="font-size:18px;"></i>Agendar demo gratis</a>
-            <a id="btn-hero-funciones" href="#funciones" style="display:inline-flex;align-items:center;gap:9px;color:#e9efea;font-weight:700;font-size:16px;padding:15px 24px;border-radius:13px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.025);transition:all .25s;" style-hover="background:rgba(255,255,255,.07);transform:translateY(-3px);">Ver funciones</a>
-          </div>
-          <div style="display:flex;flex-wrap:wrap;gap:24px;margin-top:34px;padding-top:26px;border-top:1px solid rgba(255,255,255,.07);">
-            <div><div style="font-size:1.7rem;font-weight:800;color:var(--color-primary);letter-spacing:-.02em;">+500</div><div style="font-size:13px;color:#8a978d;font-weight:600;">restaurantes activos</div></div>
-            <div><div style="font-size:1.7rem;font-weight:800;color:var(--color-primary);letter-spacing:-.02em;">4.9/5</div><div style="font-size:13px;color:#8a978d;font-weight:600;">satisfacción</div></div>
-            <div><div style="font-size:1.7rem;font-weight:800;color:var(--color-primary);letter-spacing:-.02em;">30 días</div><div style="font-size:13px;color:#8a978d;font-weight:600;">para ver resultados</div></div>
-          </div>
-        </div>
-        <div style="animation-delay:.12s;animation-fill-mode:both;">
-          <div style="border-radius:18px;border:1px solid rgba(255,255,255,.1);background:rgba(14,18,16,.7);box-shadow:0 40px 90px -30px rgba(0,0,0,.85),0 0 60px -20px color-mix(in srgb, var(--color-primary) 25%, transparent);overflow:hidden;">
-            <div style="display:flex;align-items:center;gap:7px;padding:12px 15px;border-bottom:1px solid rgba(255,255,255,.07);background:rgba(255,255,255,.02);">
-              <span style="width:10px;height:10px;border-radius:50%;background:#ff5f57;"></span>
-              <span style="width:10px;height:10px;border-radius:50%;background:#febc2e;"></span>
-              <span style="width:10px;height:10px;border-radius:50%;background:#28c840;"></span>
-            </div>
-            <img src="/assets/dashboard-preview.png" alt="Panel de control de GastroFlow" style="display:block;width:100%;height:auto;">
-          </div>
-        </div>
-      </section>
-
-      <!-- PROBLEMAS -->
-      <section style="max-width:1180px;margin:0 auto;padding:clamp(60px,9vw,110px) 24px 0;">
-        <div data-reveal style="text-align:center;max-width:48ch;margin:0 auto;">
-          <span style="font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--color-accent);">El problema</span>
-          <h2 style="margin:12px 0 0;font-size:clamp(1.7rem,4vw,2.6rem);font-weight:800;letter-spacing:-.025em;color:#f4f8f5;line-height:1.12;"><%= settings.problems_title %></h2>
-          <p style="margin:16px auto 0;font-size:1.05rem;color:#9fb0a4;"><%= settings.problems_subtitle %></p>
-        </div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr));gap:18px;margin-top:48px;">
-          <div data-reveal style="padding:26px;border-radius:18px;background:color-mix(in srgb, var(--color-accent) 5%, transparent);border:1px solid color-mix(in srgb, var(--color-accent) 18%, transparent);transition:transform .25s,border-color .25s;" style-hover="transform:translateY(-5px);border-color:color-mix(in srgb, var(--color-accent) 40%, transparent);">
-            <span style="width:46px;height:46px;border-radius:12px;background:color-mix(in srgb, var(--color-accent) 14%, transparent);color:color-mix(in srgb, var(--color-accent) 85%, #fff);display:flex;align-items:center;justify-content:center;font-size:21px;"><i class="bi bi-graph-down-arrow"></i></span>
-            <h3 style="margin:18px 0 8px;font-size:1.18rem;font-weight:700;color:color-mix(in srgb, var(--color-accent) 90%, #fff);"><%= settings.problem1_title %></h3>
-            <p style="margin:0;font-size:.97rem;color:#9fb0a4;"><%= settings.problem1_desc %></p>
-          </div>
-          <div data-reveal style="padding:26px;border-radius:18px;background:color-mix(in srgb, var(--color-accent) 5%, transparent);border:1px solid color-mix(in srgb, var(--color-accent) 18%, transparent);transition:transform .25s,border-color .25s;" style-hover="transform:translateY(-5px);border-color:color-mix(in srgb, var(--color-accent) 40%, transparent);">
-            <span style="width:46px;height:46px;border-radius:12px;background:color-mix(in srgb, var(--color-accent) 14%, transparent);color:color-mix(in srgb, var(--color-accent) 85%, #fff);display:flex;align-items:center;justify-content:center;font-size:21px;"><i class="bi bi-calculator"></i></span>
-            <h3 style="margin:18px 0 8px;font-size:1.18rem;font-weight:700;color:color-mix(in srgb, var(--color-accent) 90%, #fff);"><%= settings.problem2_title %></h3>
-            <p style="margin:0;font-size:.97rem;color:#9fb0a4;"><%= settings.problem2_desc %></p>
-          </div>
-          <div data-reveal style="padding:26px;border-radius:18px;background:color-mix(in srgb, var(--color-accent) 5%, transparent);border:1px solid color-mix(in srgb, var(--color-accent) 18%, transparent);transition:transform .25s,border-color .25s;" style-hover="transform:translateY(-5px);border-color:color-mix(in srgb, var(--color-accent) 40%, transparent);">
-            <span style="width:46px;height:46px;border-radius:12px;background:color-mix(in srgb, var(--color-accent) 14%, transparent);color:color-mix(in srgb, var(--color-accent) 85%, #fff);display:flex;align-items:center;justify-content:center;font-size:21px;"><i class="bi bi-fire"></i></span>
-            <h3 style="margin:18px 0 8px;font-size:1.18rem;font-weight:700;color:color-mix(in srgb, var(--color-accent) 90%, #fff);"><%= settings.problem3_title %></h3>
-            <p style="margin:0;font-size:.97rem;color:#9fb0a4;"><%= settings.problem3_desc %></p>
-          </div>
-          <div data-reveal style="padding:26px;border-radius:18px;background:color-mix(in srgb, var(--color-accent) 5%, transparent);border:1px solid color-mix(in srgb, var(--color-accent) 18%, transparent);transition:transform .25s,border-color .25s;" style-hover="transform:translateY(-5px);border-color:color-mix(in srgb, var(--color-accent) 40%, transparent);">
-            <span style="width:46px;height:46px;border-radius:12px;background:color-mix(in srgb, var(--color-accent) 14%, transparent);color:color-mix(in srgb, var(--color-accent) 85%, #fff);display:flex;align-items:center;justify-content:center;font-size:21px;"><i class="bi bi-cash-stack"></i></span>
-            <h3 style="margin:18px 0 8px;font-size:1.18rem;font-weight:700;color:color-mix(in srgb, var(--color-accent) 90%, #fff);"><%= settings.problem4_title %></h3>
-            <p style="margin:0;font-size:.97rem;color:#9fb0a4;"><%= settings.problem4_desc %></p>
-          </div>
-        </div>
-      </section>
-
-      <!-- FUNCIONES -->
-      <section id="funciones" style="max-width:1180px;margin:0 auto;padding:clamp(64px,10vw,120px) 24px 0;scroll-margin-top:80px;">
-        <div data-reveal style="text-align:center;max-width:50ch;margin:0 auto;">
-          <span style="font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:color-mix(in srgb, var(--color-primary) 85%, #fff);">La solución</span>
-          <h2 style="margin:12px 0 0;font-size:clamp(1.7rem,4vw,2.6rem);font-weight:800;letter-spacing:-.025em;color:#f4f8f5;line-height:1.12;"><%= settings.features_title %></h2>
-          <p style="margin:16px auto 0;font-size:1.05rem;color:#9fb0a4;"><%= settings.features_subtitle %></p>
-        </div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,290px),1fr));gap:18px;margin-top:48px;">
-          <div data-reveal style="padding:30px;border-radius:18px;background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.08);transition:transform .3s,border-color .3s,background .3s;" style-hover="transform:translateY(-7px);border-color:color-mix(in srgb, var(--color-primary) 40%, transparent);background:color-mix(in srgb, var(--color-primary) 4%, transparent);">
-            <span style="width:52px;height:52px;border-radius:14px;background:color-mix(in srgb, var(--color-primary) 12%, transparent);color:var(--color-primary);display:flex;align-items:center;justify-content:center;font-size:24px;border:1px solid color-mix(in srgb, var(--color-primary) 22%, transparent);"><i class="bi bi-clipboard-data"></i></span>
-            <h3 style="margin:20px 0 9px;font-size:1.22rem;font-weight:700;color:#f4f8f5;"><%= settings.feature1_title %></h3>
-            <p style="margin:0;font-size:.98rem;color:#9fb0a4;"><%= settings.feature1_desc %></p>
-          </div>
-          <div data-reveal style="padding:30px;border-radius:18px;background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.08);transition:transform .3s,border-color .3s,background .3s;" style-hover="transform:translateY(-7px);border-color:color-mix(in srgb, var(--color-primary) 40%, transparent);background:color-mix(in srgb, var(--color-primary) 4%, transparent);">
-            <span style="width:52px;height:52px;border-radius:14px;background:color-mix(in srgb, var(--color-primary) 12%, transparent);color:var(--color-primary);display:flex;align-items:center;justify-content:center;font-size:24px;border:1px solid color-mix(in srgb, var(--color-primary) 22%, transparent);"><i class="bi bi-display"></i></span>
-            <h3 style="margin:20px 0 9px;font-size:1.22rem;font-weight:700;color:#f4f8f5;"><%= settings.feature2_title %></h3>
-            <p style="margin:0;font-size:.98rem;color:#9fb0a4;"><%= settings.feature2_desc %></p>
-          </div>
-          <div data-reveal style="padding:30px;border-radius:18px;background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.08);transition:transform .3s,border-color .3s,background .3s;" style-hover="transform:translateY(-7px);border-color:color-mix(in srgb, var(--color-primary) 40%, transparent);background:color-mix(in srgb, var(--color-primary) 4%, transparent);">
-            <span style="width:52px;height:52px;border-radius:14px;background:color-mix(in srgb, var(--color-primary) 12%, transparent);color:var(--color-primary);display:flex;align-items:center;justify-content:center;font-size:24px;border:1px solid color-mix(in srgb, var(--color-primary) 22%, transparent);"><i class="bi bi-box-seam"></i></span>
-            <h3 style="margin:20px 0 9px;font-size:1.22rem;font-weight:700;color:#f4f8f5;"><%= settings.feature3_title %></h3>
-            <p style="margin:0;font-size:.98rem;color:#9fb0a4;"><%= settings.feature3_desc %></p>
-          </div>
-          <div data-reveal style="padding:30px;border-radius:18px;background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.08);transition:transform .3s,border-color .3s,background .3s;" style-hover="transform:translateY(-7px);border-color:color-mix(in srgb, var(--color-primary) 40%, transparent);background:color-mix(in srgb, var(--color-primary) 4%, transparent);">
-            <span style="width:52px;height:52px;border-radius:14px;background:color-mix(in srgb, var(--color-primary) 12%, transparent);color:var(--color-primary);display:flex;align-items:center;justify-content:center;font-size:24px;border:1px solid color-mix(in srgb, var(--color-primary) 22%, transparent);"><i class="bi bi-shield-lock"></i></span>
-            <h3 style="margin:20px 0 9px;font-size:1.22rem;font-weight:700;color:#f4f8f5;"><%= settings.feature4_title %></h3>
-            <p style="margin:0;font-size:.98rem;color:#9fb0a4;"><%= settings.feature4_desc %></p>
-          </div>
-          <div data-reveal style="padding:30px;border-radius:18px;background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.08);transition:transform .3s,border-color .3s,background .3s;" style-hover="transform:translateY(-7px);border-color:color-mix(in srgb, var(--color-primary) 40%, transparent);background:color-mix(in srgb, var(--color-primary) 4%, transparent);">
-            <span style="width:52px;height:52px;border-radius:14px;background:color-mix(in srgb, var(--color-primary) 12%, transparent);color:var(--color-primary);display:flex;align-items:center;justify-content:center;font-size:24px;border:1px solid color-mix(in srgb, var(--color-primary) 22%, transparent);"><i class="bi bi-grid-3x3-gap"></i></span>
-            <h3 style="margin:20px 0 9px;font-size:1.22rem;font-weight:700;color:#f4f8f5;"><%= settings.feature5_title %></h3>
-            <p style="margin:0;font-size:.98rem;color:#9fb0a4;"><%= settings.feature5_desc %></p>
-          </div>
-          <div data-reveal style="padding:30px;border-radius:18px;background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.08);transition:transform .3s,border-color .3s,background .3s;" style-hover="transform:translateY(-7px);border-color:color-mix(in srgb, var(--color-primary) 40%, transparent);background:color-mix(in srgb, var(--color-primary) 4%, transparent);">
-            <span style="width:52px;height:52px;border-radius:14px;background:color-mix(in srgb, var(--color-primary) 12%, transparent);color:var(--color-primary);display:flex;align-items:center;justify-content:center;font-size:24px;border:1px solid color-mix(in srgb, var(--color-primary) 22%, transparent);"><i class="bi bi-patch-check"></i></span>
-            <h3 style="margin:20px 0 9px;font-size:1.22rem;font-weight:700;color:#f4f8f5;"><%= settings.feature6_title %></h3>
-            <p style="margin:0;font-size:.98rem;color:#9fb0a4;"><%= settings.feature6_desc %></p>
-          </div>
-        </div>
-      </section>
-
-      <!-- RESULTADOS / ROI -->
-      <section id="resultados" style="max-width:1180px;margin:0 auto;padding:clamp(64px,10vw,120px) 24px 0;scroll-margin-top:80px;">
-        <div data-reveal style="position:relative;overflow:hidden;border-radius:26px;border:1px solid color-mix(in srgb, var(--color-primary) 22%, transparent);background:linear-gradient(135deg,color-mix(in srgb, var(--color-primary-hover) 18%, transparent),color-mix(in srgb, var(--color-primary) 6%, transparent));padding:clamp(34px,5vw,58px);box-shadow:0 30px 80px -40px color-mix(in srgb, var(--color-primary) 40%, transparent);">
-          <div style="position:absolute;top:-60px;right:-40px;width:280px;height:280px;background:radial-gradient(circle,color-mix(in srgb, var(--color-primary) 22%, transparent),transparent 65%);filter:blur(30px);pointer-events:none;"></div>
-          <div style="position:relative;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:36px;align-items:center;">
-            <div>
-              <span style="font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:color-mix(in srgb, var(--color-primary) 85%, #fff);">Resultados medibles</span>
-              <h2 style="margin:12px 0 0;font-size:clamp(1.6rem,3.6vw,2.4rem);font-weight:800;letter-spacing:-.025em;color:#f4f8f5;line-height:1.14;"><%= settings.results_title %></h2>
-              <p style="margin:14px 0 0;font-size:1.05rem;color:#bcccc1;max-width:42ch;"><%= settings.results_subtitle %></p>
-            </div>
-            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;">
-              <div style="text-align:center;padding:22px 12px;border-radius:16px;background:rgba(8,11,9,.45);border:1px solid rgba(255,255,255,.08);">
-                <div style="font-size:clamp(1.7rem,4vw,2.4rem);font-weight:800;color:var(--color-primary);letter-spacing:-.03em;"><%= settings.result1_metric %></div>
-                <div style="font-size:12.5px;color:#9fb0a4;font-weight:600;margin-top:4px;"><%= settings.result1_label %></div>
-              </div>
-              <div style="text-align:center;padding:22px 12px;border-radius:16px;background:rgba(8,11,9,.45);border:1px solid rgba(255,255,255,.08);">
-                <div style="font-size:clamp(1.7rem,4vw,2.4rem);font-weight:800;color:var(--color-primary);letter-spacing:-.03em;"><%= settings.result2_metric %></div>
-                <div style="font-size:12.5px;color:#9fb0a4;font-weight:600;margin-top:4px;"><%= settings.result2_label %></div>
-              </div>
-              <div style="text-align:center;padding:22px 12px;border-radius:16px;background:rgba(8,11,9,.45);border:1px solid rgba(255,255,255,.08);">
-                <div style="font-size:clamp(1.7rem,4vw,2.4rem);font-weight:800;color:var(--color-primary);letter-spacing:-.03em;"><%= settings.result3_metric %></div>
-                <div style="font-size:12.5px;color:#9fb0a4;font-weight:600;margin-top:4px;"><%= settings.result3_label %></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- PRECIOS -->
-      <section id="precios" style="max-width:1180px;margin:0 auto;padding:clamp(64px,10vw,120px) 24px 0;scroll-margin-top:80px;">
-        <div data-reveal style="text-align:center;max-width:48ch;margin:0 auto;">
-          <span style="font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:color-mix(in srgb, var(--color-primary) 85%, #fff);">Planes</span>
-          <h2 style="margin:12px 0 0;font-size:clamp(1.7rem,4vw,2.6rem);font-weight:800;letter-spacing:-.025em;color:#f4f8f5;line-height:1.12;"><%= settings.plans_title %></h2>
-          <p style="margin:16px auto 0;font-size:1.05rem;color:#9fb0a4;"><%= settings.plans_subtitle %></p>
-        </div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,290px),1fr));gap:20px;margin-top:48px;align-items:stretch;">
-          <!-- Operativo -->
-          <div data-reveal style="display:flex;flex-direction:column;padding:32px;border-radius:20px;background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.09);transition:transform .3s,border-color .3s;" style-hover="transform:translateY(-6px);border-color:rgba(255,255,255,.18);">
-            <h3 style="margin:0;font-size:1.3rem;font-weight:800;color:#f4f8f5;"><%= settings.plan1_title %></h3>
-            <p style="margin:8px 0 0;font-size:.95rem;color:#9fb0a4;"><%= settings.plan1_desc %></p>
-            <ul style="list-style:none;padding:0;margin:24px 0;display:flex;flex-direction:column;gap:13px;flex:1;">
-              <% (settings.plan1_features || '').split('\n').filter(f => f.trim()).forEach(feature => { %>
-                <li style="display:flex;align-items:center;gap:11px;font-size:.97rem;color:#cdd8d0;"><i class="bi bi-check-circle-fill" style="color:var(--color-primary);font-size:16px;"></i><%= feature %></li>
-              <% }) %>
-            </ul>
-            <a id="btn-plan-operativo" href="https://wa.me/<%= settings.whatsapp_number %>?text=<%= encodeURIComponent('Hola, quiero información del Plan Operativo de GastroFlow') %>" target="_blank" rel="noopener noreferrer" style="text-align:center;padding:14px;border-radius:12px;border:1px solid color-mix(in srgb, var(--color-primary) 40%, transparent);color:color-mix(in srgb, var(--color-primary) 85%, #fff);font-weight:700;font-size:.97rem;transition:all .2s;" style-hover="background:color-mix(in srgb, var(--color-primary) 8%, transparent);">Agendar demo</a>
-          </div>
-          <!-- Control Pro (destacado) -->
-          <div data-reveal style="display:flex;flex-direction:column;padding:32px;border-radius:20px;background:linear-gradient(170deg,color-mix(in srgb, var(--color-primary) 10%, transparent),rgba(14,18,16,.6));border:1.5px solid color-mix(in srgb, var(--color-primary) 55%, transparent);position:relative;box-shadow:0 26px 60px -28px color-mix(in srgb, var(--color-primary) 55%, transparent);transition:transform .3s;" style-hover="transform:translateY(-9px);">
-            <span style="position:absolute;top:-13px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,var(--color-primary-hover),var(--color-primary));color:#052010;font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;padding:6px 16px;border-radius:30px;box-shadow:0 8px 20px -6px color-mix(in srgb, var(--color-primary) 70%, transparent);">Recomendado</span>
-            <h3 style="margin:6px 0 0;font-size:1.3rem;font-weight:800;color:#f4f8f5;"><%= settings.plan2_title %></h3>
-            <p style="margin:8px 0 0;font-size:.95rem;color:#bcccc1;"><%= settings.plan2_desc %></p>
-            <ul style="list-style:none;padding:0;margin:24px 0;display:flex;flex-direction:column;gap:13px;flex:1;">
-              <% (settings.plan2_features || '').split('\n').filter(f => f.trim()).forEach(feature => { %>
-                <li style="display:flex;align-items:center;gap:11px;font-size:.97rem;color:#e9efea;"><i class="bi bi-check-circle-fill" style="color:var(--color-primary);font-size:16px;"></i><%= feature %></li>
-              <% }) %>
-            </ul>
-            <a id="btn-plan-pro" href="https://wa.me/<%= settings.whatsapp_number %>?text=<%= encodeURIComponent('Hola, me gustaría agendar una demo del Plan Control Pro') %>" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;justify-content:center;gap:8px;text-align:center;padding:14px;border-radius:12px;background:linear-gradient(135deg,var(--color-primary-hover),var(--color-primary));color:#052010;font-weight:700;font-size:.99rem;box-shadow:0 14px 30px -12px color-mix(in srgb, var(--color-primary) 80%, transparent);transition:transform .2s,box-shadow .2s;" style-hover="transform:translateY(-2px);box-shadow:0 18px 36px -12px color-mix(in srgb, var(--color-primary) 95%, transparent);"><i class="bi bi-whatsapp"></i>Agendar demo Pro</a>
-          </div>
-          <!-- Premium -->
-          <div data-reveal style="display:flex;flex-direction:column;padding:32px;border-radius:20px;background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.09);transition:transform .3s,border-color .3s;" style-hover="transform:translateY(-6px);border-color:rgba(255,255,255,.18);">
-            <h3 style="margin:0;font-size:1.3rem;font-weight:800;color:#f4f8f5;"><%= settings.plan3_title %></h3>
-            <p style="margin:8px 0 0;font-size:.95rem;color:#9fb0a4;"><%= settings.plan3_desc %></p>
-            <ul style="list-style:none;padding:0;margin:24px 0;display:flex;flex-direction:column;gap:13px;flex:1;">
-              <% (settings.plan3_features || '').split('\n').filter(f => f.trim()).forEach(feature => { %>
-                <li style="display:flex;align-items:center;gap:11px;font-size:.97rem;color:#cdd8d0;"><i class="bi bi-check-circle-fill" style="color:var(--color-primary);font-size:16px;"></i><%= feature %></li>
-              <% }) %>
-            </ul>
-            <a id="btn-plan-premium" href="https://wa.me/<%= settings.whatsapp_number %>?text=<%= encodeURIComponent('Hola, me gustaría contactar a ventas por el Plan Premium') %>" target="_blank" rel="noopener noreferrer" style="text-align:center;padding:14px;border-radius:12px;border:1px solid rgba(255,255,255,.18);color:#cdd8d0;font-weight:700;font-size:.97rem;transition:all .2s;" style-hover="background:rgba(255,255,255,.06);color:#fff;">Contactar ventas</a>
-          </div>
-        </div>
-      </section>
-
-      <!-- TESTIMONIOS -->
-      <section style="max-width:1180px;margin:0 auto;padding:clamp(64px,10vw,120px) 24px 0;">
-        <div data-reveal style="text-align:center;max-width:44ch;margin:0 auto;">
-          <span style="font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:color-mix(in srgb, var(--color-primary) 85%, #fff);">Testimonios</span>
-          <h2 style="margin:12px 0 0;font-size:clamp(1.7rem,4vw,2.6rem);font-weight:800;letter-spacing:-.025em;color:#f4f8f5;line-height:1.12;"><%= settings.testimonials_title %></h2>
-        </div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,290px),1fr));gap:18px;margin-top:48px;">
-          <% 
-            const getInitials = (name) => {
-              return (name || '').split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
-            };
-          %>
-          <div data-reveal style="display:flex;flex-direction:column;padding:30px;border-radius:18px;background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.08);transition:transform .3s,border-color .3s;" style-hover="transform:translateY(-6px);border-color:color-mix(in srgb, var(--color-primary) 30%, transparent);">
-            <i class="bi bi-quote" style="font-size:34px;color:color-mix(in srgb, var(--color-primary) 40%, transparent);line-height:1;"></i>
-            <p style="margin:6px 0 0;font-size:1.02rem;font-style:italic;color:#e9efea;line-height:1.6;flex:1;"><%= settings.testimonial1_quote %></p>
-            <div style="display:flex;align-items:center;gap:13px;margin-top:24px;padding-top:20px;border-top:1px solid rgba(255,255,255,.08);">
-              <span style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--color-primary-hover),var(--color-primary));display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;color:#052010;"><%= getInitials(settings.testimonial1_author) %></span>
-              <div><div style="font-size:.95rem;font-weight:700;color:#f4f8f5;"><%= settings.testimonial1_author %></div><div style="font-size:.85rem;color:#8a978d;"><%= settings.testimonial1_role %></div></div>
-            </div>
-          </div>
-          <div data-reveal style="display:flex;flex-direction:column;padding:30px;border-radius:18px;background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.08);transition:transform .3s,border-color .3s;" style-hover="transform:translateY(-6px);border-color:color-mix(in srgb, var(--color-primary) 30%, transparent);">
-            <i class="bi bi-quote" style="font-size:34px;color:color-mix(in srgb, var(--color-primary) 40%, transparent);line-height:1;"></i>
-            <p style="margin:6px 0 0;font-size:1.02rem;font-style:italic;color:#e9efea;line-height:1.6;flex:1;"><%= settings.testimonial2_quote %></p>
-            <div style="display:flex;align-items:center;gap:13px;margin-top:24px;padding-top:20px;border-top:1px solid rgba(255,255,255,.08);">
-              <span style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--color-primary-hover),var(--color-primary));display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;color:#052010;"><%= getInitials(settings.testimonial2_author) %></span>
-              <div><div style="font-size:.95rem;font-weight:700;color:#f4f8f5;"><%= settings.testimonial2_author %></div><div style="font-size:.85rem;color:#8a978d;"><%= settings.testimonial2_role %></div></div>
-            </div>
-          </div>
-          <div data-reveal style="display:flex;flex-direction:column;padding:30px;border-radius:18px;background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.08);transition:transform .3s,border-color .3s;" style-hover="transform:translateY(-6px);border-color:color-mix(in srgb, var(--color-primary) 30%, transparent);">
-            <i class="bi bi-quote" style="font-size:34px;color:color-mix(in srgb, var(--color-primary) 40%, transparent);line-height:1;"></i>
-            <p style="margin:6px 0 0;font-size:1.02rem;font-style:italic;color:#e9efea;line-height:1.6;flex:1;"><%= settings.testimonial3_quote %></p>
-            <div style="display:flex;align-items:center;gap:13px;margin-top:24px;padding-top:20px;border-top:1px solid rgba(255,255,255,.08);">
-              <span style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--color-primary-hover),var(--color-primary));display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;color:#052010;"><%= getInitials(settings.testimonial3_author) %></span>
-              <div><div style="font-size:.95rem;font-weight:700;color:#f4f8f5;"><%= settings.testimonial3_author %></div><div style="font-size:.85rem;color:#8a978d;"><%= settings.testimonial3_role %></div></div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- CTA FINAL -->
-      <section style="max-width:1180px;margin:0 auto;padding:clamp(64px,10vw,120px) 24px clamp(70px,9vw,110px);">
-        <div data-reveal style="position:relative;overflow:hidden;border-radius:28px;padding:clamp(40px,6vw,76px) 24px;text-align:center;background:linear-gradient(135deg,var(--color-primary-hover),var(--color-primary));box-shadow:0 36px 90px -36px color-mix(in srgb, var(--color-primary) 60%, transparent);">
-          <div style="position:absolute;top:-80px;left:-40px;width:320px;height:320px;background:radial-gradient(circle,rgba(255,255,255,.18),transparent 65%);filter:blur(20px);pointer-events:none;"></div>
-          <div style="position:absolute;bottom:-100px;right:-30px;width:300px;height:300px;background:radial-gradient(circle,rgba(5,32,16,.35),transparent 65%);filter:blur(20px);pointer-events:none;"></div>
-          <div style="position:relative;max-width:42ch;margin:0 auto;">
-            <h2 style="margin:0;font-size:clamp(1.8rem,4.4vw,3rem);font-weight:800;letter-spacing:-.03em;color:#0f172a;line-height:1.1;"><%= settings.cta_title %></h2>
-            <p style="margin:18px auto 0;font-size:clamp(1.02rem,2.2vw,1.2rem);color:#1e293b;font-weight:600;"><%= settings.cta_subtitle %></p>
-            <div style="display:flex;flex-wrap:wrap;gap:13px;justify-content:center;margin-top:32px;">
-              <a id="btn-cta-demo" href="https://wa.me/<%= settings.whatsapp_number %>?text=<%= encodeURIComponent(settings.whatsapp_message) %>" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:9px;background:#0f172a;color:#fff;font-weight:700;font-size:16px;padding:15px 30px;border-radius:13px;box-shadow:0 14px 30px -10px rgba(15,23,42,.4);transition:transform .25s;" style-hover="transform:translateY(-3px);"><i class="bi bi-whatsapp" style="font-size:18px;"></i>Solicitar demo gratis</a>
-              <a id="btn-cta-planes" href="#precios" style="display:inline-flex;align-items:center;gap:9px;color:#0f172a;font-weight:700;font-size:16px;padding:15px 28px;border-radius:13px;border:1.5px solid rgba(15,23,42,.35);transition:all .25s;" style-hover="background:rgba(15,23,42,.1);transform:translateY(-3px);">Ver planes</a>
-            </div>
-          </div>
-        </div>
-      </section>
-
-    </main>
-
-    <!-- FOOTER -->
-    <footer style="border-top:1px solid rgba(255,255,255,.07);background:rgba(6,9,7,.6);">
-      <div style="max-width:1180px;margin:0 auto;padding:clamp(48px,7vw,72px) 24px;display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:40px;">
-        <div style="grid-column:1/-1;max-width:340px;">
-          <a href="#top" style="display:flex;align-items:center;gap:10px;color:#fff;font-weight:800;font-size:19px;letter-spacing:-.02em;">
-            <span style="width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--color-primary-hover),var(--color-primary));display:flex;align-items:center;justify-content:center;font-size:17px;"><i class="bi bi-fire"></i></span>
-            GastroFlow
-          </a>
-          <p style="margin:16px 0 0;font-size:.95rem;color:#8a978d;">El sistema operativo para el éxito de tu restaurante. Control, velocidad and rentabilidad en una sola plataforma.</p>
-          <div style="display:flex;gap:10px;margin-top:18px;">
-            <a href="https://wa.me/<%= settings.whatsapp_number %>" target="_blank" rel="noopener noreferrer" style="width:40px;height:40px;border-radius:10px;border:1px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;color:#9fb0a4;font-size:18px;transition:all .2s;" style-hover="color:var(--color-primary);border-color:color-mix(in srgb, var(--color-primary) 40%, transparent);"><i class="bi bi-whatsapp"></i></a>
-            <a href="#" style="width:40px;height:40px;border-radius:10px;border:1px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;color:#9fb0a4;font-size:18px;transition:all .2s;" style-hover="color:var(--color-primary);border-color:color-mix(in srgb, var(--color-primary) 40%, transparent);"><i class="bi bi-instagram"></i></a>
-            <a href="#" style="width:40px;height:40px;border-radius:10px;border:1px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;color:#9fb0a4;font-size:18px;transition:all .2s;" style-hover="color:var(--color-primary);border-color:color-mix(in srgb, var(--color-primary) 40%, transparent);"><i class="bi bi-globe"></i></a>
-          </div>
-        </div>
+    <!-- HERO -->
+    <section class="hero wrap">
+      <div class="hero__grid">
         <div>
-          <h4 style="margin:0 0 16px;font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#cdd8d0;">Producto</h4>
-          <ul style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:11px;">
-            <li><a href="#funciones" style="color:#8a978d;font-size:.94rem;transition:color .2s;" style-hover="color:var(--color-primary);">Funciones</a></li>
-            <li><a href="#funciones" style="color:#8a978d;font-size:.94rem;transition:color .2s;" style-hover="color:var(--color-primary);">KDS de cocina</a></li>
-            <li><a href="#funciones" style="color:#8a978d;font-size:.94rem;transition:color .2s;" style-hover="color:var(--color-primary);">App de meseros</a></li>
-            <li><a href="#funciones" style="color:#8a978d;font-size:.94rem;transition:color .2s;" style-hover="color:var(--color-primary);">Inventarios</a></li>
-          </ul>
+          <span class="pill rise" style="--d:0"><span class="pill__dot" aria-hidden="true"></span>Software para restaurantes en Colombia</span>
+          <h1 class="hero__title rise" style="--d:1">
+            <% if (idx >= 0) { %><%= titulo.slice(0, idx) %><em><%= resaltado %></em><%= titulo.slice(idx + resaltado.length) %><% } else { %><%= titulo %><% } %>
+          </h1>
+          <p class="hero__sub rise" style="--d:2"><%= settings.hero_subtitle %></p>
+          <div class="hero__cta rise" style="--d:3">
+            <a id="btn-hero-registro" class="btn btn--primary" href="/auth/registro">Crear cuenta gratis <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+            <a id="btn-hero-demo" class="btn btn--ghost" href="<%= wa %>" target="_blank" rel="noopener noreferrer"><i class="bi bi-whatsapp" aria-hidden="true"></i>Hablar por WhatsApp</a>
+          </div>
+          <p class="hero__note rise" style="--d:4"><i class="bi bi-check2-circle" aria-hidden="true"></i>Se crea en un minuto. Sin instalar nada: funciona desde el navegador.</p>
         </div>
-        <div>
-          <h4 style="margin:0 0 16px;font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#cdd8d0;">Empresa</h4>
-          <ul style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:11px;">
-            <li><a href="#" style="color:#8a978d;font-size:.94rem;transition:color .2s;" style-hover="color:var(--color-primary);">Sobre nosotros</a></li>
-            <li><a href="#resultados" style="color:#8a978d;font-size:.94rem;transition:color .2s;" style-hover="color:var(--color-primary);">Resultados</a></li>
-            <li><a href="#precios" style="color:#8a978d;font-size:.94rem;transition:color .2s;" style-hover="color:var(--color-primary);">Planes</a></li>
-          </ul>
-        </div>
-        <div>
-          <h4 style="margin:0 0 16px;font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#cdd8d0;">Soporte</h4>
-          <ul style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:11px;">
-            <li><a href="https://wa.me/<%= settings.whatsapp_number %>" target="_blank" rel="noopener noreferrer" style="color:#8a978d;font-size:.94rem;transition:color .2s;" style-hover="color:var(--color-primary);">Contacto</a></li>
-            <li><a href="#" style="color:#8a978d;font-size:.94rem;transition:color .2s;" style-hover="color:var(--color-primary);">Centro de ayuda</a></li>
-            <li><a href="/legal/privacidad" style="color:#8a978d;font-size:.94rem;transition:color .2s;" style-hover="color:var(--color-primary);">Privacidad</a></li>
-            <li><a href="/legal/terminos" style="color:#8a978d;font-size:.94rem;transition:color .2s;" style-hover="color:var(--color-primary);">Términos</a></li>
-          </ul>
+
+        <div class="mock reveal" role="img" aria-label="Ilustración de ejemplo: pantalla de cocina con tres pedidos y la ficha de costo de una hamburguesa con 62% de margen">
+          <div class="mock__panel" aria-hidden="true">
+            <div class="mock__bar">Pantalla de cocina <span>3 pedidos activos</span></div>
+            <div class="tickets" id="kds">
+              <div class="tw"><div class="tw__in"><div class="ticket">
+                <div class="ticket__mesa">4</div>
+                <div><div class="ticket__name">Mesa 4</div><div class="ticket__items">2 × Hamburguesa clásica · 1 × Limonada</div></div>
+                <span class="chip chip--ok">02:10</span>
+              </div></div></div>
+              <div class="tw"><div class="tw__in"><div class="ticket ticket--late">
+                <div class="ticket__mesa">7</div>
+                <div><div class="ticket__name">Mesa 7</div><div class="ticket__items">1 × Bandeja paisa · 2 × Jugo natural</div></div>
+                <span class="chip chip--warn">14:35</span>
+              </div></div></div>
+              <div class="tw"><div class="tw__in"><div class="ticket">
+                <div class="ticket__mesa">2</div>
+                <div><div class="ticket__name">Domicilio</div><div class="ticket__items">3 × Perro caliente</div></div>
+                <span class="chip chip--ok">05:48</span>
+              </div></div></div>
+            </div>
+          </div>
+          <div class="margin-card" id="margen" aria-hidden="true">
+            <div class="margin-card__t">Ficha técnica</div>
+            <div class="margin-card__n">Hamburguesa clásica</div>
+            <div class="margin-card__row"><span>Costo de receta</span><b id="m-costo">$ 8.420</b></div>
+            <div class="margin-card__row"><span>Precio de venta</span><b>$ 22.000</b></div>
+            <div class="bar" id="m-barra"><i id="m-barra-i"></i></div>
+            <div class="margin-card__alert"><i class="bi bi-arrow-up-right" aria-hidden="true"></i>Proveedor subió la carne: costo recalculado</div>
+            <div class="margin-card__pct"><strong id="m-pct">62%</strong><span>margen</span></div>
+          </div>
+          <span class="mock__tag">Ejemplo ilustrativo con datos de muestra.</span>
         </div>
       </div>
-      <div style="max-width:1180px;margin:0 auto;padding:22px 24px 30px;border-top:1px solid rgba(255,255,255,.06);text-align:center;">
-        <p style="margin:0;font-size:.85rem;color:#6f7d73;">© <%= new Date().getFullYear() %> GastroFlow Technologies. Todos los derechos reservados.</p>
+    </section>
+
+    <!-- CAPACIDADES -->
+    <div class="wrap">
+      <div class="strip">
+        <div class="strip__track">
+          <% [false, true].forEach(copia => { %>
+          <ul class="strip__in"<%- copia ? ' aria-hidden="true"' : '' %>>
+            <li class="strip__item"><i class="bi bi-receipt" aria-hidden="true"></i>Facturación electrónica</li>
+            <li class="strip__item"><i class="bi bi-qr-code" aria-hidden="true"></i>Menú QR para tus mesas</li>
+            <li class="strip__item"><i class="bi bi-display" aria-hidden="true"></i>Cocina en tiempo real</li>
+            <li class="strip__item"><i class="bi bi-boxes" aria-hidden="true"></i>Inventario y recetas</li>
+            <li class="strip__item"><i class="bi bi-phone" aria-hidden="true"></i>Celular, tablet y PC</li>
+            <li class="strip__item"><i class="bi bi-cash-coin" aria-hidden="true"></i>Caja y arqueos</li>
+          </ul>
+          <% }) %>
+        </div>
       </div>
-    </footer>
+    </div>
 
-  </div>
+    <!-- PROBLEMAS -->
+    <section class="section wrap">
+      <div class="problems">
+        <div class="section-head reveal">
+          <span class="eyebrow eyebrow--warm">El problema</span>
+          <h2 class="h2"><%= settings.problems_title %></h2>
+          <p class="lead"><%= settings.problems_subtitle %></p>
+        </div>
+        <div class="problem-list">
+          <% [1, 2, 3, 4].forEach(n => { %>
+          <div class="problem reveal" style="--i:<%= n - 1 %>">
+            <span class="problem__n">0<%= n %></span>
+            <div><h3><%= settings['problem' + n + '_title'] %></h3><p><%= settings['problem' + n + '_desc'] %></p></div>
+          </div>
+          <% }) %>
+        </div>
+      </div>
+    </section>
 
-  <!-- Dynamic Hover style execution helper -->
-  <script>
-    document.querySelectorAll('[style-hover]').forEach(el => {
-      const originalStyle = el.getAttribute('style') || '';
-      const hoverStyle = el.getAttribute('style-hover') || '';
-      
-      const parseStyle = (cssText) => {
-        const rules = cssText.split(';').filter(rule => rule.trim());
-        const styleObj = {};
-        rules.forEach(rule => {
-          const colonIdx = rule.indexOf(':');
-          if (colonIdx !== -1) {
-            const key = rule.slice(0, colonIdx).trim();
-            const val = rule.slice(colonIdx + 1).trim();
-            styleObj[key] = val;
-          }
-        });
-        return styleObj;
-      };
+    <!-- FUNCIONES -->
+    <section id="funciones" class="section wrap">
+      <div class="section-head reveal">
+        <span class="eyebrow">La solución</span>
+        <h2 class="h2"><%= settings.features_title %></h2>
+        <p class="lead"><%= settings.features_subtitle %></p>
+      </div>
+      <% const iconos = ['clipboard-data', 'display', 'box-seam', 'shield-lock', 'grid-3x3-gap', 'patch-check']; %>
+      <% const tamanos = ['xl', 'lg', 'lg', 'xl', 'md', 'md']; %>
+      <div class="bento">
+        <% [1, 2, 3, 4, 5, 6].forEach(n => { %>
+        <article class="card card--<%= tamanos[n - 1] %> reveal" style="--i:<%= (n - 1) % 2 %>">
+          <span class="card__icon"><i class="bi bi-<%= iconos[n - 1] %>" aria-hidden="true"></i></span>
+          <h3><%= settings['feature' + n + '_title'] %></h3>
+          <p><%= settings['feature' + n + '_desc'] %></p>
+        </article>
+        <% }) %>
+      </div>
+    </section>
 
-      const originalObj = parseStyle(originalStyle);
-      const hoverObj = parseStyle(hoverStyle);
+    <!-- CÓMO EMPEZAR -->
+    <section id="empezar" class="section wrap">
+      <div class="section-head reveal">
+        <span class="eyebrow">Cómo empezar</span>
+        <h2 class="h2">Operando en tres pasos, sin instalar nada</h2>
+        <p class="lead">Empiezas con lo básico y vas activando módulos cuando tu operación los necesite.</p>
+      </div>
+      <div class="story">
+        <div class="story__steps">
+          <div class="step" data-scene="0"><h3>Crea tu cuenta</h3><p>Registra tu restaurante con tu correo. Es gratis y toma un minuto.</p></div>
+          <div class="step" data-scene="1"><h3>Carga tu carta</h3><p>Agrega productos, insumos y recetas para conocer el costo real de cada plato.</p></div>
+          <div class="step" data-scene="2"><h3>Abre tu primera mesa</h3><p>Toma pedidos, envíalos a cocina y cierra la caja con todo trazado.</p></div>
+        </div>
+        <div class="story__stage" role="img" aria-label="Ilustración de ejemplo: registro de la cuenta, carga de productos con su margen y mapa de mesas">
+          <div class="scene on" data-scene="0" aria-hidden="true">
+            <div class="mock__panel">
+              <div class="mock__bar">Crear cuenta <span>1 minuto</span></div>
+              <div class="scene__body">
+                <div class="field"><small>Nombre del restaurante</small><span class="field--type"><span>La Esquina del Sabor</span></span></div>
+                <div class="field"><small>Correo</small><span>admin@laesquina.co</span></div>
+                <div class="field"><small>Contraseña</small><span>••••••••••</span></div>
+                <div class="field field--btn"><span>Crear cuenta gratis</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="scene" data-scene="1" aria-hidden="true">
+            <div class="mock__panel">
+              <div class="mock__bar">Productos <span>costo y margen</span></div>
+              <div class="scene__body">
+                <div class="prod"><b>Hamburguesa clásica</b><span>$ 22.000</span><span class="chip chip--ok">62%</span></div>
+                <div class="prod"><b>Limonada de coco</b><span>$ 6.000</span><span class="chip chip--ok">74%</span></div>
+                <div class="prod"><b>Bandeja paisa</b><span>$ 32.000</span><span class="chip chip--warn">55%</span></div>
+                <div class="prod"><b>Perro caliente</b><span>$ 12.000</span><span class="chip chip--ok">66%</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="scene" data-scene="2" aria-hidden="true">
+            <div class="mock__panel">
+              <div class="mock__bar">Mapa de mesas <span>3 ocupadas</span></div>
+              <div class="scene__body">
+                <div class="mesas">
+                  <div class="mesa">1</div><div class="mesa mesa--busy">2</div><div class="mesa">3</div><div class="mesa mesa--kitchen">4</div>
+                  <div class="mesa">5</div><div class="mesa">6</div><div class="mesa mesa--busy">7</div><div class="mesa">8</div>
+                </div>
+                <div class="total"><span>Mesa 4 · 2 productos en cocina</span><em>$ 50.000</em></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
 
-      el.addEventListener('mouseenter', () => {
-        for (const [key, value] of Object.entries(hoverObj)) {
-          el.style[key] = value;
-        }
-      });
+    <!-- PLANES -->
+    <section id="precios" class="section wrap">
+      <div class="section-head reveal">
+        <span class="eyebrow">Planes</span>
+        <h2 class="h2"><%= settings.plans_title %></h2>
+        <p class="lead"><%= settings.plans_subtitle %></p>
+      </div>
+      <div class="plans">
+        <div class="plan reveal" style="--i:0">
+          <h3><%= settings.plan1_title %></h3>
+          <p class="plan__desc"><%= settings.plan1_desc %></p>
+          <ul class="plan__list"><% lista(settings.plan1_features).forEach(f => { %><li><i class="bi bi-check-lg" aria-hidden="true"></i><%= f %></li><% }) %></ul>
+          <a id="btn-plan-operativo" class="btn btn--ghost btn--block" href="<%= waPlan('Hola, quiero información del Plan Operativo de GastroFlow') %>" target="_blank" rel="noopener noreferrer">Consultar plan</a>
+        </div>
+        <div class="plan plan--featured reveal" style="--i:1">
+          <span class="plan__badge">Recomendado</span>
+          <h3><%= settings.plan2_title %></h3>
+          <p class="plan__desc"><%= settings.plan2_desc %></p>
+          <ul class="plan__list"><% lista(settings.plan2_features).forEach(f => { %><li><i class="bi bi-check-lg" aria-hidden="true"></i><%= f %></li><% }) %></ul>
+          <a id="btn-plan-pro" class="btn btn--primary btn--block" href="<%= waPlan('Hola, me gustaría agendar una demo del Plan Control Pro') %>" target="_blank" rel="noopener noreferrer"><i class="bi bi-whatsapp" aria-hidden="true"></i>Agendar demo</a>
+        </div>
+        <div class="plan reveal" style="--i:2">
+          <h3><%= settings.plan3_title %></h3>
+          <p class="plan__desc"><%= settings.plan3_desc %></p>
+          <ul class="plan__list"><% lista(settings.plan3_features).forEach(f => { %><li><i class="bi bi-check-lg" aria-hidden="true"></i><%= f %></li><% }) %></ul>
+          <a id="btn-plan-premium" class="btn btn--ghost btn--block" href="<%= waPlan('Hola, me gustaría contactar a ventas por el Plan Premium') %>" target="_blank" rel="noopener noreferrer">Contactar ventas</a>
+        </div>
+      </div>
+      <p class="plans__note">¿Aún no sabes cuál te conviene? <a href="/auth/registro" style="color:var(--color-primary);font-weight:700;">Crea tu cuenta gratis</a> y lo hablamos.</p>
+    </section>
 
-      el.addEventListener('mouseleave', () => {
-        for (const key of Object.keys(hoverObj)) {
-          el.style[key] = originalObj[key] || '';
-        }
-        el.style.cssText = originalStyle;
-      });
-    });
-  </script>
+    <!-- CTA FINAL -->
+    <section class="section wrap">
+      <div class="cta reveal">
+        <h2><%= settings.cta_title %></h2>
+        <p><%= settings.cta_subtitle %></p>
+        <div class="cta__btns">
+          <a id="btn-cta-registro" class="btn btn--primary" href="/auth/registro">Crear cuenta gratis <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+          <a id="btn-cta-demo" class="btn btn--ghost" href="<%= wa %>" target="_blank" rel="noopener noreferrer"><i class="bi bi-whatsapp" aria-hidden="true"></i>Solicitar demo</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="wrap footer__grid">
+      <div>
+        <a class="brand" href="#top"><span class="brand__mark"><i class="bi bi-fire" aria-hidden="true"></i></span>GastroFlow</a>
+        <p class="footer__about">El sistema operativo para el éxito de tu restaurante. Control, velocidad y rentabilidad en una sola plataforma.</p>
+      </div>
+      <div>
+        <h4>Producto</h4>
+        <ul>
+          <li><a href="#funciones">Funciones</a></li>
+          <li><a href="#empezar">Cómo empezar</a></li>
+          <li><a href="#precios">Planes</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Soporte y legal</h4>
+        <ul>
+          <li><a href="https://wa.me/<%= settings.whatsapp_number %>" target="_blank" rel="noopener noreferrer">Contacto por WhatsApp</a></li>
+          <li><a href="/legal/privacidad">Privacidad</a></li>
+          <li><a href="/legal/terminos">Términos</a></li>
+          <li><a href="/legal/cookies">Cookies</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="wrap footer__legal">© <%= new Date().getFullYear() %> GastroFlow Technologies. Todos los derechos reservados.</div>
+  </footer>
+
+  <script src="/js/modulos/landing.js?v=<%= assetV %>"></script>
 </body>
 </html>
