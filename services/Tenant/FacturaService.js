@@ -7,6 +7,7 @@
 const FacturaRepository = require('../../repositories/Tenant/FacturaRepository');
 const InventarioService = require('./InventarioService');
 const ModificadorService = require('./ModificadorService');
+const ComboArmableService = require('./ComboArmableService');
 const TenantOwnership = require('./TenantOwnership');
 
 class FacturaService {
@@ -30,6 +31,14 @@ class FacturaService {
             if (!p.es_servicio && p.producto_id >= 1000000) {
                 const insumoId = p.producto_id - 1000000;
                 p.producto_id = await AgregarItemService._getOrCreateMirrorProduct(tenantId, insumoId, p.precio);
+            }
+        }
+
+        // Combos armados: el precio y lo elegido se resuelven contra el catálogo (nunca lo que dijo el
+        // frontend). Quedan como líneas sin producto (producto_id NULL + combo_id), como los servicios.
+        for (const [i, p] of productos.entries()) {
+            if (p.combo_id) {
+                productos[i] = await ComboArmableService.resolverLineaVenta(tenantId, p);
             }
         }
 
@@ -76,7 +85,12 @@ class FacturaService {
                     InventarioService.checkStockParaProducto(tenantId, p.producto_id, parseFloat(p.cantidad) || 1)
                 )
         );
-        const todosLosFaltantes = checks.filter(c => !c.ok).flatMap(c => c.faltantes || []);
+        const checksCombos = await Promise.all(
+            productos
+                .filter(p => p.combo_id)
+                .map(p => InventarioService.checkStockParaSelecciones(tenantId, p._comboSelecciones, p.cantidad))
+        );
+        const todosLosFaltantes = [...checks, ...checksCombos].filter(c => !c.ok).flatMap(c => c.faltantes || []);
         if (todosLosFaltantes.length > 0) {
             const msg = todosLosFaltantes
                 .map(f => `${f.insumo_nombre}: requiere ${f.requerido} ${f.unidad_base}, disponible ${f.disponible}`)
@@ -189,6 +203,11 @@ class FacturaService {
                     }
                 })
         );
+
+        // Combos armados: receta de cada producto elegido (best-effort, no lanza).
+        if (productos.some(p => p.combo_id)) {
+            await InventarioService.descontarPorCombosFactura(tenantId, facturaId);
+        }
 
         // Descuento por toppings/modificadores ligados a inventario (opt-in por grupo).
         try {

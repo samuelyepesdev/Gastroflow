@@ -42,18 +42,47 @@
     </div>
 
     <!-- Categorías Horizontales -->
+    <% const hayCombos = combos && combos.length > 0; %>
     <div class="categories-wrapper" id="catScroll">
+        <% if (hayCombos) { %>
+            <a href="#cat-combos" class="category-pill active" data-id="combos">Combos</a>
+        <% } %>
         <% categorias.forEach((cat, idx) => { %>
-            <a href="#cat-<%= cat.id %>" class="category-pill <%= idx === 0 ? 'active' : '' %>" data-id="<%= cat.id %>"><%= cat.nombre %></a>
+            <a href="#cat-<%= cat.id %>" class="category-pill <%= idx === 0 && !hayCombos ? 'active' : '' %>" data-id="<%= cat.id %>"><%= cat.nombre %></a>
         <% }) %>
     </div>
 
     <!-- Listado de Productos -->
     <div class="container-fluid p-0">
-        <% if (categorias.length === 0) { %>
+        <% if (categorias.length === 0 && !hayCombos) { %>
             <div class="text-center py-5 mt-5">
                 <i class="bi bi-emoji-frown fs-1 text-muted mb-3 d-block"></i>
                 <h5 class="text-muted fw-bold">No hay productos disponibles.</h5>
+            </div>
+        <% } %>
+
+        <% if (hayCombos) { %>
+            <div class="category-section" id="cat-combos">
+                <h3 class="category-title">Combos</h3>
+                <% combos.forEach(c => { %>
+                    <div class="product-card combo-card" data-combo-id="<%= c.id %>" onclick="abrirCombo(<%= c.id %>)">
+                        <% if (c.imagen_url) { %>
+                            <img src="<%= c.imagen_url %>" class="product-img" alt="<%= c.nombre %>">
+                        <% } else { %>
+                            <div class="product-img-placeholder">
+                                <i class="bi bi-box-seam"></i>
+                            </div>
+                        <% } %>
+                        <div class="product-info">
+                            <h4 class="product-name"><%= c.nombre %></h4>
+                            <p class="product-desc"><%= c.descripcion || 'Arma tu combo a tu gusto' %></p>
+                            <p class="product-price">Desde $<%= Number(c.precio_base).toLocaleString('es-CO') %></p>
+                        </div>
+                        <button class="add-btn" onclick="event.stopPropagation(); abrirCombo(<%= c.id %>)">
+                            <i class="bi bi-plus"></i>
+                        </button>
+                    </div>
+                <% }) %>
             </div>
         <% } %>
 
@@ -234,9 +263,11 @@
 
     <script type="application/json" id="qr-page-data"><%- jsonSeguro({ qrToken: qrToken }) %></script>
     <script type="application/json" id="qr-modificadores-data"><%- jsonSeguro(modificadores || {}) %></script>
+    <script type="application/json" id="qr-combos-data"><%- jsonSeguro(combos || []) %></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="/js/core/gf.js?v=<%= assetV %>"></script>
+    <script src="/js/core/combo-picker.js?v=<%= assetV %>"></script>
     <script src="/js/modulos/menu-qr.js?v=<%= assetV %>"></script>
 </body>
 </html>

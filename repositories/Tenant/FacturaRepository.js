@@ -14,6 +14,7 @@ const BonoRepository = require('./BonoRepository');
 const BonoService = require('../../services/Tenant/BonoService');
 const RealtimeEvents = require('../../services/Shared/RealtimeEvents');
 const PedidoItemPagoRepository = require('./PedidoItemPagoRepository');
+const ComboVentaRepository = require('./ComboVentaRepository');
 
 class FacturaRepository {
     /**
@@ -160,6 +161,11 @@ class FacturaRepository {
                 .filter(p => !p.es_servicio && p.producto_id)
                 .map(p => p.producto_id);
             const { tasas, defaultTasa } = await TaxService.getTasasPorProducto(tenantId, productoIds, connection);
+            const infoCombos = await ComboVentaRepository.getInfoCombos(
+                tenantId,
+                [...new Set(facturaData.productos.filter(p => p.combo_id).map(p => p.combo_id))],
+                connection
+            );
 
             let subtotalFactura = 0;
             let impuestosFactura = 0;
@@ -167,7 +173,12 @@ class FacturaRepository {
 
             // Insert invoice details (incl. descuento_porcentaje y precio_original para mostrar en factura impresa)
             const detallesValues = facturaData.productos.map(p => {
-                const tasa = p.es_servicio ? defaultTasa : (tasas.get(p.producto_id) ?? defaultTasa);
+                // Servicio y combo no tienen producto: el combo trae su propio tributo (NULL = el del restaurante).
+                const tasa = p.es_servicio
+                    ? defaultTasa
+                    : p.combo_id
+                      ? (infoCombos.get(p.combo_id)?.tasa_impuesto ?? defaultTasa)
+                      : (tasas.get(p.producto_id) ?? defaultTasa);
                 const { base_gravable, valor_impuesto } = TaxService.desglosarLinea(p.subtotal, tasa);
                 subtotalFactura += base_gravable;
                 impuestosFactura += valor_impuesto;
@@ -193,6 +204,7 @@ class FacturaRepository {
                     p.producto_id || null,
                     p.servicio_id || null,
                     p.es_servicio ? 1 : 0,
+                    p.combo_id || null,
                     p.cantidad,
                     p.precio,
                     precioOriginal, // Guardar precio original (catálogo)
@@ -207,7 +219,7 @@ class FacturaRepository {
             });
 
             const [detalleResult] = await connection.query(
-                'INSERT INTO detalle_factura (factura_id, producto_id, servicio_id, es_servicio, cantidad, precio_unitario, precio_original, unidad_medida, subtotal, descuento_porcentaje, descuento_valor, base_gravable, tasa_impuesto, valor_impuesto) VALUES ?',
+                'INSERT INTO detalle_factura (factura_id, producto_id, servicio_id, es_servicio, combo_id, cantidad, precio_unitario, precio_original, unidad_medida, subtotal, descuento_porcentaje, descuento_valor, base_gravable, tasa_impuesto, valor_impuesto) VALUES ?',
                 [detallesValues]
             );
 
@@ -232,6 +244,16 @@ class FacturaRepository {
                     ]);
                 });
             });
+            // Snapshot de lo elegido en combos armados (mismo criterio de ids contiguos).
+            for (const [i, p] of facturaData.productos.entries()) {
+                if (p.combo_id) {
+                    await ComboVentaRepository.guardarSeleccionesDetalle(
+                        primerDetalleId + i,
+                        p._comboSelecciones,
+                        connection
+                    );
+                }
+            }
             if (modificadoresValues.length > 0) {
                 await connection.query(
                     'INSERT INTO detalle_factura_modificadores (detalle_factura_id, opcion_modificador_id, grupo_nombre, opcion_nombre, precio_adicional, cantidad, insumo_id, cantidad_insumo, unidad_insumo) VALUES ?',
@@ -343,11 +365,12 @@ class FacturaRepository {
         const [detalles] = await db.query(
             `
             SELECT d.*,
-                   COALESCE(p.nombre, s.nombre) as producto_nombre
+                   COALESCE(p.nombre, s.nombre, cb.nombre) as producto_nombre
             FROM detalle_factura d
             JOIN facturas fx ON fx.id = d.factura_id
             LEFT JOIN productos p ON d.producto_id = p.id AND p.tenant_id = fx.tenant_id
             LEFT JOIN servicios s ON d.servicio_id = s.id AND s.tenant_id = fx.tenant_id
+            LEFT JOIN combos cb ON d.combo_id = cb.id AND cb.tenant_id = fx.tenant_id
             WHERE d.factura_id = ?
         `,
             [facturaId]
@@ -356,12 +379,20 @@ class FacturaRepository {
             return detalles;
         }
         const detalleIds = detalles.map(d => d.id);
+        const [combosSel] = await db.query(
+            `SELECT detalle_factura_id, grupo_nombre, producto_nombre, cantidad
+             FROM detalle_factura_combo_selecciones WHERE detalle_factura_id IN (?) ORDER BY id`,
+            [detalleIds]
+        );
         const [modificadores] = await db.query(
             'SELECT detalle_factura_id, opcion_nombre, precio_adicional, cantidad FROM detalle_factura_modificadores WHERE detalle_factura_id IN (?)',
             [detalleIds]
         );
         detalles.forEach(d => {
             d.modificadores = modificadores.filter(m => m.detalle_factura_id === d.id);
+            if (d.combo_id || d.producto_id === null) {
+                d.combo_selecciones = combosSel.filter(c => c.detalle_factura_id === d.id);
+            }
         });
         return detalles;
     }
@@ -393,18 +424,28 @@ class FacturaRepository {
         const factura = facturas[0];
         const [productos] = await db.query(
             `
-            SELECT d.cantidad, d.precio_unitario, d.unidad_medida, d.subtotal,
+            SELECT d.id, d.combo_id, d.cantidad, d.precio_unitario, d.unidad_medida, d.subtotal,
                    d.base_gravable, d.tasa_impuesto, d.valor_impuesto,
-                   COALESCE(p.nombre, s.nombre) as nombre,
+                   COALESCE(p.nombre, s.nombre, cb.nombre) as nombre,
                    d.es_servicio
             FROM detalle_factura d
             JOIN facturas fx ON fx.id = d.factura_id
             LEFT JOIN productos p ON d.producto_id = p.id AND p.tenant_id = fx.tenant_id
             LEFT JOIN servicios s ON d.servicio_id = s.id AND s.tenant_id = fx.tenant_id
+            LEFT JOIN combos cb ON d.combo_id = cb.id AND cb.tenant_id = fx.tenant_id
             WHERE d.factura_id = ?
         `,
             [id]
         );
+        const idsCombo = productos.filter(p => p.combo_id).map(p => p.id);
+        const [combosSel] =
+            idsCombo.length > 0
+                ? await db.query(
+                      `SELECT detalle_factura_id, producto_nombre, cantidad
+                       FROM detalle_factura_combo_selecciones WHERE detalle_factura_id IN (?) ORDER BY id`,
+                      [idsCombo]
+                  )
+                : [[]];
 
         // Abonos libres registrados mientras la mesa estuvo abierta y que
         // quedaron ligados a esta factura al cerrarla (ver marcarFacturados en
@@ -466,7 +507,11 @@ class FacturaRepository {
                 base_gravable: parseFloat(p.base_gravable || 0),
                 tasa_impuesto: parseFloat(p.tasa_impuesto || 0),
                 valor_impuesto: parseFloat(p.valor_impuesto || 0),
-                es_servicio: !!p.es_servicio
+                es_servicio: !!p.es_servicio,
+                // Qué incluye un combo armado (vacío en productos y servicios).
+                incluye: combosSel
+                    .filter(c => c.detalle_factura_id === p.id)
+                    .map(c => ({ nombre: c.producto_nombre, cantidad: parseFloat(c.cantidad || 0) }))
             }))
         };
     }

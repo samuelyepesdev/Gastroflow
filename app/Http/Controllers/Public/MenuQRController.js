@@ -21,6 +21,7 @@ class MenuQRController {
                 mesa: data.mesa,
                 categorias: data.categorias,
                 modificadores: data.modificadores || {},
+                combos: data.combos || [],
                 qrToken,
                 qrSessionId: data.mesa.qr_session_id
             });

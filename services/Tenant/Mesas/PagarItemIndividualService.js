@@ -1,5 +1,6 @@
 const db = require('../../../config/database');
 const PedidoItemPagoRepository = require('../../../repositories/Tenant/PedidoItemPagoRepository');
+const ComboVentaRepository = require('../../../repositories/Tenant/ComboVentaRepository');
 const RealtimeEvents = require('../../Shared/RealtimeEvents');
 
 class PagarItemIndividualService {
@@ -12,7 +13,7 @@ class PagarItemIndividualService {
         }
 
         const [rows] = await db.query(
-            `SELECT pi.id, pi.cantidad, pi.precio_unitario, pi.pedido_id, pi.producto_id, pi.unidad_medida, pi.estado, pi.nota, pi.enviado_at, pi.preparado_at, pi.listo_at, pi.servido_at, pi.subtotal, pi.modificadores_hash, p.mesa_id
+            `SELECT pi.id, pi.cantidad, pi.precio_unitario, pi.pedido_id, pi.producto_id, pi.combo_id, pi.unidad_medida, pi.estado, pi.nota, pi.enviado_at, pi.preparado_at, pi.listo_at, pi.servido_at, pi.subtotal, pi.modificadores_hash, p.mesa_id
              FROM pedido_items pi
              INNER JOIN pedidos p ON pi.pedido_id = p.id
              WHERE pi.id = ? AND p.tenant_id = ?`,
@@ -90,12 +91,13 @@ class PagarItemIndividualService {
             );
 
             const [leftoverInsert] = await db.query(
-                `INSERT INTO pedido_items (tenant_id, pedido_id, producto_id, cantidad, unidad_medida, precio_unitario, subtotal, estado, nota, modificadores_hash, enviado_at, preparado_at, listo_at, servido_at, pagado, forma_pago)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, NULL)`,
+                `INSERT INTO pedido_items (tenant_id, pedido_id, producto_id, combo_id, cantidad, unidad_medida, precio_unitario, subtotal, estado, nota, modificadores_hash, enviado_at, preparado_at, listo_at, servido_at, pagado, forma_pago)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, NULL)`,
                 [
                     tenantId,
                     item.pedido_id,
                     item.producto_id,
+                    item.combo_id,
                     leftoverCantidad,
                     item.unidad_medida,
                     item.precio_unitario,
@@ -134,6 +136,12 @@ class PagarItemIndividualService {
                     `INSERT INTO pedido_item_modificadores (pedido_item_id, opcion_modificador_id, grupo_nombre, opcion_nombre, precio_adicional, cantidad, insumo_id, cantidad_insumo, unidad_insumo) VALUES ?`,
                     [modsValues]
                 );
+            }
+
+            // Lo elegido en un combo armado también se parte: la porción sin pagar necesita su copia.
+            if (item.combo_id) {
+                const selecciones = (await ComboVentaRepository.getSeleccionesPorItems([itemId])).get(itemId) || [];
+                await ComboVentaRepository.guardarSeleccionesPedidoItem(leftoverInsert.insertId, selecciones);
             }
         } else {
             await db.query(`UPDATE pedido_items SET pagado = 1, forma_pago = ? WHERE id = ?`, [forma_pago, itemId]);

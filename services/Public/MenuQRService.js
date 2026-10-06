@@ -1,5 +1,6 @@
 const MenuQRRepository = require('../../repositories/Public/MenuQRRepository');
 const PromocionService = require('../Tenant/PromocionService');
+const ComboArmableService = require('../Tenant/ComboArmableService');
 
 class MenuQRService {
     /**
@@ -35,7 +36,15 @@ class MenuQRService {
         const rawModificadores = await MenuQRRepository.getModificadoresParaProductos(tenant.id, productoIds);
         const modificadores = this._armarMapaModificadores(rawModificadores);
 
-        return { tenant, mesa, categorias, modificadores };
+        // 5. Combos armables (si falla, el menú sigue funcionando sin ellos)
+        let combos = [];
+        try {
+            combos = await ComboArmableService.listarParaVenta(tenant.id);
+        } catch (error) {
+            console.error('Error al cargar combos del menú QR:', error);
+        }
+
+        return { tenant, mesa, categorias, modificadores, combos };
     }
 
     static _agruparProductosPorCategoria(rawProducts) {

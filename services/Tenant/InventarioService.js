@@ -8,6 +8,7 @@ const InsumoRepository = require('../../repositories/Tenant/InsumoRepository');
 const MovimientoInventarioRepository = require('../../repositories/Tenant/MovimientoInventarioRepository');
 const RecetaRepository = require('../../repositories/Tenant/RecetaRepository');
 const ComboRepository = require('../../repositories/Tenant/ComboRepository');
+const ComboVentaRepository = require('../../repositories/Tenant/ComboVentaRepository');
 const { convertirABase } = require('../../utils/unidadesCosteo');
 
 // Conversión a unidad base para comparar con stock (stock está en unidad_base).
@@ -283,6 +284,46 @@ class InventarioService {
             .filter(Boolean);
 
         return { ok: faltantes.length === 0, faltantes };
+    }
+
+    /**
+     * Faltantes de stock de lo elegido en combos armados (selecciones del snapshot de
+     * ComboArmableService.validarSeleccion), x cantidad de combos. Solo informa: cada llamador
+     * decide si bloquea la venta (POS) o solo avisa (Mesas).
+     */
+    static async checkStockParaSelecciones(tenantId, selecciones, cantidadCombos = 1) {
+        const faltantes = [];
+        for (const s of selecciones) {
+            const check = await this.checkStockParaProducto(
+                tenantId,
+                s.producto_id,
+                Number(s.cantidad) * Number(cantidadCombos)
+            );
+            if (!check.ok) {
+                faltantes.push(...(check.faltantes || []));
+            }
+        }
+        return { ok: faltantes.length === 0, faltantes };
+    }
+
+    /**
+     * Combos armados de una factura: descuenta la receta de cada producto elegido x su cantidad
+     * x combos vendidos. Best-effort (nunca lanza): la venta ya está registrada.
+     */
+    static async descontarPorCombosFactura(tenantId, facturaId) {
+        try {
+            const selecciones = await ComboVentaRepository.getSeleccionesPorFactura(facturaId);
+            for (const s of selecciones) {
+                await this.descontarPorReceta(
+                    tenantId,
+                    s.producto_id,
+                    Number(s.cantidad_por_combo) * Number(s.cantidad_combo),
+                    'factura_' + facturaId
+                );
+            }
+        } catch (error) {
+            console.error('Error al descontar inventario de combos:', error);
+        }
     }
 
     /**

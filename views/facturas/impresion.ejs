@@ -88,6 +88,11 @@
                                 <div class="producto-nombre"
                                     style="margin: 0; font-weight: bold; font-size: 1.2em; flex: 3; text-transform: uppercase;">
                                     <%= item.producto_nombre %> <%= item.es_servicio ? '(SERVICIO)' : '' %>
+                                    <% if (item.combo_selecciones && item.combo_selecciones.length) { %>
+                                        <div style="font-size: 0.65em; font-weight: normal; text-transform: none; color: #555;">
+                                            <%= item.combo_selecciones.map(c => (Number(c.cantidad) !== 1 ? Number(c.cantidad) + 'x ' : '') + c.producto_nombre).join(', ') %>
+                                        </div>
+                                    <% } %>
                                     <% if (item.modificadores && item.modificadores.length) { %>
                                         <div style="font-size: 0.65em; font-weight: normal; text-transform: none; color: #555;">
                                             <%= item.modificadores.map(m => m.opcion_nombre).join(', ') %>

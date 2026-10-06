@@ -1,4 +1,5 @@
 const db = require('../../config/database');
+const ComboVentaRepository = require('./ComboVentaRepository');
 const NumeracionRepository = require('./NumeracionRepository');
 const { SQL_COLOMBIA } = require('../../utils/dateHelpers');
 
@@ -63,12 +64,13 @@ class POSRepository {
         }
 
         const [items] = await db.query(
-            `SELECT pi.id, pi.pedido_id, pi.producto_id, pi.servicio_id, pi.es_servicio, pi.cantidad,
+            `SELECT pi.id, pi.pedido_id, pi.producto_id, pi.combo_id, pi.servicio_id, pi.es_servicio, pi.cantidad,
                     pi.unidad_medida, pi.precio_unitario, pi.nota,
-                    COALESCE(p.nombre, s.nombre) AS nombre, p.categoria_id
+                    COALESCE(p.nombre, s.nombre, cb.nombre) AS nombre, p.categoria_id
              FROM pedido_items pi
              LEFT JOIN productos p ON p.id = pi.producto_id
              LEFT JOIN servicios s ON s.id = pi.servicio_id
+             LEFT JOIN combos cb ON cb.id = pi.combo_id AND cb.tenant_id = pi.tenant_id
              WHERE pi.tenant_id = ? AND pi.pedido_id IN (?)
                AND pi.estado != 'cancelado' AND (pi.pagado = 0 OR pi.pagado IS NULL)
              ORDER BY pi.created_at ASC`,
@@ -94,7 +96,39 @@ class POSRepository {
             modsByItem.get(m.pedido_item_id).push(m);
         }
 
+        const combosPorItem = await ComboVentaRepository.getSeleccionesPorItems(
+            items.filter(i => i.combo_id).map(i => i.id)
+        );
+
         for (const it of items) {
+            // Combo armado traído desde una mesa: vuelve al carrito con lo que se eligió (por opción).
+            if (it.combo_id) {
+                porPedido.get(it.pedido_id).push({
+                    producto_id: null,
+                    combo_id: it.combo_id,
+                    selecciones: (combosPorItem.get(it.id) || [])
+                        .filter(s => s.combo_opcion_id)
+                        .map(s => ({ opcion_id: s.combo_opcion_id })),
+                    es_servicio: false,
+                    nombre: it.nombre,
+                    precio: Number(it.precio_unitario),
+                    precio_original: Number(it.precio_unitario),
+                    cantidad: Number(it.cantidad),
+                    descuento_porcentaje: 0,
+                    categoria_id: null,
+                    unidad: it.unidad_medida || 'UND',
+                    nota: it.nota || null,
+                    modificadores_seleccion: [],
+                    modificadores_preview: [],
+                    modificadores_total: 0,
+                    modificadores_hash: null,
+                    combo_preview: (combosPorItem.get(it.id) || []).map(s => ({
+                        producto_nombre: s.producto_nombre,
+                        cantidad: Number(s.cantidad)
+                    }))
+                });
+                continue;
+            }
             const modsItem = modsByItem.get(it.id) || [];
             const modificadoresTotal = modsItem.reduce((s, m) => s + Number(m.precio_adicional) * (m.cantidad || 1), 0);
             const precioBase = Number(it.precio_unitario) - modificadoresTotal;
@@ -268,10 +302,23 @@ class POSRepository {
                     : null;
 
             const [itemResult] = await conn.query(
-                `INSERT INTO pedido_items (tenant_id, pedido_id, producto_id, cantidad, unidad_medida, precio_unitario, subtotal, estado, modificadores_hash, enviado_at)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, 'enviado', ?, NOW())`,
-                [tenantId, pedidoId, p.producto_id, cantidad, p.unidad || 'UND', precio, subtotal, modificadoresHash]
+                `INSERT INTO pedido_items (tenant_id, pedido_id, producto_id, combo_id, cantidad, unidad_medida, precio_unitario, subtotal, estado, modificadores_hash, enviado_at)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'enviado', ?, NOW())`,
+                [
+                    tenantId,
+                    pedidoId,
+                    p.producto_id || null,
+                    p.combo_id || null,
+                    cantidad,
+                    p.unidad || 'UND',
+                    precio,
+                    subtotal,
+                    modificadoresHash
+                ]
             );
+            if (p.combo_id) {
+                await ComboVentaRepository.guardarSeleccionesPedidoItem(itemResult.insertId, p._comboSelecciones, conn);
+            }
 
             if (mods.length > 0) {
                 const modValues = mods.map(m => [
@@ -301,7 +348,7 @@ class POSRepository {
      * prepararla de inmediato). Se completa después desde CocinaRepository.completarPedidoPOS.
      */
     static async enviarPedidoACocina(tenantId, { productos, nombrePedido, clienteId }) {
-        const itemsValidos = (productos || []).filter(p => !p.es_servicio && p.producto_id);
+        const itemsValidos = (productos || []).filter(p => !p.es_servicio && (p.producto_id || p.combo_id));
         if (itemsValidos.length === 0) {
             return null;
         }
@@ -361,7 +408,7 @@ class POSRepository {
      * limpia los toppings de las líneas viejas junto con ellas.
      */
     static async resincronizarItemsPedido(tenantId, pedidoId, productos) {
-        const itemsValidos = (productos || []).filter(p => !p.es_servicio && p.producto_id);
+        const itemsValidos = (productos || []).filter(p => !p.es_servicio && (p.producto_id || p.combo_id));
         if (itemsValidos.length === 0) {
             return null;
         }

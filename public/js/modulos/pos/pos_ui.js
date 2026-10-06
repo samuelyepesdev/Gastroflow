@@ -73,7 +73,8 @@ window.POS_UI = {
         const cartMap = {};
         POS.state.cart.forEach(item => { cartMap[item.producto_id] = (cartMap[item.producto_id] || 0) + item.cantidad; });
 
-        if (!filtrados.length) {
+        const combos = POS.state.combosFiltrados || [];
+        if (!filtrados.length && !combos.length) {
             grid.innerHTML = `<div class="pos-catalog-empty">
                 <i class="bi bi-search"></i>
                 <p>Sin productos</p>
@@ -81,7 +82,14 @@ window.POS_UI = {
             return;
         }
 
-        grid.innerHTML = filtrados.map(p => {
+        const combosHtml = combos.map(c => `<button class="pos-product-card" data-combo-id="${c.id}">
+                <span class="ppc-icon" style="background:#fef3c7;color:#b45309"><i class="bi bi-box-seam"></i></span>
+                <span class="ppc-cat-label" style="color:#b45309">Combo</span>
+                <span class="ppc-name">${GF.escapeHtml(c.nombre)}</span>
+                <span class="ppc-price">desde ${GF.dinero(c.precio_base)}</span>
+            </button>`).join('');
+
+        grid.innerHTML = combosHtml + filtrados.map(p => {
             const { color, soft } = paletteMap[p.categoria_id] || { color: '#6366f1', soft: '#ede9fe' };
             const qty = cartMap[p.id] || 0;
             const badge = qty ? `<span class="ppc-qty-badge">${qty}</span>` : '';
@@ -111,6 +119,9 @@ window.POS_UI = {
             </button>`;
         }).join('');
 
+        grid.querySelectorAll('.pos-product-card[data-combo-id]').forEach(btn => {
+            btn.addEventListener('click', () => POS.agregarCombo(Number.parseInt(btn.dataset.comboId)));
+        });
         // Delegación de eventos — CSP safe (sin onclick inline)
         grid.querySelectorAll('.pos-product-card[data-pid]').forEach(btn => {
             btn.addEventListener('click', () => POS.addToCart(Number.parseInt(btn.dataset.pid)));
@@ -157,10 +168,13 @@ window.POS_UI = {
                         ? `<span class="pci-disc-badge">-${item.descuento_porcentaje}%</span>` : '');
                 const modText = (item.modificadores_preview && item.modificadores_preview.length)
                     ? `<div class="pci-mods">${GF.escapeHtml(item.modificadores_preview.map(m => m.opcion_nombre).join(', '))}</div>` : '';
+                const comboText = (item.combo_preview && item.combo_preview.length)
+                    ? `<div class="pci-mods">${GF.escapeHtml(item.combo_preview.map(c => (Number(c.cantidad) !== 1 ? Number(c.cantidad) + '× ' : '') + c.producto_nombre).join(', '))}</div>` : '';
                 return `<div class="pos-cart-item">
                     <div class="pci-body">
                         <div class="pci-info">
                             <div class="pci-name">${GF.escapeHtml(item.nombre)}${descBadge}</div>
+                            ${comboText}
                             ${modText}
                             <div class="pci-unit">${GF.dinero(item.precio + (item.modificadores_total || 0))} c/u</div>
                         </div>
@@ -178,7 +192,7 @@ window.POS_UI = {
                         </div>
                     </div>
                     <div class="pci-actions-row">
-                        ${!item.es_servicio ? `
+                        ${!item.es_servicio && !item.combo_id ? `
                         <button class="pci-action-btn pci-mods-btn" data-pci-action="mods" data-pci-idx="${idx}">
                             <i class="bi bi-pencil-square me-1"></i>Editar pedido
                         </button>` : ''}

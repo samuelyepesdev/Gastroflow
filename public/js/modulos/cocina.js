@@ -25,6 +25,21 @@ function formatModificadores(mods) {
         .join(' · ');
 }
 
+// Lo que eligió el cliente en un combo armado: "Plato: Burger · Bebida: 2× Gaseosa".
+function formatCombo(selecciones) {
+    if (!selecciones?.length) return '';
+    const porGrupo = new Map();
+    selecciones.forEach(s => {
+        const grupo = s.grupo_nombre || 'Combo';
+        if (!porGrupo.has(grupo)) porGrupo.set(grupo, []);
+        const cant = Number(s.cantidad);
+        porGrupo.get(grupo).push(cant !== 1 ? `${cant}× ${s.producto_nombre}` : s.producto_nombre);
+    });
+    return [...porGrupo.entries()]
+        .map(([grupo, productos]) => `${grupo}: ${productos.join(', ')}`)
+        .join(' · ');
+}
+
 /**
  * Create card for individual item (sub-card inside mesa card)
  */
@@ -71,6 +86,11 @@ function cardItem(it) {
                         <div class="nota-especial">
                             <strong>Instrucciones Especiales:</strong>
                             <span>${GF.escapeHtml(it.nota)}</span>
+                        </div>` : ''}
+                        ${it.combo_selecciones?.length ? `
+                        <div class="nota-especial">
+                            <strong>Combo:</strong>
+                            <span>${GF.escapeHtml(formatCombo(it.combo_selecciones))}</span>
                         </div>` : ''}
                         ${it.modificadores?.length ? `
                         <div class="nota-especial">
@@ -119,6 +139,7 @@ function cardItemEstacion(item) {
                 <span class="badge bg-dark">${item.cantidad}</span>
             </div>
             <div class="kds-item-meta">${GF.escapeHtml(mesaLabel)} · Pedido #${item.pedido_numero} · esperando ${minutos} min</div>
+            ${item.combo_selecciones?.length ? `<div class="kds-item-nota"><i class="bi bi-box-seam"></i> ${GF.escapeHtml(formatCombo(item.combo_selecciones))}</div>` : ''}
             ${item.nota ? `<div class="kds-item-nota"><i class="bi bi-chat-left-text"></i> ${GF.escapeHtml(item.nota)}</div>` : ''}
             ${accion}
         </div>

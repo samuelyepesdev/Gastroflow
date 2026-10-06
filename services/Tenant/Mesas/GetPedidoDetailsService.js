@@ -1,5 +1,6 @@
 const db = require('../../../config/database');
 const PedidoAbonoRepository = require('../../../repositories/Tenant/PedidoAbonoRepository');
+const ComboVentaRepository = require('../../../repositories/Tenant/ComboVentaRepository');
 
 class GetPedidoDetailsService {
     /**
@@ -23,14 +24,15 @@ class GetPedidoDetailsService {
         const [items] = await db.query(
             `
             SELECT i.*,
-                   COALESCE(p.nombre, s.nombre) AS producto_nombre
+                   COALESCE(p.nombre, s.nombre, cb.nombre) AS producto_nombre
             FROM pedido_items i
             LEFT JOIN productos p ON p.id = i.producto_id AND p.tenant_id = ?
             LEFT JOIN servicios s ON s.id = i.servicio_id AND s.tenant_id = ?
+            LEFT JOIN combos cb ON cb.id = i.combo_id AND cb.tenant_id = ?
             WHERE i.pedido_id = ?
             ORDER BY i.created_at ASC
         `,
-            [tenantId, tenantId, pedidoId]
+            [tenantId, tenantId, tenantId, pedidoId]
         );
 
         if (items.length > 0) {
@@ -39,8 +41,14 @@ class GetPedidoDetailsService {
                 'SELECT pedido_item_id, opcion_nombre, precio_adicional, cantidad FROM pedido_item_modificadores WHERE pedido_item_id IN (?)',
                 [itemIds]
             );
+            const combosPorItem = await ComboVentaRepository.getSeleccionesPorItems(
+                items.filter(i => i.combo_id).map(i => i.id)
+            );
             items.forEach(i => {
                 i.modificadores = modificadores.filter(m => m.pedido_item_id === i.id);
+                if (i.combo_id) {
+                    i.combo_selecciones = combosPorItem.get(i.id) || [];
+                }
             });
         }
 

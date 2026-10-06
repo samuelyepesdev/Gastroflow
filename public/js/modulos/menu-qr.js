@@ -14,6 +14,16 @@ const MODIFICADORES = (function () {
     }
 })();
 
+// Combos armables (inyectados por el server, ya filtrados a lo vendible)
+(function () {
+    const el = document.getElementById('qr-combos-data');
+    try {
+        ComboPicker.setCatalogo(el ? JSON.parse(el.textContent) : []);
+    } catch (_) {
+        ComboPicker.setCatalogo([]);
+    }
+})();
+
 // Carrito basado en LÍNEAS: cada línea = producto + combinación de toppings + nota.
 // key: `${producto_id}|${idsOpcionesOrdenados}|${nota}`
 let cart = {};
@@ -47,6 +57,42 @@ function lineKey(productoId, seleccion, nota) {
     ids.sort((a, b) => a - b);
     return `${productoId}|${ids.join(',')}|${(nota || '').trim()}`;
 }
+
+// ----- Combos armables -----
+
+// El selector devuelve lo elegido; el precio del carrito es una vista previa, el servidor lo recalcula.
+// Dos líneas con exactamente las mismas opciones suman cantidad.
+async function abrirCombo(id) {
+    const combo = (await ComboPicker.catalogo()).find(c => c.id === id);
+    if (!combo) { return; }
+    const elegido = await ComboPicker.elegir(combo);
+    if (!elegido) { return; }
+
+    const firma = elegido.selecciones.map(s => s.opcion_id).sort((a, b) => a - b).join(',');
+    const key = `combo|${combo.id}|${firma}`;
+    if (cart[key]) {
+        cart[key].qty += 1;
+    } else {
+        const marcadas = new Set(elegido.selecciones.map(s => s.opcion_id));
+        const preview = combo.grupos
+            .flatMap(g => (g.forzado ? g.opciones : g.opciones.filter(o => marcadas.has(o.id))))
+            .map(o => ({ opcion_nombre: (o.cantidad !== 1 ? `${o.cantidad}× ` : '') + o.nombre }));
+        cart[key] = {
+            key: key,
+            combo_id: combo.id,
+            selecciones: elegido.selecciones,
+            nombre: combo.nombre,
+            precioBase: elegido.precio,
+            precioAdicional: 0,
+            qty: 1,
+            seleccion: [],
+            preview: preview,
+            nota: ''
+        };
+    }
+    updateUI();
+}
+window.abrirCombo = abrirCombo;
 
 // ----- Alta de líneas -----
 
@@ -271,10 +317,12 @@ function updateUI() {
     Object.values(cart).forEach(line => {
         total += (line.precioBase + line.precioAdicional) * line.qty;
         count += line.qty;
-        qtyPorProducto[line.producto_id] = (qtyPorProducto[line.producto_id] || 0) + line.qty;
+        if (line.producto_id) {
+            qtyPorProducto[line.producto_id] = (qtyPorProducto[line.producto_id] || 0) + line.qty;
+        }
     });
 
-    document.querySelectorAll('.product-card').forEach(card => {
+    document.querySelectorAll('.product-card:not(.combo-card)').forEach(card => {
         const addBtn = card.querySelector('.add-btn');
         const ctrl = card.querySelector('.qty-controls');
         const val = card.querySelector('.qty-value');
@@ -527,12 +575,16 @@ document.addEventListener('DOMContentLoaded', function () {
         btn.disabled = true;
         btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Procesando...';
 
-        const items = lines.map(l => ({
-            producto_id: l.producto_id,
-            cantidad: l.qty,
-            nota: l.nota || null,
-            modificadores: l.seleccion || []
-        }));
+        const items = lines.map(l =>
+            l.combo_id
+                ? { combo_id: l.combo_id, selecciones: l.selecciones, cantidad: l.qty, nota: l.nota || null }
+                : {
+                      producto_id: l.producto_id,
+                      cantidad: l.qty,
+                      nota: l.nota || null,
+                      modificadores: l.seleccion || []
+                  }
+        );
         const notas = document.getElementById('pedidoNotas').value.trim();
 
         try {

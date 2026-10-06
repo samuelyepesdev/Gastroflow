@@ -1,5 +1,6 @@
 const AgregarItemService = require('../../../../../services/Tenant/Mesas/AgregarItemService');
 const AgregarServicioService = require('../../../../../services/Tenant/Mesas/AgregarServicioService');
+const AgregarComboService = require('../../../../../services/Tenant/Mesas/AgregarComboService');
 const EliminarItemService = require('../../../../../services/Tenant/Mesas/EliminarItemService');
 const UpdateItemCantidadService = require('../../../../../services/Tenant/Mesas/UpdateItemCantidadService');
 const UpdateItemEstadoService = require('../../../../../services/Tenant/Mesas/UpdateItemEstadoService');
@@ -44,6 +45,25 @@ class PedidoItemsController {
                 servicio_id,
                 cantidad,
                 precio,
+                nota
+            });
+            return res.status(201).json(resultado);
+        } catch (error) {
+            return res.status(400).json({ error: error.message });
+        }
+    }
+
+    // POST /mesas/pedidos/:pedidoId/combos
+    static async addCombo(req, res) {
+        try {
+            const { pedidoId } = req.params;
+            const { combo_id, cantidad, selecciones, nota } = req.body;
+            const resultado = await AgregarComboService.execute({
+                tenantId: req.tenant?.id,
+                pedidoId,
+                combo_id,
+                cantidad,
+                selecciones,
                 nota
             });
             return res.status(201).json(resultado);

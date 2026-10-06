@@ -36,6 +36,14 @@ window.POS = {
             }
         }
 
+        // Combos armables (catálogo vendible). Si falla, el POS sigue funcionando sin ellos.
+        try {
+            this.state.combos = await ComboPicker.catalogo();
+        } catch (_) {
+            this.state.combos = [];
+        }
+        this._aplicarFiltros();
+
         POS_UI.renderCats();
         POS_UI.renderCatalogo();
         POS_UI.renderCart();
@@ -187,6 +195,48 @@ window.POS = {
         POS_UI.flashCard(producto.id);
     },
 
+    // Combo armado: el selector devuelve lo elegido (ComboPicker). El precio del carrito es una
+    // vista previa; el servidor lo recalcula contra el catálogo al cobrar. Dos líneas con
+    // exactamente las mismas opciones suman cantidad.
+    async agregarCombo(comboId) {
+        const combo = (this.state.combos || []).find(c => c.id === comboId);
+        if (!combo) return;
+        const elegido = await ComboPicker.elegir(combo);
+        if (!elegido) return;
+
+        const firma = elegido.selecciones.map(s => s.opcion_id).sort((a, b) => a - b).join(',');
+        const existing = this.state.cart.find(i => i.combo_id === combo.id && i.combo_firma === firma);
+        if (existing) {
+            existing.cantidad++;
+        } else {
+            // Qué quedó elegido, para mostrarlo bajo el nombre en el carrito (los grupos fijos entran solos).
+            const marcadas = new Set(elegido.selecciones.map(s => s.opcion_id));
+            const preview = combo.grupos
+                .flatMap(g => (g.forzado ? g.opciones : g.opciones.filter(o => marcadas.has(o.id))))
+                .map(o => ({ producto_nombre: o.nombre, cantidad: o.cantidad }));
+            this.state.cart.push({
+                producto_id: null,
+                combo_id: combo.id,
+                combo_firma: firma,
+                selecciones: elegido.selecciones,
+                combo_preview: preview,
+                nombre: combo.nombre,
+                precio: elegido.precio,
+                precio_original: elegido.precio,
+                cantidad: 1,
+                descuento_porcentaje: 0,
+                descuento_valor: 0,
+                descuento_manual: false,
+                unidad: 'UND',
+                modificadores_seleccion: [],
+                modificadores_preview: [],
+                modificadores_total: 0,
+                modificadores_hash: null
+            });
+        }
+        POS_UI.renderCart();
+    },
+
     // Agrega un servicio (ej. domicilio) como línea del carrito -- sin modificadores,
     // no va a cocina (POSService._resolverItems filtra es_servicio antes de enviar).
     agregarServicio(servicio) {
@@ -324,6 +374,13 @@ window.POS = {
         }
 
         this.state.filtrados = list;
+
+        // Los combos no tienen categoría: se ofrecen en "Todos" (y filtrados por la búsqueda).
+        const q = (searchQuery || '').toLowerCase().trim();
+        this.state.combosFiltrados =
+            catActiva && catActiva !== 'all'
+                ? []
+                : (this.state.combos || []).filter(c => !q || c.nombre.toLowerCase().includes(q));
         POS_UI.renderCatalogo();
     },
 

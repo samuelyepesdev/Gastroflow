@@ -2,6 +2,7 @@ const POSRepository = require('../../repositories/Tenant/POSRepository');
 const PromocionService = require('./PromocionService');
 const RealtimeEvents = require('../Shared/RealtimeEvents');
 const TenantOwnership = require('./TenantOwnership');
+const ComboArmableService = require('./ComboArmableService');
 
 class POSService {
     static async getProductosForPOS(tenantId) {
@@ -133,8 +134,12 @@ class POSService {
         );
         return Promise.all(
             (productos || [])
-                .filter(p => !p.es_servicio && p.producto_id)
+                .filter(p => !p.es_servicio && (p.producto_id || p.combo_id))
                 .map(async p => {
+                    // Combo armado: precio y selección salen del catálogo (sin toppings).
+                    if (p.combo_id) {
+                        return ComboArmableService.resolverLineaVenta(tenantId, p);
+                    }
                     const { precioAdicionalTotal, lineasSnapshot } = await ModificadorService.validarYCalcularSeleccion(
                         tenantId,
                         p.producto_id,

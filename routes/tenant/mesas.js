@@ -48,6 +48,8 @@ router.delete('/abonos/:abonoId', requirePermission('mesas.facturar'), Pedido.el
 // --- ITEMS DEL PEDIDO ---
 router.post('/pedidos/:pedidoId/items', queueForSync('pedido_items.agregar'), Items.store);
 router.post('/pedidos/:pedidoId/servicios', queueForSync('pedido_items.agregar_servicio'), Items.addService);
+// Combos armables: sin queueForSync todavía (SyncService no conoce esta acción), solo online.
+router.post('/pedidos/:pedidoId/combos', Items.addCombo);
 router.put('/items/:itemId/cantidad', queueForSync('pedido_items.actualizar_cantidad'), Items.updateCantidad);
 router.patch('/items/:itemId/cantidad', queueForSync('pedido_items.actualizar_cantidad'), Items.updateCantidad);
 router.delete('/items/:itemId', queueForSync('pedido_items.eliminar'), Items.destroy);

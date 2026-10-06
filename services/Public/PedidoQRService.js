@@ -5,6 +5,8 @@ const RealtimeEvents = require('../Shared/RealtimeEvents');
 const InventarioService = require('../Tenant/InventarioService'); // Para validación de stock
 const ModificadorService = require('../Tenant/ModificadorService'); // Toppings/modificadores
 const PromocionService = require('../Tenant/PromocionService');
+const ComboArmableService = require('../Tenant/ComboArmableService'); // Combos armables
+const ComboVentaRepository = require('../../repositories/Tenant/ComboVentaRepository');
 
 class PedidoQRService {
     static async procesarPedido(qrToken, itemsInput, notasGlobales, clientIp, cookies = {}) {
@@ -60,11 +62,15 @@ class PedidoQRService {
             const mesaId = mesa.id;
 
             // 2. Extraer IDs de productos únicos y validar existencias / precios reales
-            const productoIds = [...new Set(itemsInput.map(i => Number(i.producto_id)))];
-            const [productosDb] = await connection.query(
-                `SELECT id, precio_unidad, nombre, categoria_id FROM productos WHERE id IN (?) AND tenant_id = ? AND activo = 1`,
-                [productoIds, tenantId]
-            );
+            // Las líneas de combo armado (combo_id) se validan aparte contra el catálogo de combos.
+            const productoIds = [...new Set(itemsInput.filter(i => !i.combo_id).map(i => Number(i.producto_id)))];
+            const [productosDb] =
+                productoIds.length > 0
+                    ? await connection.query(
+                          `SELECT id, precio_unidad, nombre, categoria_id FROM productos WHERE id IN (?) AND tenant_id = ? AND activo = 1`,
+                          [productoIds, tenantId]
+                      )
+                    : [[]];
 
             if (productosDb.length !== productoIds.length) {
                 throw Object.assign(new Error('Algunos productos ya no están disponibles. Por favor, recarga el menú.'), { status: 400 });
@@ -127,6 +133,9 @@ class PedidoQRService {
                 existentesItems.forEach(r => cantidadPorProducto.set(Number(r.producto_id), Number(r.total)));
             }
             itemsInput.forEach(i => {
+                if (i.combo_id) {
+                    return;
+                }
                 const pid = Number(i.producto_id);
                 const cant = Number.parseFloat(i.cantidad) || 0;
                 cantidadPorProducto.set(pid, (cantidadPorProducto.get(pid) || 0) + cant);
@@ -144,6 +153,12 @@ class PedidoQRService {
             let totalItemsNuevos = 0;
 
             for (const item of itemsInput) {
+                // Combo armado: precio y lo elegido salen del catálogo, nunca del cliente.
+                if (item.combo_id) {
+                    totalItemsNuevos += await PedidoQRService._insertarLineaCombo(connection, tenantId, pedidoId, item);
+                    continue;
+                }
+
                 const prod = productosMap.get(Number(item.producto_id));
                 const cantidad = parseFloat(item.cantidad);
                 if (!prod || isNaN(cantidad) || cantidad <= 0) {continue;}
@@ -239,6 +254,40 @@ class PedidoQRService {
     }
 
     /**
+     * Inserta una línea de combo armado (producto NULL + combo_id) con su snapshot.
+     * @returns {Promise<number>} subtotal de la línea
+     */
+    static async _insertarLineaCombo(connection, tenantId, pedidoId, item) {
+        const cantidad = Number.parseFloat(item.cantidad);
+        if (Number.isNaN(cantidad) || cantidad <= 0) {
+            throw Object.assign(new Error('Cantidad inválida.'), { status: 400 });
+        }
+
+        let combo;
+        try {
+            combo = await ComboArmableService.resolverSeleccion(Number(item.combo_id), tenantId, item.selecciones);
+        } catch (e) {
+            throw Object.assign(new Error(e.message || 'Selección del combo inválida.'), { status: 400 });
+        }
+
+        // Validación de stock blanda, igual que con los productos: solo se registra el aviso.
+        const check = await InventarioService.checkStockParaSelecciones(tenantId, combo.selecciones, cantidad);
+        if (!check.ok) {
+            console.warn(`[Menu QR] Combo vendido sin stock suficiente: Combo ID ${combo.combo_id} en Tenant ${tenantId}`);
+        }
+
+        const notaItem = typeof item.nota === 'string' && item.nota.trim() ? item.nota.trim().slice(0, 255) : null;
+        const subtotal = Math.round(cantidad * combo.precio_final * 100) / 100;
+        const [itemRes] = await connection.query(
+            `INSERT INTO pedido_items (tenant_id, pedido_id, producto_id, combo_id, cantidad, unidad_medida, precio_unitario, subtotal, estado, nota)
+             VALUES (?, ?, NULL, ?, ?, 'UND', ?, ?, 'pendiente', ?)`,
+            [tenantId, pedidoId, combo.combo_id, cantidad, combo.precio_final, subtotal, notaItem]
+        );
+        await ComboVentaRepository.guardarSeleccionesPedidoItem(itemRes.insertId, combo.selecciones, connection);
+        return subtotal;
+    }
+
+    /**
      * Resuelve la mesa a partir del qr_token para operaciones de solo lectura o
      * acciones ligeras (consultar estado, llamar al mesero). No aplica la expiración
      * por inactividad de procesarPedido: solo dice si la cookie de sesión coincide.
@@ -290,9 +339,11 @@ class PedidoQRService {
         const pedido = pedidos[0];
 
         const [items] = await db.query(
-            `SELECT pi.id, pi.cantidad, pi.subtotal, pi.estado, pi.nota, p.nombre AS producto_nombre
+            `SELECT pi.id, pi.combo_id, pi.cantidad, pi.subtotal, pi.estado, pi.nota,
+                    COALESCE(p.nombre, cb.nombre) AS producto_nombre
              FROM pedido_items pi
              LEFT JOIN productos p ON p.id = pi.producto_id
+             LEFT JOIN combos cb ON cb.id = pi.combo_id AND cb.tenant_id = pi.tenant_id
              WHERE pi.pedido_id = ?
              ORDER BY pi.created_at ASC, pi.id ASC`,
             [pedido.id]
@@ -307,6 +358,10 @@ class PedidoQRService {
             );
         }
 
+        const combosPorItem = await ComboVentaRepository.getSeleccionesPorItems(
+            items.filter(i => i.combo_id).map(i => i.id)
+        );
+
         const resumen = { pendiente: 0, enviado: 0, preparando: 0, listo: 0, servido: 0, cancelado: 0 };
         const itemsOut = items.map(i => {
             if (resumen[i.estado] !== undefined) {
@@ -318,7 +373,12 @@ class PedidoQRService {
                 subtotal: Number(i.subtotal),
                 estado: i.estado,
                 nota: i.nota || null,
-                modificadores: modificadores.filter(m => m.pedido_item_id === i.id).map(m => m.opcion_nombre)
+                // Un combo muestra lo elegido en el mismo lugar que los toppings de un producto.
+                modificadores: i.combo_id
+                    ? (combosPorItem.get(i.id) || []).map(
+                          s => (Number(s.cantidad) !== 1 ? `${Number(s.cantidad)}× ` : '') + s.producto_nombre
+                      )
+                    : modificadores.filter(m => m.pedido_item_id === i.id).map(m => m.opcion_nombre)
             };
         });
 

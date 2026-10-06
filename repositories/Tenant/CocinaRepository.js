@@ -5,6 +5,7 @@
  */
 
 const db = require('../../config/database');
+const ComboVentaRepository = require('./ComboVentaRepository');
 
 class CocinaRepository {
     /**
@@ -21,16 +22,19 @@ class CocinaRepository {
             `
             SELECT i.*, p.numero AS pedido_numero, p.mesa_id, p.origen AS pedido_origen,
                    m.numero AS mesa_numero, m.tipo AS mesa_tipo, m.descripcion AS mesa_descripcion,
-                   pr.nombre AS producto_nombre,
-                   c.estacion_id, e.nombre AS estacion_nombre, e.orden AS estacion_orden
+                   COALESCE(pr.nombre, cb.nombre) AS producto_nombre,
+                   COALESCE(c.estacion_id, cb.estacion_id) AS estacion_id,
+                   e.nombre AS estacion_nombre, e.orden AS estacion_orden
             FROM pedido_items i
             JOIN pedidos p ON p.id = i.pedido_id
             JOIN mesas m ON m.id = p.mesa_id
-            JOIN productos pr ON pr.id = i.producto_id
-            JOIN categorias c ON pr.categoria_id = c.id
-            LEFT JOIN estaciones e ON e.id = c.estacion_id
+            LEFT JOIN productos pr ON pr.id = i.producto_id
+            LEFT JOIN categorias c ON c.id = pr.categoria_id
+            LEFT JOIN combos cb ON cb.id = i.combo_id AND cb.tenant_id = p.tenant_id
+            LEFT JOIN estaciones e ON e.id = COALESCE(c.estacion_id, cb.estacion_id)
             WHERE p.tenant_id = ?
-              AND c.nombre <> 'Cerámicas'
+              AND (pr.id IS NOT NULL OR cb.id IS NOT NULL)
+              AND COALESCE(c.nombre, '') <> 'Cerámicas'
               AND p.estado NOT IN ('cerrado', 'cancelado')
               AND i.estado IN ('enviado','preparando','listo')
             ORDER BY COALESCE(i.enviado_at, i.created_at) ASC, i.id ASC
@@ -44,8 +48,14 @@ class CocinaRepository {
                 'SELECT pedido_item_id, grupo_nombre, opcion_nombre FROM pedido_item_modificadores WHERE pedido_item_id IN (?)',
                 [itemIds]
             );
+            const combosPorItem = await ComboVentaRepository.getSeleccionesPorItems(
+                items.filter(i => i.combo_id).map(i => i.id)
+            );
             items.forEach(i => {
                 i.modificadores = modificadores.filter(m => m.pedido_item_id === i.id);
+                if (i.combo_id) {
+                    i.combo_selecciones = combosPorItem.get(i.id) || [];
+                }
             });
         }
 
@@ -86,10 +96,11 @@ class CocinaRepository {
         let query = `
             UPDATE pedido_items pi
             INNER JOIN pedidos p ON pi.pedido_id = p.id
-            INNER JOIN productos pr ON pi.producto_id = pr.id
+            LEFT JOIN productos pr ON pi.producto_id = pr.id
+            LEFT JOIN combos cb ON pi.combo_id = cb.id
             SET pi.estado = ?, pi.${timestampField} = NOW()
             WHERE p.tenant_id = ?
-              AND pr.nombre = ?
+              AND COALESCE(pr.nombre, cb.nombre) = ?
               AND pi.estado IN (?)
               AND pi.modificadores_hash <=> ?
         `;

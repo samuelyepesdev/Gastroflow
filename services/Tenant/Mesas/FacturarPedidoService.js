@@ -7,6 +7,7 @@ const PedidoItemPagoRepository = require('../../../repositories/Tenant/PedidoIte
 const BonoRepository = require('../../../repositories/Tenant/BonoRepository');
 const BonoService = require('../BonoService');
 const InventarioService = require('../InventarioService');
+const ComboVentaRepository = require('../../../repositories/Tenant/ComboVentaRepository');
 const TaxService = require('../../Shared/TaxService');
 const RealtimeEvents = require('../../Shared/RealtimeEvents');
 const TenantOwnership = require('../TenantOwnership');
@@ -43,6 +44,12 @@ class FacturarPedidoService {
             const productoIds = items.filter(i => !i.es_servicio && i.producto_id).map(i => i.producto_id);
             const { tasas, defaultTasa } = await TaxService.getTasasPorProducto(tenantId, productoIds, connection);
 
+            const infoCombos = await ComboVentaRepository.getInfoCombos(
+                tenantId,
+                [...new Set(items.filter(i => i.combo_id).map(i => i.combo_id))],
+                connection
+            );
+
             const serviciosExternosIds = await FacturarPedidoService._obtenerServiciosExternos(
                 connection,
                 tenantId,
@@ -63,7 +70,8 @@ class FacturarPedidoService {
                 descuentosMap,
                 tasas,
                 defaultTasa,
-                serviciosExternosIds
+                serviciosExternosIds,
+                infoCombos
             );
 
             const propina = Math.max(
@@ -151,6 +159,7 @@ class FacturarPedidoService {
                 l.producto_id,
                 l.servicio_id,
                 l.es_servicio,
+                l.combo_id,
                 l.cantidad,
                 l.precio_unitario,
                 l.unidad_medida,
@@ -163,11 +172,12 @@ class FacturarPedidoService {
             ]);
 
             const [detalleResult] = await connection.query(
-                `INSERT INTO detalle_factura (factura_id, producto_id, servicio_id, es_servicio, cantidad, precio_unitario, unidad_medida, subtotal, descuento_porcentaje, descuento_valor, base_gravable, tasa_impuesto, valor_impuesto) VALUES ?`,
+                `INSERT INTO detalle_factura (factura_id, producto_id, servicio_id, es_servicio, combo_id, cantidad, precio_unitario, unidad_medida, subtotal, descuento_porcentaje, descuento_valor, base_gravable, tasa_impuesto, valor_impuesto) VALUES ?`,
                 [detallesValuesFinal]
             );
 
             await FacturarPedidoService._copiarModificadores(connection, items, detalleResult.insertId);
+            await ComboVentaRepository.copiarAFactura(connection, items, detalleResult.insertId);
 
             // El cobro de servicios externos (ej. domicilio de un tercero) entra con
             // la factura pero se le entrega al proveedor en efectivo: se compensa
@@ -296,7 +306,14 @@ class FacturarPedidoService {
         return { tipo: 'porcentaje', valor: Math.max(0, Number(entrada) || 0) };
     }
 
-    static _procesarLineasFactura(items, descuentosMap, tasas, defaultTasa, serviciosExternosIds = new Set()) {
+    static _procesarLineasFactura(
+        items,
+        descuentosMap,
+        tasas,
+        defaultTasa,
+        serviciosExternosIds = new Set(),
+        infoCombos = new Map()
+    ) {
         let total = 0;
         let montoEfectivo = 0;
         let montoTransferencia = 0;
@@ -350,7 +367,12 @@ class FacturarPedidoService {
                 montoServiciosExternos += subtotal;
             }
 
-            const tasa = i.es_servicio ? defaultTasa : (tasas.get(i.producto_id) ?? defaultTasa);
+            // Servicio y combo no tienen producto: el combo trae su propio tributo (NULL = el del restaurante).
+            const tasa = i.es_servicio
+                ? defaultTasa
+                : i.combo_id
+                  ? (infoCombos.get(i.combo_id)?.tasa_impuesto ?? defaultTasa)
+                  : (tasas.get(i.producto_id) ?? defaultTasa);
             const { base_gravable, valor_impuesto } = TaxService.desglosarLinea(subtotal, tasa);
             subtotalFactura += base_gravable;
             impuestosFactura += valor_impuesto;
@@ -359,6 +381,7 @@ class FacturarPedidoService {
                 producto_id: i.producto_id,
                 servicio_id: i.servicio_id,
                 es_servicio: i.es_servicio,
+                combo_id: i.combo_id || null,
                 cantidad: cant,
                 precio_unitario: precioUnitFactura,
                 unidad_medida: i.unidad_medida || 'UND',
@@ -507,6 +530,9 @@ class FacturarPedidoService {
     }
 
     static async _descontarInventario(tenantId, lineasFactura, facturaId) {
+        if (lineasFactura.some(l => l.combo_id)) {
+            await InventarioService.descontarPorCombosFactura(tenantId, facturaId);
+        }
         for (const l of lineasFactura) {
             try {
                 if (!l.es_servicio && l.producto_id) {

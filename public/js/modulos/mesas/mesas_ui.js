@@ -19,6 +19,8 @@ window.MesasModule.renderItems = function() {
     const badgePagado = it.pagado ? '<br><span class="badge bg-success mt-1"><i class="bi bi-check2-circle me-1"></i>Pagado</span>' : '';
     const modsTexto = (it.modificadores && it.modificadores.length)
       ? '<div class="pedido-item-mods">' + it.modificadores.map(m => GF.escapeHtml(m.opcion_nombre)).join(', ') + '</div>' : '';
+    const comboTxt = (it.combo_selecciones && it.combo_selecciones.length)
+      ? '<div class="pedido-item-mods">' + it.combo_selecciones.map(s => (Number(s.cantidad) !== 1 ? Number(s.cantidad) + '× ' : '') + GF.escapeHtml(s.producto_nombre)).join(', ') + '</div>' : '';
     const notaTxt = (it.nota != null && String(it.nota).trim() !== '')
       ? '<div class="pedido-item-nota" title="' + GF.escapeHtml(it.nota) + '"><i class="bi bi-chat-left-text"></i> ' + GF.escapeHtml(it.nota) + '</div>'
       : '';
@@ -37,7 +39,7 @@ window.MesasModule.renderItems = function() {
 
     tbody.append(`
       <tr>
-        <td class="td-producto align-middle">${GF.escapeHtml(it.producto_nombre || it.nombre || it.producto_id) + descBadge + badgePagado + modsTexto + notaTxt}</td>
+        <td class="td-producto align-middle">${GF.escapeHtml(it.producto_nombre || it.nombre || it.producto_id) + descBadge + badgePagado + comboTxt + modsTexto + notaTxt}</td>
         <td class="text-center align-middle">${inputHtml}</td>
         <td class="text-end td-precio d-none d-sm-table-cell align-middle">${this.formatear(precio)}</td>
         <td class="text-end td-subtotal align-middle">${it.pagado ? '<span class="text-muted text-decoration-line-through small">' + this.formatear(subtotal) + '</span>' : this.formatear(subtotal)}</td>
@@ -121,6 +123,46 @@ window.MesasModule.seleccionarProducto = async function(p) {
     $('#buscarProductoMesa').val('').focus();
   });
 };
+
+// Combos armables: el selector (ComboPicker) devuelve lo elegido y el servidor calcula el precio.
+window.MesasModule.seleccionarCombo = async function(combo) {
+  await this.runWithOffcanvasHidden(async () => {
+    const elegido = await ComboPicker.elegir(combo);
+    if (!elegido) return;
+    try {
+      await GF.api.post(
+        `/api/mesas/pedidos/${this.pedidoActual.id}/combos`,
+        { combo_id: combo.id, cantidad: 1, selecciones: elegido.selecciones },
+        'Error al agregar el combo'
+      );
+    } catch (e) {
+      return Swal.fire({ icon: 'error', title: e.message });
+    }
+    this.currentMesaEstado = 'ocupada';
+    await this.cargarPedido(this.pedidoActual.id);
+    $('#buscarProductoMesa').val('').focus();
+  });
+};
+
+function crearItemResultadoCombo(mod, list, combo) {
+  const item = $(`
+    <a href="#" class="list-group-item list-group-item-action">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <div class="fw-bold text-primary"><i class="bi bi-box-seam me-1"></i>Combo</div>
+          <div class="text-dark">${GF.escapeHtml(combo.nombre)}</div>
+        </div>
+        <span class="badge bg-light text-dark border">desde $${Number(combo.precio_base).toLocaleString()}</span>
+      </div>
+    </a>`);
+  item.on('click', e => {
+    e.preventDefault();
+    list.hide().empty();
+    $('#buscarProductoMesa').val('');
+    mod.seleccionarCombo(combo);
+  });
+  return item;
+}
 
 // Extraída de refreshMesas: es el mismo bloque de "mesa ya facturada en otro
 // lado" que limpiarMesaPorEventoExterno en mesas_core.js, pero detectado por
@@ -449,12 +491,17 @@ $(function () {
     const q = this.value.trim();
     if (q.length < 2) { $('#resultadosProductoMesa').hide().empty(); return; }
     to = setTimeout(async () => {
-      const productos = await GF.api.getOr(`/api/productos/buscar?q=${encodeURIComponent(q)}`, []);
+      const [productos] = await Promise.all([
+        GF.api.getOr(`/api/productos/buscar?q=${encodeURIComponent(q)}`, []),
+        ComboPicker.catalogo()
+      ]);
+      const combos = ComboPicker.buscar(q);
       const list = $('#resultadosProductoMesa');
       list.empty();
-      if (productos.length === 0) {
+      if (productos.length === 0 && combos.length === 0) {
         list.append('<div class="list-group-item text-muted">No se encontraron productos</div>');
       } else {
+        combos.forEach(c => list.append(crearItemResultadoCombo(mod, list, c)));
         productos.forEach(p => {
           list.append(crearItemResultadoProducto(mod, list, p));
         });

@@ -196,6 +196,8 @@ window.POS_PAGO = {
                         : bruto * (1 - (item.descuento_porcentaje || 0) / 100);
                     return {
                         producto_id: item.producto_id,
+                        combo_id: item.combo_id || null,
+                        selecciones: item.combo_id ? item.selecciones : undefined,
                         es_servicio: !!item.es_servicio,
                         servicio_id: item.servicio_id || null,
                         cantidad: item.cantidad,

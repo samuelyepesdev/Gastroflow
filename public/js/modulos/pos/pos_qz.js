@@ -90,6 +90,10 @@ window.POS_QZ = {
             } else if (item.descuento_porcentaje != null && Number(item.descuento_porcentaje) > 0) {
                 text(`  Desc: -${Number(item.descuento_porcentaje)}%`.slice(0, cols));
             }
+            (item.combo_selecciones || []).forEach(sel => {
+                const cant = Number(sel.cantidad) !== 1 ? `${Number(sel.cantidad)}x ` : '';
+                text(`  - ${cant}${sel.producto_nombre}`.slice(0, cols));
+            });
             (item.modificadores || []).forEach(mod => {
                 text(`  + ${mod.opcion_nombre}`.slice(0, cols));
             });
