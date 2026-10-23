@@ -35,7 +35,15 @@ const ADMIN_SECTIONS = [
         label: 'Usuarios y accesos',
         icon: 'bi-people',
         collapsible: true,
-        items: [{ key: 'permisos', label: 'Permisos por usuario', icon: 'bi-shield-lock', href: '/admin/permisos' }]
+        items: [
+            { key: 'permisos', label: 'Permisos por usuario', icon: 'bi-shield-lock', href: '/admin/permisos' },
+            {
+                key: 'permisos-masivo',
+                label: 'Permisos masivos y roles',
+                icon: 'bi-people-fill',
+                href: '/admin/permisos/masivo'
+            }
+        ]
     },
     {
         key: 'operacion',

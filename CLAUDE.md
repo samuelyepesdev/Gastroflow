@@ -94,6 +94,11 @@ routes/ (thin)  →  middleware (auth, tenant, planFeature)  →  app/Http/Contr
   grants default roles ONLY when it is newly created, so manual role edits are never undone.
   `PERMISSION_TO_MODULE` and `PERMISSION_SECTIONS` are derived from the catalog. A plan whose
   `caracteristicas` contains `'*'` includes every module, present and future.
+  At scale, use `/admin/permisos/masivo` (`PermisosMasivosService`): bulk grant/deny/reset by role ×
+  restaurants (all / by plan / selection) with a preview that shares the same change plan as apply, an
+  exceptions report with "volver al estándar", the roles × permissions matrix, and an audit trail
+  (`tenant_audit`, actions `permisos.*`). Bulk edits store the MINIMAL exceptions (granting what the role
+  already gives stores nothing) and skip Premium/Definitivo admins, whose exceptions never apply.
   `utils/planPermissions.js` maps each fine-grained permission slug (`productos.ver`, `caja.abrir_cerrar`,
   ...) to the plan module it requires, and `getAllowedForUser` combines plan + add-ons + user permissions
   for what a view/navbar should show. `requirePermission`/`requireRole` (`middleware/auth.js`) enforce the
