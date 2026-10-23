@@ -95,6 +95,7 @@ class AppServer {
 
     async bootstrap() {
         await runScript('scripts/run-migrations.js', this.env, this.logDir);
+        await runScript('scripts/normalizar-permisos-admins.js', this.env, this.logDir);
 
         if (!this.env.SYNC_API_URL) {
             // Desktop puramente local (sin vínculo a producción): mantiene el

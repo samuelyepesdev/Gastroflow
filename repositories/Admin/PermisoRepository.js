@@ -6,6 +6,7 @@
 const db = require('../../config/database');
 const { PERMISSION_SECTIONS } = require('../../utils/constants');
 const CacheService = require('../../services/Shared/CacheService');
+const PermisosUsuarioService = require('../../services/Shared/PermisosUsuarioService');
 
 class PermisoRepository {
     static async getAllRoles() {
@@ -102,36 +103,31 @@ class PermisoRepository {
         return rows;
     }
 
-    /** IDs de permisos asignados directamente al usuario (user_permisos) */
-    static async getPermisoIdsByUser(userId) {
-        const [rows] = await db.query('SELECT permiso_id FROM user_permisos WHERE user_id = ?', [userId]);
-        return rows.map(r => r.permiso_id);
+    /** Excepciones del usuario sobre su rol: { conceder: [permiso_id], denegar: [permiso_id] } */
+    static async getExcepcionesByUser(userId) {
+        const [rows] = await db.query('SELECT permiso_id, efecto FROM user_permisos WHERE user_id = ?', [userId]);
+        return {
+            conceder: rows.filter(r => r.efecto === 'conceder').map(r => r.permiso_id),
+            denegar: rows.filter(r => r.efecto === 'denegar').map(r => r.permiso_id)
+        };
+    }
+
+    /** Ids de permisos a partir de sus nombres (los nombres que no existan se ignoran). */
+    static async _idsPorNombre(nombres) {
+        if (!nombres || nombres.length === 0) {
+            return [];
+        }
+        const [rows] = await db.query('SELECT id FROM permisos WHERE nombre IN (?)', [nombres]);
+        return rows.map(r => r.id);
     }
 
     /**
-     * Permisos efectivos para mostrar en el panel: si el usuario tiene user_permisos (el Superadmin
-     * ya personalizó), devolver esos; si no, devolver los del rol (así el panel muestra el estado real).
+     * Permisos efectivos del usuario (rol + concedidos - denegados, con el techo del plan si es
+     * admin del restaurante), tal como los vería el sistema. Es lo que muestra el panel.
      */
     static async getEffectivePermisoIdsByUser(userId) {
-        const [userRows] = await db.query('SELECT rol_id FROM usuarios WHERE id = ?', [userId]);
-        if (!userRows.length) {
-            return [];
-        }
-        // Unión de permisos de todos los roles asignados (principal + usuario_roles),
-        // no solo del rol principal.
-        const [rolRows] = await db
-            .query('SELECT rol_id FROM usuario_roles WHERE user_id = ?', [userId])
-            .catch(() => [[]]);
-        const rolIds = [...new Set([userRows[0].rol_id, ...(rolRows || []).map(r => r.rol_id)])];
-        const [rolePerms] = await db.query('SELECT DISTINCT permiso_id FROM rol_permisos WHERE rol_id IN (?)', [
-            rolIds
-        ]);
-        const roleIds = (rolePerms || []).map(r => r.permiso_id);
-        const userIds = await PermisoRepository.getPermisoIdsByUser(userId);
-        if (userIds && userIds.length > 0) {
-            return userIds;
-        }
-        return roleIds;
+        const resuelto = await PermisosUsuarioService.resolver(userId);
+        return resuelto ? PermisoRepository._idsPorNombre(resuelto.permisos) : [];
     }
 
     /** Obtener IDs de permisos cuyos nombres están en la lista (para sincronizar con plan) */
@@ -144,19 +140,55 @@ class PermisoRepository {
         return (rows || []).map(r => r.id);
     }
 
-    /** Asignar permisos directos al usuario (reemplazo: si tiene alguno, esos son los efectivos) */
+    /**
+     * Guarda los permisos que el superadmin dejó marcados para el usuario. Se guardan solo las
+     * diferencias contra lo que le corresponde por rol y plan: lo que marcó de más es una
+     * concesión y lo que desmarcó es una denegación. Si no cambió nada, no queda ninguna fila y
+     * el usuario sigue al rol (recibe sus permisos nuevos).
+     */
     static async setPermisosForUser(userId, permisoIds) {
+        const resuelto = await PermisosUsuarioService.resolver(userId);
+        if (!resuelto) {
+            throw new Error('Usuario no encontrado');
+        }
+        const deseados = new Set(permisoIds || []);
+        const base = new Set(await PermisoRepository._idsPorNombre(resuelto.base));
+        const conceder = [...deseados].filter(id => !base.has(id));
+        const denegar = [...base].filter(id => !deseados.has(id));
+        await PermisoRepository.setExcepcionesForUser(userId, { conceder, denegar });
+    }
+
+    /** Reemplaza las excepciones del usuario (en una transacción) y limpia su contexto en caché. */
+    static async setExcepcionesForUser(userId, { conceder = [], denegar = [] }) {
         const connection = await db.getConnection();
         try {
+            await connection.beginTransaction();
             await connection.query('DELETE FROM user_permisos WHERE user_id = ?', [userId]);
-            if (permisoIds && permisoIds.length > 0) {
-                const values = permisoIds.map(pid => [userId, pid]);
-                await connection.query('INSERT INTO user_permisos (user_id, permiso_id) VALUES ?', [values]);
+            const filas = [
+                ...conceder.map(pid => [userId, pid, 'conceder']),
+                ...denegar.map(pid => [userId, pid, 'denegar'])
+            ];
+            if (filas.length > 0) {
+                await connection.query('INSERT INTO user_permisos (user_id, permiso_id, efecto) VALUES ?', [filas]);
             }
+            await connection.commit();
+        } catch (error) {
+            await connection.rollback();
+            throw error;
         } finally {
             connection.release();
         }
         CacheService.delete(`user:ctx:${userId}`);
+    }
+
+    /** Quita todas las excepciones de los usuarios: vuelven a depender solo de su rol y su plan. */
+    static async reiniciarExcepciones(userIds) {
+        if (!userIds || userIds.length === 0) {
+            return 0;
+        }
+        const [r] = await db.query('DELETE FROM user_permisos WHERE user_id IN (?)', [userIds]);
+        userIds.forEach(id => CacheService.delete(`user:ctx:${id}`));
+        return r.affectedRows;
     }
 }
 

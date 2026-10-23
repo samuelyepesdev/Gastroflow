@@ -16,7 +16,7 @@
     "outputPath": "dist"
   },
   "scripts": {
-    "start": "node scripts/run-migrations.js && node scripts/create-admin.js && node scripts/seed-doc-types.js && node scripts/seed-temas-parametros.js && node server.js",
+    "start": "node scripts/run-migrations.js && node scripts/normalizar-permisos-admins.js && node scripts/create-admin.js && node scripts/seed-doc-types.js && node scripts/seed-temas-parametros.js && node server.js",
     "dev": "nodemon server.js",
     "prepare": "node -e \"if (process.env.NODE_ENV !== 'production' && process.env.HUSKY !== '0') { require('child_process').execSync('husky', {stdio: 'inherit'}) }\"",
     "lint": "eslint . --ext .js",
@@ -26,6 +26,7 @@
     "migrate": "node scripts/run-migrations.js",
     "seed:docs": "node scripts/seed-doc-types.js",
     "create-admin": "node scripts/create-admin.js",
+    "permisos:impacto": "node scripts/permisos-impacto.js",
     "create-test-users": "node scripts/create-test-users.js",
     "generate:og-image": "node scripts/generate-og-image.js",
     "seed-tenants": "node scripts/seed-tenants-test.js",

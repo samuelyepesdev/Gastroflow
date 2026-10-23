@@ -39,6 +39,8 @@ class AddonService {
         }
         await AddonRepository.addToTenant(tenantId, addonId);
         CacheService.delete(`addons:${tenantId}`);
+        // Los add-ons suben el techo de permisos del admin: se refresca el contexto cacheado
+        CacheService.deleteByPrefix('user:ctx:');
         await TenantAuditService.log({
             tenantId,
             userId,
@@ -51,6 +53,7 @@ class AddonService {
     static async removeFromTenant(tenantId, addonId, userId = null) {
         await AddonRepository.removeFromTenant(tenantId, addonId);
         CacheService.delete(`addons:${tenantId}`);
+        CacheService.deleteByPrefix('user:ctx:');
         await TenantAuditService.log({
             tenantId,
             userId,
