@@ -16,7 +16,7 @@
     "outputPath": "dist"
   },
   "scripts": {
-    "start": "node scripts/run-migrations.js && node scripts/normalizar-permisos-admins.js && node scripts/create-admin.js && node scripts/seed-doc-types.js && node scripts/seed-temas-parametros.js && node server.js",
+    "start": "node scripts/run-migrations.js && node scripts/sincronizar-permisos.js && node scripts/normalizar-permisos-admins.js && node scripts/create-admin.js && node scripts/seed-doc-types.js && node scripts/seed-temas-parametros.js && node server.js",
     "dev": "nodemon server.js",
     "prepare": "node -e \"if (process.env.NODE_ENV !== 'production' && process.env.HUSKY !== '0') { require('child_process').execSync('husky', {stdio: 'inherit'}) }\"",
     "lint": "eslint . --ext .js",

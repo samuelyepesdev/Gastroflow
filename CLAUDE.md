@@ -88,6 +88,12 @@ routes/ (thin)  →  middleware (auth, tenant, planFeature)  →  app/Http/Contr
   (modules the plan/add-ons don't include are dropped, everything the plan includes is added; Premium and
   Definitivo get everything and ignore exceptions), so a plan change no longer rewrites per-user rows.
   `syncPlanPermissionsToTenantUsers` only clears admin exceptions and the `user:ctx:` cache.
+  **Permissions are declared in ONE catalog, `utils/permisosCatalogo.js`** (name, description, panel section,
+  plan module or `null`, default roles). To add a permission, add it there — don't write a migration:
+  `scripts/sincronizar-permisos.js` (in the `npm start` and Electron chains) creates it in `permisos` and
+  grants default roles ONLY when it is newly created, so manual role edits are never undone.
+  `PERMISSION_TO_MODULE` and `PERMISSION_SECTIONS` are derived from the catalog. A plan whose
+  `caracteristicas` contains `'*'` includes every module, present and future.
   `utils/planPermissions.js` maps each fine-grained permission slug (`productos.ver`, `caja.abrir_cerrar`,
   ...) to the plan module it requires, and `getAllowedForUser` combines plan + add-ons + user permissions
   for what a view/navbar should show. `requirePermission`/`requireRole` (`middleware/auth.js`) enforce the

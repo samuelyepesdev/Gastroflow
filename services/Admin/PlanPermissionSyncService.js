@@ -11,7 +11,11 @@
 
 const PermisoRepository = require('../../repositories/Admin/PermisoRepository');
 const CacheService = require('../Shared/CacheService');
-const { getPermissionNamesForModule, PERMISSION_TO_MODULE } = require('../../utils/planPermissions');
+const {
+    getPermissionNamesForModule,
+    incluyeTodosLosModulos,
+    PERMISSION_TO_MODULE
+} = require('../../utils/planPermissions');
 const { ROLES } = require('../../utils/constants');
 
 /**
@@ -30,7 +34,7 @@ function getPermissionNamesForPlan(plan) {
         (plan.nombre &&
             (plan.nombre.toLowerCase().includes('premium') || plan.nombre.toLowerCase().includes('definitivo')));
 
-    if (isPremium) {
+    if (isPremium || incluyeTodosLosModulos(plan)) {
         return Object.keys(PERMISSION_TO_MODULE);
     }
 
