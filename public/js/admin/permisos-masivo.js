@@ -71,6 +71,23 @@
         });
     });
 
+    // Marca o desmarca TODOS los permisos (también los ocultos por el buscador)
+    $('pmTodosPermisos').addEventListener('change', function (e) {
+        todos('.pm-permiso, .pm-sec-check').forEach(function (c) {
+            c.checked = e.target.checked;
+        });
+        invalidar();
+    });
+    // Si se desmarca uno suelto, el "todos" deja de estar marcado
+    todos('.pm-permiso').forEach(function (c) {
+        c.addEventListener('change', function () {
+            var total = todos('.pm-permiso');
+            $('pmTodosPermisos').checked = total.every(function (p) {
+                return p.checked;
+            });
+        });
+    });
+
     function filtrar(input, selector, atributo) {
         input.addEventListener('input', function () {
             var t = input.value.trim().toLowerCase();
