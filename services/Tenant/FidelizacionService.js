@@ -24,6 +24,8 @@ const PROGRAMA_POR_DEFECTO = {
     nombre: 'Tarjeta de sellos',
     sellos_requeridos: 8,
     monto_minimo: 0,
+    modo_sello: 'monto',
+    producto_id: null,
     premio: 'Premio de la casa',
     activo: 0,
     diseno: 'cafe',
@@ -92,6 +94,16 @@ class FidelizacionService {
         if (!Number.isFinite(montoMinimo) || montoMinimo < 0) {
             throw new Error('El monto mínimo no puede ser negativo');
         }
+        const modoSello = datos.modo_sello === 'producto' ? 'producto' : 'monto';
+        let productoId = null;
+        if (modoSello === 'producto') {
+            productoId = Number.parseInt(datos.producto_id, 10);
+            if (!Number.isInteger(productoId) || productoId < 1) {
+                throw new Error('Elige el producto de la carta que da el sello');
+            }
+            // El id viene del navegador: debe ser un producto de este restaurante.
+            await TenantOwnership.productos(tenantId, [productoId]);
+        }
         if (!premio) {
             throw new Error('Indica cuál es el premio');
         }
@@ -110,7 +122,10 @@ class FidelizacionService {
         const guardado = await FidelizacionRepository.guardarPrograma(tenantId, {
             nombre,
             sellosRequeridos,
-            montoMinimo,
+            // En modo producto el monto no aplica: se guarda en 0 para no dejar una regla fantasma.
+            montoMinimo: modoSello === 'producto' ? 0 : montoMinimo,
+            modoSello,
+            productoId,
             premio,
             activo: datos.activo === undefined ? true : Boolean(datos.activo),
             diseno: FidelizacionDisenos.disenoValido(datos.diseno),
@@ -292,15 +307,27 @@ class FidelizacionService {
         return { url, qr, activo: Boolean(programa.activo) };
     }
 
+    /** Cómo se gana un sello, en una frase para el cliente. */
+    static textoRegla(programa) {
+        if (programa.modo_sello === 'producto' && programa.producto_nombre) {
+            return `Cada compra que incluya ${programa.producto_nombre} suma un sello.`;
+        }
+        return Number(programa.monto_minimo) > 0
+            ? `Cada compra desde ${formatMoney(programa.monto_minimo)} suma un sello.`
+            : 'Cada compra suma un sello.';
+    }
+
+    /** Productos de la carta para elegir el que da el sello. */
+    static listarProductos(tenantId) {
+        return FidelizacionRepository.listarProductos(tenantId);
+    }
+
     /** PDF imprimible (tarjeta con el diseño del local y su QR de inscripción). */
     static async tarjetaQrPdf(tenantId) {
         const { qr } = await FidelizacionService.obtenerInscripcionQR(tenantId);
         const programa = await FidelizacionRepository.obtenerPrograma(tenantId);
         const ctx = await FidelizacionService._contextoDiseno(tenantId, programa);
-        const regla =
-            Number(programa.monto_minimo) > 0
-                ? `Cada compra desde ${formatMoney(programa.monto_minimo)} suma un sello.`
-                : 'Cada compra suma un sello.';
+        const regla = FidelizacionService.textoRegla(programa);
         const datos = await FidelizacionService._datosTarjeta(ctx, {
             modo: 'impreso',
             programa: programa.nombre,
@@ -421,7 +448,20 @@ class FidelizacionService {
             if (!programa || !programa.activo) {
                 return { sellado: false, motivo: 'programa_inactivo' };
             }
-            if (Number(total) < Number(programa.monto_minimo)) {
+            if (programa.modo_sello === 'producto') {
+                // Sin producto elegido (o eliminado de la carta) no se sella: nunca a ciegas.
+                if (!programa.producto_id) {
+                    return { sellado: false, motivo: 'producto_no_configurado' };
+                }
+                const incluye = await FidelizacionRepository.facturaTieneProducto(
+                    tenantId,
+                    facturaId,
+                    programa.producto_id
+                );
+                if (!incluye) {
+                    return { sellado: false, motivo: 'sin_producto' };
+                }
+            } else if (Number(total) < Number(programa.monto_minimo)) {
                 return { sellado: false, motivo: 'monto_insuficiente' };
             }
 

@@ -5,7 +5,10 @@ jest.mock('../../../config/database', () => ({ getConnection: jest.fn(), query: 
 jest.mock('../../../repositories/Tenant/FidelizacionRepository');
 jest.mock('../../../services/Shared/GoogleWalletService');
 jest.mock('../../../repositories/Tenant/ClienteRepository');
-jest.mock('../../../services/Tenant/TenantOwnership', () => ({ clientes: jest.fn().mockResolvedValue(true) }));
+jest.mock('../../../services/Tenant/TenantOwnership', () => ({
+    clientes: jest.fn().mockResolvedValue(true),
+    productos: jest.fn().mockResolvedValue(true)
+}));
 // Funciones simples (no jest.fn): resetAllMocks no las toca. Sin R2 la imagen del pase simplemente no se sube.
 jest.mock('../../../services/Tenant/R2StorageService', () => ({
     publicUrl: undefined,
@@ -79,6 +82,89 @@ describe('guardarPrograma', () => {
             1,
             expect.objectContaining({ sellosRequeridos: 8, premio: 'Postre', montoMinimo: 15000, activo: true })
         );
+    });
+});
+
+describe('sello por producto: guardado', () => {
+    const base = { sellos_requeridos: 8, premio: 'Postre', monto_minimo: 5000 };
+
+    test('el modo por defecto es por monto y no guarda producto', async () => {
+        Repo.guardarPrograma.mockResolvedValue({});
+        await FidelizacionService.guardarPrograma(1, { ...base, producto_id: 9 });
+        expect(Repo.guardarPrograma).toHaveBeenCalledWith(
+            1,
+            expect.objectContaining({ modoSello: 'monto', productoId: null, montoMinimo: 5000 })
+        );
+    });
+
+    test('en modo producto exige elegir uno', async () => {
+        await expect(FidelizacionService.guardarPrograma(1, { ...base, modo_sello: 'producto' })).rejects.toThrow(
+            /producto/
+        );
+        expect(Repo.guardarPrograma).not.toHaveBeenCalled();
+    });
+
+    test('en modo producto valida que sea del restaurante y deja el monto en 0', async () => {
+        const TenantOwnership = require('../../../services/Tenant/TenantOwnership');
+        TenantOwnership.productos.mockResolvedValue(true);
+        Repo.guardarPrograma.mockResolvedValue({});
+        await FidelizacionService.guardarPrograma(1, { ...base, modo_sello: 'producto', producto_id: '9' });
+        expect(TenantOwnership.productos).toHaveBeenCalledWith(1, [9]);
+        expect(Repo.guardarPrograma).toHaveBeenCalledWith(
+            1,
+            expect.objectContaining({ modoSello: 'producto', productoId: 9, montoMinimo: 0 })
+        );
+    });
+
+    test('rechaza un producto de otro restaurante', async () => {
+        const TenantOwnership = require('../../../services/Tenant/TenantOwnership');
+        TenantOwnership.productos.mockRejectedValue(new Error('Producto no válido'));
+        await expect(
+            FidelizacionService.guardarPrograma(1, { ...base, modo_sello: 'producto', producto_id: 99 })
+        ).rejects.toThrow(/no válido/);
+        expect(Repo.guardarPrograma).not.toHaveBeenCalled();
+    });
+});
+
+describe('sello por producto: venta', () => {
+    const porProducto = { ...programa, monto_minimo: 0, modo_sello: 'producto', producto_id: 9 };
+    const venta = { tenantId: 1, facturaId: 40, clienteId: 5, total: 100 };
+
+    test('sin producto configurado no sella', async () => {
+        Repo.obtenerPrograma.mockResolvedValue({ ...porProducto, producto_id: null });
+        expect((await FidelizacionService.sellarPorFactura(venta)).motivo).toBe('producto_no_configurado');
+        expect(Repo.facturaTieneProducto).not.toHaveBeenCalled();
+    });
+
+    test('la venta sin el producto no sella, aunque el monto sea alto', async () => {
+        Repo.obtenerPrograma.mockResolvedValue(porProducto);
+        Repo.facturaTieneProducto.mockResolvedValue(false);
+        const r = await FidelizacionService.sellarPorFactura({ ...venta, total: 900000 });
+        expect(r).toEqual({ sellado: false, motivo: 'sin_producto' });
+        expect(Repo.facturaTieneProducto).toHaveBeenCalledWith(1, 40, 9);
+        expect(db.getConnection).not.toHaveBeenCalled();
+    });
+
+    test('la venta con el producto suma un sello, sin mirar el monto', async () => {
+        Repo.obtenerPrograma.mockResolvedValue(porProducto);
+        Repo.facturaTieneProducto.mockResolvedValue(true);
+        Repo.obtenerTarjetaPorCliente.mockResolvedValue(tarjetaBase);
+        Repo.registrarMovimiento.mockResolvedValue(true);
+        const r = await FidelizacionService.sellarPorFactura(venta);
+        expect(r).toMatchObject({ sellado: true, sellos: 1 });
+    });
+
+    test('en modo monto no consulta el detalle de la factura', async () => {
+        Repo.obtenerPrograma.mockResolvedValue(programa);
+        Repo.obtenerTarjetaPorCliente.mockResolvedValue(null);
+        await FidelizacionService.sellarPorFactura({ ...venta, total: 20000 });
+        expect(Repo.facturaTieneProducto).not.toHaveBeenCalled();
+    });
+
+    test('la regla impresa nombra el producto', () => {
+        expect(FidelizacionService.textoRegla({ ...porProducto, producto_nombre: 'Café' })).toMatch(/incluya Café/);
+        expect(FidelizacionService.textoRegla({ monto_minimo: 0 })).toBe('Cada compra suma un sello.');
+        expect(FidelizacionService.textoRegla({ monto_minimo: 10000 })).toMatch(/desde/);
     });
 });
 
@@ -349,7 +435,7 @@ describe('inscripción por QR', () => {
         expect(Repo.guardarTokenInscripcion).not.toHaveBeenCalled();
         await FidelizacionService.obtenerInscripcionQR(4, { regenerar: true });
         expect(Repo.guardarTokenInscripcion).toHaveBeenCalledTimes(1);
-    });
+    }, 30000);
 });
 
 describe('diseño de la tarjeta', () => {

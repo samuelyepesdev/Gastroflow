@@ -28,6 +28,7 @@ const logoUpload = (req, res, next) =>
 // Rutas base: /api/fidelizacion
 router.get('/programa', requirePermission('fidelizacion.ver'), FidelizacionController.programa);
 router.put('/programa', requirePermission('fidelizacion.gestionar'), FidelizacionController.guardarPrograma);
+router.get('/productos', requirePermission('fidelizacion.ver'), FidelizacionController.productos);
 
 router.get('/inscripcion', requirePermission('fidelizacion.gestionar'), FidelizacionController.inscripcion);
 router.post(

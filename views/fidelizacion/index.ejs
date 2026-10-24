@@ -29,10 +29,25 @@
                                 <label class="form-label small text-muted mb-1" for="pSellos">Sellos para ganar el premio</label>
                                 <input class="form-control" id="pSellos" type="number" min="2" max="20" required>
                             </div>
-                            <div class="col-sm-6">
+                            <div class="col-12">
+                                <label class="form-label small text-muted mb-1" for="pModo">¿Cuándo se gana un sello?</label>
+                                <select class="form-select" id="pModo">
+                                    <option value="monto">Por el valor de la compra</option>
+                                    <option value="producto">Al comprar un producto de la carta</option>
+                                </select>
+                            </div>
+                            <div class="col-12" id="grupoMonto">
                                 <label class="form-label small text-muted mb-1" for="pMonto">Compra mínima por sello ($)</label>
                                 <input class="form-control" id="pMonto" type="number" min="0" step="1000" value="0">
-                                <div class="form-text">0 = cualquier factura suma un sello.</div>
+                                <div class="form-text">0 = cualquier venta a un cliente con tarjeta suma un sello.</div>
+                            </div>
+                            <div class="col-12 d-none" id="grupoProducto">
+                                <label class="form-label small text-muted mb-1" for="pProducto">Producto que da el sello</label>
+                                <select class="form-select" id="pProducto"></select>
+                                <div class="form-text">
+                                    El sello se suma cuando la venta del cliente incluye este producto (un sello por venta,
+                                    sin importar cuántas unidades lleve). Si no lo incluye, no suma.
+                                </div>
                             </div>
                             <div class="col-12">
                                 <label class="form-label small text-muted mb-1" for="pPremio">Premio</label>
