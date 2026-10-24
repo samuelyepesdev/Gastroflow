@@ -3,6 +3,7 @@
  */
 
 const PlanRepository = require('../../repositories/Admin/PlanRepository');
+const CacheService = require('../Shared/CacheService');
 
 class PlanService {
     /** Listar todos los planes activos */
@@ -45,6 +46,9 @@ class PlanService {
             throw new Error('Plan no encontrado');
         }
         await PlanRepository.update(id, data);
+        // Los módulos del plan son el techo de permisos del admin de cada restaurante que lo usa
+        CacheService.deleteByPrefix('user:ctx:');
+        CacheService.deleteByPrefix('tenant:');
         return PlanRepository.findById(id);
     }
 }

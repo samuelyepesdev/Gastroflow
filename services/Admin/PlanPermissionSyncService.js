@@ -1,18 +1,26 @@
 /**
- * Sincroniza permisos del plan con los administradores del tenant.
- * Solo se aplica a usuarios con rol "admin" (administrador del tenant/restaurante).
- * - Al subir de plan (ej. a Pro/Premium): se les asignan los permisos que incluye el plan (si no los tienen).
- * - Al bajar de plan (ej. a Básico): se les quitan los permisos que el plan ya no incluye.
+ * Efecto de un cambio de plan sobre los administradores del restaurante.
+ *
+ * El plan (y sus add-ons) es el techo de permisos del admin y se calcula en el momento
+ * (PermisosUsuarioService), así que subir o bajar de plan ya no reescribe permisos por usuario.
+ * Lo único que se hace al cambiar de plan es quitar las excepciones guardadas de los admins del
+ * restaurante, para que queden exactamente con lo que su plan incluye (igual que antes, cuando
+ * la sincronización les reemplazaba los permisos) y refrescar su contexto en caché.
+ * Solo se tocan usuarios con rol "admin".
  */
 
-const { getPermissionNamesForModule } = require('../../utils/planPermissions');
 const PermisoRepository = require('../../repositories/Admin/PermisoRepository');
-const PlanService = require('./PlanService');
+const CacheService = require('../Shared/CacheService');
+const {
+    getPermissionNamesForModule,
+    incluyeTodosLosModulos,
+    PERMISSION_TO_MODULE
+} = require('../../utils/planPermissions');
 const { ROLES } = require('../../utils/constants');
 
 /**
- * Obtiene los nombres de permisos que implica un plan (según sus módulos).
- * Si el plan es Premium o Definitivo, devuelve todos los permisos.
+ * Nombres de permisos que implica un plan (según sus módulos).
+ * Premium y Definitivo incluyen todos los permisos conocidos.
  * @param {Object|null} plan - Plan con .caracteristicas (array de slugs)
  * @returns {string[]}
  */
@@ -26,8 +34,7 @@ function getPermissionNamesForPlan(plan) {
         (plan.nombre &&
             (plan.nombre.toLowerCase().includes('premium') || plan.nombre.toLowerCase().includes('definitivo')));
 
-    if (isPremium) {
-        const { PERMISSION_TO_MODULE } = require('../../utils/planPermissions');
+    if (isPremium || incluyeTodosLosModulos(plan)) {
         return Object.keys(PERMISSION_TO_MODULE);
     }
 
@@ -36,52 +43,33 @@ function getPermissionNamesForPlan(plan) {
     }
 
     const names = new Set();
-    const { getPermissionNamesForModule } = require('../../utils/planPermissions');
     for (const moduleSlug of plan.caracteristicas) {
-        const perms = getPermissionNamesForModule(moduleSlug);
-        perms.forEach(p => names.add(p));
+        getPermissionNamesForModule(moduleSlug).forEach(p => names.add(p));
     }
     return [...names];
 }
 
-/**
- * Indica si el usuario es administrador del tenant (rol admin).
- * @param {string} rolNombre - nombre del rol del usuario
- * @returns {boolean}
- */
+/** Indica si el usuario es administrador del restaurante (rol admin). */
 function isAdminDelTenant(rolNombre) {
     return String(rolNombre || '').toLowerCase() === ROLES.ADMIN.toLowerCase();
 }
 
 /**
- * Sincroniza permisos del plan solo con los administradores del tenant.
- * - Si el plan incluye un permiso que el admin no tiene → se le asigna.
- * - Si el plan no incluye un permiso que el admin tiene → se le quita (bajada de plan).
- * Solo se tocan usuarios con rol "admin".
+ * Se llama al cambiar el plan de un restaurante.
  * @param {number} tenantId
- * @param {number} planId - ID del plan nuevo (para cargar caracteristicas)
+ * @returns {Promise<{admins: number, excepcionesQuitadas: number}>}
  */
-async function syncPlanPermissionsToTenantUsers(tenantId, planId) {
-    const plan = await PlanService.getById(planId);
-    if (!plan) {
-        return;
-    }
-
-    const permissionNames = getPermissionNamesForPlan(plan);
-    const planPermisoIds = await PermisoRepository.getPermisoIdsByNames(permissionNames);
-
+async function syncPlanPermissionsToTenantUsers(tenantId) {
     const users = await PermisoRepository.getUsuariosByTenantId(tenantId);
-    const admins = (users || []).filter(u => isAdminDelTenant(u.rol_nombre));
-    if (admins.length === 0) {
-        return;
-    }
-
-    for (const u of admins) {
-        await PermisoRepository.setPermisosForUser(u.id, [...planPermisoIds]);
-    }
+    const adminIds = (users || []).filter(u => isAdminDelTenant(u.rol_nombre)).map(u => u.id);
+    const excepcionesQuitadas = await PermisoRepository.reiniciarExcepciones(adminIds);
+    // El techo de plan de los admins cambió: se descarta el contexto cacheado de todo el restaurante
+    (users || []).forEach(u => CacheService.delete(`user:ctx:${u.id}`));
+    return { admins: adminIds.length, excepcionesQuitadas };
 }
 
 module.exports = {
     getPermissionNamesForPlan,
+    isAdminDelTenant,
     syncPlanPermissionsToTenantUsers
 };

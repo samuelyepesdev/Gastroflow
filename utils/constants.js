@@ -84,38 +84,8 @@ const PERMISSIONS = {
     CLASIFICACION_VER: 'clasificacion.ver'
 };
 
-// Secciones para agrupar permisos en el panel (clave = título, valor = prefijo o permisos)
-const PERMISSION_SECTIONS = {
-    Productos: [
-        'productos.ver',
-        'productos.crear',
-        'productos.editar',
-        'productos.eliminar',
-        'productos.importar',
-        'productos.pide_nota'
-    ],
-    Clientes: ['clientes.ver', 'clientes.crear', 'clientes.editar', 'clientes.eliminar'],
-    Mesas: ['mesas.ver', 'mesas.gestionar', 'mesas.editar', 'mesas.qr'],
-    Cocina: ['cocina.ver', 'cocina.ver_todo', 'cocina.ver_listos', 'cocina.gestionar'],
-    Facturas: ['facturas.crear', 'facturas.ver'],
-    Ventas: ['ventas.ver', 'ventas.exportar'],
-    Configuración: ['configuracion.ver', 'configuracion.editar'],
-    Costeo: ['costeo.ver', 'costeo.editar'],
-    Inventario: ['inventario.ver', 'inventario.editar'],
-    Recetas: ['recetas.ver', 'recetas.editar'],
-    Modificadores: ['modificadores.ver', 'modificadores.editar'],
-    Usuarios: ['usuarios.ver', 'usuarios.gestionar'],
-    Plantillas: ['plantillas.ver'],
-    Eventos: ['eventos.ver', 'eventos.crear', 'eventos.editar', 'eventos.eliminar', 'ventas_evento.realizar'],
-    Analítica: ['analitica.ver'],
-    Predicción: ['prediccion.ver'],
-    Perfil: ['perfil.ver', 'perfil.editar'],
-    Reportes: ['reporte_mensual.test'],
-    Proveedores: ['proveedores.ver', 'proveedores.editar', 'proveedores.ordenes'],
-    Alertas: ['alertas.configurar'],
-    POS: ['pos.ver', 'pos.vender', 'pos.nombrar_cliente'],
-    Clasificación: ['clasificacion.ver']
-};
+// Secciones para agrupar permisos en el panel (derivadas de utils/permisosCatalogo.js)
+const { PERMISSION_SECTIONS } = require('./permisosCatalogo');
 
 // Table states
 const ESTADO_MESA = {

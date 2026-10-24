@@ -137,3 +137,32 @@ describe('planPermissions', () => {
         });
     });
 });
+
+describe('plan que incluye todos los módulos ("*")', () => {
+    const {
+        TODOS_LOS_MODULOS,
+        incluyeTodosLosModulos,
+        planHasModule: tieneModulo,
+        planAllowsPermission: permiteAccion,
+        getAllowedByPlan: permitidosPorPlan
+    } = require('../../../utils/planPermissions');
+    const { getPermissionNamesForPlan } = require('../../../services/Admin/PlanPermissionSyncService');
+    const plan = { slug: 'completo', nombre: 'Completo', caracteristicas: [TODOS_LOS_MODULOS] };
+
+    it('lo reconoce solo con el valor especial en las características', () => {
+        expect(incluyeTodosLosModulos(plan)).toBe(true);
+        expect(incluyeTodosLosModulos({ caracteristicas: ['productos'] })).toBe(false);
+        expect(incluyeTodosLosModulos(null)).toBe(false);
+    });
+
+    it('incluye cualquier módulo, también uno que aún no existe', () => {
+        expect(tieneModulo(plan, 'analitica')).toBe(true);
+        expect(tieneModulo(plan, 'modulo_del_futuro')).toBe(true);
+        expect(Object.values(permitidosPorPlan(plan)).every(Boolean)).toBe(true);
+    });
+
+    it('permite todos los permisos con módulo y entrega todos al admin', () => {
+        expect(permiteAccion(plan, 'analitica.ver')).toBe(true);
+        expect(getPermissionNamesForPlan(plan)).toEqual(Object.keys(PERMISSION_TO_MODULE));
+    });
+});

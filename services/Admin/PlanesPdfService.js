@@ -9,10 +9,14 @@
 
 const PdfMaker = require('../Shared/PdfMaker');
 const PlanService = require('./PlanService');
+const { TODOS_LOS_MODULOS } = require('../../utils/planPermissions');
 
 const BANNER_COLORS = { basico: '#475569', pro: '#1d4ed8', premium: '#6d28d9' };
 
 function humanizeFeature(feat) {
+    if (feat === TODOS_LOS_MODULOS) {
+        return 'Todos los módulos, incluidos los nuevos';
+    }
     return feat
         .split('_')
         .map(word => word.charAt(0).toUpperCase() + word.slice(1))

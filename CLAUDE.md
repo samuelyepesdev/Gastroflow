@@ -78,8 +78,27 @@ routes/ (thin)  →  middleware (auth, tenant, planFeature)  →  app/Http/Contr
   1. **Plan** (`tenant.plan_id` → `planes.caracteristicas` JSON) — gates whole modules
      (`requirePlanFeature` in `middleware/planFeature.js`).
   2. **Role** (admin/mesero/cocinero/cajero/superadmin, `rol_permisos`) — default permission set per role.
-  3. **Per-user override** (`user_permisos`, granted from the superadmin panel) — can unlock a module a
-     tenant's plan doesn't include (e.g. giving one user Analítica without Premium).
+  3. **Per-user exceptions** (`user_permisos` with `efecto` = `conceder`/`denegar`, set from the superadmin
+     panel) — can unlock a module a tenant's plan doesn't include (e.g. giving one user Analítica without
+     Premium) or take away a permission their role gives.
+  A user's effective permissions are computed in ONE place, `services/Shared/PermisosUsuarioService.js`
+  (login, `AuthService.getUserById` and the panel all use it): `(role permissions + concedidos) − denegados`.
+  `user_permisos` stores only differences from the role — never a full snapshot, or a permission added to
+  a role later would never reach that user. For the restaurant's `admin` role the plan is computed live
+  (modules the plan/add-ons don't include are dropped, everything the plan includes is added; Premium and
+  Definitivo get everything and ignore exceptions), so a plan change no longer rewrites per-user rows.
+  `syncPlanPermissionsToTenantUsers` only clears admin exceptions and the `user:ctx:` cache.
+  **Permissions are declared in ONE catalog, `utils/permisosCatalogo.js`** (name, description, panel section,
+  plan module or `null`, default roles). To add a permission, add it there — don't write a migration:
+  `scripts/sincronizar-permisos.js` (in the `npm start` and Electron chains) creates it in `permisos` and
+  grants default roles ONLY when it is newly created, so manual role edits are never undone.
+  `PERMISSION_TO_MODULE` and `PERMISSION_SECTIONS` are derived from the catalog. A plan whose
+  `caracteristicas` contains `'*'` includes every module, present and future.
+  At scale, use `/admin/permisos/masivo` (`PermisosMasivosService`): bulk grant/deny/reset by role ×
+  restaurants (all / by plan / selection) with a preview that shares the same change plan as apply, an
+  exceptions report with "volver al estándar", the roles × permissions matrix, and an audit trail
+  (`tenant_audit`, actions `permisos.*`). Bulk edits store the MINIMAL exceptions (granting what the role
+  already gives stores nothing) and skip Premium/Definitivo admins, whose exceptions never apply.
   `utils/planPermissions.js` maps each fine-grained permission slug (`productos.ver`, `caja.abrir_cerrar`,
   ...) to the plan module it requires, and `getAllowedForUser` combines plan + add-ons + user permissions
   for what a view/navbar should show. `requirePermission`/`requireRole` (`middleware/auth.js`) enforce the
@@ -87,7 +106,7 @@ routes/ (thin)  →  middleware (auth, tenant, planFeature)  →  app/Http/Contr
   Auth itself is JWT via cookie (`auth_token`) or `Authorization: Bearer`, verified in `AuthService`.
 
 - **Migrations**: plain numbered SQL files in `database/migrations/` (`NNN_description.sql`, zero-padded,
-  currently up to `119`). `scripts/run-migrations.js` runs every `.sql` not yet recorded in the
+  currently up to `124`). `scripts/run-migrations.js` runs every `.sql` not yet recorded in the
   `schema_migrations` table, in filename order — add a new one as the next number, don't edit past ones.
   `config/env.js` validates required env vars (`JWT_SECRET` ≥ 32 chars, DB vars unless `MYSQL_URL`/
   `DATABASE_URL` is set) at process boot and throws before the app starts if they're missing/weak.

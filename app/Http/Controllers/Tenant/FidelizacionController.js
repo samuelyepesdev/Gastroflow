@@ -32,6 +32,15 @@ class FidelizacionController {
         }
     }
 
+    // GET /api/fidelizacion/productos -> productos de la carta para elegir el que da el sello
+    static async productos(req, res) {
+        try {
+            res.json(await FidelizacionService.listarProductos(tenantDe(req)));
+        } catch (error) {
+            responderError(res, error, 'No se pudieron cargar los productos');
+        }
+    }
+
     // PUT /api/fidelizacion/programa
     static async guardarPrograma(req, res) {
         try {

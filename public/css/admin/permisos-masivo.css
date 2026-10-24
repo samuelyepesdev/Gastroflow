@@ -1,0 +1,80 @@
+/* admin/permisos/masivo.ejs — reglas específicas. Paleta y .admin-page-header viven en shell.css. */
+
+.pm-tabs .nav-link {
+    color: var(--sa-text-secondary);
+}
+
+.pm-tabs .nav-link.active {
+    color: var(--sa-text-primary);
+    background: var(--sa-surface-2);
+    border-color: var(--sa-border) var(--sa-border) transparent;
+}
+
+.pm-paso {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    margin-right: 6px;
+    border-radius: 50%;
+    background: var(--sa-accent);
+    color: var(--sa-accent-text);
+    font-size: 12px;
+}
+
+.pm-lista {
+    max-height: 220px;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.pm-secciones {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 12px;
+    max-height: 520px;
+    overflow-y: auto;
+}
+
+.pm-seccion {
+    border: 1px solid var(--sa-border);
+    border-radius: var(--sa-radius-sm);
+    padding: 10px 12px;
+}
+
+.pm-seccion-titulo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+    font-weight: 700;
+}
+
+.pm-matriz-wrap {
+    max-height: 70vh;
+    overflow: auto;
+}
+
+.pm-matriz thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: var(--sa-surface-2);
+}
+
+.pm-matriz-seccion td {
+    background: var(--sa-surface-3);
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 12px;
+    letter-spacing: 0.04em;
+}
+
+#pmResultado strong {
+    color: var(--sa-text-primary);
+}
+
+[hidden] {
+    display: none !important;
+}

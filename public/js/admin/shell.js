@@ -46,6 +46,47 @@ document.addEventListener('DOMContentLoaded', function () {
     if (closeBtn) closeBtn.addEventListener('click', closeSidebar);
     if (backdrop) backdrop.addEventListener('click', closeSidebar);
 
+    // ─── Accesos rápidos: el superadmin elige cuáles se muestran (pin) ─────
+    // Se guarda por navegador. Sin configuración previa se muestran todos.
+    const PINS_KEY = 'gf_admin_quicklinks';
+    const cards = Array.from(sidebar.querySelectorAll('.admin-quicklink-card'));
+    const pinButtons = Array.from(sidebar.querySelectorAll('.admin-nav-item'));
+    const emptyHint = sidebar.querySelector('.admin-quicklinks-empty');
+    const allKeys = cards.map(function (c) { return c.dataset.key; });
+
+    function loadPins() {
+        try {
+            const raw = JSON.parse(localStorage.getItem(PINS_KEY));
+            if (Array.isArray(raw)) return raw;
+        } catch (e) { /* sin storage: se usan todos */ }
+        return allKeys.slice();
+    }
+    function savePins(pins) {
+        try { localStorage.setItem(PINS_KEY, JSON.stringify(pins)); } catch (e) { /* ignorar */ }
+    }
+    function renderPins(pins) {
+        cards.forEach(function (c) { c.style.display = pins.includes(c.dataset.key) ? '' : 'none'; });
+        pinButtons.forEach(function (li) {
+            const on = pins.includes(li.dataset.key);
+            const btn = li.querySelector('.admin-nav-pin');
+            btn.classList.toggle('pinned', on);
+            btn.title = on ? 'Quitar de accesos rápidos' : 'Fijar en accesos rápidos';
+            btn.querySelector('i').className = 'bi ' + (on ? 'bi-pin-angle-fill' : 'bi-pin-angle');
+        });
+        const any = cards.some(function (c) { return pins.includes(c.dataset.key); });
+        if (emptyHint) emptyHint.hidden = any;
+    }
+    pinButtons.forEach(function (li) {
+        li.querySelector('.admin-nav-pin').addEventListener('click', function () {
+            const pins = loadPins();
+            const i = pins.indexOf(li.dataset.key);
+            if (i === -1) pins.push(li.dataset.key); else pins.splice(i, 1);
+            savePins(pins);
+            renderPins(pins);
+        });
+    });
+    renderPins(loadPins());
+
     // ─── Buscador: filtra los ítems del menú en vivo ───────────────────────
     const searchInput = document.getElementById('adminNavSearch');
     if (searchInput) {

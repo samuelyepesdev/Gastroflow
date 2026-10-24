@@ -3,67 +3,9 @@
  * Cada permiso se asocia a un módulo del plan; el tenant solo tiene acceso si su plan incluye ese módulo.
  */
 
-// Módulo del plan requerido para cada permiso (slug de característica en tabla planes)
-const PERMISSION_TO_MODULE = {
-    'productos.ver': 'productos',
-    'productos.crear': 'productos',
-    'productos.editar': 'productos',
-    'productos.eliminar': 'productos',
-    'productos.importar': 'importar_exportar',
-    'productos.pide_nota': 'productos',
-    'clientes.ver': 'clientes',
-    'clientes.crear': 'clientes',
-    'clientes.editar': 'clientes',
-    'clientes.eliminar': 'clientes',
-    'mesas.ver': 'mesas',
-    'mesas.gestionar': 'mesas',
-    'mesas.editar': 'mesas',
-    'mesas.qr': 'mesas',
-    'cocina.ver': 'cocina',
-    'cocina.gestionar': 'cocina',
-    'ventas.ver': 'ventas',
-    'ventas.exportar': 'importar_exportar',
-    'facturas.ver': 'ventas',
-    'facturas.crear': 'ventas',
-    'configuracion.ver': 'configuracion',
-    'configuracion.editar': 'configuracion',
-    'costeo.ver': 'costeo',
-    'costeo.editar': 'costeo',
-    'inventario.ver': 'inventario',
-    'inventario.editar': 'inventario',
-    'recetas.ver': 'recetas',
-    'recetas.editar': 'recetas',
-    'modificadores.ver': 'productos',
-    'modificadores.editar': 'productos',
-    'usuarios.ver': 'configuracion',
-    'usuarios.gestionar': 'configuracion',
-    'plantillas.ver': 'plantillas',
-    'analitica.ver': 'analitica',
-    'prediccion.ver': 'prediccion_ml',
-    'eventos.ver': 'eventos',
-    'eventos.crear': 'eventos',
-    'eventos.editar': 'eventos',
-    'eventos.eliminar': 'eventos',
-    'ventas_evento.realizar': 'eventos',
-    'proveedores.ver': 'proveedores',
-    'proveedores.editar': 'proveedores',
-    'proveedores.ordenes': 'proveedores',
-    'alertas.configurar': 'configuracion',
-    'caja.ver': 'caja',
-    'caja.abrir_cerrar': 'caja',
-    'caja.movimientos': 'caja',
-    'servicios.ver': 'servicios',
-    'servicios.crear': 'servicios',
-    'servicios.editar': 'servicios',
-    'servicios.eliminar': 'servicios',
-    'perfil.ver': 'configuracion',
-    'perfil.editar': 'configuracion',
-    'reporte_mensual.test': 'configuracion',
-    'cocina.ver_todo': 'cocina',
-    'cocina.ver_listos': 'cocina',
-    'pos.ver': 'ventas',
-    'pos.vender': 'ventas'
-};
+// Módulo del plan requerido para cada permiso (slug de característica en tabla planes).
+// Se deriva de utils/permisosCatalogo.js, donde se declara cada permiso.
+const { PERMISSION_TO_MODULE } = require('./permisosCatalogo');
 
 // Módulos que se usan en navbar / rutas (para allowedByPlan)
 // Básico: dashboard, productos, clientes, mesas, cocina, ventas, configuracion
@@ -89,6 +31,10 @@ const PLAN_MODULES = [
     'proveedores'
 ];
 
+// Valor especial de `planes.caracteristicas`: el plan incluye TODOS los módulos, también los que se
+// agreguen después. Así un plan "completo" no hay que actualizarlo cada vez que sale un módulo nuevo.
+const TODOS_LOS_MODULOS = '*';
+
 // Etiquetas legibles para cada slug de módulo — usadas por el editor de características
 // (admin/planes) y por el comparador de planes del navbar del tenant.
 const MODULE_LABELS = {
@@ -109,8 +55,14 @@ const MODULE_LABELS = {
     costeo: 'Costeo',
     caja: 'Caja registradora',
     servicios: 'Servicios',
-    proveedores: 'Proveedores'
+    proveedores: 'Proveedores',
+    [TODOS_LOS_MODULOS]: 'Todos los módulos (incluidos los nuevos)'
 };
+
+/** ¿El plan está marcado como "incluye todos los módulos"? */
+function incluyeTodosLosModulos(plan) {
+    return !!plan && Array.isArray(plan.caracteristicas) && plan.caracteristicas.includes(TODOS_LOS_MODULOS);
+}
 
 /**
  * Indica si el plan permite un permiso concreto.
@@ -135,7 +87,7 @@ function planAllowsPermission(plan, permission) {
         return true;
     }
     const moduleSlug = PERMISSION_TO_MODULE[permission];
-    if (!moduleSlug) {
+    if (!moduleSlug || incluyeTodosLosModulos(plan)) {
         return true;
     }
     return Array.isArray(plan.caracteristicas) && plan.caracteristicas.includes(moduleSlug);
@@ -186,7 +138,9 @@ function planHasModule(plan, moduleSlug, addonSlugs = []) {
     if (!plan.caracteristicas) {
         return true;
     }
-    const planIncluye = Array.isArray(plan.caracteristicas) && plan.caracteristicas.includes(moduleSlug);
+    const planIncluye =
+        incluyeTodosLosModulos(plan) ||
+        (Array.isArray(plan.caracteristicas) && plan.caracteristicas.includes(moduleSlug));
     if (planIncluye) {
         return true;
     }
@@ -229,6 +183,8 @@ function getAllowedForUser(plan, userPermissions, addonSlugs = []) {
 }
 
 module.exports = {
+    TODOS_LOS_MODULOS,
+    incluyeTodosLosModulos,
     PERMISSION_TO_MODULE,
     PLAN_MODULES,
     MODULE_LABELS,

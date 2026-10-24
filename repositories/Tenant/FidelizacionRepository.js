@@ -11,22 +11,62 @@ class FidelizacionRepository {
     // ---- Programa ----------------------------------------------------------
 
     static async obtenerPrograma(tenantId, connection) {
-        const [rows] = await ejecutar(connection, 'SELECT * FROM fidelizacion_programas WHERE tenant_id = ?', [
-            tenantId
-        ]);
+        const [rows] = await ejecutar(
+            connection,
+            `SELECT fp.*, p.nombre AS producto_nombre
+             FROM fidelizacion_programas fp
+             LEFT JOIN productos p ON p.id = fp.producto_id AND p.tenant_id = fp.tenant_id
+             WHERE fp.tenant_id = ?`,
+            [tenantId]
+        );
         return rows[0] || null;
+    }
+
+    /** Productos activos de la carta para elegir el que da el sello. */
+    static async listarProductos(tenantId) {
+        const [rows] = await db.query(
+            'SELECT id, nombre FROM productos WHERE tenant_id = ? AND activo = 1 ORDER BY nombre',
+            [tenantId]
+        );
+        return rows;
+    }
+
+    /** ¿La factura (de este restaurante) incluye el producto? */
+    static async facturaTieneProducto(tenantId, facturaId, productoId) {
+        const [rows] = await db.query(
+            `SELECT 1 FROM detalle_factura df
+             JOIN facturas f ON f.id = df.factura_id
+             WHERE f.tenant_id = ? AND df.factura_id = ? AND df.producto_id = ? AND df.cantidad > 0
+             LIMIT 1`,
+            [tenantId, facturaId, productoId]
+        );
+        return rows.length > 0;
     }
 
     static async guardarPrograma(
         tenantId,
-        { nombre, sellosRequeridos, montoMinimo, premio, activo, diseno, color, lema, logoUrl, mostrarLogo }
+        {
+            nombre,
+            sellosRequeridos,
+            montoMinimo,
+            modoSello,
+            productoId,
+            premio,
+            activo,
+            diseno,
+            color,
+            lema,
+            logoUrl,
+            mostrarLogo
+        }
     ) {
         await db.query(
             `INSERT INTO fidelizacion_programas
-                (tenant_id, nombre, sellos_requeridos, monto_minimo, premio, activo, diseno, color, lema, logo_url, mostrar_logo)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                (tenant_id, nombre, sellos_requeridos, monto_minimo, modo_sello, producto_id, premio, activo, diseno, color, lema, logo_url, mostrar_logo)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
              ON DUPLICATE KEY UPDATE nombre = VALUES(nombre), sellos_requeridos = VALUES(sellos_requeridos),
-                monto_minimo = VALUES(monto_minimo), premio = VALUES(premio), activo = VALUES(activo),
+                monto_minimo = VALUES(monto_minimo), modo_sello = VALUES(modo_sello), producto_id = VALUES(producto_id),
+                premio = VALUES(premio), activo = VALUES(activo),
                 diseno = VALUES(diseno), color = VALUES(color), lema = VALUES(lema),
                 logo_url = VALUES(logo_url), mostrar_logo = VALUES(mostrar_logo)`,
             [
@@ -34,6 +74,8 @@ class FidelizacionRepository {
                 nombre,
                 sellosRequeridos,
                 montoMinimo,
+                modoSello,
+                productoId,
                 premio,
                 activo ? 1 : 0,
                 diseno,

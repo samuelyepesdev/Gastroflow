@@ -20,6 +20,12 @@
                             </div>
                             <div class="mb-2">
                                 <div class="small text-muted fw-bold">Características incluidas</div>
+                                <label class="feat-check-item fw-bold" for="pc-<%= p.id %>-todos"
+                                    title="Incluye todos los módulos actuales y los que se agreguen después. Los administradores de este plan reciben cada módulo nuevo sin tocar el plan.">
+                                    <input type="checkbox" id="pc-<%= p.id %>-todos" data-plan-module="*"
+                                        <%= p.caracteristicas && p.caracteristicas.includes('*') ? 'checked' : '' %>>
+                                    Todos los módulos (incluidos los nuevos)
+                                </label>
                                 <div class="feat-check-grid">
                                     <% for (var mi=0; mi < (planModules ? planModules.length : 0); mi++) {
                                         var modSlug = planModules[mi];

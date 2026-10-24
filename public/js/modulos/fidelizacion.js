@@ -16,8 +16,36 @@
     let logoUrl = null; // logo propio subido a R2 (null = el del negocio)
     let catalogo = { disenos: [], logoNegocio: false };
     let temporizadorPrevia = null;
+    // Productos de la carta y el que está guardado en el programa (puede haberse eliminado de la carta).
+    let productos = [];
+    let productoGuardado = null;
 
     // ---------- Programa ----------
+
+    function alternarModo() {
+        const porProducto = $('pModo').value === 'producto';
+        $('grupoMonto').classList.toggle('d-none', porProducto);
+        $('grupoProducto').classList.toggle('d-none', !porProducto);
+        $('pProducto').required = porProducto;
+    }
+
+    function pintarProductos() {
+        const elegido = $('pProducto').value || productoGuardado;
+        const opciones = productos.map(
+            p => `<option value="${Number(p.id)}">${GF.escapeHtml(p.nombre)}</option>`
+        );
+        $('pProducto').innerHTML = `<option value="">Elige un producto…</option>${opciones.join('')}`;
+        $('pProducto').value = elegido && productos.some(p => String(p.id) === String(elegido)) ? elegido : '';
+    }
+
+    async function cargarProductos() {
+        try {
+            productos = await GF.api('/api/fidelizacion/productos', {}, 'No se pudieron cargar los productos');
+            pintarProductos();
+        } catch (error) {
+            GF.error(error.message);
+        }
+    }
 
     function pintarPrograma(p) {
         programa = p;
@@ -29,10 +57,14 @@
         $('pNombre').value = p.nombre || '';
         $('pSellos').value = p.sellos_requeridos || 8;
         $('pMonto').value = Number(p.monto_minimo || 0);
+        $('pModo').value = p.modo_sello === 'producto' ? 'producto' : 'monto';
+        productoGuardado = p.producto_id || null;
+        pintarProductos();
+        alternarModo();
         $('pPremio').value = p.premio || '';
         $('pActivo').checked = Boolean(Number(p.activo));
         if (!puedeGestionar) {
-            $('formPrograma').querySelectorAll('input, button').forEach(el => (el.disabled = true));
+            $('formPrograma').querySelectorAll('input, button, select').forEach(el => (el.disabled = true));
             $('btnGuardarDiseno').disabled = true;
             ['pColor', 'pLema', 'pMostrarLogo', 'inputLogo', 'btnLogoNegocio', 'btnColorOriginal'].forEach(
                 id => ($(id).disabled = true)
@@ -139,6 +171,8 @@
                         nombre: $('pNombre').value,
                         sellos_requeridos: $('pSellos').value,
                         monto_minimo: $('pMonto').value || 0,
+                        modo_sello: $('pModo').value,
+                        producto_id: $('pModo').value === 'producto' ? $('pProducto').value : null,
                         premio: $('pPremio').value,
                         activo: $('pActivo').checked,
                         diseno,
@@ -303,6 +337,7 @@
     });
     $('pLema').addEventListener('input', pintarVistaPreviaDiferida);
     $('pPremio').addEventListener('input', pintarVistaPreviaDiferida);
+    $('pModo').addEventListener('change', alternarModo);
     $('pSellos').addEventListener('change', pintarVistaPrevia);
     $('pMostrarLogo').addEventListener('change', pintarVistaPrevia);
     $('inputLogo').addEventListener('change', subirLogo);
@@ -323,5 +358,6 @@
         else if (btn.classList.contains('btn-enlace')) copiar(`${location.origin}/tarjeta/${btn.dataset.token}`);
     });
 
+    cargarProductos();
     cargarPrograma().then(cargarTarjetas);
 })();

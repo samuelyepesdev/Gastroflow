@@ -4,6 +4,7 @@ const db = require('../../config/database');
 const { JWT_CONFIG } = require('../../utils/constants');
 const logger = require('../../utils/logger');
 const CacheService = require('./CacheService');
+const PermisosUsuarioService = require('./PermisosUsuarioService');
 
 // Authentication service
 // Handles user authentication, token generation and password management
@@ -76,37 +77,13 @@ async function authenticateUser(username, password) {
 
         const userRoles = await getUserRoleIdsAndNames(user.id, user.rol_id, user.rol_nombre);
 
-        // Permisos efectivos: si el Superadmin asignó user_permisos (aunque sea para quitar), solo esos; si no, la unión de los roles del usuario
-        let userPermissions = [];
-        const isPremium =
-            user.rol_nombre === 'admin' && (user.plan_slug === 'premium' || user.plan_slug === 'definitivo');
-
-        if (isPremium) {
-            const { PERMISSION_TO_MODULE } = require('../../utils/planPermissions');
-            userPermissions = Object.keys(PERMISSION_TO_MODULE);
-        } else {
-            const [rolePerms] = await db.query(
-                `
-                SELECT DISTINCT p.nombre FROM permisos p
-                INNER JOIN rol_permisos rp ON p.id = rp.permiso_id
-                WHERE rp.rol_id IN (?)
-            `,
-                [userRoles.ids]
-            );
-            const [userPermsRows] = await db
-                .query(
-                    `
-                SELECT p.nombre FROM permisos p
-                INNER JOIN user_permisos up ON p.id = up.permiso_id
-                WHERE up.user_id = ?
-            `,
-                    [user.id]
-                )
-                .catch(() => [[]]);
-
-            const userPerms = (userPermsRows || []).map(p => p.nombre);
-            userPermissions = userPerms.length > 0 ? userPerms : (rolePerms || []).map(p => p.nombre);
-        }
+        // Permisos efectivos: rol + concedidos - denegados (y techo del plan para el admin del restaurante)
+        const resuelto = await PermisosUsuarioService.resolver(user.id, {
+            rolIds: userRoles.ids,
+            rolNombre: user.rol_nombre,
+            tenantId: user.tenant_id
+        });
+        const userPermissions = resuelto ? resuelto.permisos : [];
 
         // Generate JWT token (include tenant_id for multi-tenancy)
         const token = generateToken({
@@ -210,36 +187,12 @@ async function getUserById(userId) {
 
         const userRoles = await getUserRoleIdsAndNames(user.id, user.rol_id, user.rol_nombre);
 
-        let permisos = [];
-        const isPremium =
-            user.rol_nombre === 'admin' && (user.plan_slug === 'premium' || user.plan_slug === 'definitivo');
-
-        if (isPremium) {
-            const { PERMISSION_TO_MODULE } = require('../../utils/planPermissions');
-            permisos = Object.keys(PERMISSION_TO_MODULE);
-        } else {
-            const [rolePerms] = await db.query(
-                `
-                SELECT DISTINCT p.nombre FROM permisos p
-                INNER JOIN rol_permisos rp ON p.id = rp.permiso_id
-                WHERE rp.rol_id IN (?)
-            `,
-                [userRoles.ids]
-            );
-            const [userPermsRows] = await db
-                .query(
-                    `
-                SELECT p.nombre FROM permisos p
-                INNER JOIN user_permisos up ON p.id = up.permiso_id
-                WHERE up.user_id = ?
-            `,
-                    [user.id]
-                )
-                .catch(() => [[]]);
-
-            const userPerms = (userPermsRows || []).map(p => p.nombre);
-            permisos = userPerms.length > 0 ? userPerms : (rolePerms || []).map(p => p.nombre);
-        }
+        const resuelto = await PermisosUsuarioService.resolver(user.id, {
+            rolIds: userRoles.ids,
+            rolNombre: user.rol_nombre,
+            tenantId: user.tenant_id
+        });
+        const permisos = resuelto ? resuelto.permisos : [];
 
         return {
             id: user.id,

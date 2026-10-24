@@ -1,0 +1,205 @@
+<%- include('../_shell/_open', {
+    title: 'Permisos masivos',
+    currentAdminPage: 'permisos-masivo',
+    pageCss: '/css/admin/permisos-masivo.css'
+}) %>
+
+    <div class="admin-page-header">
+        <h1><i class="bi bi-people-fill me-2"></i>Permisos masivos y roles</h1>
+        <p class="mb-0">Cambia permisos de muchos usuarios a la vez, revisa quién se aparta de su rol y edita los permisos por defecto de cada rol.</p>
+    </div>
+
+    <ul class="nav nav-tabs pm-tabs mb-3" role="tablist">
+        <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tabMasivo" type="button" role="tab"><i class="bi bi-lightning-charge me-1"></i>Edición masiva</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabExcepciones" type="button" role="tab" id="btnTabExcepciones"><i class="bi bi-person-exclamation me-1"></i>Excepciones</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabRoles" type="button" role="tab"><i class="bi bi-grid-3x3 me-1"></i>Roles</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabAuditoria" type="button" role="tab" id="btnTabAuditoria"><i class="bi bi-clock-history me-1"></i>Auditoría</button></li>
+    </ul>
+
+    <div class="tab-content">
+        <!-- ================= Edición masiva ================= -->
+        <div class="tab-pane fade show active" id="tabMasivo" role="tabpanel">
+            <div class="row g-3">
+                <div class="col-12 col-xl-4">
+                    <div class="card border-0 shadow-sm mb-3">
+                        <div class="card-body">
+                            <h6 class="fw-bold"><span class="pm-paso">1</span> ¿A qué roles?</h6>
+                            <div class="d-flex flex-wrap gap-3" id="pmRoles">
+                                <% roles.forEach(function (r) { %>
+                                    <label class="form-check">
+                                        <input class="form-check-input pm-rol" type="checkbox" value="<%= r.nombre %>">
+                                        <span class="form-check-label"><%= r.nombre %></span>
+                                    </label>
+                                <% }) %>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card border-0 shadow-sm mb-3">
+                        <div class="card-body">
+                            <h6 class="fw-bold"><span class="pm-paso">2</span> ¿En qué restaurantes?</h6>
+                            <label class="form-check"><input class="form-check-input" type="radio" name="pmModo" value="todos" checked> <span class="form-check-label">Todos (<%= restaurantes.length %>)</span></label>
+                            <label class="form-check"><input class="form-check-input" type="radio" name="pmModo" value="planes"> <span class="form-check-label">Por plan</span></label>
+                            <div id="pmPlanes" class="ms-4 mb-2" hidden>
+                                <% planes.forEach(function (p) { %>
+                                    <label class="form-check"><input class="form-check-input pm-plan" type="checkbox" value="<%= p.id %>"> <span class="form-check-label"><%= p.nombre %></span></label>
+                                <% }) %>
+                            </div>
+                            <label class="form-check"><input class="form-check-input" type="radio" name="pmModo" value="manual"> <span class="form-check-label">Elegir restaurantes</span></label>
+                            <div id="pmManual" class="ms-4 mt-2" hidden>
+                                <input type="search" id="pmBuscarRest" class="form-control form-control-sm mb-2" placeholder="Buscar restaurante...">
+                                <div class="pm-lista">
+                                    <% restaurantes.forEach(function (t) { %>
+                                        <label class="form-check pm-rest" data-nombre="<%= t.nombre.toLowerCase() %>">
+                                            <input class="form-check-input pm-tenant" type="checkbox" value="<%= t.id %>">
+                                            <span class="form-check-label"><%= t.nombre %> <small class="text-muted"><%= t.plan_nombre || '' %></small></span>
+                                        </label>
+                                    <% }) %>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body">
+                            <h6 class="fw-bold"><span class="pm-paso">4</span> ¿Qué hacer?</h6>
+                            <label class="form-check d-block mb-2"><input class="form-check-input" type="radio" name="pmAccion" value="conceder" checked>
+                                <span class="form-check-label"><strong>Conceder</strong><br><small class="text-muted">Pueden usarlos aunque su rol o plan no los incluya.</small></span></label>
+                            <label class="form-check d-block mb-2"><input class="form-check-input" type="radio" name="pmAccion" value="denegar">
+                                <span class="form-check-label"><strong>Denegar</strong><br><small class="text-muted">Los pierden aunque su rol los incluya.</small></span></label>
+                            <label class="form-check d-block"><input class="form-check-input" type="radio" name="pmAccion" value="quitar">
+                                <span class="form-check-label"><strong>Volver al estándar</strong><br><small class="text-muted">Quita las excepciones de esos permisos (o todas, si no marcas ninguno).</small></span></label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-12 col-xl-8">
+                    <div class="card border-0 shadow-sm mb-3">
+                        <div class="card-body">
+                            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+                                <h6 class="fw-bold mb-0"><span class="pm-paso">3</span> ¿Qué permisos? <small class="text-muted" id="pmContador">0 elegidos</small></h6>
+                                <input type="search" id="pmBuscarPerm" class="form-control form-control-sm" style="max-width:240px" placeholder="Buscar permiso...">
+                            </div>
+                            <div class="pm-secciones">
+                                <% secciones.forEach(function (sec) { %>
+                                    <div class="pm-seccion" data-seccion>
+                                        <label class="pm-seccion-titulo"><input type="checkbox" class="form-check-input pm-sec-check"> <%= sec.seccion %></label>
+                                        <% sec.permisos.forEach(function (p) { %>
+                                            <label class="form-check pm-perm" data-texto="<%= (p.nombre + ' ' + (p.descripcion || '')).toLowerCase() %>">
+                                                <input class="form-check-input pm-permiso" type="checkbox" value="<%= p.id %>">
+                                                <span class="form-check-label"><code><%= p.nombre %></code><br><small class="text-muted"><%= p.descripcion %></small></span>
+                                            </label>
+                                        <% }) %>
+                                    </div>
+                                <% }) %>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body">
+                            <div class="d-flex flex-wrap gap-2 mb-3">
+                                <button type="button" class="btn btn-outline-primary" id="btnPrevisualizar"><i class="bi bi-eye me-1"></i>Previsualizar</button>
+                                <button type="button" class="btn btn-primary" id="btnAplicar" disabled><i class="bi bi-check2-circle me-1"></i>Aplicar cambio</button>
+                            </div>
+                            <div id="pmResultado" class="text-muted small">Elige roles, restaurantes, permisos y acción, y pulsa «Previsualizar». Nada se guarda hasta que apliques.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= Excepciones ================= -->
+        <div class="tab-pane fade" id="tabExcepciones" role="tabpanel">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <p class="text-muted small mb-3">Usuarios con permisos distintos a los de su rol: lo que se les concedió o quitó a mano. «Volver al estándar» les quita esas excepciones y recuperan lo que corresponde a su rol y plan.</p>
+                    <div class="row g-2 mb-3">
+                        <div class="col-12 col-md-4">
+                            <select id="exTenant" class="form-select form-select-sm">
+                                <option value="">Todos los restaurantes</option>
+                                <% restaurantes.forEach(function (t) { %><option value="<%= t.id %>"><%= t.nombre %></option><% }) %>
+                            </select>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <select id="exRol" class="form-select form-select-sm">
+                                <option value="">Todos los roles</option>
+                                <% roles.forEach(function (r) { %><option value="<%= r.nombre %>"><%= r.nombre %></option><% }) %>
+                            </select>
+                        </div>
+                        <div class="col-6 col-md-3"><input type="search" id="exBuscar" class="form-control form-control-sm" placeholder="Usuario o restaurante"></div>
+                        <div class="col-12 col-md-2 d-grid"><button type="button" class="btn btn-sm btn-outline-secondary" id="btnExBuscar"><i class="bi bi-search me-1"></i>Buscar</button></div>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="small text-muted" id="exResumen"></span>
+                        <button type="button" class="btn btn-sm btn-outline-danger" id="btnExReiniciarTodos" hidden><i class="bi bi-arrow-counterclockwise me-1"></i>Volver al estándar a los mostrados</button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table align-middle mb-0">
+                            <thead><tr><th>Restaurante</th><th>Usuario</th><th>Rol</th><th>Concedidos</th><th>Denegados</th><th></th></tr></thead>
+                            <tbody id="exCuerpo"><tr><td colspan="6" class="text-muted text-center py-4">Cargando...</td></tr></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= Roles ================= -->
+        <div class="tab-pane fade" id="tabRoles" role="tabpanel">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <p class="text-muted small mb-3">Permisos por defecto de cada rol. Un cambio llega a <strong>todos</strong> los usuarios de ese rol, en todos los restaurantes. Para el rol <code>admin</code> el plan sigue siendo el techo: un permiso de un módulo que su plan no incluye no le llega.</p>
+                    <div class="table-responsive pm-matriz-wrap">
+                        <table class="table table-sm align-middle pm-matriz mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Permiso</th>
+                                    <% matriz.forEach(function (r) { %>
+                                        <th class="text-center">
+                                            <div class="fw-bold"><%= r.nombre %></div>
+                                            <small class="text-muted"><%= r.usuarios %> usuarios</small>
+                                            <button type="button" class="btn btn-sm btn-primary d-block mx-auto mt-1 js-guardar-rol" data-rol="<%= r.id %>" disabled>Guardar</button>
+                                        </th>
+                                    <% }) %>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% secciones.forEach(function (sec) { %>
+                                    <tr class="pm-matriz-seccion"><td colspan="<%= matriz.length + 1 %>"><%= sec.seccion %></td></tr>
+                                    <% sec.permisos.forEach(function (p) { %>
+                                        <tr>
+                                            <td><code><%= p.nombre %></code><br><small class="text-muted"><%= p.descripcion %></small></td>
+                                            <% matriz.forEach(function (r) { %>
+                                                <td class="text-center"><input class="form-check-input pm-celda" type="checkbox" data-rol="<%= r.id %>" value="<%= p.id %>"></td>
+                                            <% }) %>
+                                        </tr>
+                                    <% }) %>
+                                <% }) %>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= Auditoría ================= -->
+        <div class="tab-pane fade" id="tabAuditoria" role="tabpanel">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <p class="text-muted small mb-3">Últimos cambios de permisos hechos desde este panel.</p>
+                    <div class="table-responsive">
+                        <table class="table align-middle mb-0">
+                            <thead><tr><th>Fecha</th><th>Quién</th><th>Acción</th><th>Detalle</th></tr></thead>
+                            <tbody id="auCuerpo"><tr><td colspan="4" class="text-muted text-center py-4">Cargando...</td></tr></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="application/json" id="pm-data"><%- jsonSeguro({ matriz: matriz }) %></script>
+
+<%- include('../_shell/_close', {
+    extraScripts: '<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script><script src="/js/admin/permisos-masivo.js?v=' + assetV + '"></script>'
+}) %>

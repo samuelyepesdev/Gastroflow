@@ -9,6 +9,7 @@ const InventarioService = require('./InventarioService');
 const ModificadorService = require('./ModificadorService');
 const ComboArmableService = require('./ComboArmableService');
 const TenantOwnership = require('./TenantOwnership');
+const FidelizacionService = require('./FidelizacionService');
 
 class FacturaService {
     /**
@@ -215,6 +216,16 @@ class FacturaService {
         } catch (err) {
             console.error('Error al descontar inventario por modificadores:', err);
         }
+
+        // Sello de fidelización (igual que al cobrar una mesa): ya con la venta guardada y sin lanzar nunca;
+        // es idempotente por factura y solo aplica si el cliente tiene tarjeta.
+        await FidelizacionService.sellarPorFactura({
+            tenantId,
+            facturaId,
+            clienteId: cliente_id,
+            total,
+            usuarioId: facturaData.usuario_id || null
+        });
 
         // --- INVALIDAR CACHÉ DE ESTADÍSTICAS (Actualización instantánea del Dashboard) ---
         try {
