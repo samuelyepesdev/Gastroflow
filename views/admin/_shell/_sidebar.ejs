@@ -16,12 +16,13 @@
         <div class="admin-quicklinks-title">Accesos rápidos</div>
         <div class="admin-quicklinks-grid">
             <% adminQuickLinks.forEach(function (l) { %>
-                <a href="<%= l.href %>" class="admin-quicklink-card">
+                <a href="<%= l.href %>" class="admin-quicklink-card" data-key="<%= l.key %>">
                     <i class="bi <%= l.icon %>"></i>
                     <span><%= l.label %></span>
                 </a>
             <% }); %>
         </div>
+        <div class="admin-quicklinks-empty" hidden>Fija vistas con el <i class="bi bi-pin-angle"></i> del menú.</div>
     </div>
 
     <nav class="admin-sidebar-nav">
@@ -37,7 +38,8 @@
                 <% } %>
                 <ul class="admin-nav-list">
                     <% section.items.forEach(function (item) { %>
-                        <li>
+                        <li class="admin-nav-item" data-key="<%= item.key %>">
+                            <button type="button" class="admin-nav-pin" title="Fijar en accesos rápidos" aria-label="Fijar en accesos rápidos"><i class="bi bi-pin-angle"></i></button>
                             <a href="<%= item.href %>"
                                class="admin-nav-link<%= (typeof currentAdminPage !=='undefined' && currentAdminPage===item.key) ? ' active' : '' %>">
                                 <i class="bi <%= item.icon %>"></i>
