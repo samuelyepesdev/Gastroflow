@@ -74,11 +74,17 @@ class PermisoRepository {
     static async setPermisosForRol(rolId, permisoIds) {
         const connection = await db.getConnection();
         try {
+            // En transacción: si el INSERT falla, el rol no se queda sin permisos
+            await connection.beginTransaction();
             await connection.query('DELETE FROM rol_permisos WHERE rol_id = ?', [rolId]);
             if (permisoIds && permisoIds.length > 0) {
                 const values = permisoIds.map(pid => [rolId, pid]);
                 await connection.query('INSERT INTO rol_permisos (rol_id, permiso_id) VALUES ?', [values]);
             }
+            await connection.commit();
+        } catch (error) {
+            await connection.rollback();
+            throw error;
         } finally {
             connection.release();
         }
