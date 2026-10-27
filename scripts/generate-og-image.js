@@ -1,7 +1,7 @@
 /**
  * generate-og-image.js
  *
- * Genera public/og-image.png (2400x1260, retina @2x de 1200x630) usado en
+ * Genera public/og-image.jpg (1200x630, < 300 KB: WhatsApp descarta imagenes mas pesadas y muestra miniatura chica) usado en
  * las etiquetas Open Graph / Twitter Card de la landing
  * (views/landing/index.ejs). Usa el logo real del proyecto (public/logo.png)
  * como protagonista, con una paleta construida a partir de su propio azul
@@ -126,16 +126,16 @@ function buildHtml() {
 }
 
 (async () => {
-    const outPath = path.join(__dirname, '..', 'public', 'og-image.png');
+    const outPath = path.join(__dirname, '..', 'public', 'og-image.jpg');
     const browser = await puppeteer.launch({
         headless: 'new',
         args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu']
     });
     try {
         const page = await browser.newPage();
-        await page.setViewport({ width: WIDTH, height: HEIGHT, deviceScaleFactor: 2 });
+        await page.setViewport({ width: WIDTH, height: HEIGHT, deviceScaleFactor: 1 });
         await page.setContent(buildHtml(), { waitUntil: 'networkidle0' });
-        await page.screenshot({ path: outPath, type: 'png' });
+        await page.screenshot({ path: outPath, type: 'jpeg', quality: 88 });
         console.log('OG image generada en:', outPath);
     } finally {
         await browser.close();
