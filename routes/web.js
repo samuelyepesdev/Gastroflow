@@ -98,6 +98,8 @@ router.use('/bono', require('./bono_publico'));
 router.use('/tarjeta', require('./tarjeta_publica'));
 // Webhook público de Wompi (cobro de suscripciones) -- se autentica por firma, no por sesión.
 router.use('/webhooks', require('./webhooks'));
+// Resumen para Safe Hub (panel interno de Safe): se autentica con el token HUB_TOKEN, no por sesión.
+router.use('/api/hub', require('./hub'));
 
 // --- RUTA PRINCIPAL (Home & Redirección) ---
 router.get('/', optionalAuth, HomeController.index);
