@@ -177,6 +177,15 @@ routes/ (thin)  →  middleware (auth, tenant, planFeature)  →  app/Http/Contr
   a new synced action that *does* need a specific permission means adding the check inside `SyncService`
   itself, not in `routes/tenant/sync.js`.
 
+- **Branding "Cloche" (2026-10)**: paleta Tinta `#0E1B2C` · Coral `#FF5A36` · Crema `#FFF4E8` · Arena `#F3EDE4` ·
+  Gris `#5B6B7E`; Montserrat (títulos/logotipo, wordmark en mayúsculas con tracking) + Poppins (interfaz). Tokens y
+  reencauzado de Bootstrap en `public/css/core/brand.css` (se carga DESPUÉS de bootstrap) — no escribas hex de marca
+  sueltos. Assets servidos en `public/brand/` (isotipo, logotipo, favicon, íconos, animación); el kit completo con
+  manual, `.mov` y capas está en `docs/branding/`. Fuentes de PDF en `assets/fonts/`; cabecera de reportes con
+  `encabezadoMarca()` (`PdfDocHelpers`); correos se envuelven solos en `MailerService`. La imagen OG se regenera con
+  `npm run generate:og-image`. App en claro (Crema/Arena), landing/login en Tinta. El menú QR usa los colores de cada
+  restaurante, no la marca.
+
 - **WhatsApp bot was removed (2026-09)** for RAM consumption — don't reintroduce `whatsapp-web.js` as a
   dependency; if you see references to it in older docs/migrations they're historical
   (`091_limpiar_permisos_whatsapp.sql`, `docs/modulos/10_whatsapp_bot.md`).
