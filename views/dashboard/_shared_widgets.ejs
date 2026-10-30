@@ -2,13 +2,13 @@
 <div style="display:none;">
     
     <!-- 1. Contenedor de Evolución de Ventas -->
-    <div id="widgetDailySalesChart" style="background:#fff;border:1px solid #e9ebef;border-radius:16px;padding:20px;box-shadow:0 1px 2px rgba(16,24,40,.04);height:100%;">
+    <div id="widgetDailySalesChart" style="background:#fff;border:1px solid #e4dccf;border-radius:16px;padding:20px;box-shadow:0 1px 2px rgba(14, 27, 44,.04);height:100%;">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:18px;">
             <div>
-                <h3 style="margin:0;font-size:16px;font-weight:700;color:#0f172a;"><i class="bi bi-graph-up me-2"></i>Evolución de ventas</h3>
-                <p style="margin:3px 0 0;font-size:12.5px;color:#8a94a6;font-weight:500;">Ingresos por periodo seleccionado</p>
+                <h3 style="margin:0;font-size:16px;font-weight:700;color:#0e1b2c;"><i class="bi bi-graph-up me-2"></i>Evolución de ventas</h3>
+                <p style="margin:3px 0 0;font-size:12.5px;color:#8a97a8;font-weight:500;">Ingresos por periodo seleccionado</p>
             </div>
-            <div style="display:inline-flex;gap:3px;padding:4px;background:#eceff2;border-radius:12px;">
+            <div style="display:inline-flex;gap:3px;padding:4px;background:#efe8dd;border-radius:12px;">
                 <button type="button" class="btn-range" data-range="hoy">Hoy</button>
                 <button type="button" class="btn-range active" data-range="7d">7 días</button>
                 <button type="button" class="btn-range" data-range="30d">30 días</button>
@@ -20,61 +20,61 @@
     </div>
 
     <!-- 2. Contenedor de Métodos de Pago -->
-    <div id="widgetPaymentChart" style="background:#fff;border:1px solid #e9ebef;border-radius:16px;padding:20px;box-shadow:0 1px 2px rgba(16,24,40,.04);height:100%;">
-        <h3 style="margin:0 0 14px;font-size:16px;font-weight:700;color:#0f172a;"><i class="bi bi-pie-chart me-2"></i>Métodos de pago</h3>
+    <div id="widgetPaymentChart" style="background:#fff;border:1px solid #e4dccf;border-radius:16px;padding:20px;box-shadow:0 1px 2px rgba(14, 27, 44,.04);height:100%;">
+        <h3 style="margin:0 0 14px;font-size:16px;font-weight:700;color:#0e1b2c;"><i class="bi bi-pie-chart me-2"></i>Métodos de pago</h3>
         <div style="display:flex;align-items:center;justify-content:center;height:140px;position:relative;" id="paymentChartDonut"></div>
         <div style="display:flex;flex-direction:column;gap:11px;margin-top:14px;" id="paymentChartDetails"></div>
     </div>
 
     <!-- 3. Contenedor de Ventas por Categoría -->
-    <div id="widgetCategoryChart" style="background:#fff;border:1px solid #e9ebef;border-radius:16px;padding:20px;box-shadow:0 1px 2px rgba(16,24,40,.04);height:100%;">
-        <h3 style="margin:0 0 18px;font-size:16px;font-weight:700;color:#0f172a;"><i class="bi bi-tag-fill me-2"></i>Ventas por categoría</h3>
+    <div id="widgetCategoryChart" style="background:#fff;border:1px solid #e4dccf;border-radius:16px;padding:20px;box-shadow:0 1px 2px rgba(14, 27, 44,.04);height:100%;">
+        <h3 style="margin:0 0 18px;font-size:16px;font-weight:700;color:#0e1b2c;"><i class="bi bi-tag-fill me-2"></i>Ventas por categoría</h3>
         <div id="categoryChartBars"></div>
     </div>
 
     <!-- 4. Contenedor de Top Productos -->
-    <div id="widgetProductList" style="background:#fff;border:1px solid #e9ebef;border-radius:16px;padding:20px;box-shadow:0 1px 2px rgba(16,24,40,.04);height:100%;">
-        <h3 style="margin:0 0 8px;font-size:16px;font-weight:700;color:#0f172a;"><i class="bi bi-trophy-fill me-2"></i>Top productos más vendidos</h3>
+    <div id="widgetProductList" style="background:#fff;border:1px solid #e4dccf;border-radius:16px;padding:20px;box-shadow:0 1px 2px rgba(14, 27, 44,.04);height:100%;">
+        <h3 style="margin:0 0 8px;font-size:16px;font-weight:700;color:#0e1b2c;"><i class="bi bi-trophy-fill me-2"></i>Top productos más vendidos</h3>
         <div id="productListItems"></div>
     </div>
 
     <!-- 5. Contenedor de Resumen del Mes -->
-    <div id="widgetResumenMes" style="background:#fff;border:1px solid #e9ebef;border-radius:16px;padding:20px;box-shadow:0 1px 2px rgba(16,24,40,.04);height:100%;">
-        <h3 style="margin:0 0 14px;font-size:16px;font-weight:700;color:#0f172a;"><i class="bi bi-list-stars me-2"></i>Resumen del mes</h3>
+    <div id="widgetResumenMes" style="background:#fff;border:1px solid #e4dccf;border-radius:16px;padding:20px;box-shadow:0 1px 2px rgba(14, 27, 44,.04);height:100%;">
+        <h3 style="margin:0 0 14px;font-size:16px;font-weight:700;color:#0e1b2c;"><i class="bi bi-list-stars me-2"></i>Resumen del mes</h3>
         <div style="display:flex;flex-direction:column;">
-            <div style="display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid #f2f4f7;">
-                <span style="font-size:13.5px;color:#56606f;font-weight:500;">Ventas del mes</span>
-                <span style="font-size:14px;font-weight:700;color:#0f172a;font-variant-numeric:tabular-nums;" id="resumenVentasMesVal">$0</span>
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid #f3ede4;">
+                <span style="font-size:13.5px;color:#5b6b7e;font-weight:500;">Ventas del mes</span>
+                <span style="font-size:14px;font-weight:700;color:#0e1b2c;font-variant-numeric:tabular-nums;" id="resumenVentasMesVal">$0</span>
             </div>
-            <div style="display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid #f2f4f7;">
-                <span style="font-size:13.5px;color:#56606f;font-weight:500;">Facturas emitidas</span>
-                <span style="font-size:14px;font-weight:700;color:#0f172a;font-variant-numeric:tabular-nums;" id="resumenFacturasMesVal">0</span>
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid #f3ede4;">
+                <span style="font-size:13.5px;color:#5b6b7e;font-weight:500;">Facturas emitidas</span>
+                <span style="font-size:14px;font-weight:700;color:#0e1b2c;font-variant-numeric:tabular-nums;" id="resumenFacturasMesVal">0</span>
             </div>
-            <div style="display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid #f2f4f7;cursor:pointer;" data-action="modal-promedio" class="clickable">
-                <span style="font-size:13.5px;color:#56606f;font-weight:500;">Promedio por factura</span>
-                <span style="font-size:14px;font-weight:700;color:#0f172a;font-variant-numeric:tabular-nums;" id="resumenPromedioMesVal">$0</span>
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid #f3ede4;cursor:pointer;" data-action="modal-promedio" class="clickable">
+                <span style="font-size:13.5px;color:#5b6b7e;font-weight:500;">Promedio por factura</span>
+                <span style="font-size:14px;font-weight:700;color:#0e1b2c;font-variant-numeric:tabular-nums;" id="resumenPromedioMesVal">$0</span>
             </div>
-            <div style="display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid #f2f4f7;">
-                <span style="font-size:13.5px;color:#56606f;font-weight:500;">Servicios externos / domicilios</span>
-                <span style="font-size:14px;font-weight:700;color:#0f172a;font-variant-numeric:tabular-nums;" id="resumenServiciosMesVal">$0</span>
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid #f3ede4;">
+                <span style="font-size:13.5px;color:#5b6b7e;font-weight:500;">Servicios externos / domicilios</span>
+                <span style="font-size:14px;font-weight:700;color:#0e1b2c;font-variant-numeric:tabular-nums;" id="resumenServiciosMesVal">$0</span>
             </div>
             <div style="display:flex;justify-content:space-between;align-items:center;padding:11px 0;cursor:pointer;" data-action="modal-ventas-eventos" class="clickable">
-                <span style="font-size:13.5px;color:#56606f;font-weight:500;">Ventas en eventos</span>
-                <span style="font-size:14px;font-weight:700;color:#0f172a;font-variant-numeric:tabular-nums;" id="resumenVentasEventosMesVal">$0</span>
+                <span style="font-size:13.5px;color:#5b6b7e;font-weight:500;">Ventas en eventos</span>
+                <span style="font-size:14px;font-weight:700;color:#0e1b2c;font-variant-numeric:tabular-nums;" id="resumenVentasEventosMesVal">$0</span>
             </div>
         </div>
     </div>
 
     <!-- 6. Contenedor de Calendario -->
-    <div id="widgetCalendar" style="background:#fff;border:1px solid #e9ebef;border-radius:16px;padding:20px;box-shadow:0 1px 2px rgba(16,24,40,.04);height:100%;">
+    <div id="widgetCalendar" style="background:#fff;border:1px solid #e4dccf;border-radius:16px;padding:20px;box-shadow:0 1px 2px rgba(14, 27, 44,.04);height:100%;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
-            <h3 style="margin:0;font-size:16px;font-weight:700;color:#0f172a;"><i class="bi bi-calendar3 me-2"></i>Calendario de Eventos</h3>
-            <span style="font-size:12px;font-weight:600;color:#8a94a6;" id="calendarEventosCountLabel">0 eventos</span>
+            <h3 style="margin:0;font-size:16px;font-weight:700;color:#0e1b2c;"><i class="bi bi-calendar3 me-2"></i>Calendario de Eventos</h3>
+            <span style="font-size:12px;font-weight:600;color:#8a97a8;" id="calendarEventosCountLabel">0 eventos</span>
         </div>
         <div id="miniCalendarioEventos" class="mini-calendario-container">
             <div class="text-muted small text-center py-3">Cargando calendario...</div>
         </div>
-        <p style="margin:12px 0 0;font-size:11.5px;color:#9aa3b2;line-height:1.5;">Los días con eventos aparecen marcados; el día de hoy en color de acento.</p>
+        <p style="margin:12px 0 0;font-size:11.5px;color:#8a97a8;line-height:1.5;">Los días con eventos aparecen marcados; el día de hoy en color de acento.</p>
     </div>
 
 </div>

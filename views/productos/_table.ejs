@@ -17,13 +17,13 @@
                 'Bebidas': '#0ea5e9',
                 'Postres': '#f59e0b',
                 'Cócteles': '#8b5cf6',
-                'Acompañamientos': '#64748b'
+                'Acompañamientos': '#5b6b7e'
             };
             
             (productos || []).forEach(function(producto) { 
                 const tieneReceta = recetasMap[producto.id]; 
                 const catName = producto.categoria_nombre || 'Sin categoría';
-                const catColor = colorMap[catName] || '#64748b';
+                const catColor = colorMap[catName] || '#5b6b7e';
             %>
                 <tr class="producto-row <%= producto.disponible === 0 || producto.disponible === false ? 'producto-inactivo' : '' %>" data-categoria-id="<%= producto.categoria_id || '' %>" data-producto-id="<%= producto.id %>">
                     <td data-label="Código" class="code-cell">

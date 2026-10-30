@@ -17,7 +17,7 @@
             <a href="?tenantId=<%= t.id %>" class="tenant-item <%= Number(activeTenantId) === t.id ? 'active' : '' %>"
                 data-name="<%= t.nombre.toLowerCase() %>">
                 <div class="tenant-avatar"
-                    style="background: <%= (t.config && t.config.colors && t.config.colors.primary) ? t.config.colors.primary : '#0f172a' %>">
+                    style="background: <%= (t.config && t.config.colors && t.config.colors.primary) ? t.config.colors.primary : '#0e1b2c' %>">
                     <%= t.nombre.charAt(0).toUpperCase() %>
                 </div>
                 <div class="tenant-info">

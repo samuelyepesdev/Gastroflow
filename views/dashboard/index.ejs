@@ -2,7 +2,7 @@
     <!-- Fonts and Styles -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/modulos/dashboard.css?v=<%= assetV %>">
     <% const activeAccent = colorAcento(typeof tenant !== 'undefined' ? tenant : null, typeof nav !== 'undefined' ? nav.primaryColor : null) %>
     <%- include('../partials/layout/accent-vars', { color: activeAccent, selector: '#dashboardRoot' }) %>
@@ -21,14 +21,14 @@
                         <span style="width:40px;height:40px;border-radius:11px;background:var(--accentSoft);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:20px;">
                             <i class="bi bi-graph-up-arrow"></i>
                         </span>
-                        <h1 class="mb-0 fw-bold" style="font-size:26px; letter-spacing:-.02em; color:#0f172a;">Panel de control</h1>
+                        <h1 class="mb-0 fw-bold" style="font-size:26px; letter-spacing:-.02em; color:#0e1b2c;">Panel de control</h1>
                     </div>
                     <p class="mb-0 text-muted fw-semibold" style="margin-left: 48px; font-size:13.5px;" id="currentDateLabel">Cargando fecha...</p>
                 </div>
                 
                 <div class="d-flex align-items-center gap-3 flex-wrap">
                     <!-- Variaciones: Analytics o Focus -->
-                    <div style="display:inline-flex;gap:3px;padding:4px;background:#eceff2;border-radius:12px;">
+                    <div style="display:inline-flex;gap:3px;padding:4px;background:#efe8dd;border-radius:12px;">
                         <button type="button" class="btn-variation active" data-variation="A">
                             <i class="bi bi-grid-1x2-fill"></i>Analytics
                         </button>
@@ -38,7 +38,7 @@
                     </div>
 
                     <% if (user.permisos && user.permisos.includes('reporte_mensual.test')) { %>
-                        <button class="btn btn-outline-success border-2 px-3 fw-bold" id="btnTestReporteMensual" style="border-radius:11px; font-size:13.5px; height: 38px;">
+                        <button class="btn btn-outline-primary border-2 px-3 fw-bold" id="btnTestReporteMensual" style="border-radius:11px; font-size:13.5px; height: 38px;">
                             <i class="bi bi-file-earmark-pdf me-2"></i>Reporte Prueba
                         </button>
                     <% } %>
@@ -109,15 +109,15 @@
             </div>
 
             <!-- Filtros de fecha -->
-            <div style="background:white; padding:16px; border-radius:16px; border:1px solid #e9ebef; box-shadow:0 1px 2px rgba(16,24,40,.04); margin-bottom:20px;">
+            <div style="background:white; padding:16px; border-radius:16px; border:1px solid #e4dccf; box-shadow:0 1px 2px rgba(14, 27, 44,.04); margin-bottom:20px;">
                 <div class="row g-2 align-items-end">
                     <div class="col-12 col-md-3">
-                        <label for="filtroDesde" class="form-label mb-1" style="font-size:12.5px;font-weight:700;color:#5b6573;">Desde</label>
-                        <input type="date" id="filtroDesde" class="form-control" style="border-radius:10px;font-size:13.5px;border-color:#eceff2;">
+                        <label for="filtroDesde" class="form-label mb-1" style="font-size:12.5px;font-weight:700;color:#5b6b7e;">Desde</label>
+                        <input type="date" id="filtroDesde" class="form-control" style="border-radius:10px;font-size:13.5px;border-color:#efe8dd;">
                     </div>
                     <div class="col-12 col-md-3">
-                        <label for="filtroHasta" class="form-label mb-1" style="font-size:12.5px;font-weight:700;color:#5b6573;">Hasta</label>
-                        <input type="date" id="filtroHasta" class="form-control" style="border-radius:10px;font-size:13.5px;border-color:#eceff2;">
+                        <label for="filtroHasta" class="form-label mb-1" style="font-size:12.5px;font-weight:700;color:#5b6b7e;">Hasta</label>
+                        <input type="date" id="filtroHasta" class="form-control" style="border-radius:10px;font-size:13.5px;border-color:#efe8dd;">
                     </div>
                     <div class="col-12 col-md-3">
                         <button id="aplicarFiltros" class="btn w-100 text-white" style="background:var(--accent); border-radius:10px; font-size:13.5px; font-weight:700; border:none; height:38px;">

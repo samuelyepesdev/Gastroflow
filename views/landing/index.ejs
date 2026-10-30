@@ -10,11 +10,12 @@
   <title><%= pageTitle %></title>
   <meta name="description" content="<%= pageDesc %>">
   <link rel="canonical" href="<%= siteUrl %>/">
-  <meta name="theme-color" content="<%= '#101010' %>">
+  <meta name="theme-color" content="#0e1b2c">
 
   <!-- Favicon -->
-  <link rel="icon" type="image/png" href="/logo.png">
-  <link rel="apple-touch-icon" href="/logo.png">
+  <link rel="icon" type="image/svg+xml" href="/brand/favicon/favicon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="/brand/favicon/favicon-32.png">
+  <link rel="apple-touch-icon" href="/brand/favicon/favicon-180.png">
 
   <!-- Open Graph / Facebook, WhatsApp, LinkedIn -->
   <meta property="og:type" content="website">
@@ -58,7 +59,7 @@
     "@type": "Organization",
     "name": "GastroFlow",
     "url": "<%= siteUrl %>/",
-    "logo": "<%= siteUrl %>/logo.png",
+    "logo": "<%= siteUrl %>/brand/favicon/favicon-512.png",
     "description": "<%= pageDesc %>"
   }
   </script>
@@ -69,15 +70,15 @@
   <!-- Fonts & Icons -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500&family=Geist+Mono:wght@400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
   <style>
     :root {
-      --color-primary: <%= settings.color_primary || '#3fc46d' %>;
-      --color-primary-hover: <%= settings.color_primary_hover || '#2e7d46' %>;
-      --color-background: <%= '#101010' %>;
-      --color-text: <%= settings.color_text || '#e9efea' %>;
-      --color-accent: <%= settings.color_accent || '#c2604f' %>;
+      --color-primary: <%= settings.color_primary || '#ff5a36' %>;
+      --color-primary-hover: <%= settings.color_primary_hover || '#e8431f' %>;
+      --color-background: #0e1b2c;
+      --color-text: <%= settings.color_text || '#fff4e8' %>;
+      --color-accent: <%= settings.color_accent || '#ff5a36' %>;
     }
   </style>
   <link rel="stylesheet" href="/css/core/landing.css?v=<%= assetV %>">
@@ -97,7 +98,7 @@
 
   <header class="nav">
     <nav class="wrap nav__in" aria-label="Principal">
-      <a class="brand" href="#top"><span class="brand__mark"><i class="bi bi-fire" aria-hidden="true"></i></span>GastroFlow</a>
+      <a class="brand" href="#top"><span class="brand__mark"><img src="/brand/isotipo/isotipo-oscuro.svg" alt="" width="34" height="34"></span><span class="brand__txt">GastroFlow</span></a>
       <div class="nav__links">
         <a id="lnk-nav-producto" class="nav__link" href="#producto">Producto</a>
         <a id="lnk-nav-funciones" class="nav__link" href="#funciones">Funciones</a>
@@ -368,7 +369,7 @@
   <footer class="footer">
     <div class="wrap footer__grid">
       <div>
-        <a class="brand" href="#top"><span class="brand__mark"><i class="bi bi-fire" aria-hidden="true"></i></span>GastroFlow</a>
+        <a class="brand" href="#top"><span class="brand__mark"><img src="/brand/isotipo/isotipo-oscuro.svg" alt="" width="34" height="34"></span><span class="brand__txt">GastroFlow</span></a>
         <p class="footer__about">El sistema operativo para el éxito de tu restaurante. Control, velocidad y rentabilidad en una sola plataforma.</p>
       </div>
       <div>

@@ -1,6 +1,8 @@
 <link rel="stylesheet" href="/css/core/navbar.css?v=<%= assetV %>">
 <link rel="stylesheet" href="/css/core/tablas-responsive.css?v=<%= assetV %>">
 <script src="/js/core/gf.js?v=<%= assetV %>"></script>
+<link rel="stylesheet" href="/css/core/gf-marca.css?v=<%= assetV %>">
+<script src="/js/core/gf-marca.js?v=<%= assetV %>"></script>
 <script src="/js/core/tablas-responsive.js?v=<%= assetV %>" defer></script>
 <script src="/js/core/navbar-grupos.js?v=<%= assetV %>" defer></script>
 <%- include('_navbar_styles') %>
@@ -20,7 +22,7 @@
         <div class="container-fluid gap-2">
 
             <a class="navbar-brand" href="<%= nav.brandHref %>" title="<%= nav.tenantNombre %>">
-                <div class="n-icon"><i class="bi bi-shop text-white" style="font-size:.85rem;"></i></div>
+                <img class="n-icon" src="/brand/isotipo/isotipo-oscuro.svg" alt="" width="32" height="32">
                 <%= nav.brandName %>
             </a>
 
