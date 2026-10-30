@@ -4,10 +4,10 @@
    ============================================================ */
 
 :root {
-    --n-primary: #6366f1;
-    --n-primary-dark: #4f46e5;
-    --n-bg-start: #1e3a5f;
-    --n-bg-end: #0f172a;
+    --n-primary: #ff5a36;
+    --n-primary-dark: #e8431f;
+    --n-bg-start: #16283e;
+    --n-bg-end: #0e1b2c;
 }
 
 .navbar {
@@ -31,13 +31,9 @@
 }
 
 .n-icon {
-    width: 29px;
-    height: 29px;
-    background: linear-gradient(135deg, var(--n-primary), var(--n-primary-dark));
-    border-radius: 7px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
     flex-shrink: 0;
 }
 
@@ -86,12 +82,12 @@
     display: flex;
     align-items: center;
     gap: .5rem;
-    color: #334155;
+    color: #223650;
 }
 
 .dropdown-item:hover {
-    background: #f1f5f9;
-    color: #0f172a;
+    background: #f3ede4;
+    color: #0e1b2c;
 }
 
 .dropdown-divider {
@@ -101,16 +97,16 @@
 .dropdown-header {
     font-size: .67rem;
     font-weight: 700;
-    color: #94a3b8;
+    color: #8a97a8;
     text-transform: uppercase;
     letter-spacing: .5px;
     padding: .35rem .75rem .2rem;
 }
 
 .n-plan {
-    background: rgba(99, 102, 241, .25);
-    border: 1px solid rgba(99, 102, 241, .4);
-    color: #c7d2fe;
+    background: rgba(255, 90, 54, .25);
+    border: 1px solid rgba(255, 90, 54, .4);
+    color: #ffd0c4;
     border-radius: 20px;
     font-size: .7rem;
     font-weight: 700;
@@ -120,7 +116,7 @@
 }
 
 .n-plan:hover {
-    background: rgba(99, 102, 241, .4);
+    background: rgba(255, 90, 54, .4);
 }
 
 .n-user {
@@ -145,7 +141,7 @@
 .n-av {
     width: 26px;
     height: 26px;
-    background: linear-gradient(135deg, #6366f1, #818cf8);
+    background: linear-gradient(135deg, #ff5a36, #ff8a6e);
     border-radius: 50%;
     display: flex;
     align-items: center;

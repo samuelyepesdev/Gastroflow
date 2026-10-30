@@ -6,7 +6,8 @@ const {
     footerText,
     productosTable,
     categoriaTable,
-    medioPagoTable
+    medioPagoTable,
+    encabezadoMarca
 } = require('../Shared/PdfDocHelpers');
 const PdfCharts = require('../Shared/PdfCharts');
 const MailerService = require('../Shared/MailerService');
@@ -115,7 +116,7 @@ class ReporteMensualService {
         const segmentos = [
             { label: 'Efectivo', value: pagos.efectivo || 0, color: COLOR_REPORTE },
             { label: 'Transferencia', value: pagos.transferencia || 0, color: '#9aa7bd' },
-            { label: 'Servicios Ext.', value: pagos.serviciosExternos || 0, color: '#3257b0' }
+            { label: 'Servicios Ext.', value: pagos.serviciosExternos || 0, color: '#e8431f' }
         ];
         const total = segmentos.reduce((s, seg) => s + seg.value, 0);
         const porcentaje = v => (total ? `${((v / total) * 100).toFixed(1).replace('.', ',')}%` : '0%');
@@ -124,7 +125,7 @@ class ReporteMensualService {
             { canvas: [{ type: 'rect', x: 0, y: 1, w: 9, h: 9, color: seg.color }], width: 9 },
             { text: seg.label, fontSize: 9, bold: true, width: 85 },
             { text: formatMoney(seg.value), fontSize: 9, alignment: 'right', width: 80 },
-            { text: porcentaje(seg.value), fontSize: 9, color: '#64748b', alignment: 'right', width: 40 }
+            { text: porcentaje(seg.value), fontSize: 9, color: '#5b6b7e', alignment: 'right', width: 40 }
         ]);
 
         return [
@@ -162,14 +163,7 @@ class ReporteMensualService {
 
         return {
             content: [
-                { text: tenant.nombre, alignment: 'center', fontSize: 20, bold: true, color: '#28a745' },
-                {
-                    text: `Reporte de Ventas - ${mes}`,
-                    alignment: 'center',
-                    fontSize: 12,
-                    color: '#666666',
-                    margin: [0, 4, 0, 20]
-                },
+                ...encabezadoMarca(tenant.nombre, `Reporte de Ventas - ${mes}`),
                 {
                     columns: [
                         statCard('Total Ingresos Brutos', formatMoney(totalMes), { valueColor: '#28a745' }),

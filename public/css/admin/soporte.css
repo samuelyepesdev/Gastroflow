@@ -5,7 +5,7 @@
 .ticket-status-abierto { background-color: #ffc107; color: #000; }
 .ticket-status-en_proceso { background-color: #0dcaf0; color: #000; }
 .ticket-status-resuelto { background-color: #198754; color: #fff; }
-.ticket-status-cerrado { background-color: #6c757d; color: #fff; }
+.ticket-status-cerrado { background-color: #5b6b7e; color: #fff; }
 
 .table-responsive {
     background: var(--sa-surface-2);

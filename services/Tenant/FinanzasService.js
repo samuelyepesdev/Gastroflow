@@ -15,7 +15,8 @@ const {
     tableHeaderCell,
     tableCell,
     emptyRow,
-    zebraTableLayout
+    zebraTableLayout,
+    encabezadoMarca
 } = require('../Shared/PdfDocHelpers');
 
 /** Variación porcentual de `actual` frente a `anterior` (null si no hay base de comparación). */
@@ -314,14 +315,7 @@ class FinanzasService {
 
         const docDefinition = {
             content: [
-                { text: tenant.nombre, alignment: 'center', fontSize: 20, bold: true, color: '#4f46e5' },
-                {
-                    text: `Estado Financiero - Últimos ${dias} días (al ${hoyStr})`,
-                    alignment: 'center',
-                    fontSize: 12,
-                    color: '#666666',
-                    margin: [0, 4, 0, 20]
-                },
+                ...encabezadoMarca(tenant.nombre, `Estado Financiero - Últimos ${dias} días (al ${hoyStr})`),
                 {
                     columns: [
                         statCard('Ingresos', formatMoney(data.ingresos) + variacionTexto(data.variacionIngresos), {
@@ -331,13 +325,13 @@ class FinanzasService {
                             valueColor: '#dc2626'
                         }),
                         statCard('Utilidad', formatMoney(data.utilidad) + variacionTexto(data.variacionUtilidad), {
-                            valueColor: data.utilidad >= 0 ? '#4f46e5' : '#dc2626'
+                            valueColor: data.utilidad >= 0 ? '#e8431f' : '#dc2626'
                         })
                     ],
                     columnGap: 12,
                     margin: [0, 0, 0, 10]
                 },
-                sectionTitle('Desglose de Egresos', '#4f46e5'),
+                sectionTitle('Desglose de Egresos', '#e8431f'),
                 {
                     ul: [
                         `Caja (compras de inventario, gastos manuales): ${formatMoney(data.egresosCaja)}`,
@@ -348,7 +342,7 @@ class FinanzasService {
                     ],
                     margin: [0, 0, 0, 10]
                 },
-                sectionTitle('Ingresos por Forma de Pago', '#4f46e5'),
+                sectionTitle('Ingresos por Forma de Pago', '#e8431f'),
                 {
                     ul: [
                         `Efectivo: ${formatMoney(data.desglosePago.efectivo)}`,
@@ -357,9 +351,9 @@ class FinanzasService {
                     ],
                     margin: [0, 0, 0, 10]
                 },
-                sectionTitle('Egresos de Caja por Categoría', '#4f46e5'),
+                sectionTitle('Egresos de Caja por Categoría', '#e8431f'),
                 categoriaTable(),
-                sectionTitle('Cuentas por Pagar Pendientes', '#4f46e5'),
+                sectionTitle('Cuentas por Pagar Pendientes', '#e8431f'),
                 cuentasPorPagarTable(),
                 footerText('Este reporte fue generado de forma automática.')
             ]

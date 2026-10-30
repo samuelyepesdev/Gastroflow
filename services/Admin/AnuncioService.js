@@ -69,7 +69,7 @@ function normalizar(body) {
 
     const color = textoOpcional(body.color_acento, 7, 'El color');
     if (color && !/^#[0-9a-f]{6}$/i.test(color)) {
-        throw new Error('El color debe ser un hex válido, ej. #4f46e5');
+        throw new Error('El color debe ser un hex válido, ej. #e8431f');
     }
 
     const frecuencia = FRECUENCIAS.includes(body.frecuencia) ? body.frecuencia : 'una_vez';

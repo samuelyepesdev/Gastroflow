@@ -3,15 +3,15 @@
    ============================================================ */
 
 :root {
-    --primary-gradient: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+    --primary-gradient: linear-gradient(135deg, #ff5a36 0%, #e8431f 100%);
     --surface-card: #ffffff;
-    --text-main: #1e293b;
-    --text-muted: #64748b;
-    --border-color: #f1f5f9;
+    --text-main: #16283e;
+    --text-muted: #5b6b7e;
+    --border-color: #f3ede4;
 }
 
 body {
-    background-color: #f8fafc;
+    background-color: #fff9f2;
 }
 
 .card-premium {
@@ -88,7 +88,7 @@ body {
 }
 
 .table-premium thead th {
-    background-color: #f8fafc;
+    background-color: #fff9f2;
     color: var(--text-muted);
     font-weight: 600;
     text-transform: uppercase;
@@ -106,7 +106,7 @@ body {
 }
 
 .table-premium tbody tr:hover {
-    background-color: #f1f5f9;
+    background-color: #f3ede4;
 }
 
 /* Badges */
@@ -149,15 +149,15 @@ body {
 .search-input {
     padding-left: 2.75rem;
     border-radius: 10px;
-    border: 1px solid #e2e8f0;
-    background-color: #f8fafc;
+    border: 1px solid #e4dccf;
+    background-color: #fff9f2;
     transition: all 0.2s;
 }
 
 .search-input:focus {
     background-color: #fff;
-    box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
-    border-color: #6366f1;
+    box-shadow: 0 0 0 4px rgba(232, 67, 31, 0.1);
+    border-color: #ff5a36;
 }
 
 .search-icon {
@@ -195,13 +195,13 @@ body {
 .form-control-premium {
     padding: 0.75rem 1rem;
     border-radius: 10px;
-    border: 1px solid #e2e8f0;
+    border: 1px solid #e4dccf;
     font-size: 0.9375rem;
 }
 
 .form-control-premium:focus {
-    box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
-    border-color: #6366f1;
+    box-shadow: 0 0 0 4px rgba(232, 67, 31, 0.1);
+    border-color: #ff5a36;
 }
 
 @media (max-width: 768px) {
@@ -235,7 +235,7 @@ body {
     .table-premium tbody tr {
         display: block;
         padding: 1rem;
-        border-bottom: 8px solid #f1f5f9;
+        border-bottom: 8px solid #f3ede4;
         position: relative;
     }
 
@@ -246,7 +246,7 @@ body {
     }
 
     .table-premium tbody td:last-child {
-        border-top: 1px solid #f1f5f9;
+        border-top: 1px solid #f3ede4;
         margin-top: 0.5rem;
         padding-top: 0.75rem !important;
         text-align: left !important;

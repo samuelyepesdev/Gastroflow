@@ -8,10 +8,11 @@
  */
 
 const PdfMaker = require('../Shared/PdfMaker');
+const { encabezadoMarca } = require('../Shared/PdfDocHelpers');
 const PlanService = require('./PlanService');
 const { TODOS_LOS_MODULOS } = require('../../utils/planPermissions');
 
-const BANNER_COLORS = { basico: '#475569', pro: '#1d4ed8', premium: '#6d28d9' };
+const BANNER_COLORS = { basico: '#46566a', pro: '#c93514', premium: '#6d28d9' };
 
 function humanizeFeature(feat) {
     if (feat === TODOS_LOS_MODULOS) {
@@ -56,7 +57,7 @@ function planCard(plan) {
             }
         },
         { text: 'Nuestra Propuesta', style: 'cardSectionTitle', margin: [10, 12, 10, 4] },
-        { text: plan.descripcion || '', fontSize: 9, color: '#475569', margin: [10, 0, 10, 8] }
+        { text: plan.descripcion || '', fontSize: 9, color: '#46566a', margin: [10, 0, 10, 8] }
     ];
 
     if (plan.descripcion_detallada) {
@@ -64,8 +65,8 @@ function planCard(plan) {
             text: plan.descripcion_detallada,
             fontSize: 8,
             italics: true,
-            color: '#64748b',
-            fillColor: '#f1f5f9',
+            color: '#5b6b7e',
+            fillColor: '#f3ede4',
             margin: [10, 0, 10, 10]
         });
     }
@@ -84,9 +85,9 @@ function planCard(plan) {
             widths: ['*', '*', '*'],
             body: [
                 [
-                    { text: 'PEQUEÑO', fontSize: 8, bold: true, color: '#64748b', alignment: 'center' },
-                    { text: 'MEDIANO', fontSize: 8, bold: true, color: '#64748b', alignment: 'center' },
-                    { text: 'GRANDE', fontSize: 8, bold: true, color: '#64748b', alignment: 'center' }
+                    { text: 'PEQUEÑO', fontSize: 8, bold: true, color: '#5b6b7e', alignment: 'center' },
+                    { text: 'MEDIANO', fontSize: 8, bold: true, color: '#5b6b7e', alignment: 'center' },
+                    { text: 'GRANDE', fontSize: 8, bold: true, color: '#5b6b7e', alignment: 'center' }
                 ],
                 [
                     {
@@ -113,9 +114,9 @@ function planCard(plan) {
         layout: {
             hLineWidth: () => 0.5,
             vLineWidth: i => (i === 1 || i === 2 ? 0.5 : 0),
-            hLineColor: () => '#e2e8f0',
-            vLineColor: () => '#e2e8f0',
-            fillColor: () => '#f8fafc'
+            hLineColor: () => '#e4dccf',
+            vLineColor: () => '#e4dccf',
+            fillColor: () => '#fff9f2'
         },
         margin: [10, 0, 10, 10]
     });
@@ -132,29 +133,28 @@ class PlanesPdfService {
 
         const docDefinition = {
             pageMargins: [40, 50, 40, 40],
-            styles: { cardSectionTitle: { fontSize: 10, bold: true, color: '#4f46e5' } },
+            styles: { cardSectionTitle: { fontSize: 10, bold: true, color: '#e8431f' } },
             content: [
-                { text: 'GastroFlow Portafolio', alignment: 'center', fontSize: 22, bold: true, color: '#4f46e5' },
-                {
-                    text: 'Transformando la gestión de tu restaurante con inteligencia',
-                    alignment: 'center',
-                    fontSize: 11,
-                    color: '#64748b',
-                    margin: [0, 4, 0, 24]
-                },
+                ...encabezadoMarca(
+                    'Portafolio de planes',
+                    'Transformando la gestión de tu restaurante con inteligencia',
+                    {
+                        margenSubtitulo: 24
+                    }
+                ),
                 ...(plans || []).map(planCard),
                 {
                     text: `GastroFlow SAS © ${new Date().getFullYear()} - Portafolio Oficial de Servicios Gastronómicos`,
                     alignment: 'center',
                     fontSize: 8,
-                    color: '#94a3b8',
+                    color: '#8a97a8',
                     margin: [0, 10, 0, 0]
                 },
                 {
                     text: `Generado el ${new Date().toLocaleDateString('es-CO')}`,
                     alignment: 'center',
                     fontSize: 8,
-                    color: '#94a3b8'
+                    color: '#8a97a8'
                 }
             ]
         };

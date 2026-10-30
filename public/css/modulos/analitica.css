@@ -3,17 +3,17 @@
    ======================================== */
 
 body {
-   background: linear-gradient(180deg, #f0f4f8 0%, #e2e8f0 100%);
+   background: linear-gradient(180deg, #f0f4f8 0%, #e4dccf 100%);
    min-height: 100vh;
 }
 
 .analitica-header {
-   background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+   background: linear-gradient(135deg, #e8431f 0%, #ff5a36 100%);
    color: #fff;
    border-radius: 16px;
    padding: 1.5rem 2rem;
    margin-bottom: 1.5rem;
-   box-shadow: 0 4px 20px rgba(79, 70, 229, 0.3);
+   box-shadow: 0 4px 20px rgba(232, 67, 31, 0.3);
 }
 
 .card-analitica {
@@ -25,20 +25,20 @@ body {
 
 .card-analitica .card-header {
    background: #fff;
-   border-bottom: 2px solid #e2e8f0;
+   border-bottom: 2px solid #e4dccf;
    font-weight: 600;
    padding: 1rem 1.25rem;
    border-radius: 16px 16px 0 0;
 }
 
 .nav-tabs {
-   border-bottom: 2px solid #e2e8f0;
+   border-bottom: 2px solid #e4dccf;
    gap: 1rem;
 }
 
 .nav-tabs .nav-link {
    border: none;
-   color: #64748b;
+   color: #5b6b7e;
    font-weight: 600;
    padding: 0.8rem 1.5rem;
    border-radius: 12px 12px 0 0;
@@ -47,18 +47,18 @@ body {
 }
 
 .nav-tabs .nav-link:hover {
-   color: #4f46e5;
-   background: rgba(79, 70, 229, 0.05);
+   color: #e8431f;
+   background: rgba(232, 67, 31, 0.05);
 }
 
 .nav-tabs .nav-link.active {
-   color: #4f46e5;
-   border-bottom: 3px solid #4f46e5;
+   color: #e8431f;
+   border-bottom: 3px solid #e8431f;
    background: transparent;
 }
 
 .kpi-box {
-   background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+   background: linear-gradient(135deg, #fff9f2 0%, #f3ede4 100%);
    border-radius: 12px;
    padding: 1.25rem;
    text-align: center;
@@ -67,12 +67,12 @@ body {
 .kpi-box .valor {
    font-size: 1.75rem;
    font-weight: 700;
-   color: #1e293b;
+   color: #16283e;
 }
 
 .kpi-box .label {
    font-size: 0.85rem;
-   color: #64748b;
+   color: #5b6b7e;
    text-transform: uppercase;
    letter-spacing: 0.5px;
    margin-top: 0.25rem;
@@ -99,7 +99,7 @@ body {
 }
 
 .table-meses thead th {
-   background: #f8fafc;
+   background: #fff9f2;
    font-weight: 600;
-   color: #475569;
+   color: #46566a;
 }

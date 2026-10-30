@@ -44,7 +44,7 @@ function luminancia(hex) {
     return (0.299 * r + 0.587 * g + 0.114 * b) / 255;
 }
 
-const contraste = hex => (luminancia(hex) > 0.62 ? '#1f2937' : '#ffffff');
+const contraste = hex => (luminancia(hex) > 0.62 ? '#16283e' : '#ffffff');
 
 // ---- Figuras de sello ----------------------------------------------------------------
 
@@ -168,7 +168,7 @@ const FONDOS = {
     minimal: (w, h, ac) => {
         const u = w / HERO_ANCHO;
         return `<rect width="${w}" height="${h}" fill="#ffffff"/>
-<rect x="${1 * u}" y="${1 * u}" width="${w - 2 * u}" height="${h - 2 * u}" fill="none" stroke="#e5e7eb" stroke-width="${2 * u}"/>
+<rect x="${1 * u}" y="${1 * u}" width="${w - 2 * u}" height="${h - 2 * u}" fill="none" stroke="#e4dccf" stroke-width="${2 * u}"/>
 <rect x="${32 * u}" y="0" width="${90 * u}" height="${7 * u}" fill="${ac}"/>`;
     },
     pizarra: (w, h) => {
@@ -193,7 +193,7 @@ const FONDOS = {
         const u = w / HERO_ANCHO;
         const rombo = (x, y) =>
             `<polygon points="${x},${y - 7 * u} ${x + 7 * u},${y} ${x},${y + 7 * u} ${x - 7 * u},${y}" fill="${ac}"/>`;
-        return `<defs><linearGradient id="fe" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1a1a1a"/><stop offset="1" stop-color="#090909"/></linearGradient></defs>
+        return `<defs><linearGradient id="fe" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0e1b2c"/><stop offset="1" stop-color="#090909"/></linearGradient></defs>
 <rect width="${w}" height="${h}" fill="url(#fe)"/>
 <rect x="${13 * u}" y="${13 * u}" width="${w - 26 * u}" height="${h - 26 * u}" fill="none" stroke="${ac}" stroke-width="${2.5 * u}"/>
 <rect x="${23 * u}" y="${23 * u}" width="${w - 46 * u}" height="${h - 46 * u}" fill="none" stroke="${ac}" stroke-opacity="0.5" stroke-width="${1.2 * u}"/>
@@ -251,10 +251,10 @@ const DISENOS = [
     {
         id: 'minimal',
         nombre: 'Minimal',
-        acento: '#111827',
+        acento: '#0e1b2c',
         forma: 'circulo',
-        paleta: () => ({ tinta: '#111827', suave: '#6b7280' }),
-        panel: { fill: '#f9fafb', opacity: 1, stroke: '#e5e7eb' },
+        paleta: () => ({ tinta: '#0e1b2c', suave: '#5b6b7e' }),
+        panel: { fill: '#f9fafb', opacity: 1, stroke: '#e4dccf' },
         vacio: { fill: '#ffffff', opacidad: 0.45 }
     },
     {
@@ -492,7 +492,7 @@ function componer(o) {
                 x: 887,
                 y: 430 + i * 34,
                 tamano: 22,
-                color: '#64748b',
+                color: '#5b6b7e',
                 ancla: 'middle',
                 maxAncho: 250
             });

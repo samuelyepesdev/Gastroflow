@@ -173,7 +173,7 @@ window.POS_PAGO = {
 
         const btn = document.getElementById('posConfirmarPagoBtn');
         btn.disabled = true;
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Procesando...';
+        btn.innerHTML = '<span class="gf-mini me-1"></span>Procesando...';
 
         try {
             const payload = {
@@ -228,6 +228,13 @@ window.POS_PAGO = {
             POS.clearCart();
             POS.recargarStats();
             POS._goToCatalogTab();
+
+            if (window.GF && GF.marca) {
+                GF.marca.exito({
+                    titulo: '¡Venta registrada!',
+                    detalle: (result.numero ? 'Factura #' + result.numero + ' · ' : 'Factura generada · ') + GF.dinero(total)
+                });
+            }
 
         } catch (err) {
             Swal.fire('Error al cobrar', err.message || 'No se pudo procesar el pago', 'error');

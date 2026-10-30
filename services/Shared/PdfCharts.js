@@ -8,8 +8,8 @@
 const { formatMoney } = require('../../utils/money');
 
 const FONT = 'Roboto';
-const COLOR_TEXTO = '#64748b';
-const COLOR_GRILLA = '#e2e8f0';
+const COLOR_TEXTO = '#5b6b7e';
+const COLOR_GRILLA = '#e4dccf';
 
 function escapeXml(text) {
     return String(text ?? '')
@@ -122,7 +122,7 @@ function barrasSvg(items, { width = 515, color = '#28a745', filaAlto = 20 } = {}
             const largo = Math.max(1, (it.valor / max) * barraMax);
             const etiqueta = it.etiqueta.length > 24 ? `${it.etiqueta.slice(0, 23)}…` : it.etiqueta;
             return (
-                `<text x="0" y="${yy + 13}" font-family="${FONT}" font-size="8" fill="#334155">${escapeXml(etiqueta)}</text>` +
+                `<text x="0" y="${yy + 13}" font-family="${FONT}" font-size="8" fill="#223650">${escapeXml(etiqueta)}</text>` +
                 `<rect x="${etiquetaAncho}" y="${yy + 4}" width="${largo.toFixed(1)}" height="11" rx="2" fill="${color}"/>` +
                 `<text x="${etiquetaAncho + largo + 5}" y="${yy + 13}" font-family="${FONT}" font-size="8" fill="${COLOR_TEXTO}">${escapeXml(formatMoney(it.valor))}</text>`
             );

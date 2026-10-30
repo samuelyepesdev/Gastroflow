@@ -21,10 +21,9 @@
     <% if (typeof seo !== 'undefined' && seo) { -%>
     <meta name="description" content="<%= seo.description %>">
     <link rel="canonical" href="<%= seo.canonical %>">
-    <meta name="theme-color" content="#080b09">
-    <link rel="icon" type="image/png" href="/logo.png">
     <% } -%>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="/css/core/brand.css?v=<%= assetV %>">
     <% if (typeof swal !== 'undefined' && swal) { -%>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <% } -%>

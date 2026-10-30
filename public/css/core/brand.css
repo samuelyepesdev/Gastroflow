@@ -1,0 +1,109 @@
+/* ============================================================
+   brand.css — Tokens de marca GastroFlow "Cloche"
+   Fuente única de colores y tipografía. Manual: docs/branding/07-manual/.
+   Cada hoja de estilos mapea sus variables locales (--n-*, --sa-*, --color-*)
+   a estos tokens; no escribas hex de marca sueltos en los módulos.
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800&family=Poppins:wght@400;500;600&display=swap');
+
+:root {
+    /* Paleta */
+    --gf-tinta: #0e1b2c;      /* texto, campana, fondos de app */
+    --gf-coral: #ff5a36;      /* plato, botones, acentos */
+    --gf-crema: #fff4e8;      /* fondo principal claro */
+    --gf-arena: #f3ede4;      /* fondos de página */
+    --gf-gris: #5b6b7e;       /* texto secundario */
+
+    /* Derivados (hover / superficies sobre tinta) */
+    --gf-coral-fuerte: #e8431f;
+    --gf-coral-suave: rgba(255, 90, 54, 0.14);
+    --gf-tinta-2: #16283e;
+    --gf-tinta-3: #223650;
+    --gf-linea: #e4dccf;
+    --gf-linea-oscura: #2c4160;
+
+    /* Tipografía: Montserrat para marca/títulos, Poppins para interfaz */
+    --gf-font-titulo: 'Montserrat', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --gf-font-ui: 'Poppins', system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+/* ---- Bootstrap 5.3 reencauzado a la marca (se carga DESPUÉS de bootstrap.min.css) ---- */
+:root,
+[data-bs-theme='light'] {
+    --bs-primary: var(--gf-coral);
+    --bs-primary-rgb: 255, 90, 54;
+    --bs-link-color: var(--gf-coral-fuerte);
+    --bs-link-color-rgb: 232, 67, 31;
+    --bs-link-hover-color: #c93514;
+    --bs-link-hover-color-rgb: 201, 53, 20;
+    --bs-body-color: var(--gf-tinta);
+    --bs-body-color-rgb: 14, 27, 44;
+    --bs-body-bg: var(--gf-arena);
+    --bs-body-bg-rgb: 243, 237, 228;
+    --bs-secondary-color: var(--gf-gris);
+    --bs-border-color: var(--gf-linea);
+    --bs-body-font-family: var(--gf-font-ui);
+    --bs-heading-color: var(--gf-tinta);
+    --bs-focus-ring-color: rgba(255, 90, 54, 0.25);
+}
+
+body {
+    font-family: var(--gf-font-ui);
+}
+
+h1, h2, h3, h4, h5, h6,
+.h1, .h2, .h3, .h4, .h5, .h6,
+.navbar-brand,
+.modal-title,
+.card-header {
+    font-family: var(--gf-font-titulo);
+    letter-spacing: -0.01em;
+}
+
+.btn-primary {
+    --bs-btn-bg: var(--gf-coral);
+    --bs-btn-border-color: var(--gf-coral);
+    --bs-btn-hover-bg: var(--gf-coral-fuerte);
+    --bs-btn-hover-border-color: var(--gf-coral-fuerte);
+    --bs-btn-active-bg: #c93514;
+    --bs-btn-active-border-color: #c93514;
+    --bs-btn-disabled-bg: var(--gf-coral);
+    --bs-btn-disabled-border-color: var(--gf-coral);
+    --bs-btn-focus-shadow-rgb: 255, 90, 54;
+}
+
+.btn-outline-primary {
+    --bs-btn-color: var(--gf-coral-fuerte);
+    --bs-btn-border-color: var(--gf-coral);
+    --bs-btn-hover-bg: var(--gf-coral);
+    --bs-btn-hover-border-color: var(--gf-coral);
+    --bs-btn-active-bg: var(--gf-coral-fuerte);
+    --bs-btn-active-border-color: var(--gf-coral-fuerte);
+    --bs-btn-focus-shadow-rgb: 255, 90, 54;
+}
+
+.text-primary { color: var(--gf-coral-fuerte) !important; }
+.bg-primary { background-color: var(--gf-coral) !important; }
+.border-primary { border-color: var(--gf-coral) !important; }
+.badge.bg-primary { background-color: var(--gf-coral) !important; }
+
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--gf-coral);
+    box-shadow: 0 0 0 0.2rem rgba(255, 90, 54, 0.2);
+}
+
+.form-check-input:checked {
+    background-color: var(--gf-coral);
+    border-color: var(--gf-coral);
+}
+
+.nav-pills .nav-link.active,
+.page-item.active .page-link,
+.list-group-item.active {
+    background-color: var(--gf-coral);
+    border-color: var(--gf-coral);
+}
+
+.progress-bar { background-color: var(--gf-coral); }

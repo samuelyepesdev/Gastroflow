@@ -62,7 +62,7 @@ window.POS = {
 
     // Calcula variantes oscura/suave del color de acento y las aplica como CSS vars
     _setupColors() {
-        const accent = document.body.style.getPropertyValue('--pos-accent').trim() || '#6366f1';
+        const accent = document.body.style.getPropertyValue('--pos-accent').trim() || '#ff5a36';
 
         const hx = h => {
             h = h.replace('#', '').trim();
@@ -429,7 +429,7 @@ window.POS = {
             });
             this.clearCart();
             await this.recargarBorradores();
-            Swal.fire({ icon: 'success', title: 'Orden guardada y enviada a cocina', timer: 1500, showConfirmButton: false });
+            GF.marca.exito({ variante: 'cocina', titulo: 'Orden enviada a cocina', detalle: 'Ya la están preparando', duracion: 1500 });
         } catch (err) {
             Swal.fire('Error', err.message || 'No se pudo guardar la orden', 'error');
         }

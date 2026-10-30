@@ -1,19 +1,19 @@
 /* Página pública del bono (/bono/:token). Mobile-first: la abre un celular al escanear el QR. */
 :root {
-    --bono-color: #6366f1;
-    --bono-bg: #f1f5f9;
+    --bono-color: #ff5a36;
+    --bono-bg: #f3ede4;
     --bono-surface: #ffffff;
-    --bono-text: #0f172a;
-    --bono-muted: #64748b;
-    --bono-border: #e2e8f0;
+    --bono-text: #0e1b2c;
+    --bono-muted: #5b6b7e;
+    --bono-border: #e4dccf;
 }
 
 @media (prefers-color-scheme: dark) {
     :root {
-        --bono-bg: #0b1220;
+        --bono-bg: #09131f;
         --bono-surface: #151e31;
-        --bono-text: #f1f5f9;
-        --bono-muted: #94a3b8;
+        --bono-text: #f3ede4;
+        --bono-muted: #8a97a8;
         --bono-border: #263249;
     }
 }
@@ -57,7 +57,7 @@ body {
     border-radius: 18px;
     padding: 24px 20px;
     text-align: center;
-    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+    box-shadow: 0 10px 30px rgba(14, 27, 44, 0.08);
 }
 
 .bono-card--inactivo {

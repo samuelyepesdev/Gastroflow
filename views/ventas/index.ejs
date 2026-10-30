@@ -24,7 +24,7 @@
 
         <!-- Event Filter Banner -->
         <% if (typeof eventoFiltro !== 'undefined' && eventoFiltro) { %>
-            <div class="alert alert-info py-3 mb-4 d-flex align-items-center justify-content-between flex-wrap gap-2 border-0 shadow-sm" style="border-radius: 12px; background: #eef2fb; color: #1e3a8a;">
+            <div class="alert alert-info py-3 mb-4 d-flex align-items-center justify-content-between flex-wrap gap-2 border-0 shadow-sm" style="border-radius: 12px; background: #fff0eb; color: #1e3a8a;">
                 <span>
                     <i class="bi bi-calendar-event me-2" style="font-size: 16px;"></i>
                     Ventas del evento: <strong><%= eventoFiltro.nombre %></strong>
@@ -35,23 +35,23 @@
 
         <!-- Tables Ready to Pay (Mesas Listas para Pagar) -->
         <% if (typeof mesasListas !== 'undefined' && mesasListas.length > 0) { %>
-            <div class="premium-table-card mb-4" style="border-color: #10b981; overflow: hidden;">
-                <div class="p-3 text-white d-flex align-items-center gap-2" style="background: #10b981;">
+            <div class="premium-table-card mb-4" style="border-color: #ff5a36; overflow: hidden;">
+                <div class="p-3 text-white d-flex align-items-center gap-2" style="background: #ff5a36;">
                     <i class="bi bi-cash-coin" style="font-size: 1.2rem;"></i>
                     <h5 class="mb-0 fw-bold">Mesas Listas para Pagar</h5>
                 </div>
-                <div class="p-4" style="background: #fafbfc;">
+                <div class="p-4" style="background: #fff9f2;">
                     <div class="row g-3">
                         <% mesasListas.forEach(function(mesa) { %>
                             <div class="col-md-4 col-lg-3">
-                                <div class="card h-100 border-0 shadow-sm" style="border-radius: 12px; background: #fff; border: 1px solid #e2e5ea !important;">
+                                <div class="card h-100 border-0 shadow-sm" style="border-radius: 12px; background: #fff; border: 1px solid #e4dccf !important;">
                                     <div class="card-body text-center p-3">
                                         <h5 class="card-title fw-bold text-dark mb-1">Mesa <%= mesa.mesa_numero %></h5>
-                                        <p class="card-text mb-3" style="font-size: 13px; color: #64748b;">
+                                        <p class="card-text mb-3" style="font-size: 13px; color: #5b6b7e;">
                                             <strong>Pedido #<%= mesa.pedido_id %></strong><br>
-                                            <span class="text-success fw-bold">Total: $<%= (Number(mesa.pedido_total) || 0).toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %></span>
+                                            <span class="text-primary fw-bold">Total: $<%= (Number(mesa.pedido_total) || 0).toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %></span>
                                         </p>
-                                        <button class="btn btn-success btn-sm w-100 py-2" style="border-radius: 8px; font-weight: 700; background: #10b981; border: none;" onclick="window.location.href='/mesas?pedido=<%= mesa.pedido_id %>'">
+                                        <button class="btn btn-primary btn-sm w-100 py-2" style="border-radius: 8px; font-weight: 700; border: none;" onclick="window.location.href='/mesas?pedido=<%= mesa.pedido_id %>'">
                                             <i class="bi bi-cash-stack me-1"></i> Facturar
                                         </button>
                                     </div>

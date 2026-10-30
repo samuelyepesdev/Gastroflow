@@ -12,32 +12,33 @@
 <title><%= titulo %></title>
 <meta name="description" content="<%= descripcion %>">
 <link rel="canonical" href="<%= canonical %>"/>
-<meta name="theme-color" content="#080b09">
-<link rel="icon" type="image/png" href="/logo.png">
+<meta name="theme-color" content="#0e1b2c">
+<link rel="icon" type="image/svg+xml" href="/brand/favicon/favicon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="/brand/favicon/favicon-32.png">
 <%- include('../partials/_analytics') %>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
 <script src="/js/tailwind-landing.js?v=<%= assetV %>"></script>
 <style>
-  body { font-family: 'Inter', sans-serif; }
+  body { font-family: 'Poppins', sans-serif; }
   .glass { background: rgba(255,255,255,0.05); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.1); }
   .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
-  .prose-legal h2 { font-size: 1.25rem; font-weight: 700; color: var(--md-sys-color-on-surface, #e2e8f0); margin-top: 2rem; margin-bottom: 0.75rem; }
-  .prose-legal h3 { font-size: 1rem; font-weight: 600; color: var(--md-sys-color-on-surface, #e2e8f0); margin-top: 1.5rem; margin-bottom: 0.5rem; }
+  .prose-legal h2 { font-size: 1.25rem; font-weight: 700; color: var(--md-sys-color-on-surface, #e4dccf); margin-top: 2rem; margin-bottom: 0.75rem; }
+  .prose-legal h3 { font-size: 1rem; font-weight: 600; color: var(--md-sys-color-on-surface, #e4dccf); margin-top: 1.5rem; margin-bottom: 0.5rem; }
   .prose-legal p  { margin-bottom: 0.875rem; line-height: 1.75; }
   .prose-legal ul { list-style: disc; padding-left: 1.5rem; margin-bottom: 0.875rem; }
   .prose-legal ul li { margin-bottom: 0.35rem; }
-  .prose-legal a  { color: #818cf8; text-decoration: underline; }
+  .prose-legal a  { color: #ff8a6e; text-decoration: underline; }
   .prose-legal ol { list-style: decimal; padding-left: 1.5rem; margin-bottom: 0.875rem; }
   .prose-legal ol li { margin-bottom: 0.35rem; }
   .prose-legal table { width: 100%; border-collapse: collapse; margin-bottom: 1.25rem; font-size: 0.85rem; }
   .prose-legal th, .prose-legal td { text-align: left; padding: 0.6rem 0.75rem; border-bottom: 1px solid var(--md-sys-color-outline-variant, #464554); vertical-align: top; }
-  .prose-legal th { color: var(--md-sys-color-on-surface, #e2e8f0); font-weight: 700; white-space: nowrap; }
+  .prose-legal th { color: var(--md-sys-color-on-surface, #e4dccf); font-weight: 700; white-space: nowrap; }
   .prose-legal code { background: rgba(255,255,255,.08); padding: 0.1rem 0.4rem; border-radius: 0.35rem; font-size: 0.85em; }
   .legal-doc-link { display: block; border-radius: 0.6rem; padding: 0.55rem 0.75rem; font-size: 0.875rem; color: var(--md-sys-color-on-surface-variant, #c7c4d7); text-decoration: none; transition: background-color .15s, color .15s; }
-  .legal-doc-link:hover { background: rgba(255,255,255,.06); color: var(--md-sys-color-on-surface, #e2e8f0); }
-  .legal-doc-link.activo { background: color-mix(in srgb, #6366f1 14%, transparent); color: #a5b4fc; font-weight: 600; }
+  .legal-doc-link:hover { background: rgba(255,255,255,.06); color: var(--md-sys-color-on-surface, #e4dccf); }
+  .legal-doc-link.activo { background: color-mix(in srgb, #ff5a36 14%, transparent); color: #ffb4a1; font-weight: 600; }
   .legal-doc-link.oculto { display: none; }
 </style>
 </head>

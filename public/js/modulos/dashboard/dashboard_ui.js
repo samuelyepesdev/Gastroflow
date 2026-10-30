@@ -290,7 +290,7 @@ $(function () {
     const donutSVG = mod.donut([
       { value: cash, color: mod.activeTheme },
       { value: trans, color: '#9aa7bd' },
-      { value: ext, color: '#3257b0' }
+      { value: ext, color: '#e8431f' }
     ], rangeLabels[mod.activeRange] || 'Total periodo');
     $('#paymentChartDonut').html(donutSVG);
 
@@ -303,21 +303,21 @@ $(function () {
     const detailsHTML = `
       <div style="display:flex; align-items:center; gap:10px;">
         <span style="width:11px; height:11px; border-radius:3px; background:${mod.activeTheme};"></span>
-        <span style="flex:1; font-size:13px; font-weight:600; color:#46505f;">Efectivo</span>
-        <span style="font-size:13px; font-weight:700; color:#0f172a; font-variant-numeric:tabular-nums;">${mod.formatCurrency(cash)}</span>
-        <span style="font-size:12px; font-weight:700; color:#8a94a6; width:46px; text-align:right;">${cashP}</span>
+        <span style="flex:1; font-size:13px; font-weight:600; color:#46566a;">Efectivo</span>
+        <span style="font-size:13px; font-weight:700; color:#0e1b2c; font-variant-numeric:tabular-nums;">${mod.formatCurrency(cash)}</span>
+        <span style="font-size:12px; font-weight:700; color:#8a97a8; width:46px; text-align:right;">${cashP}</span>
       </div>
       <div style="display:flex; align-items:center; gap:10px;">
         <span style="width:11px; height:11px; border-radius:3px; background:#9aa7bd;"></span>
-        <span style="flex:1; font-size:13px; font-weight:600; color:#46505f;">Transferencia</span>
-        <span style="font-size:13px; font-weight:700; color:#0f172a; font-variant-numeric:tabular-nums;">${mod.formatCurrency(trans)}</span>
-        <span style="font-size:12px; font-weight:700; color:#8a94a6; width:46px; text-align:right;">${transP}</span>
+        <span style="flex:1; font-size:13px; font-weight:600; color:#46566a;">Transferencia</span>
+        <span style="font-size:13px; font-weight:700; color:#0e1b2c; font-variant-numeric:tabular-nums;">${mod.formatCurrency(trans)}</span>
+        <span style="font-size:12px; font-weight:700; color:#8a97a8; width:46px; text-align:right;">${transP}</span>
       </div>
       <div style="display:flex; align-items:center; gap:10px;">
-        <span style="width:11px; height:11px; border-radius:3px; background:#3257b0;"></span>
-        <span style="flex:1; font-size:13px; font-weight:600; color:#46505f;">Servicios Ext.</span>
-        <span style="font-size:13px; font-weight:700; color:#0f172a; font-variant-numeric:tabular-nums;">${mod.formatCurrency(ext)}</span>
-        <span style="font-size:12px; font-weight:700; color:#8a94a6; width:46px; text-align:right;">${extP}</span>
+        <span style="width:11px; height:11px; border-radius:3px; background:#e8431f;"></span>
+        <span style="flex:1; font-size:13px; font-weight:600; color:#46566a;">Servicios Ext.</span>
+        <span style="font-size:13px; font-weight:700; color:#0e1b2c; font-variant-numeric:tabular-nums;">${mod.formatCurrency(ext)}</span>
+        <span style="font-size:12px; font-weight:700; color:#8a97a8; width:46px; text-align:right;">${extP}</span>
       </div>
     `;
     $('#paymentChartDetails').html(detailsHTML);

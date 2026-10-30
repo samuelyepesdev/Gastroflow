@@ -8,6 +8,7 @@
     "assets": [
       "views/**/*",
       "public/**/*",
+      "assets/**/*",
       "node_modules/ejs/**/*"
     ],
     "targets": [

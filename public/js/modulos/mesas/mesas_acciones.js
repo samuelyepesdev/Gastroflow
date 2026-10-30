@@ -356,7 +356,7 @@ $(function () {
         await GF.api.put(`/api/mesas/items/${it.id}/enviar`);
       }
       await mod.cargarPedido(mod.pedidoActual.id);
-      Swal.fire({ icon: 'success', title: 'Enviado a cocina' });
+      GF.marca.exito({ variante: 'cocina', titulo: 'Enviado a cocina', detalle: 'Ya lo están preparando', duracion: 1500 });
     } catch (err) {
       console.error(err);
       Swal.fire({ icon: 'error', title: 'No se pudo enviar a cocina', text: err.message });

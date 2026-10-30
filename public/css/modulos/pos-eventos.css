@@ -3,10 +3,10 @@
    ======================================== */
 
 :root {
-    --step-active: #3b82f6;
+    --step-active: #ff5a36;
     --step-completed: #10b981;
-    --step-inactive: #e2e8f0;
-    --bg-gradient: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    --step-inactive: #e4dccf;
+    --bg-gradient: linear-gradient(135deg, #fff9f2 0%, #f3ede4 100%);
 }
 
 body.pos-event-flow {
@@ -22,13 +22,13 @@ body.pos-event-flow {
 .flow-title {
     font-size: 1.875rem;
     font-weight: 700;
-    color: #0f172a;
+    color: #0e1b2c;
     margin-bottom: 0.25rem;
 }
 
 .flow-subtitle {
     font-size: 0.875rem;
-    color: #64748b;
+    color: #5b6b7e;
 }
 
 /* Modern Stepper */
@@ -63,8 +63,8 @@ body.pos-event-flow {
     font-weight: 600;
     font-size: 1.25rem;
     transition: all 0.3s ease;
-    background: #f1f5f9;
-    color: #64748b;
+    background: #f3ede4;
+    color: #5b6b7e;
     border: 3px solid white;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
 }
@@ -72,7 +72,7 @@ body.pos-event-flow {
 .step-item.active .step-circle {
     background: var(--step-active);
     color: white;
-    box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.3);
+    box-shadow: 0 10px 15px -3px rgba(255, 90, 54, 0.3);
 }
 
 .step-item.completed .step-circle {
@@ -83,7 +83,7 @@ body.pos-event-flow {
 .step-label {
     font-size: 0.75rem;
     font-weight: 600;
-    color: #64748b;
+    color: #5b6b7e;
     text-transform: uppercase;
     letter-spacing: 0.025em;
 }
@@ -96,7 +96,7 @@ body.pos-event-flow {
     flex-grow: 1;
     max-width: 3rem;
     height: 2px;
-    background: #e2e8f0;
+    background: #e4dccf;
     margin-bottom: 1.5rem; /* Alineado con circulo */
 }
 
@@ -128,7 +128,7 @@ body.pos-event-flow {
 .flow-card {
     background: white;
     border-radius: 1rem;
-    border: 1px solid #e2e8f0;
+    border: 1px solid #e4dccf;
     box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
     overflow: hidden;
     transition: transform 0.3s ease;
@@ -155,7 +155,7 @@ body.pos-event-flow {
 /* Inputs & Buttons */
 .flow-input {
     background: #fff;
-    border: 1px solid #e2e8f0;
+    border: 1px solid #e4dccf;
     padding: 0.75rem 1rem;
     border-radius: 0.5rem;
     font-size: 16px; /* CRÍTICO: Evita zoom en iPhone */
@@ -165,7 +165,7 @@ body.pos-event-flow {
 .flow-input:focus {
     border-color: var(--step-active);
     outline: none;
-    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
+    box-shadow: 0 0 0 4px rgba(255, 90, 54, 0.15);
 }
 
 .btn-flow-next {
@@ -179,8 +179,8 @@ body.pos-event-flow {
 
 .btn-flow-back {
     background: white;
-    color: #64748b;
-    border: 1px solid #e2e8f0;
+    color: #5b6b7e;
+    border: 1px solid #e4dccf;
     padding: 0.625rem 1.5rem;
     border-radius: 0.5rem;
     font-weight: 600;
@@ -189,25 +189,25 @@ body.pos-event-flow {
 /* Info Cards inside Flow */
 .info-box {
     background: #eff6ff;
-    border: 1px solid #bfdbfe;
+    border: 1px solid #ffd0c4;
     border-radius: 0.75rem;
     padding: 1rem;
 }
 
 .summary-card {
-    background: #f8fafc;
+    background: #fff9f2;
     border-radius: 0.75rem;
     padding: 1rem;
-    border: 1px solid #e2e8f0;
+    border: 1px solid #e4dccf;
 }
 
 /* Table overrides */
 .table-pos thead th {
-    background: #f8fafc;
-    color: #64748b;
+    background: #fff9f2;
+    color: #5b6b7e;
     font-size: 0.75rem;
     text-transform: uppercase;
     letter-spacing: 0.025em;
     padding: 0.75rem 1rem;
-    border-bottom: 1px solid #e2e8f0;
+    border-bottom: 1px solid #e4dccf;
 }

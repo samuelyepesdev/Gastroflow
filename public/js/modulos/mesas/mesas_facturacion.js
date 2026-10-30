@@ -37,7 +37,7 @@ $(function () {
       }, 'Error al facturar');
 
       Swal.fire({
-        icon: 'success',
+        ...GF.marca.swalIcono('exito'),
         title: 'Listo',
         html: '<p><strong>Factura #' + (dataF.numero != null ? dataF.numero : dataF.factura_id) + '</strong> ' + extraMsg + '.</p>',
         confirmButtonText: 'Cerrar'
@@ -249,8 +249,8 @@ $(function () {
       showCancelButton: true,
       confirmButtonText: 'Siguiente <i class="bi bi-arrow-right-short"></i>',
       cancelButtonText: 'Cancelar',
-      confirmButtonColor: '#0d6efd',
-      cancelButtonColor: '#6c757d',
+      confirmButtonColor: '#ff5a36',
+      cancelButtonColor: '#5b6b7e',
       customClass: {
         popup: 'rounded-4 shadow',
         confirmButton: 'px-4 py-2 fw-semibold',
@@ -274,8 +274,8 @@ $(function () {
       showCancelButton: true,
       confirmButtonText: 'Siguiente <i class="bi bi-arrow-right-short"></i>',
       cancelButtonText: 'Cancelar',
-      confirmButtonColor: '#0d6efd',
-      cancelButtonColor: '#6c757d',
+      confirmButtonColor: '#ff5a36',
+      cancelButtonColor: '#5b6b7e',
       customClass: { popup: 'rounded-4 shadow' }
     });
     return formaPago;
@@ -299,7 +299,7 @@ $(function () {
       confirmButtonText: 'Confirmar Pago <i class="bi bi-check-circle"></i>',
       cancelButtonText: 'Cancelar',
       confirmButtonColor: '#198754',
-      cancelButtonColor: '#6c757d',
+      cancelButtonColor: '#5b6b7e',
       customClass: { popup: 'rounded-4 shadow' }
     });
     return recibido ? MoneyInput.parse(recibido) : null;
@@ -469,7 +469,7 @@ $(function () {
         confirmButtonText: 'Registrar abono',
         cancelButtonText: 'Cancelar',
         confirmButtonColor: '#198754',
-        cancelButtonColor: '#6c757d',
+        cancelButtonColor: '#5b6b7e',
         customClass: { popup: 'rounded-4 shadow' },
         preConfirm: () => {
           const popup = Swal.getPopup();
@@ -563,7 +563,7 @@ $(function () {
         `,
         showConfirmButton: true,
         confirmButtonText: 'Cerrar',
-        confirmButtonColor: '#6c757d',
+        confirmButtonColor: '#5b6b7e',
         customClass: { popup: 'rounded-4 shadow' },
         didOpen: popup => {
           $(popup)
@@ -636,7 +636,7 @@ $(function () {
         denyButtonText: 'Por Producto',
         cancelButtonText: 'Cancelar',
         confirmButtonColor: '#198754',
-        denyButtonColor: '#0d6efd'
+        denyButtonColor: '#ff5a36'
       });
 
       if (result.isConfirmed) {
@@ -833,11 +833,7 @@ $(function () {
 
       modal.hide();
 
-      Swal.fire({
-        title: 'Generando factura...',
-        allowOutsideClick: false,
-        didOpen: () => Swal.showLoading()
-      });
+      GF.cargandoPantalla('Generando factura...');
 
       try {
         const data = await GF.api(`/api/mesas/pedidos/${mod.pedidoActual.id}/facturar`, {
@@ -856,7 +852,7 @@ $(function () {
           }
         }, 'Error al facturar');
 
-        Swal.close();
+        GF.cerrarCargando();
         const modalPago = bootstrap.Modal.getInstance(document.getElementById('modalPago'));
         modalPago?.hide();
         mod.canvas.hide();
@@ -882,12 +878,13 @@ $(function () {
           html += '<div class="text-start mt-2"><p><strong>Total cobrado:</strong> ' + mod.formatear(restante) + '</p><p><strong>Recibido:</strong> ' + mod.formatear(montoRecibido) + '</p><p class="text-success fw-bold">Cambio: ' + mod.formatear(cambio) + '</p></div>';
         }
         Swal.fire({
-          icon: 'success',
+          ...GF.marca.swalIcono('exito'),
           title: 'Listo',
           html: html,
           confirmButtonText: 'Cerrar'
         });
       } catch (err) {
+        GF.cerrarCargando();
         Swal.fire({ icon: 'error', title: err.message });
       }
     });

@@ -1,15 +1,15 @@
 /* Estado de Resultados / Finanzas Corporativas (views/finanzas/index.ejs) */
 
 :root {
-    --finance-navy: #0f172a;
-    --finance-slate: #334155;
-    --finance-border: #e2e8f0;
+    --finance-navy: #0e1b2c;
+    --finance-slate: #223650;
+    --finance-border: #e4dccf;
     --finance-success: #059669;
     --finance-danger: #dc2626;
 }
 
 body {
-    background-color: #f8fafc;
+    background-color: #fff9f2;
     font-family: 'Inter', -apple-system, sans-serif;
     color: var(--finance-navy);
 }
@@ -51,7 +51,7 @@ body {
 }
 
 .table-finance th {
-    background: #f1f5f9;
+    background: #f3ede4;
     color: var(--finance-slate);
     text-transform: uppercase;
     font-size: 0.7rem;

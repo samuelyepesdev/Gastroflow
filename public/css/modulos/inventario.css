@@ -3,14 +3,14 @@
    ============================================================ */
 
 body {
-    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    background: linear-gradient(135deg, #fff9f2 0%, #f3ede4 100%);
     min-height: 100vh;
 }
 
 /* Headers y Tipografía */
 h1.h4 {
     font-weight: 800;
-    color: #1e293b;
+    color: #16283e;
     letter-spacing: -0.5px;
 }
 
@@ -37,7 +37,7 @@ h1.h4 {
     left: 0;
     width: 4px;
     height: 100%;
-    background: #4f46e5;
+    background: #e8431f;
 }
 
 .kpi-card.kpi-success::before {
@@ -51,7 +51,7 @@ h1.h4 {
 .kpi-label {
     font-size: 0.75rem;
     font-weight: 700;
-    color: #64748b;
+    color: #5b6b7e;
     text-transform: uppercase;
     letter-spacing: 1px;
     margin-bottom: 0.5rem;
@@ -60,7 +60,7 @@ h1.h4 {
 .kpi-value {
     font-size: 1.85rem;
     font-weight: 800;
-    color: #0f172a;
+    color: #0e1b2c;
 }
 
 /* Tabla Principal */
@@ -73,14 +73,14 @@ h1.h4 {
 
 .card-header {
     background: #fff;
-    border-bottom: 1px solid #f1f5f9;
+    border-bottom: 1px solid #f3ede4;
     padding: 1.5rem;
     border-radius: 24px 24px 0 0 !important;
 }
 
 .table thead th {
-    background: #f8fafc;
-    color: #64748b;
+    background: #fff9f2;
+    color: #5b6b7e;
     font-weight: 700;
     text-transform: uppercase;
     font-size: 0.7rem;
@@ -92,9 +92,9 @@ h1.h4 {
 .table tbody td {
     padding: 1.25rem 1rem;
     vertical-align: middle;
-    color: #334155;
+    color: #223650;
     font-size: 0.9rem;
-    border-bottom: 1px solid #f1f5f9;
+    border-bottom: 1px solid #f3ede4;
 }
 
 .fila-insumo {
@@ -102,7 +102,7 @@ h1.h4 {
 }
 
 .fila-insumo:hover {
-    background: #f8fafc;
+    background: #fff9f2;
 }
 
 /* Alertas de Stock Bajo */
@@ -140,7 +140,7 @@ h1.h4 {
 .search-box .input-group-text {
     background: transparent;
     border: none;
-    color: #94a3b8;
+    color: #8a97a8;
     padding-left: 1.25rem;
 }
 
@@ -173,8 +173,8 @@ h1.h4 {
 }
 
 .btn-icon-a {
-    background: #f3f4f6;
-    color: #374151;
+    background: #f3ede4;
+    color: #223650;
 }
 
 .btn-icon-m {
@@ -204,7 +204,7 @@ h1.h4 {
     padding: 1rem;
     margin-bottom: 1rem;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
-    border: 1px solid #f1f5f9;
+    border: 1px solid #f3ede4;
     position: relative;
     overflow: hidden;
     transition: transform 0.2s ease;
@@ -223,7 +223,7 @@ h1.h4 {
     left: 0;
     width: 6px;
     height: 100%;
-    background: #e2e8f0;
+    background: #e4dccf;
 }
 
 .inventario-card.stock-bajo::before {
@@ -233,7 +233,7 @@ h1.h4 {
 .inventario-card .titulo {
     font-size: 1rem;
     font-weight: 700;
-    color: #1e293b;
+    color: #16283e;
     margin-bottom: 0.15rem;
     line-height: 1.2;
 }

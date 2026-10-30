@@ -4,7 +4,7 @@
    ============================================================ */
 
 body {
-    background-color: #f1f5f9;
+    background-color: #f3ede4;
 }
 
 /* Tarjetas de mesa (solo antiguas / virtuales) */
@@ -32,7 +32,7 @@ body {
 }
 
 .mesa-card:not(.mesa-real-card).reservada {
-    border-top: 4px solid #64748b;
+    border-top: 4px solid #5b6b7e;
 }
 
 .mesa-card:not(.mesa-real-card).virtual {
@@ -63,21 +63,21 @@ body {
 }
 
 .pill-reservada {
-    background: #e2e8f0;
-    color: #475569;
+    background: #e4dccf;
+    color: #46566a;
 }
 
 /* Número de mesa */
 .mesa-num {
     font-size: 1.5rem;
     font-weight: 800;
-    color: #0f172a;
+    color: #0e1b2c;
     line-height: 1;
 }
 
 .mesa-desc {
     font-size: .78rem;
-    color: #64748b;
+    color: #5b6b7e;
     min-height: 16px;
 }
 
@@ -107,7 +107,7 @@ body {
 
 #canvasFactura .offcanvas-header {
     padding: 1rem 1.5rem;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #ff5a36 0%, #e8431f 100%);
     color: white;
 }
 
@@ -158,7 +158,7 @@ body {
 
 /* Modal de pago */
 .payment-card {
-    border-color: #dee2e6 !important;
+    border-color: #e4dccf !important;
     transition: all 0.3s;
     cursor: pointer;
 }
@@ -169,7 +169,7 @@ body {
 }
 
 .payment-card.selected {
-    border-color: #0d6efd !important;
+    border-color: #ff5a36 !important;
     background: linear-gradient(135deg, #e7f1ff 0%, #cfe2ff 100%);
 }
 
@@ -182,7 +182,7 @@ body {
     padding: 1rem;
     font-size: 1.1rem;
     font-weight: 600;
-    border: 2px solid #dee2e6;
+    border: 2px solid #e4dccf;
     transition: all 0.2s;
 }
 
@@ -464,9 +464,9 @@ body {
 
 .silla-real-item {
     position: absolute;
-    background: #475569;
+    background: #46566a;
     box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15), inset 0 1px 2px rgba(255, 255, 255, 0.15);
-    border: 1.5px solid #64748b;
+    border: 1.5px solid #5b6b7e;
     z-index: 4;
     transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.25);
 }
@@ -478,8 +478,8 @@ body {
 }
 
 .ocupada .silla-real-item {
-    background: #64748b;
-    border-color: #94a3b8;
+    background: #5b6b7e;
+    border-color: #8a97a8;
 }
 
 .reservada .silla-real-item {
@@ -591,13 +591,13 @@ body {
 }
 
 .btn-premium-action.btn-success {
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    background: linear-gradient(135deg, #ff5a36 0%, #e8431f 100%);
     border: none !important;
 }
 
 .btn-premium-action.btn-success:hover {
-    background: linear-gradient(135deg, #059669 0%, #047857 100%);
-    box-shadow: 0 6px 16px rgba(16, 185, 129, 0.3);
+    background: linear-gradient(135deg, #e8431f 0%, #c93514 100%);
+    box-shadow: 0 6px 16px rgba(255, 90, 54, 0.3);
     transform: translateY(-1px);
 }
 
@@ -643,10 +643,10 @@ body {
 /* Selección de toppings/modificadores al agregar un producto */
 .pos-mod-opcion {
     display: flex; align-items: center; justify-content: space-between;
-    padding: 8px 10px; border: 1px solid #e5e7eb; border-radius: 8px;
+    padding: 8px 10px; border: 1px solid #e4dccf; border-radius: 8px;
     margin-bottom: 6px; cursor: pointer; font-size: 14px;
 }
-.pos-mod-opcion:hover { background: #f8f9fa; }
+.pos-mod-opcion:hover { background: #fff9f2; }
 .pedido-item-mods { font-size: 11.5px; color: #b45309; margin-top: 1px; }
 .pedido-item-nota {
     font-size: 11px;
@@ -670,27 +670,27 @@ body {
     .table-pedido-mesas thead th {
         font-size: 0.7rem;
         text-transform: uppercase;
-        color: #64748b;
+        color: #5b6b7e;
         font-weight: 700;
-        background: #f8fafc !important;
-        border-bottom: 2px solid #e2e8f0;
+        background: #fff9f2 !important;
+        border-bottom: 2px solid #e4dccf;
         padding: 0.75rem 0.5rem !important;
     }
 
     .td-producto {
         font-weight: 600;
-        color: #1e293b;
+        color: #16283e;
         font-size: 0.85rem;
     }
 
     .td-subtotal {
-        color: #0f172a;
+        color: #0e1b2c;
         font-size: 0.85rem;
     }
 
     #totalPedido {
         font-size: 1.25rem;
-        color: #0d6efd;
+        color: #ff5a36;
     }
 
     /* ===== Panel de Favoritos Lateral ===== */

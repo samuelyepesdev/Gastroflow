@@ -2,7 +2,7 @@
     var SD = JSON.parse(document.getElementById('SD').textContent);
     var ALL_ADDONS = SD.addons;
     var ALL_PLANS = SD.plans;
-    var PC = { basico: '#64748b', pro: '#0d6efd', premium: '#6366f1' };
+    var PC = { basico: '#5b6b7e', pro: '#ff5a36', premium: '#ff5a36' };
 
     var addonMap = {};
     var metaMap = {};
@@ -155,7 +155,7 @@
             return sp;
         }
         sp.className = 'badge-plan';
-        sp.style.background = PC[plan.slug] || '#64748b';
+        sp.style.background = PC[plan.slug] || '#5b6b7e';
         sp.textContent = plan.nombre;
         return sp;
     }

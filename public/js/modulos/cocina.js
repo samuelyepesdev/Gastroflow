@@ -582,6 +582,7 @@ $(function () {
 
         try {
             await GF.api(`/api/cocina/pedidos/${pedidoId}/completar`, { method: 'PUT' }, 'Error al completar pedido');
+            GF.marca.exito({ titulo: '¡Pedido listo!', detalle: 'Sale a la mesa', duracion: 1200 });
             await cargarCola();
         } catch (error) {
             console.error('Error:', error);

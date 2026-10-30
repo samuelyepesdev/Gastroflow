@@ -137,7 +137,7 @@ class ClientManager {
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#dc3545',
-            cancelButtonColor: '#6c757d',
+            cancelButtonColor: '#5b6b7e',
             confirmButtonText: 'Sí, eliminar',
             cancelButtonText: 'Cancelar'
         });

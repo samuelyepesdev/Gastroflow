@@ -1,0 +1,251 @@
+/* ============================================================
+   gf-marca.css — Animaciones de marca "Cloche" (campana de servicio)
+   Usado por: public/js/core/gf-marca.js (GF.marca.*), GF.cargando (mini).
+   El domo usa currentColor, así que funciona sobre claro y oscuro.
+   ============================================================ */
+
+/* ---------- Campana animada (SVG inline) ---------- */
+.gf-cloche {
+    display: block;
+    width: 96px;
+    height: 96px;
+    overflow: visible;
+    color: var(--gf-tinta, #0e1b2c);
+}
+
+.gf-cloche .c-domo {
+    transform-box: fill-box;
+    transform-origin: 0% 100%;
+}
+
+.gf-cloche .c-vapor path {
+    fill: none;
+    stroke: var(--gf-coral, #ff5a36);
+    stroke-width: 3.2;
+    stroke-linecap: round;
+    opacity: 0;
+}
+
+.gf-cloche .c-check {
+    opacity: 0;
+    transform-box: fill-box;
+    transform-origin: 50% 50%;
+}
+
+.gf-cloche .c-check circle {
+    fill: var(--gf-coral, #ff5a36);
+}
+
+.gf-cloche .c-check path {
+    fill: none;
+    stroke: #fff;
+    stroke-width: 4.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-dasharray: 26;
+    stroke-dashoffset: 26;
+}
+
+/* --- Cargando: el domo se levanta y baja en bucle, sale vapor --- */
+.gf-cloche--carga .c-domo {
+    animation: gf-domo-carga 1.9s cubic-bezier(.45, 0, .25, 1) infinite;
+}
+
+.gf-cloche--carga .c-vapor path {
+    animation: gf-vapor 1.9s ease-out infinite;
+}
+
+.gf-cloche--carga .c-vapor path:nth-child(2) { animation-delay: .18s; }
+.gf-cloche--carga .c-vapor path:nth-child(3) { animation-delay: .36s; }
+
+/* --- Éxito (venta / factura): el domo sube y se queda, aparece el check --- */
+.gf-cloche--exito .c-domo {
+    animation: gf-domo-sube 1.1s cubic-bezier(.3, 1.4, .5, 1) .15s forwards;
+}
+
+.gf-cloche--exito .c-vapor path {
+    animation: gf-vapor 1.4s ease-out .45s 1 both;
+}
+
+.gf-cloche--exito .c-vapor path:nth-child(2) { animation-delay: .6s; }
+.gf-cloche--exito .c-vapor path:nth-child(3) { animation-delay: .75s; }
+
+.gf-cloche--exito .c-check {
+    animation: gf-check-pop .5s cubic-bezier(.3, 1.6, .5, 1) .55s forwards;
+}
+
+.gf-cloche--exito .c-check path {
+    animation: gf-check-trazo .35s ease-out .85s forwards;
+}
+
+/* --- Cocina: el domo vibra (olla a presión) y sale mucho vapor --- */
+.gf-cloche--cocina .c-domo {
+    animation: gf-domo-cocina .8s ease-in-out infinite;
+}
+
+.gf-cloche--cocina .c-vapor path {
+    animation: gf-vapor 1.1s ease-out infinite;
+}
+
+.gf-cloche--cocina .c-vapor path:nth-child(2) { animation-delay: .2s; }
+.gf-cloche--cocina .c-vapor path:nth-child(3) { animation-delay: .4s; }
+
+@keyframes gf-domo-carga {
+    0%, 12%   { transform: translateY(0) rotate(0); }
+    38%, 62%  { transform: translateY(-15px) rotate(-9deg); }
+    88%, 100% { transform: translateY(0) rotate(0); }
+}
+
+@keyframes gf-domo-sube {
+    0%   { transform: translateY(0) rotate(0); }
+    100% { transform: translateY(-24px) rotate(-13deg); }
+}
+
+@keyframes gf-domo-cocina {
+    0%, 100% { transform: translate(0, -4px); }
+    20% { transform: translate(-1.6px, -6px); }
+    40% { transform: translate(1.6px, -4px); }
+    60% { transform: translate(-1.2px, -6px); }
+    80% { transform: translate(1.2px, -4px); }
+}
+
+@keyframes gf-vapor {
+    0%   { opacity: 0; transform: translateY(8px); }
+    25%  { opacity: .9; }
+    100% { opacity: 0; transform: translateY(-14px); }
+}
+
+@keyframes gf-check-pop {
+    0%   { opacity: 0; transform: scale(.2); }
+    100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes gf-check-trazo {
+    to { stroke-dashoffset: 0; }
+}
+
+/* ---------- Capa (overlay) con tarjeta ---------- */
+.gf-marca {
+    position: fixed;
+    inset: 0;
+    z-index: 2147483000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    background: rgba(14, 27, 44, .55);
+    backdrop-filter: blur(3px);
+    animation: gf-marca-in .22s ease both;
+}
+
+.gf-marca.is-saliendo {
+    animation: gf-marca-out .22s ease both;
+}
+
+.gf-marca__card {
+    width: min(100%, 320px);
+    padding: 26px 22px 22px;
+    border-radius: 22px;
+    background: var(--gf-crema, #fff4e8);
+    color: var(--gf-tinta, #0e1b2c);
+    text-align: center;
+    box-shadow: 0 24px 60px rgba(14, 27, 44, .4);
+    animation: gf-card-in .35s cubic-bezier(.3, 1.3, .5, 1) both;
+}
+
+.gf-marca__card .gf-cloche {
+    margin: 0 auto 10px;
+}
+
+.gf-marca__titulo {
+    margin: 0;
+    font-family: var(--gf-font-titulo, 'Montserrat', system-ui, sans-serif);
+    font-weight: 700;
+    font-size: 1.15rem;
+    line-height: 1.25;
+}
+
+.gf-marca__detalle {
+    margin: 6px 0 0;
+    font-family: var(--gf-font-ui, 'Poppins', system-ui, sans-serif);
+    font-size: .88rem;
+    color: var(--gf-gris, #5b6b7e);
+}
+
+.gf-marca__detalle strong {
+    color: var(--gf-tinta, #0e1b2c);
+}
+
+@keyframes gf-marca-in  { from { opacity: 0; } to { opacity: 1; } }
+@keyframes gf-marca-out { from { opacity: 1; } to { opacity: 0; } }
+@keyframes gf-card-in   { from { opacity: 0; transform: translateY(14px) scale(.94); } to { opacity: 1; transform: none; } }
+
+/* ---------- Campana como ícono de SweetAlert ---------- */
+.swal2-icon.gf-swal-marca {
+    width: 96px;
+    height: 96px;
+    margin: 1.4em auto .4em;
+    border: 0;
+    font-size: 1rem;
+}
+
+.swal2-icon.gf-swal-marca .swal2-icon-content {
+    font-size: 1rem;
+}
+
+/* ---------- Mini cargador para botones (GF.cargando) ---------- */
+.gf-mini {
+    position: relative;
+    display: inline-block;
+    width: 1.15em;
+    height: 1em;
+    margin-right: .45em;
+    vertical-align: -.12em;
+}
+
+.gf-mini::before,
+.gf-mini::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+}
+
+/* plato */
+.gf-mini::after {
+    bottom: 0;
+    height: .16em;
+    border-radius: 999px;
+    background: currentColor;
+    opacity: .85;
+}
+
+/* domo */
+.gf-mini::before {
+    bottom: .26em;
+    height: .56em;
+    border-radius: 999px 999px 0 0;
+    background: currentColor;
+    transform-origin: 0 100%;
+    animation: gf-mini-domo 1.1s cubic-bezier(.45, 0, .25, 1) infinite;
+}
+
+@keyframes gf-mini-domo {
+    0%, 15%   { transform: translateY(0) rotate(0); }
+    45%, 65%  { transform: translateY(-.28em) rotate(-12deg); }
+    95%, 100% { transform: translateY(0) rotate(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .gf-cloche .c-domo,
+    .gf-cloche .c-vapor path,
+    .gf-mini::before {
+        animation: none !important;
+    }
+
+    .gf-cloche--exito .c-domo { transform: translateY(-24px) rotate(-13deg); }
+    .gf-cloche--exito .c-check { opacity: 1; animation: none !important; }
+    .gf-cloche--exito .c-check path { stroke-dashoffset: 0; animation: none !important; }
+    .gf-marca,
+    .gf-marca__card { animation: none !important; }
+}

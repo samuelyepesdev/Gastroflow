@@ -14,11 +14,11 @@ class LandingSettingsService {
             });
 
             const defaults = {
-                color_primary: '#6366f1',
-                color_primary_hover: '#4f46e5',
-                color_background: '#080b09',
-                color_text: '#e9efea',
-                color_accent: '#c2604f',
+                color_primary: '#ff5a36',
+                color_primary_hover: '#e8431f',
+                color_background: '#0e1b2c',
+                color_text: '#fff4e8',
+                color_accent: '#ff5a36',
                 whatsapp_number: '573173994234',
                 whatsapp_message: 'Hola, me gustaría agendar una demo de GastroFlow',
                 hero_title: 'Deja de adivinar. Empieza a controlar tu margen.',

@@ -46,8 +46,8 @@ ProductManager.prototype.init = function() {
     
     $('.category-filter-btn').removeClass('active').css({
       background: '#fff',
-      color: '#5b6573',
-      borderColor: '#e2e5ea',
+      color: '#5b6b7e',
+      borderColor: '#e4dccf',
       boxShadow: 'none'
     });
     

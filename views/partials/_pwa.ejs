@@ -1,7 +1,10 @@
-<%# PWA: manifest, color de barra y banner "Instalar GastroFlow" (public/js/core/pwa-install.js). %>
+<%# PWA + identidad de marca Cloche: favicon, manifest, color de barra y banner "Instalar GastroFlow" (public/js/core/pwa-install.js). %>
+<link rel="icon" type="image/svg+xml" href="/brand/favicon/favicon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="/brand/favicon/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/brand/favicon/favicon-16.png">
 <link rel="manifest" href="<%= typeof manifestUrl !== 'undefined' ? manifestUrl : '/manifest.webmanifest' %>">
-<meta name="theme-color" content="#080b09">
-<link rel="apple-touch-icon" href="/icons/icon-192.png">
+<meta name="theme-color" content="#0e1b2c">
+<link rel="apple-touch-icon" href="/brand/favicon/favicon-180.png">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="<%= typeof appTitle !== 'undefined' ? appTitle : 'GastroFlow' %>">

@@ -4,7 +4,7 @@
 }
 
 .input-group-text {
-    border-color: #dee2e6;
+    border-color: #e4dccf;
 }
 
 .card {
@@ -40,10 +40,10 @@
 .caja-paso-n { flex: 0 0 auto; width: 1.75rem; height: 1.75rem; border-radius: 50%; background: #4e73df; color: #fff; font-weight: 700; display: flex; align-items: center; justify-content: center; }
 
 /* Ganancias de hoy */
-.caja-kpi { background: #fff; border: 1px solid #e5e7eb; border-left: 4px solid; border-radius: .75rem; padding: .75rem 1rem; height: 100%; }
-.caja-kpi-t { font-size: .8rem; font-weight: 600; color: #6b7280; }
+.caja-kpi { background: #fff; border: 1px solid #e4dccf; border-left: 4px solid; border-radius: .75rem; padding: .75rem 1rem; height: 100%; }
+.caja-kpi-t { font-size: .8rem; font-weight: 600; color: #5b6b7e; }
 .caja-kpi-v { font-size: 1.6rem; font-weight: 800; line-height: 1.2; }
-.caja-kpi-s { font-size: .72rem; color: #9ca3af; }
+.caja-kpi-s { font-size: .72rem; color: #8a97a8; }
 
 /* Resultado del arqueo */
 .arqueo-res { padding: .5rem .75rem; border-radius: .5rem; font-weight: 700; font-size: .9rem; }

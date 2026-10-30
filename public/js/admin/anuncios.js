@@ -7,7 +7,7 @@
     var modal = new bootstrap.Modal(modalEl);
     var stage = document.getElementById('previewStage');
 
-    var COLOR_DEFECTO = { funcionalidad: '#4f46e5', actualizacion: '#0891b2', tutorial: '#059669', aviso: '#d97706' };
+    var COLOR_DEFECTO = { funcionalidad: '#e8431f', actualizacion: '#0891b2', tutorial: '#059669', aviso: '#d97706' };
     var colorPersonalizado = false;
 
     function $(id) {

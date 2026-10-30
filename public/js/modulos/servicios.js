@@ -48,7 +48,7 @@ $(function () {
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#ef4444',
-            cancelButtonColor: '#64748b',
+            cancelButtonColor: '#5b6b7e',
             confirmButtonText: 'Sí, eliminar',
             cancelButtonText: 'Cancelar',
             customClass: {

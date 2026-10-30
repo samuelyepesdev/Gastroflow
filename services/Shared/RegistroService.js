@@ -75,7 +75,7 @@ class RegistroService {
                         <h2>¡Hola${nombre_completo ? ', ' + nombre_completo : ''}!</h2>
                         <p>Gracias por registrarte en GastroFlow. Confirma tu correo para activar tu cuenta y crear tu local:</p>
                         <p style="text-align:center;margin:28px 0;">
-                            <a href="${link}" style="background:#6366f1;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;">Verificar mi correo</a>
+                            <a href="${link}" style="background:#ff5a36;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;">Verificar mi correo</a>
                         </p>
                         <p>O copia y pega este link en tu navegador:<br>${link}</p>
                         <p style="color:#888;font-size:12px;">Este link vence en ${TOKEN_TTL_HORAS} horas.</p>

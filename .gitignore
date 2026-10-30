@@ -61,3 +61,6 @@ resources/mysql-portable/*
 secrets/
 *.wallet-key.json
 google-wallet-key*.json
+
+# Kit de marca: los .mov ProRes pesan decenas de MB (viven en el zip original; hay .webm/.mp4 en public/brand)
+docs/branding/**/*.mov
