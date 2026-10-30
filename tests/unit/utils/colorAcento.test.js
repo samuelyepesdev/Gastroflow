@@ -16,13 +16,13 @@ describe('colorAcento', () => {
     });
 
     test('sin nada, cae al verde de GastroFlow', () => {
-        expect(colorAcento(null, null)).toBe('#2e7d46');
-        expect(colorAcento(undefined, undefined)).toBe('#2e7d46');
+        expect(colorAcento(null, null)).toBe('#ff5a36');
+        expect(colorAcento(undefined, undefined)).toBe('#ff5a36');
     });
 
     test('tenant sin config.colores.primary (undefined en cualquier nivel) no revienta', () => {
-        expect(colorAcento({}, null)).toBe('#2e7d46');
-        expect(colorAcento({ config: {} }, null)).toBe('#2e7d46');
-        expect(colorAcento({ config: { colores: {} } }, null)).toBe('#2e7d46');
+        expect(colorAcento({}, null)).toBe('#ff5a36');
+        expect(colorAcento({ config: {} }, null)).toBe('#ff5a36');
+        expect(colorAcento({ config: { colores: {} } }, null)).toBe('#ff5a36');
     });
 });
