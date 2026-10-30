@@ -9,10 +9,10 @@ document.addEventListener('DOMContentLoaded', function () {
     const contentEl = document.querySelector('.admin-shell-content') || document.body;
     const contentStyles = getComputedStyle(contentEl);
     const cssVar = (name, fallback) => (contentStyles.getPropertyValue(name).trim() || fallback);
-    const chartTextColor = cssVar('--sa-text-secondary', '#475569');
-    const chartTitleColor = cssVar('--sa-text-primary', '#0f172a');
-    const chartGridColor = 'rgba(15, 23, 42, 0.06)';
-    const chartBorderColor = cssVar('--sa-border', '#e2e8f0');
+    const chartTextColor = cssVar('--sa-text-secondary', '#46566a');
+    const chartTitleColor = cssVar('--sa-text-primary', '#0e1b2c');
+    const chartGridColor = 'rgba(14, 27, 44, 0.06)';
+    const chartBorderColor = cssVar('--sa-border', '#e4dccf');
     const chartTooltipBg = cssVar('--sa-surface-2', '#ffffff');
 
     if (window.Chart) {
@@ -26,7 +26,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // auto-refresh del leaderboard.
     const TENANT_COLOR_PALETTE = [
         '#2e7d46', '#0ea5e9', '#f59e0b', '#8b5cf6', '#f43f5e', '#10b981',
-        '#6366f1', '#ec4899', '#14b8a6', '#f97316', '#84cc16', '#06b6d4'
+        '#ff5a36', '#ec4899', '#14b8a6', '#f97316', '#84cc16', '#06b6d4'
     ];
 
     function getTenantColor(name) {
@@ -119,8 +119,8 @@ document.addEventListener('DOMContentLoaded', function () {
                         borderWidth: 1,
                         displayColors: true,
                         caretPadding: 10,
-                        titleFont: { family: 'Plus Jakarta Sans', weight: '700' },
-                        bodyFont: { family: 'Plus Jakarta Sans' },
+                        titleFont: { family: 'Poppins', weight: '700' },
+                        bodyFont: { family: 'Poppins' },
                         callbacks: {
                             label: context => {
                                 let label = context.dataset.label || '';
@@ -136,7 +136,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         grid: { display: false },
                         ticks: {
                             color: chartTextColor,
-                            font: { family: 'Plus Jakarta Sans', size: 11 }
+                            font: { family: 'Poppins', size: 11 }
                         }
                     },
                     y: {
@@ -144,7 +144,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         grid: { color: chartGridColor },
                         ticks: {
                             color: chartTextColor,
-                            font: { family: 'Plus Jakarta Sans', size: 11 },
+                            font: { family: 'Poppins', size: 11 },
                             callback: v => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(v)
                         }
                     }
@@ -201,7 +201,7 @@ document.addEventListener('DOMContentLoaded', function () {
                             color: chartTextColor,
                             boxWidth: 10,
                             padding: 15,
-                            font: { family: 'Plus Jakarta Sans', weight: '600', size: 12 }
+                            font: { family: 'Poppins', weight: '600', size: 12 }
                         }
                     },
                     tooltip: {
@@ -212,8 +212,8 @@ document.addEventListener('DOMContentLoaded', function () {
                         borderWidth: 1,
                         displayColors: true,
                         caretPadding: 10,
-                        titleFont: { family: 'Plus Jakarta Sans', weight: '700' },
-                        bodyFont: { family: 'Plus Jakarta Sans' },
+                        titleFont: { family: 'Poppins', weight: '700' },
+                        bodyFont: { family: 'Poppins' },
                         callbacks: {
                             label: function (context) {
                                 let lbl = context.dataset.label || '';
@@ -229,14 +229,14 @@ document.addEventListener('DOMContentLoaded', function () {
                 scales: {
                     x: {
                         grid: { display: false },
-                        ticks: { color: chartTextColor, font: { family: 'Plus Jakarta Sans', size: 11 } }
+                        ticks: { color: chartTextColor, font: { family: 'Poppins', size: 11 } }
                     },
                     y: {
                         beginAtZero: true,
                         grid: { color: chartGridColor },
                         ticks: {
                             color: chartTextColor,
-                            font: { family: 'Plus Jakarta Sans', size: 11 },
+                            font: { family: 'Poppins', size: 11 },
                             callback: v => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(v)
                         }
                     }

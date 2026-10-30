@@ -53,7 +53,7 @@
     font-weight: 700;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: #64748b;
+    color: #5b6b7e;
     margin-bottom: 0.45rem;
 }
 
@@ -80,29 +80,29 @@
     display: flex;
     gap: 0.5rem;
     align-items: flex-start;
-    border: 1.5px solid #e2e8f0;
+    border: 1.5px solid #e4dccf;
     border-radius: 0.75rem;
     padding: 0.55rem 0.7rem;
     cursor: pointer;
     font-size: 0.82rem;
     line-height: 1.25;
-    color: #475569;
+    color: #46566a;
     transition: border-color 0.15s, background 0.15s;
 }
 
 .bono-origen label strong {
     display: block;
-    color: #0f172a;
+    color: #0e1b2c;
     font-size: 0.9rem;
 }
 
 .bono-origen input:checked + label {
-    border-color: var(--bs-primary, #6366f1);
-    background: rgba(99, 102, 241, 0.06);
+    border-color: var(--bs-primary, #ff5a36);
+    background: rgba(255, 90, 54, 0.06);
 }
 
 .bono-origen input:focus-visible + label {
-    outline: 2px solid var(--bs-primary, #6366f1);
+    outline: 2px solid var(--bs-primary, #ff5a36);
     outline-offset: 2px;
 }
 
@@ -136,13 +136,13 @@
 }
 
 .bono-plantilla:focus-visible {
-    outline: 2px solid var(--bs-primary, #6366f1);
+    outline: 2px solid var(--bs-primary, #ff5a36);
     outline-offset: 2px;
 }
 
 .bono-plantilla[aria-pressed='true'] {
-    border-color: var(--bs-primary, #6366f1);
-    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.18);
+    border-color: var(--bs-primary, #ff5a36);
+    box-shadow: 0 0 0 3px rgba(255, 90, 54, 0.18);
 }
 
 .bono-plantilla__img {
@@ -172,7 +172,7 @@
     display: block;
     font-size: 0.75rem;
     font-weight: 600;
-    color: #334155;
+    color: #223650;
     padding: 0.3rem 0.15rem 0.1rem;
 }
 
@@ -184,7 +184,7 @@
 
 .bono-contador {
     font-size: 0.72rem;
-    color: #94a3b8;
+    color: #8a97a8;
     text-align: right;
 }
 
@@ -207,7 +207,7 @@
     border-radius: 0.9rem;
     overflow: hidden;
     background-size: cover;
-    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.18);
+    box-shadow: 0 12px 30px rgba(14, 27, 44, 0.18);
     container-type: inline-size;
     font-family: Roboto, system-ui, -apple-system, 'Segoe UI', sans-serif;
 }
@@ -309,7 +309,7 @@
 .bono-preview__rotulo {
     font-size: 1.35cqw;
     letter-spacing: 0.28cqw;
-    color: #94a3b8;
+    color: #8a97a8;
 }
 
 .bono-preview__valor {
@@ -321,7 +321,7 @@
 .bono-preview__qr {
     font-size: 17cqw;
     line-height: 1;
-    color: #0f172a;
+    color: #0e1b2c;
     margin: 1cqw 0 2.2cqw;
 }
 
@@ -329,7 +329,7 @@
     font-size: 2.4cqw;
     font-weight: 700;
     letter-spacing: 0.2cqw;
-    color: #0f172a;
+    color: #0e1b2c;
 }
 
 .bono-preview-acciones .btn {
@@ -343,5 +343,5 @@
     gap: 0.5rem;
     margin-top: 0.6rem;
     font-size: 0.78rem;
-    color: #64748b;
+    color: #5b6b7e;
 }

@@ -13,8 +13,8 @@
                     {
                         label: 'Ventas',
                         data: mesesData.map(function (m) { return Number.parseFloat(m.total_ventas) || 0; }),
-                        backgroundColor: 'rgba(99,102,241,0.75)',
-                        borderColor: 'rgba(99,102,241,1)',
+                        backgroundColor: 'rgba(255, 90, 54,0.75)',
+                        borderColor: 'rgba(255, 90, 54,1)',
                         borderWidth: 1,
                         borderRadius: 6,
                         yAxisID: 'y'
@@ -75,7 +75,7 @@
         labels.push('Estimado');
         const valores = predData.map(function (m) { return Number.parseFloat(m.total_ventas) || 0; });
         valores.push(predValor);
-        const colores = predData.map(function () { return 'rgba(99,102,241,0.65)'; });
+        const colores = predData.map(function () { return 'rgba(255, 90, 54,0.65)'; });
         colores.push('rgba(245,158,11,0.8)');
 
         new Chart(document.getElementById('chartPrediccion'), {

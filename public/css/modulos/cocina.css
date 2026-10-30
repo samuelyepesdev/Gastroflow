@@ -3,11 +3,11 @@
    ======================================== */
 
 body {
-    background-color: #f8f9fa;
+    background-color: #fff9f2;
 }
 
 .navbar {
-    background-color: #2c3e50;
+    background-color: #16283e;
     box-shadow: 0 2px 4px rgba(0, 0, 0, .1);
 }
 
@@ -41,7 +41,7 @@ body {
 .producto {
     font-size: 1.1rem;
     font-weight: 600;
-    color: #2c3e50;
+    color: #16283e;
 }
 
 .cantidad-badge {
@@ -75,7 +75,7 @@ body {
     }
 
     .card:not(.no-card-dark) {
-        background-color: #e2e8f0;
+        background-color: #e4dccf;
         border-color: #cbd5f5;
     }
 }
@@ -245,7 +245,7 @@ body {
 }
 
 .resumen-item {
-    border: 1px solid #e0e7ff !important;
+    border: 1px solid #ffe6df !important;
     border-radius: 12px !important;
     background-color: #fff !important;
     transition: all 0.3s ease;
@@ -263,13 +263,13 @@ body {
 }
 
 .resumen-item .total-badge {
-    background: linear-gradient(135deg, #4f46e5, #7c3aed); /* Degradado vibrante */
+    background: linear-gradient(135deg, #e8431f, #7c3aed); /* Degradado vibrante */
     color: white;
     padding: 4px 10px;
     border-radius: 8px;
     font-size: 0.85rem;
     font-weight: 800;
-    box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.2);
+    box-shadow: 0 4px 6px -1px rgba(232, 67, 31, 0.2);
     flex-shrink: 0;
 }
 
@@ -290,15 +290,15 @@ body {
     font-size: 0.7rem !important;
     letter-spacing: 0.5px;
     padding: 8px !important;
-    background-color: #6366f1 !important; /* Indigo */
+    background-color: #ff5a36 !important; /* Indigo */
     border: none !important;
-    box-shadow: 0 4px 0px #4338ca !important; /* Efecto 3D sutil */
+    box-shadow: 0 4px 0px #c93514 !important; /* Efecto 3D sutil */
     transition: all 0.1s;
 }
 
 .btn-preparar-lote:active {
     transform: translateY(2px);
-    box-shadow: 0 1px 0px #4338ca !important;
+    box-shadow: 0 1px 0px #c93514 !important;
 }
 
 .btn-success.btn-preparar-lote {

@@ -11,7 +11,7 @@
     flex-direction: column;
     justify-content: center;
     padding: 40px 0 56px;
-    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    font-family: 'Poppins', system-ui, -apple-system, sans-serif;
     background: radial-gradient(120% 90% at 50% 30%, #fff4ec 0%, #ffe1cf 44%, #f9c3ab 100%);
 }
 

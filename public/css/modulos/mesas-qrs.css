@@ -1,7 +1,7 @@
 /* Impresión de códigos QR por mesa (views/mesas/qrs.ejs) */
 
 body {
-    background: #f8f9fa;
+    background: #fff9f2;
     padding: 20px;
     font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }

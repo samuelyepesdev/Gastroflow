@@ -187,13 +187,13 @@
             Swal.fire({
                 title: '¿Eliminar la factura #' + numero + '?',
                 html: '<div style="margin: 10px 0 18px; text-align: center;">' +
-                      '<div style="font-size: 13.5px; color: #6b7585; line-height: 1.5; font-family: \'Plus Jakarta Sans\', sans-serif;">' +
+                      '<div style="font-size: 13.5px; color: #6b7585; line-height: 1.5; font-family: \'Poppins\', sans-serif;">' +
                       'Se eliminará permanentemente del sistema.<br>Esta acción <strong style="color: #dc2626;">no se puede deshacer.</strong>' +
                       '</div>' +
-                      '<div style="margin-top: 14px; padding: 14px; border-radius: 12px; background: #f8f9fb; border: 1px solid #eceef1; text-align: left; display: flex; flex-direction: column; gap: 9px; font-family: \'Plus Jakarta Sans\', sans-serif; font-size: 12.5px;">' +
+                      '<div style="margin-top: 14px; padding: 14px; border-radius: 12px; background: #fff9f2; border: 1px solid #efe8dd; text-align: left; display: flex; flex-direction: column; gap: 9px; font-family: \'Poppins\', sans-serif; font-size: 12.5px;">' +
                       '<div style="display: flex; justify-content: space-between;"><strong>Restaurante:</strong> <span>' + tenant + '</span></div>' +
                       '<div style="display: flex; justify-content: space-between;"><strong>Cliente:</strong> <span>' + cliente + '</span></div>' +
-                      '<div style="display: flex; justify-content: space-between; font-size: 14.5px; border-top: 1px dashed #e2e5ea; padding-top: 9px;"><strong>Total:</strong> <strong style="color: #0f172a;">$' + Math.round(parseFloat(total)).toLocaleString('es-CO') + '</strong></div>' +
+                      '<div style="display: flex; justify-content: space-between; font-size: 14.5px; border-top: 1px dashed #e4dccf; padding-top: 9px;"><strong>Total:</strong> <strong style="color: #0e1b2c;">$' + Math.round(parseFloat(total)).toLocaleString('es-CO') + '</strong></div>' +
                       '</div>' +
                       '</div>',
                 icon: 'warning',

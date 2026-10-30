@@ -19,8 +19,8 @@ body {
     height: 46px;
     flex: 0 0 46px;
     border-radius: 12px;
-    background: color-mix(in srgb, var(--accent, #2e7d46) 12%, white);
-    color: var(--accent, #2e7d46);
+    background: color-mix(in srgb, var(--accent, #ff5a36) 12%, white);
+    color: var(--accent, #ff5a36);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -30,13 +30,13 @@ body {
 .page-title-text h1 {
     font-size: 20px;
     font-weight: 800;
-    color: #0f172a;
+    color: #0e1b2c;
     margin: 0;
 }
 
 .page-title-text p {
     font-size: 13.5px;
-    color: #8a94a6;
+    color: #8a97a8;
     margin: 2px 0 0;
 }
 
@@ -45,7 +45,7 @@ body {
 .clasif-table-card {
     background: #fff;
     border-radius: 14px;
-    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+    box-shadow: 0 1px 3px rgba(14, 27, 44, 0.06);
 }
 
 .clasif-filters-card {
@@ -56,19 +56,19 @@ body {
 .clasif-filters-card .form-label {
     font-size: 12.5px;
     font-weight: 700;
-    color: #5b6573;
+    color: #5b6b7e;
     margin-bottom: 4px;
 }
 
 .btn-clasif-primary {
-    background: var(--accent, #2e7d46);
+    background: var(--accent, #ff5a36);
     color: #fff;
     font-weight: 700;
     border: none;
 }
 
 .btn-clasif-primary:hover {
-    background: var(--accent, #2e7d46);
+    background: var(--accent, #ff5a36);
     opacity: 0.88;
     color: #fff;
 }
@@ -90,7 +90,7 @@ body {
 .clasif-summary-label {
     font-size: 12px;
     font-weight: 700;
-    color: #8a94a6;
+    color: #8a97a8;
     text-transform: uppercase;
     letter-spacing: 0.3px;
 }
@@ -98,7 +98,7 @@ body {
 .clasif-summary-val {
     font-size: 22px;
     font-weight: 800;
-    color: #0f172a;
+    color: #0e1b2c;
     font-variant-numeric: tabular-nums;
 }
 
@@ -109,7 +109,7 @@ body {
 
 .clasif-table-header {
     padding: 16px 20px;
-    border-bottom: 1px solid #f1f3f6;
+    border-bottom: 1px solid #f3ede4;
 }
 
 .clasif-table-header h3 {
@@ -119,7 +119,7 @@ body {
     display: flex;
     align-items: center;
     gap: 8px;
-    color: #0f172a;
+    color: #0e1b2c;
 }
 
 .clasif-row {
@@ -144,13 +144,13 @@ body {
     justify-content: center;
     font-weight: 800;
     font-size: 13px;
-    background: #f1f3f6;
-    color: #8a94a6;
+    background: #f3ede4;
+    color: #8a97a8;
 }
 
 .clasif-rank.top3 {
-    background: color-mix(in srgb, var(--accent, #2e7d46) 15%, white);
-    color: var(--accent, #2e7d46);
+    background: color-mix(in srgb, var(--accent, #ff5a36) 15%, white);
+    color: var(--accent, #ff5a36);
 }
 
 .clasif-info {
@@ -169,7 +169,7 @@ body {
 .clasif-name {
     font-size: 14px;
     font-weight: 700;
-    color: #1e2733;
+    color: #16283e;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -178,8 +178,8 @@ body {
 .clasif-cat-badge {
     font-size: 11px;
     font-weight: 600;
-    color: #8a94a6;
-    background: #f4f5f7;
+    color: #8a97a8;
+    background: #f3ede4;
     padding: 2px 8px;
     border-radius: 6px;
     margin-left: 8px;
@@ -189,28 +189,28 @@ body {
 .clasif-total {
     font-size: 14px;
     font-weight: 800;
-    color: #0f172a;
+    color: #0e1b2c;
     white-space: nowrap;
     font-variant-numeric: tabular-nums;
 }
 
 .clasif-bar-track {
     height: 7px;
-    background: #f0f2f5;
+    background: #f3ede4;
     border-radius: 6px;
     overflow: hidden;
 }
 
 .clasif-bar-fill {
     height: 100%;
-    background: var(--accent, #2e7d46);
+    background: var(--accent, #ff5a36);
     border-radius: 6px;
 }
 
 .clasif-units {
     font-size: 12.5px;
     font-weight: 700;
-    color: #8a94a6;
+    color: #8a97a8;
     white-space: nowrap;
     flex: 0 0 auto;
     min-width: 70px;
@@ -220,5 +220,5 @@ body {
 .clasif-empty {
     padding: 48px 20px;
     text-align: center;
-    color: #9aa3b2;
+    color: #8a97a8;
 }

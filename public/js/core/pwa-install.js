@@ -35,14 +35,18 @@
         var css = document.createElement('style');
         css.textContent =
             '.gf-pwa{position:fixed;left:12px;right:12px;bottom:12px;z-index:2000;max-width:520px;margin:0 auto;' +
-            'display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:18px;background:#0f172a;color:#fff;' +
+            'display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:18px;background:#0e1b2c;color:#fff;' +
             'box-shadow:0 10px 30px rgba(0,0,0,.35);font-family:system-ui,sans-serif}' +
             '.gf-pwa img{width:44px;height:44px;border-radius:12px;flex:none}' +
             '.gf-pwa div{flex:1;min-width:0}.gf-pwa b{display:block;font-size:.95rem}' +
             '.gf-pwa small{display:block;opacity:.7;font-size:.78rem;line-height:1.25}' +
             '.gf-pwa button{border:0;cursor:pointer;font:inherit}' +
-            '.gf-pwa .gf-pwa-ok{background:#16a34a;color:#fff;font-weight:700;padding:9px 16px;border-radius:999px}' +
-            '.gf-pwa .gf-pwa-x{background:none;color:#fff;opacity:.7;font-size:1.3rem;padding:4px 8px}';
+            '.gf-pwa .gf-pwa-ok{background:#ff5a36;color:#0e1b2c;font-weight:700;padding:9px 16px;border-radius:999px}' +
+            '.gf-pwa .gf-pwa-x{background:none;color:#fff;opacity:.7;font-size:1.3rem;padding:4px 8px}' +
+            '.gf-pwa b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.gf-pwa .gf-pwa-ok{white-space:nowrap}' +
+            '@media(max-width:420px){.gf-pwa{left:8px;right:8px;bottom:8px;gap:8px;padding:8px 8px 8px 10px;border-radius:16px}' +
+            '.gf-pwa img{width:36px;height:36px;border-radius:10px}.gf-pwa small{display:none}' +
+            '.gf-pwa .gf-pwa-ok{padding:8px 14px;font-size:.85rem}.gf-pwa .gf-pwa-x{padding:2px 6px}}';
         document.head.appendChild(css);
 
         banner = document.createElement('div');
@@ -109,21 +113,21 @@
         var css = document.createElement('style');
         css.id = 'gf-pwa-guia-css';
         css.textContent =
-            '.gf-pwa-fondo{position:fixed;inset:0;z-index:2100;background:rgba(15,23,42,.72);display:flex;' +
+            '.gf-pwa-fondo{position:fixed;inset:0;z-index:2100;background:rgba(14, 27, 44,.72);display:flex;' +
             'align-items:center;justify-content:center;padding:16px;font-family:system-ui,sans-serif}' +
-            '.gf-pwa-guia{background:#fff;color:#0f172a;border-radius:20px;max-width:380px;width:100%;padding:20px;' +
+            '.gf-pwa-guia{background:#fff;color:#0e1b2c;border-radius:20px;max-width:380px;width:100%;padding:20px;' +
             'box-shadow:0 20px 50px rgba(0,0,0,.4)}' +
             '.gf-pwa-guia h2{font-size:1.1rem;margin:0 0 4px}' +
-            '.gf-pwa-guia p{margin:0 0 12px;font-size:.88rem;color:#475569}' +
+            '.gf-pwa-guia p{margin:0 0 12px;font-size:.88rem;color:#46566a}' +
             '.gf-pwa-guia ol{list-style:none;margin:0 0 14px;padding:0;display:flex;flex-direction:column;gap:10px}' +
             '.gf-pwa-guia li{display:flex;align-items:center;gap:12px;font-size:.95rem}' +
-            '.gf-pwa-paso{flex:none;width:44px;height:44px;border-radius:12px;background:#eef2ff;color:#4f46e5;' +
+            '.gf-pwa-paso{flex:none;width:44px;height:44px;border-radius:12px;background:#fff0eb;color:#e8431f;' +
             'display:flex;align-items:center;justify-content:center}' +
-            '.gf-pwa-num{flex:none;width:22px;height:22px;border-radius:50%;background:#0f172a;color:#fff;' +
+            '.gf-pwa-num{flex:none;width:22px;height:22px;border-radius:50%;background:#0e1b2c;color:#fff;' +
             'font-size:.75rem;font-weight:700;display:flex;align-items:center;justify-content:center}' +
             '.gf-pwa-guia button{border:0;cursor:pointer;font:inherit;width:100%;padding:11px;border-radius:12px;' +
-            'font-weight:700;background:#16a34a;color:#fff}' +
-            '.gf-pwa-guia .gf-pwa-sec{background:#e2e8f0;color:#0f172a;margin-bottom:8px}' +
+            'font-weight:700;background:#ff5a36;color:#fff}' +
+            '.gf-pwa-guia .gf-pwa-sec{background:#e4dccf;color:#0e1b2c;margin-bottom:8px}' +
             '.gf-pwa-flecha{position:fixed;z-index:2101;font-size:2.4rem;line-height:1;color:#fff;text-align:center;' +
             'text-shadow:0 2px 8px rgba(0,0,0,.6);animation:gf-pwa-rebote 1s ease-in-out infinite;pointer-events:none}' +
             '.gf-pwa-flecha small{display:block;font-size:.8rem;font-weight:700}' +

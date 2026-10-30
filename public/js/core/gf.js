@@ -232,7 +232,7 @@
             if (!b.dataset.gfHtml) b.dataset.gfHtml = b.innerHTML;
             b.disabled = true;
             b.innerHTML =
-                '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>' +
+                '<span class="gf-mini" role="status" aria-hidden="true"></span>' +
                 escapeHtml(texto || 'Procesando...');
         } else {
             b.disabled = false;
@@ -244,13 +244,25 @@
     }
 
     /** Bloquea la pantalla con un spinner mientras dura una operación. Cerrar con GF.cerrarCargando(). */
+    let cerrarMarca = null;
     function cargandoPantalla(titulo) {
+        // Con gf-marca.js cargado, la espera es la campana animada de marca.
+        if (GF.marca) {
+            if (cerrarMarca) cerrarMarca();
+            cerrarMarca = GF.marca.cargando(titulo || 'Cargando...');
+            return;
+        }
         const S = swal();
         if (!S) return;
         S.fire({ title: titulo || 'Cargando...', allowOutsideClick: false, didOpen: () => S.showLoading() });
     }
 
     function cerrarCargando() {
+        if (cerrarMarca) {
+            cerrarMarca();
+            cerrarMarca = null;
+            return;
+        }
         const S = swal();
         if (S) S.close();
     }

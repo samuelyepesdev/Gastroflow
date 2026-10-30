@@ -13,7 +13,7 @@
 }
 
 .kds-columna {
-    background: #e2e8f0;
+    background: #e4dccf;
     border-radius: 10px;
     flex: 0 0 300px;
     max-height: calc(100vh - 130px);
@@ -24,7 +24,7 @@
 .kds-columna-header {
     padding: 10px 14px;
     font-weight: 700;
-    color: #1e293b;
+    color: #16283e;
     border-bottom: 2px solid rgba(0, 0, 0, 0.08);
     display: flex;
     justify-content: space-between;
@@ -44,7 +44,7 @@
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     padding: 10px 12px;
     margin-bottom: 8px;
-    border-left: 4px solid #94a3b8;
+    border-left: 4px solid #8a97a8;
 }
 
 .kds-item.espera-normal {
@@ -61,23 +61,23 @@
 
 .kds-item .kds-item-producto {
     font-weight: 600;
-    color: #1e293b;
+    color: #16283e;
 }
 
 .kds-item .kds-item-meta {
     font-size: 0.75rem;
-    color: #64748b;
+    color: #5b6b7e;
 }
 
 .kds-item .kds-item-nota {
     font-size: 0.8rem;
-    color: #475569;
+    color: #46566a;
     font-style: italic;
 }
 
 .kds-empty {
     text-align: center;
-    color: #94a3b8;
+    color: #8a97a8;
     padding: 20px 0;
     font-size: 0.85rem;
 }

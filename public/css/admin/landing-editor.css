@@ -1,9 +1,9 @@
 /* Editor de Landing Page del superadmin (views/admin/landing/editor.ejs) */
 
 body {
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    background-color: #0f172a;
-    color: #f8fafc;
+    font-family: 'Poppins', sans-serif;
+    background-color: #0e1b2c;
+    color: #fff9f2;
     min-height: 100vh;
 }
 
@@ -36,7 +36,7 @@ body {
 }
 
 .inner-card {
-    background: rgba(15, 23, 42, 0.3);
+    background: rgba(14, 27, 44, 0.3);
     border: 1px solid rgba(255, 255, 255, 0.05);
     border-radius: 12px;
     padding: 1.5rem;
@@ -45,7 +45,7 @@ body {
 
 /* Vertical Tabs Styling */
 .nav-pills .nav-link {
-    color: #94a3b8;
+    color: #8a97a8;
     background: rgba(255, 255, 255, 0.02);
     border: 1px solid rgba(255, 255, 255, 0.04);
     padding: 0.9rem 1.2rem;
@@ -92,36 +92,36 @@ body {
 
 .form-label {
     font-weight: 600;
-    color: #cbd5e1;
+    color: #d6ccbd;
     margin-bottom: 0.5rem;
     font-size: 0.9rem;
 }
 
 .form-control, .form-select {
-    background-color: rgba(15, 23, 42, 0.55);
+    background-color: rgba(14, 27, 44, 0.55);
     border: 1px solid rgba(255, 255, 255, 0.08);
-    color: #f8fafc;
+    color: #fff9f2;
     border-radius: 10px;
     padding: 0.75rem 1rem;
     transition: all 0.2s ease;
 }
 
 .form-control:focus, .form-select:focus {
-    background-color: rgba(15, 23, 42, 0.75);
+    background-color: rgba(14, 27, 44, 0.75);
     border-color: #3fc46d;
-    color: #f8fafc;
+    color: #fff9f2;
     box-shadow: 0 0 0 4px rgba(63, 196, 109, 0.15);
 }
 
 .form-control::placeholder {
-    color: #64748b;
+    color: #5b6b7e;
 }
 
 .color-picker-wrapper {
     display: flex;
     align-items: center;
     gap: 1rem;
-    background: rgba(15, 23, 42, 0.4);
+    background: rgba(14, 27, 44, 0.4);
     border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 10px;
     padding: 0.5rem 1rem;
@@ -139,7 +139,7 @@ body {
 .color-picker-value {
     font-family: 'Courier New', Courier, monospace;
     font-size: 0.95rem;
-    color: #cbd5e1;
+    color: #d6ccbd;
     font-weight: 600;
 }
 
@@ -185,10 +185,10 @@ body {
 
 .ql-container.ql-snow {
     border-color: rgba(255, 255, 255, 0.08) !important;
-    background: rgba(15, 23, 42, 0.45) !important;
+    background: rgba(14, 27, 44, 0.45) !important;
     border-bottom-left-radius: 10px;
     border-bottom-right-radius: 10px;
-    color: #f8fafc !important;
+    color: #fff9f2 !important;
     font-family: inherit;
     font-size: 0.95rem;
 }
@@ -198,19 +198,19 @@ body {
 }
 
 .ql-snow .ql-stroke {
-    stroke: #cbd5e1 !important;
+    stroke: #d6ccbd !important;
 }
 
 .ql-snow .ql-fill {
-    fill: #cbd5e1 !important;
+    fill: #d6ccbd !important;
 }
 
 .ql-snow .ql-picker {
-    color: #cbd5e1 !important;
+    color: #d6ccbd !important;
 }
 
 .ql-snow .ql-picker-options {
-    background-color: #1e293b !important;
+    background-color: #16283e !important;
     border-color: rgba(255, 255, 255, 0.08) !important;
 }
 
@@ -235,7 +235,7 @@ body {
 .editor-footer {
     position: sticky;
     bottom: 0;
-    background: rgba(15, 23, 42, 0.85);
+    background: rgba(14, 27, 44, 0.85);
     backdrop-filter: blur(12px);
     margin: 2rem -2rem -2rem;
     padding: 1.5rem 2rem;

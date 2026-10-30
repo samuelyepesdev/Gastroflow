@@ -383,7 +383,7 @@ function renderOffcanvasList(total) {
                         ${item.nota ? `<div class="cart-item-nota"><i class="bi bi-chat-left-text me-1"></i>${GF.escapeHtml(item.nota)}</div>` : ''}
                         <div class="cart-item-price">${GF.dinero(unit)}</div>
                     </div>
-                    <div class="qty-controls active" style="position: static; background: #f0f2f5; box-shadow: none;">
+                    <div class="qty-controls active" style="position: static; background: #f3ede4; box-shadow: none;">
                         <button class="qty-btn text-danger" onclick="updateLineIdx(${idx}, -1)"><i class="bi bi-dash"></i></button>
                         <span class="qty-value">${item.qty}</span>
                         <button class="qty-btn" style="color: var(--primary-color);" onclick="updateLineIdx(${idx}, 1)"><i class="bi bi-plus"></i></button>

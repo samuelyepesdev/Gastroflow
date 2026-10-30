@@ -2,14 +2,14 @@
     height: 100%;
     padding: 18px 20px;
     background: #fff;
-    border: 1px solid #e2e8f0;
+    border: 1px solid #e4dccf;
     border-radius: 14px;
-    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
+    box-shadow: 0 1px 3px rgba(14, 27, 44, 0.05);
 }
 
 .anuncio-card.inactivo {
     opacity: 0.6;
-    background: #f8fafc;
+    background: #fff9f2;
 }
 
 .anuncio-tipo {
@@ -20,8 +20,8 @@
     font-weight: 800;
     letter-spacing: 0.04em;
     text-transform: uppercase;
-    color: #4f46e5;
-    background: #eef2ff;
+    color: #e8431f;
+    background: #fff0eb;
 }
 
 .anuncio-titulo {
@@ -36,7 +36,7 @@
     gap: 3px;
     margin-top: 12px;
     font-size: 13px;
-    color: #64748b;
+    color: #5b6b7e;
 }
 
 .anuncio-stats {
@@ -45,9 +45,9 @@
     gap: 6px 18px;
     margin-top: 12px;
     padding-top: 10px;
-    border-top: 1px dashed #e2e8f0;
+    border-top: 1px dashed #e4dccf;
     font-size: 13px;
-    color: #475569;
+    color: #46566a;
 }
 
 .tipo-selector {
@@ -68,7 +68,7 @@
     align-items: center;
     gap: 8px;
     padding: 10px 12px;
-    border: 2px solid #e2e8f0;
+    border: 2px solid #e4dccf;
     border-radius: 12px;
     font-size: 13px;
     font-weight: 700;
@@ -77,14 +77,14 @@
 }
 
 .tipo-selector input:checked + span {
-    border-color: #4f46e5;
-    background: #eef2ff;
+    border-color: #e8431f;
+    background: #fff0eb;
     color: #3730a3;
 }
 
 .tipo-selector input:focus-visible + span,
 .chip input:focus-visible + span {
-    outline: 2px solid #4f46e5;
+    outline: 2px solid #e8431f;
     outline-offset: 2px;
 }
 
@@ -97,7 +97,7 @@
 .chip span {
     display: inline-block;
     padding: 6px 14px;
-    border: 1px solid #cbd5e1;
+    border: 1px solid #d6ccbd;
     border-radius: 999px;
     font-size: 13px;
     font-weight: 600;
@@ -106,8 +106,8 @@
 }
 
 .chip input:checked + span {
-    border-color: #4f46e5;
-    background: #4f46e5;
+    border-color: #e8431f;
+    background: #e8431f;
     color: #fff;
 }
 
@@ -119,5 +119,5 @@
 .preview-stage {
     padding: 24px 12px;
     border-radius: 14px;
-    background: repeating-linear-gradient(45deg, #f1f5f9, #f1f5f9 10px, #e9eef5 10px, #e9eef5 20px);
+    background: repeating-linear-gradient(45deg, #f3ede4, #f3ede4 10px, #e9eef5 10px, #e9eef5 20px);
 }

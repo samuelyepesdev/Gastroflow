@@ -4,7 +4,7 @@
    ============================================================ */
 
 body {
-    background-color: #f8f9fa;
+    background-color: #fff9f2;
     font-size: 16px;
 }
 
@@ -33,19 +33,19 @@ body {
 
 /* Paleta unificada */
 .stat-card.c-primary {
-    background: linear-gradient(135deg, #1e3a5f 0%, #1e40af 100%);
+    background: linear-gradient(135deg, #16283e 0%, #1e40af 100%);
 }
 
 .stat-card.c-blue {
-    background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%);
+    background: linear-gradient(135deg, #c93514 0%, #e8431f 100%);
 }
 
 .stat-card.c-slate {
-    background: linear-gradient(135deg, #334155 0%, #475569 100%);
+    background: linear-gradient(135deg, #223650 0%, #46566a 100%);
 }
 
 .stat-card.c-indigo {
-    background: linear-gradient(135deg, #4338ca 0%, #6366f1 100%);
+    background: linear-gradient(135deg, #c93514 0%, #ff5a36 100%);
 }
 
 .stat-card.c-teal {
@@ -68,7 +68,7 @@ body {
 }
 
 .stat-label {
-    color: #1a1a1a;
+    color: #0e1b2c;
     font-size: 0.9rem;
     font-weight: 700;
     text-transform: uppercase;
@@ -97,7 +97,7 @@ body {
 
 .card-header {
     background-color: #fff;
-    border-bottom: 2px solid #f8f9fa;
+    border-bottom: 2px solid #fff9f2;
     font-weight: 600;
     font-size: 1.2rem;
 }
@@ -139,7 +139,7 @@ body {
 .mini-calendario-nav .mes-titulo {
     font-weight: 700;
     font-size: 1rem;
-    color: #2c3e50;
+    color: #16283e;
     margin: 0;
     flex: 1;
     text-align: center;
@@ -172,11 +172,11 @@ body {
     min-width: 28px;
     height: 32px;
     vertical-align: middle;
-    background: #f8f9fa;
+    background: #fff9f2;
 }
 
 .mini-calendario td:not(.dia-evento):hover {
-    background: #e9ecef;
+    background: #e4dccf;
 }
 
 .mini-calendario .dia-evento {
@@ -191,7 +191,7 @@ body {
 }
 
 .mini-calendario .dia-hoy {
-    border: 2px solid #0d6efd;
+    border: 2px solid #ff5a36;
     background: rgba(13, 110, 253, 0.08) !important;
     font-weight: 700;
 }
@@ -242,7 +242,7 @@ body {
 
     .table:not(.mini-calendario) tbody tr {
         display: block;
-        border-bottom: 1px solid #e9ecef;
+        border-bottom: 1px solid #e4dccf;
     }
 
     .table:not(.mini-calendario) tbody td {
@@ -271,7 +271,7 @@ body {
     }
 
     .card:not(.no-card-dark) {
-        background-color: #e2e8f0;
+        background-color: #e4dccf;
         border-color: #cbd5f5;
     }
 }
@@ -280,14 +280,14 @@ body {
    dashboardRoot variables & variation classes
    ============================================================ */
 #dashboardRoot {
-    --accent: #2e7d46;
-    --accentDark: #1b4d2b;
-    --accentSoft: #eef6f0;
-    --accentSofter: #f6faf7;
-    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
-    color: #0f172a;
+    --accent: #ff5a36;
+    --accentDark: #cc4829;
+    --accentSoft: #fff0eb;
+    --accentSofter: #fff7f4;
+    font-family: 'Poppins', system-ui, -apple-system, sans-serif;
+    color: #0e1b2c;
     min-height: 100vh;
-    background: #f8f9fa;
+    background: #fff9f2;
 }
 
 .btn-variation {
@@ -302,14 +302,14 @@ body {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    color: #5b6573;
+    color: #5b6b7e;
     transition: all .15s;
 }
 
 .btn-variation.active {
     background: #fff;
     color: var(--accent);
-    box-shadow: 0 1px 3px rgba(16,24,40,.14);
+    box-shadow: 0 1px 3px rgba(14, 27, 44,.14);
 }
 
 .btn-range {
@@ -321,14 +321,14 @@ body {
     font-size: 13px;
     font-weight: 700;
     font-family: inherit;
-    color: #5b6573;
+    color: #5b6b7e;
     transition: all .15s;
 }
 
 .btn-range.active {
     background: #fff;
     color: var(--accent);
-    box-shadow: 0 1px 3px rgba(16,24,40,.14);
+    box-shadow: 0 1px 3px rgba(14, 27, 44,.14);
 }
 
 .btn-focus-tab {
@@ -343,14 +343,14 @@ body {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    color: #5b6573;
+    color: #5b6b7e;
     transition: all .15s;
 }
 
 .btn-focus-tab.active {
     background: #fff;
     color: var(--accent);
-    box-shadow: 0 1px 3px rgba(16,24,40,.14);
+    box-shadow: 0 1px 3px rgba(14, 27, 44,.14);
 }
 
 /* Custom progress bars for categories */
