@@ -79,9 +79,9 @@ module.exports = function navbarLocals(req, res, next) {
                 can.clasificacion ||
                 can.cocina;
 
-            let primaryColor = '#6366f1';
-            let bgStart = '#1e3a5f';
-            let bgEnd = '#0f172a';
+            let primaryColor = '#ff5a36';
+            let bgStart = '#16283e';
+            let bgEnd = '#0e1b2c';
             let textColor = '#ffffff';
 
             let cardPrimary = '';
