@@ -4,7 +4,67 @@
  * PlanesPdfService, ReporteMensualService y ReporteConsolidadoService.
  */
 
+const fs = require('node:fs');
+const path = require('node:path');
 const { formatMoney } = require('../../utils/money');
+
+// Paleta Cloche (docs/branding/07-manual).
+const MARCA = {
+    tinta: '#0e1b2c',
+    coral: '#ff5a36',
+    coralFuerte: '#e8431f',
+    crema: '#fff4e8',
+    arena: '#f3ede4',
+    gris: '#5b6b7e'
+};
+
+let isotipoSvg = null;
+/** Isotipo (campana) a color, leído una vez de public/brand para incrustarlo como { svg }. */
+function getIsotipoSvg() {
+    if (!isotipoSvg) {
+        isotipoSvg = fs.readFileSync(
+            path.join(__dirname, '..', '..', 'public', 'brand', 'isotipo', 'isotipo-color.svg'),
+            'utf8'
+        );
+    }
+    return isotipoSvg;
+}
+
+/**
+ * Cabecera de marca de los reportes: isotipo + GASTROFLOW, filete coral y título/subtítulo.
+ * Devuelve un arreglo de nodos pdfmake para esparcir en `content`.
+ */
+function encabezadoMarca(titulo, subtitulo, { margenSubtitulo = 20 } = {}) {
+    const nodos = [
+        {
+            columns: [
+                { svg: getIsotipoSvg(), width: 30 },
+                {
+                    text: 'GASTROFLOW',
+                    font: 'Montserrat',
+                    bold: true,
+                    fontSize: 13,
+                    characterSpacing: 2,
+                    color: MARCA.tinta,
+                    margin: [0, 7, 0, 0]
+                }
+            ],
+            columnGap: 8
+        },
+        { canvas: [{ type: 'rect', x: 0, y: 0, w: 515, h: 2, color: MARCA.coral }], margin: [0, 8, 0, 14] },
+        { text: titulo, alignment: 'center', font: 'Montserrat', bold: true, fontSize: 20, color: MARCA.tinta }
+    ];
+    if (subtitulo) {
+        nodos.push({
+            text: subtitulo,
+            alignment: 'center',
+            fontSize: 11,
+            color: MARCA.gris,
+            margin: [0, 4, 0, margenSubtitulo]
+        });
+    }
+    return nodos;
+}
 
 function capitalize(text) {
     if (!text) {
@@ -18,14 +78,14 @@ function zebraTableLayout() {
     return {
         hLineWidth: () => 0.5,
         vLineWidth: () => 0.5,
-        hLineColor: () => '#e2e8f0',
-        vLineColor: () => '#e2e8f0',
+        hLineColor: () => '#e4dccf',
+        vLineColor: () => '#e4dccf',
         fillColor: (rowIndex, node) => {
             const headerRows = node.table.headerRows || 0;
             if (rowIndex < headerRows) {
-                return '#f1f5f9';
+                return '#f3ede4';
             }
-            return (rowIndex - headerRows) % 2 === 0 ? '#f8fafc' : null;
+            return (rowIndex - headerRows) % 2 === 0 ? '#fff9f2' : null;
         },
         paddingLeft: () => 8,
         paddingRight: () => 8,
@@ -35,7 +95,7 @@ function zebraTableLayout() {
 }
 
 function tableHeaderCell(text, alignment = 'left') {
-    return { text, bold: true, fontSize: 9, color: '#334155', alignment };
+    return { text, bold: true, fontSize: 9, color: '#223650', alignment };
 }
 
 function tableCell(text, alignment = 'left', extra = {}) {
@@ -43,7 +103,7 @@ function tableCell(text, alignment = 'left', extra = {}) {
 }
 
 function emptyRow(text, colSpan) {
-    const row = [{ text, colSpan, alignment: 'center', italics: true, fontSize: 9, color: '#64748b' }];
+    const row = [{ text, colSpan, alignment: 'center', italics: true, fontSize: 9, color: '#5b6b7e' }];
     for (let i = 1; i < colSpan; i += 1) {
         row.push({});
     }
@@ -51,12 +111,12 @@ function emptyRow(text, colSpan) {
 }
 
 /** Tarjeta de estadística con acento de color a la izquierda (imita border-left del HTML original). */
-function statCard(label, value, { valueColor = '#4f46e5' } = {}) {
+function statCard(label, value, { valueColor = MARCA.coralFuerte } = {}) {
     return {
         table: {
             widths: ['*'],
             body: [
-                [{ text: label, fontSize: 9, color: '#64748b', bold: true, margin: [0, 0, 0, 6] }],
+                [{ text: label, fontSize: 9, color: '#5b6b7e', bold: true, margin: [0, 0, 0, 6] }],
                 [{ text: value, fontSize: 17, bold: true, color: valueColor }]
             ]
         },
@@ -64,7 +124,7 @@ function statCard(label, value, { valueColor = '#4f46e5' } = {}) {
             hLineWidth: () => 0,
             vLineWidth: i => (i === 0 ? 3 : 0),
             vLineColor: () => valueColor,
-            fillColor: () => '#f8fafc',
+            fillColor: () => '#fff9f2',
             paddingLeft: () => 12,
             paddingRight: () => 12,
             paddingTop: () => 10,
@@ -74,11 +134,11 @@ function statCard(label, value, { valueColor = '#4f46e5' } = {}) {
 }
 
 /** Título de sección con barra de color a la izquierda. */
-function sectionTitle(text, color = '#10b981') {
+function sectionTitle(text, color = MARCA.coral) {
     return {
         columns: [
             { canvas: [{ type: 'rect', x: 0, y: 2, w: 3, h: 12, color }], width: 6 },
-            { text, bold: true, fontSize: 12, color: '#1e293b' }
+            { text, font: 'Montserrat', bold: true, fontSize: 12, color: MARCA.tinta }
         ],
         columnGap: 8,
         margin: [0, 16, 0, 8]
@@ -88,8 +148,14 @@ function sectionTitle(text, color = '#10b981') {
 function footerText(text) {
     return {
         stack: [
-            { text, alignment: 'center', fontSize: 8, color: '#94a3b8', margin: [0, 20, 0, 2] },
-            { text: 'Sistema GastroFlow', alignment: 'center', fontSize: 8, bold: true, color: '#94a3b8' }
+            { text, alignment: 'center', fontSize: 8, color: '#8a97a8', margin: [0, 20, 0, 2] },
+            {
+                text: 'GASTROFLOW · Gestión de restaurantes',
+                alignment: 'center',
+                fontSize: 8,
+                bold: true,
+                color: '#8a97a8'
+            }
         ]
     };
 }
@@ -142,7 +208,7 @@ function categoriaTable(porCategoria) {
                 tableCell(c.total_cantidad ?? '', 'right'),
                 tableCell(c.facturas_count, 'right'),
                 tableCell(formatMoney(c.total_ventas), 'right'),
-                tableCell(porcentaje(Number(c.total_ventas) || 0, total), 'right', { color: '#64748b' })
+                tableCell(porcentaje(Number(c.total_ventas) || 0, total), 'right', { color: '#5b6b7e' })
             ]);
         }
     } else {
@@ -198,20 +264,22 @@ function medioPagoTable(porMedio) {
                 ),
                 tableCell(v.cantidad, 'right'),
                 tableCell(formatMoney(v.total), 'right'),
-                tableCell(porcentaje(v.total, total), 'right', { color: '#64748b' })
+                tableCell(porcentaje(v.total, total), 'right', { color: '#5b6b7e' })
             ]);
         }
         body.push([
-            { text: 'Total', bold: true, fontSize: 9, fillColor: '#eef2ff' },
-            { text: String(facturas), bold: true, fontSize: 9, alignment: 'right', fillColor: '#eef2ff' },
-            { text: formatMoney(total), bold: true, fontSize: 9, alignment: 'right', fillColor: '#eef2ff' },
-            { text: '', fillColor: '#eef2ff' }
+            { text: 'Total', bold: true, fontSize: 9, fillColor: '#fff0eb' },
+            { text: String(facturas), bold: true, fontSize: 9, alignment: 'right', fillColor: '#fff0eb' },
+            { text: formatMoney(total), bold: true, fontSize: 9, alignment: 'right', fillColor: '#fff0eb' },
+            { text: '', fillColor: '#fff0eb' }
         ]);
     }
     return { table: { headerRows: 1, widths: ['*', 'auto', 'auto', 'auto'], body }, layout: zebraTableLayout() };
 }
 
 module.exports = {
+    MARCA,
+    encabezadoMarca,
     formatMoney,
     capitalize,
     zebraTableLayout,

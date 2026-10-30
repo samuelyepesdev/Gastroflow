@@ -11,7 +11,8 @@ const {
     tableHeaderCell,
     tableCell,
     emptyRow,
-    medioPagoTable
+    medioPagoTable,
+    encabezadoMarca
 } = require('../Shared/PdfDocHelpers');
 const TenantService = require('./TenantService');
 const StatsRepository = require('../../repositories/Tenant/StatsRepository');
@@ -58,19 +59,12 @@ function toBool(value, defaultValue) {
 /** Página de portada: stats globales, total por mes (rango multi-mes) y resumen por restaurante. */
 function buildCoverContent(mes, totals, activeTenantsData, ventasPorMes) {
     const content = [
-        { text: 'Reporte Consolidado de Ventas', alignment: 'center', fontSize: 20, bold: true, color: '#4f46e5' },
-        {
-            text: `Resumen de Operaciones · ${mes}`,
-            alignment: 'center',
-            fontSize: 12,
-            color: '#64748b',
-            margin: [0, 4, 0, 24]
-        },
+        ...encabezadoMarca('Reporte Consolidado de Ventas', `Resumen de Operaciones · ${mes}`, { margenSubtitulo: 24 }),
         {
             columns: [
                 statCard('Total Neto del Periodo', formatMoney(totals.totalSales), { valueColor: '#10b981' }),
-                statCard('Total Facturas / Pedidos', String(totals.totalInvoices), { valueColor: '#4f46e5' }),
-                statCard('Restaurantes Evaluados', String(activeTenantsData.length), { valueColor: '#4f46e5' })
+                statCard('Total Facturas / Pedidos', String(totals.totalInvoices), { valueColor: '#e8431f' }),
+                statCard('Restaurantes Evaluados', String(activeTenantsData.length), { valueColor: '#e8431f' })
             ],
             columnGap: 12,
             margin: [0, 0, 0, 20]
@@ -93,11 +87,11 @@ function buildCoverContent(mes, totals, activeTenantsData, ventasPorMes) {
             ]);
         }
         body.push([
-            { text: 'Total Neto', bold: true, fontSize: 9, fillColor: '#eef2ff' },
-            { text: String(totals.totalInvoices), bold: true, fontSize: 9, alignment: 'right', fillColor: '#eef2ff' },
-            { text: formatMoney(totals.totalSales), bold: true, fontSize: 9, alignment: 'right', fillColor: '#eef2ff' }
+            { text: 'Total Neto', bold: true, fontSize: 9, fillColor: '#fff0eb' },
+            { text: String(totals.totalInvoices), bold: true, fontSize: 9, alignment: 'right', fillColor: '#fff0eb' },
+            { text: formatMoney(totals.totalSales), bold: true, fontSize: 9, alignment: 'right', fillColor: '#fff0eb' }
         ]);
-        content.push(sectionTitle('Total por Mes', '#4f46e5'));
+        content.push(sectionTitle('Total por Mes', '#e8431f'));
         content.push({
             table: { headerRows: 1, widths: ['*', 'auto', 'auto'], body },
             layout: zebraTableLayout(),
@@ -127,7 +121,7 @@ function buildCoverContent(mes, totals, activeTenantsData, ventasPorMes) {
     } else {
         rBody.push(emptyRow('No hay restaurantes registrados o activos.', 5));
     }
-    content.push(sectionTitle('Resumen de Rendimiento por Restaurante', '#4f46e5'));
+    content.push(sectionTitle('Resumen de Rendimiento por Restaurante', '#e8431f'));
     content.push({
         table: { headerRows: 1, widths: ['*', 'auto', 'auto', 'auto', 'auto'], body: rBody },
         layout: zebraTableLayout()
@@ -135,7 +129,7 @@ function buildCoverContent(mes, totals, activeTenantsData, ventasPorMes) {
 
     // Medios de pago de todo el periodo (suma de todos los restaurantes incluidos)
     const porMedioGlobal = sumarMedios(activeTenantsData.map(d => d.porMedio));
-    content.push(sectionTitle('Facturas por Medio de Pago (global)', '#4f46e5'));
+    content.push(sectionTitle('Facturas por Medio de Pago (global)', '#e8431f'));
     content.push(medioPagoTable(porMedioGlobal));
     content.push(
         footerText('Este reporte consolidado fue generado de forma automática por el panel de administración.')
@@ -152,13 +146,13 @@ function buildTenantSectionContent(d, mes, mostrarTopProductos) {
                 {
                     text: [
                         { text: `${d.tenant.nombre}\n`, fontSize: 16, bold: true, color: '#10b981' },
-                        { text: `Reporte Detallado · ${mes}`, fontSize: 9, color: '#64748b' }
+                        { text: `Reporte Detallado · ${mes}`, fontSize: 9, color: '#5b6b7e' }
                     ]
                 },
                 {
                     text: `Slug: ${d.tenant.slug}\nPlan: ${d.tenant.plan_nombre || 'Sin Plan'}`,
                     fontSize: 8,
-                    color: '#94a3b8',
+                    color: '#8a97a8',
                     alignment: 'right'
                 }
             ],
@@ -209,8 +203,8 @@ function buildTenantSectionContent(d, mes, mostrarTopProductos) {
                 text: capitalize(dm.nombreMes),
                 fontSize: 9,
                 bold: true,
-                color: '#4f46e5',
-                fillColor: '#eef2ff',
+                color: '#e8431f',
+                fillColor: '#fff0eb',
                 margin: [0, 8, 0, 4]
             });
             content.push(productosTable(dm.topProductos));
