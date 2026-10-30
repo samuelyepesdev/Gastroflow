@@ -54,7 +54,7 @@ async function handleFormSubmit(event, tenantId, type) {
 
     if (type === 'general') {
         const colorInputGeneral = document.getElementById('editConfigColorGeneral');
-        const colorValue = colorInputGeneral ? colorInputGeneral.value : '#6366f1';
+        const colorValue = colorInputGeneral ? colorInputGeneral.value : '#ff5a36';
 
         data.config = JSON.stringify({
             colors: { primary: colorValue },
@@ -209,7 +209,7 @@ async function deleteUser(userId, username, tenantId) {
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#dc3545',
-        cancelButtonColor: '#6c757d',
+        cancelButtonColor: '#5b6b7e',
         confirmButtonText: 'Sí, eliminar',
         cancelButtonText: 'Cancelar'
     });

@@ -12,11 +12,11 @@
 
 .btn-white {
     background: #fff;
-    border: 1px solid #dee2e6;
+    border: 1px solid #e4dccf;
 }
 
 .btn-white:hover {
-    background: #f8f9fa;
+    background: #fff9f2;
 }
 
 .badge {
@@ -37,8 +37,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #eef2ff;
-    color: #6366f1;
+    background: #fff0eb;
+    color: #ff5a36;
     font-weight: 700;
     border-radius: 50%;
 }

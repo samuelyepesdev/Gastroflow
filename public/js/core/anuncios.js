@@ -18,7 +18,7 @@
         aviso: { icono: 'bi-exclamation-triangle', etiqueta: 'Importante' }
     };
     var COLOR_DEFECTO = {
-        funcionalidad: '#4f46e5',
+        funcionalidad: '#e8431f',
         actualizacion: '#0891b2',
         tutorial: '#059669',
         aviso: '#d97706'

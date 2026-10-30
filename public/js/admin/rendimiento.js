@@ -6,12 +6,12 @@ document.addEventListener('DOMContentLoaded', function () {
     const contentEl = document.querySelector('.admin-shell-content') || document.body;
     const contentStyles = getComputedStyle(contentEl);
     const cssVar = (name, fallback) => contentStyles.getPropertyValue(name).trim() || fallback;
-    const chartTextColor = cssVar('--sa-text-secondary', '#475569');
-    const chartTitleColor = cssVar('--sa-text-primary', '#0f172a');
-    const chartGridColor = 'rgba(15, 23, 42, 0.06)';
-    const chartBorderColor = cssVar('--sa-border', '#e2e8f0');
+    const chartTextColor = cssVar('--sa-text-secondary', '#46566a');
+    const chartTitleColor = cssVar('--sa-text-primary', '#0e1b2c');
+    const chartGridColor = 'rgba(14, 27, 44, 0.06)';
+    const chartBorderColor = cssVar('--sa-border', '#e4dccf');
     const chartTooltipBg = cssVar('--sa-surface-2', '#ffffff');
-    const accentColor = cssVar('--sa-accent', '#3b82f6');
+    const accentColor = cssVar('--sa-accent', '#ff5a36');
 
     if (window.Chart) {
         Chart.defaults.color = chartTextColor;
@@ -21,7 +21,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // Mismo hash de paleta que dashboard.js -- cada restaurante recibe un color estable.
     const TENANT_COLOR_PALETTE = [
         '#2e7d46', '#0ea5e9', '#f59e0b', '#8b5cf6', '#f43f5e', '#10b981',
-        '#6366f1', '#ec4899', '#14b8a6', '#f97316', '#84cc16', '#06b6d4'
+        '#ff5a36', '#ec4899', '#14b8a6', '#f97316', '#84cc16', '#06b6d4'
     ];
     function getTenantColor(name) {
         const str = String(name || '');
@@ -56,8 +56,8 @@ document.addEventListener('DOMContentLoaded', function () {
         });
         const canvasCtx = ctxTendencia.getContext('2d');
         const gradient = canvasCtx.createLinearGradient(0, 0, 0, 300);
-        gradient.addColorStop(0, 'rgba(59, 130, 246, 0.22)');
-        gradient.addColorStop(1, 'rgba(59, 130, 246, 0.02)');
+        gradient.addColorStop(0, 'rgba(255, 90, 54, 0.22)');
+        gradient.addColorStop(1, 'rgba(255, 90, 54, 0.02)');
 
         new Chart(ctxTendencia, {
             type: 'line',

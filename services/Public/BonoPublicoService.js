@@ -8,7 +8,7 @@ const BonoRepository = require('../../repositories/Tenant/BonoRepository');
 const TenantRepository = require('../../repositories/Admin/TenantRepository');
 const { hoyColombia } = require('../../utils/dateHelpers');
 
-const COLOR_PRIMARIO_DEFECTO = '#6366f1';
+const COLOR_PRIMARIO_DEFECTO = '#ff5a36';
 const COLOR_HEX_REGEX = /^#[0-9a-fA-F]{3,8}$/;
 const TOKEN_REGEX = /^[A-Za-z0-9_-]{16,64}$/;
 

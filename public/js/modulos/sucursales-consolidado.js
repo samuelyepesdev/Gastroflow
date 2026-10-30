@@ -55,8 +55,8 @@
                     {
                         label: 'Ventas',
                         data: r.diario.map(d => d.ventas),
-                        borderColor: '#4f46e5',
-                        backgroundColor: 'rgba(79,70,229,.12)',
+                        borderColor: '#e8431f',
+                        backgroundColor: 'rgba(232, 67, 31,.12)',
                         fill: true,
                         tension: 0.25,
                         pointRadius: r.diario.length > 45 ? 0 : 3

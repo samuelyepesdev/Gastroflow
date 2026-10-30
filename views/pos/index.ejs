@@ -1,11 +1,11 @@
 <%- include('../partials/layout/head', { titulo: 'Terminal POS', viewport: 'width=device-width, initial-scale=1.0, viewport-fit=cover' }) %>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/core/index.css?v=<%= assetV %>">
     <link rel="stylesheet" href="/css/modulos/pos.css?v=<%= assetV %>">
 </head>
-<body class="pos-terminal-body" style="--pos-accent:<%= nav.primaryColor || '#6366f1' %>;--pos-dark:<%= nav.bgStart || '#1e293b' %>">
+<body class="pos-terminal-body" style="--pos-accent:<%= nav.primaryColor || '#ff5a36' %>;--pos-dark:<%= nav.bgStart || '#16283e' %>">
 
 <%- include('../partials/navbar', { user: typeof user !== 'undefined' ? user : null, tenant: typeof tenant !== 'undefined' ? tenant : null }) %>
 

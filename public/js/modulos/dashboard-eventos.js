@@ -35,7 +35,7 @@ document.addEventListener('DOMContentLoaded', function () {
             showCloseButton: true,
             focusConfirm: false,
             confirmButtonText: '<i class="bi bi-check-lg"></i> ¡Entendido!',
-            confirmButtonColor: '#2563eb',
+            confirmButtonColor: '#e8431f',
             customClass: {
                 popup: 'rounded-4'
             }

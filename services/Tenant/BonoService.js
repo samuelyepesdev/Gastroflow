@@ -226,7 +226,7 @@ class BonoService {
     }
 
     static listarPlantillas(colorNegocio) {
-        return BonoPlantillas.listarParaUI(colorNegocio || '#6366f1');
+        return BonoPlantillas.listarParaUI(colorNegocio || '#ff5a36');
     }
 
     static async listar(tenantId, filters = {}) {

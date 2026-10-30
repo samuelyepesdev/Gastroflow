@@ -1,10 +1,10 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
 
 /* Basic styles & scrollbars */
 body {
-    background-color: #f3f4f6;
-    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
-    color: #0f172a;
+    background-color: #f3ede4;
+    font-family: 'Poppins', system-ui, -apple-system, sans-serif;
+    color: #0e1b2c;
     min-height: 100vh;
 }
 
@@ -16,11 +16,11 @@ body {
     background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-    background: #cbd5e1;
+    background: #d6ccbd;
     border-radius: 8px;
 }
 ::-webkit-scrollbar-thumb:hover {
-    background: #94a3b8;
+    background: #8a97a8;
 }
 
 .container {
@@ -62,23 +62,23 @@ body {
     font-size: 25px;
     font-weight: 800;
     letter-spacing: -.02em;
-    color: #0f172a;
+    color: #0e1b2c;
 }
 
 .page-title-text p {
     margin: 7px 0 0 0;
     font-size: 13.5px;
-    color: #7a8499;
+    color: #8a97a8;
     font-weight: 500;
 }
 
 /* Filter container */
 .filters-panel {
     background: #fff;
-    border: 1px solid #e9ebef;
+    border: 1px solid #e4dccf;
     border-radius: 16px;
     padding: 16px;
-    box-shadow: 0 1px 2px rgba(16,24,40,.04);
+    box-shadow: 0 1px 2px rgba(14, 27, 44,.04);
     display: flex;
     align-items: flex-end;
     gap: 14px;
@@ -96,14 +96,14 @@ body {
 .filter-group .filter-label {
     font-size: 12px;
     font-weight: 700;
-    color: #7a8499;
+    color: #8a97a8;
 }
 
 .filter-input-wrapper {
     display: flex;
     align-items: center;
     gap: 8px;
-    border: 1px solid #e2e5ea;
+    border: 1px solid #e4dccf;
     border-radius: 10px;
     padding: 9px 12px;
     background: #fff;
@@ -115,7 +115,7 @@ body {
 }
 
 .filter-input-wrapper i {
-    color: #9aa3b2;
+    color: #8a97a8;
     font-size: 14px;
 }
 
@@ -125,13 +125,13 @@ body {
     font-family: inherit;
     font-size: 13.5px;
     font-weight: 600;
-    color: #1e2733;
+    color: #16283e;
     background: transparent;
     width: 100%;
 }
 
 .filter-input-wrapper input::placeholder {
-    color: #9aa3b2;
+    color: #8a97a8;
 }
 
 /* Payment segment selector */
@@ -139,7 +139,7 @@ body {
     display: inline-flex;
     gap: 3px;
     padding: 4px;
-    background: #eceff2;
+    background: #efe8dd;
     border-radius: 11px;
 }
 
@@ -152,14 +152,14 @@ body {
     font-weight: 700;
     font-family: inherit;
     background: transparent;
-    color: #5b6573;
+    color: #5b6b7e;
     transition: all 0.15s ease;
 }
 
 .payment-segment-btn.active {
     background: #fff;
     color: var(--accent);
-    box-shadow: 0 1px 3px rgba(16,24,40,.14);
+    box-shadow: 0 1px 3px rgba(14, 27, 44,.14);
 }
 
 /* KPI Summary Cards */
@@ -172,10 +172,10 @@ body {
 
 .kpi-card {
     background: #fff;
-    border: 1px solid #e9ebef;
+    border: 1px solid #e4dccf;
     border-radius: 16px;
     padding: 18px;
-    box-shadow: 0 1px 2px rgba(16,24,40,.04);
+    box-shadow: 0 1px 2px rgba(14, 27, 44,.04);
 }
 
 .kpi-card-header {
@@ -200,13 +200,13 @@ body {
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: .03em;
-    color: #7a8499;
+    color: #8a97a8;
 }
 
 .kpi-card-value {
     font-size: 24px;
     font-weight: 800;
-    color: #0f172a;
+    color: #0e1b2c;
     font-variant-numeric: tabular-nums;
     letter-spacing: -.01em;
 }
@@ -215,7 +215,7 @@ body {
     background: linear-gradient(135deg, var(--accentDark), var(--accent));
     border-radius: 16px;
     padding: 18px;
-    box-shadow: 0 6px 16px -10px rgba(16,24,40,.4);
+    box-shadow: 0 6px 16px -10px rgba(14, 27, 44,.4);
     color: #fff;
     border: none;
 }
@@ -231,9 +231,9 @@ body {
 /* Grouped Table container */
 .premium-table-card {
     background: #fff;
-    border: 1px solid #e9ebef;
+    border: 1px solid #e4dccf;
     border-radius: 16px;
-    box-shadow: 0 1px 2px rgba(16,24,40,.04);
+    box-shadow: 0 1px 2px rgba(14, 27, 44,.04);
     overflow: hidden;
     margin-bottom: 24px;
 }
@@ -246,21 +246,21 @@ body {
 
 .premium-table thead th {
     padding: 14px 20px;
-    background: #f8f9fb;
-    border-bottom: 1px solid #eceef1;
+    background: #fff9f2;
+    border-bottom: 1px solid #efe8dd;
     font-size: 11.5px;
     font-weight: 700;
     letter-spacing: .04em;
     text-transform: uppercase;
-    color: #8a94a6;
+    color: #8a97a8;
 }
 
 /* Table Group Header */
 .table-group-header td {
     padding: 11px 20px;
-    background: #fafbfc;
-    border-top: 1px solid #eceef1;
-    border-bottom: 1px solid #f2f4f7;
+    background: #fff9f2;
+    border-top: 1px solid #efe8dd;
+    border-bottom: 1px solid #f3ede4;
 }
 
 .table-group-header.today td {
@@ -274,7 +274,7 @@ body {
     font-size: 12.5px;
     font-weight: 800;
     letter-spacing: .02em;
-    color: #5b6573;
+    color: #5b6b7e;
 }
 
 .table-group-header.today .group-title {
@@ -284,42 +284,42 @@ body {
 .group-summary {
     font-size: 12.5px;
     font-weight: 600;
-    color: #8a94a6;
+    color: #8a97a8;
 }
 
 .group-summary b {
-    color: #0f172a;
+    color: #0e1b2c;
     font-variant-numeric: tabular-nums;
 }
 
 /* Table rows */
 .venta-row td {
     padding: 13px 20px;
-    border-bottom: 1px solid #f2f4f7;
+    border-bottom: 1px solid #f3ede4;
     font-size: 13.5px;
-    color: #1e2733;
+    color: #16283e;
     font-weight: 600;
     vertical-align: middle;
 }
 
 .venta-row:hover td {
-    background-color: #fafbfc;
+    background-color: #fff9f2;
 }
 
 .venta-row .factura-id {
     font-weight: 800;
-    color: #0f172a;
+    color: #0e1b2c;
 }
 
 .venta-row .fecha-venta {
     font-size: 13px;
-    color: #56606f;
+    color: #5b6b7e;
 }
 
 .venta-row .total-cell {
     font-size: 14.5px;
     font-weight: 800;
-    color: #0f172a;
+    color: #0e1b2c;
     font-variant-numeric: tabular-nums;
     text-align: right;
 }
@@ -341,8 +341,8 @@ body {
 }
 
 .pay-chip.transferencia {
-    background: #eef2fb;
-    color: #3257b0;
+    background: #fff0eb;
+    color: #e8431f;
 }
 
 .pay-chip.mixto {
@@ -380,9 +380,9 @@ body {
     display: inline-flex;
     align-items: center;
     gap: 5px;
-    border: 1px solid #e2e5ea;
+    border: 1px solid #e4dccf;
     background: #fff;
-    color: #5b6573;
+    color: #5b6b7e;
     border-radius: 8px;
     padding: 6px 10px;
     font-size: 12.5px;
@@ -393,8 +393,8 @@ body {
 }
 
 .btn-premium-print:hover {
-    background: #f8fafc;
-    border-color: #cbd5e1;
+    background: #fff9f2;
+    border-color: #d6ccbd;
 }
 
 /* Responsive Rules */
@@ -430,7 +430,7 @@ body {
     .venta-row {
         display: block;
         padding: 16px;
-        border-bottom: 1px solid #e9ecef;
+        border-bottom: 1px solid #e4dccf;
     }
     
     .venta-row td {
@@ -445,7 +445,7 @@ body {
     .venta-row td::before {
         content: attr(data-label);
         font-weight: 700;
-        color: #7a8499;
+        color: #8a97a8;
         font-size: 12px;
         text-transform: uppercase;
         letter-spacing: .02em;
@@ -459,7 +459,7 @@ body {
         justify-content: flex-end;
         gap: 8px;
         margin-top: 8px;
-        border-top: 1px dashed #e2e5ea;
+        border-top: 1px dashed #e4dccf;
         padding-top: 12px;
     }
 }

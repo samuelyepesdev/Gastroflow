@@ -98,7 +98,7 @@
                         {
                             label: 'Ventas',
                             data: stats.tendencia.map(function (d) { return d.ventas; }),
-                            borderColor: '#0d6efd',
+                            borderColor: '#ff5a36',
                             backgroundColor: gradient,
                             pointRadius: 0,
                             pointHoverRadius: 5,
@@ -164,7 +164,7 @@
                         {
                             label: 'Ventas',
                             data: stats.crecimientoMensual.map(function (d) { return d.ventas; }),
-                            backgroundColor: '#0d6efd',
+                            backgroundColor: '#ff5a36',
                             borderRadius: 6,
                             maxBarThickness: 42
                         }

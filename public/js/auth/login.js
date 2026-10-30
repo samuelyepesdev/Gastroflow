@@ -60,18 +60,39 @@ document.getElementById('loginForm').addEventListener('submit', async function (
         const rol = (data.user.rol || '').toString().toLowerCase();
         const isSuperadmin = rol === 'superadmin';
 
-        Swal.fire({
-            icon: 'success',
-            title: `¡Hola, ${data.user.nombre_completo || data.user.username}!`,
-            text: 'Acceso concedido. Redirigiendo...',
-            timer: 1400,
-            showConfirmButton: false
-        }).then(() => {
-            window.location.href = isSuperadmin ? '/admin/dashboard' : '/';
-        });
+        mostrarBienvenida(
+            data.user.nombre_completo || data.user.username,
+            isSuperadmin ? '/admin/dashboard' : '/'
+        );
 
     } catch (error) {
         showError(error.message);
         setLoading(false);
     }
 });
+
+// Pantalla de bienvenida con la animación de marca. Redirige al terminar de armarse el logo
+// (~2 s), con clic para saltarla y sin video si el usuario pidió menos movimiento.
+function mostrarBienvenida(nombre, destino) {
+    const capa = document.getElementById('bienvenida');
+    const video = document.getElementById('bienvenidaVideo');
+    const reducido = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let ido = false;
+    const ir = () => {
+        if (ido) return;
+        ido = true;
+        window.location.href = destino;
+    };
+
+    if (!capa) {
+        ir();
+        return;
+    }
+    document.getElementById('bienvenidaSaludo').textContent = `¡Hola, ${nombre}!`;
+    capa.hidden = false;
+    capa.addEventListener('click', ir);
+    if (!reducido && video) {
+        video.play().catch(() => {});
+    }
+    setTimeout(ir, reducido ? 900 : 2600);
+}

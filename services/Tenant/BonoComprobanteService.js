@@ -14,7 +14,7 @@ const TenantRepository = require('../../repositories/Admin/TenantRepository');
 const BonoPlantillas = require('./BonoPlantillas');
 const { formatMoney } = require('../../utils/money');
 
-const COLOR_PRIMARIO_DEFECTO = '#6366f1';
+const COLOR_PRIMARIO_DEFECTO = '#ff5a36';
 const { ANCHO, ALTO } = BonoPlantillas;
 
 // Panel blanco de la derecha (valor + QR + código)
@@ -288,7 +288,7 @@ class BonoComprobanteService {
                 absolutePosition: { x: 0, y: 0 }
             },
             enCaja(
-                { text: 'VALOR', fontSize: 7.5, color: '#94a3b8', characterSpacing: 1.5, alignment: 'center' },
+                { text: 'VALOR', fontSize: 7.5, color: '#8a97a8', characterSpacing: 1.5, alignment: 'center' },
                 PANEL.x,
                 PANEL.y + 16,
                 PANEL.w
@@ -301,7 +301,7 @@ class BonoComprobanteService {
             ),
             { image: qrDataUrl, width: 112, absolutePosition: { x: cx - 56, y: PANEL.y + 70 } },
             enCaja(
-                { text: 'CÓDIGO', fontSize: 7, color: '#94a3b8', characterSpacing: 1.5, alignment: 'center' },
+                { text: 'CÓDIGO', fontSize: 7, color: '#8a97a8', characterSpacing: 1.5, alignment: 'center' },
                 PANEL.x,
                 PANEL.y + 192,
                 PANEL.w
@@ -311,7 +311,7 @@ class BonoComprobanteService {
                     text: bono.codigo,
                     fontSize: 13,
                     bold: true,
-                    color: '#0f172a',
+                    color: '#0e1b2c',
                     characterSpacing: 1,
                     alignment: 'center'
                 },
@@ -328,13 +328,13 @@ class BonoComprobanteService {
                         x2: PANEL.x + PANEL.w - 24,
                         y2: PANEL.y + 234,
                         lineWidth: 0.5,
-                        lineColor: '#e2e8f0'
+                        lineColor: '#e4dccf'
                     }
                 ],
                 absolutePosition: { x: 0, y: 0 }
             },
             enCaja(
-                { text: 'Escanéalo al pagar', fontSize: 7, color: '#94a3b8', alignment: 'center' },
+                { text: 'Escanéalo al pagar', fontSize: 7, color: '#8a97a8', alignment: 'center' },
                 PANEL.x,
                 PANEL.y + 244,
                 PANEL.w

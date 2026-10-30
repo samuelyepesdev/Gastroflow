@@ -1,0 +1,23 @@
+GASTROFLOW · KIT DE MARCA (opción 8, Cloche)
+
+Todos los SVG tienen las letras convertidas a formas (no necesitan fuentes instaladas).
+Cuando hay fondo, es un rectángulo con id="fondo": bórralo y el logo queda transparente.
+
+01-isotipo        Campana sola: color, crema, oscuro, coral, negro (positivo), blanco (negativo). SVG + PNG 1024.
+02-logotipo       Horizontal, vertical y solo texto, en las mismas 6 versiones. SVG + PNG.
+03-combinaciones  6 combinaciones de color con su contraste y uso recomendado + hoja.
+04-app-favicon    Íconos de app (oscuro/claro/coral), Play Store 512, iOS 1024, favicons 16–512.
+05-iconos         9 íconos de módulos (cuadrícula 48, zona segura 4, radio 3), en negro, tinta, coral y blanco.
+                  Hoja con cuadrícula + prueba a 16/20/24/32/48 px.
+06-animacion
+  capas-svg / capas-png  Cada pieza por separado en el mismo lienzo 1920x1080 para animar en
+                         CapCut, After Effects o Canva: plato, campana (con y sin brillo), brillo,
+                         perilla, cada letra (letra-01-G … letra-10-W) y subtítulo.
+                         Si los apilas en el mismo orden, forman el logo exacto.
+  videos                 logo-animado (oscuro, claro, vertical para historias/reels),
+                         versión transparente .mov (ProRes 4444) y .webm para poner encima de tus videos,
+                         isotipo-revelado: la campana se levanta, sale vapor y vuelve a cerrar.
+07-manual         Concepto, área de protección, tamaños mínimos, paleta (HEX/RGB) y tipografía.
+
+Tipografía: Montserrat Bold 700 / SemiBold 600 (logotipo y títulos), Poppins Medium (interfaz). Licencia libre, Google Fonts.
+Colores: Tinta #0E1B2C · Coral #FF5A36 · Crema #FFF4E8 · Arena #F3EDE4 · Gris #5B6B7E

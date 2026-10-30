@@ -11,7 +11,7 @@
     flex-direction: column;
     justify-content: center;
     padding: 24px 0 32px;
-    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    font-family: 'Poppins', system-ui, -apple-system, sans-serif;
     background: radial-gradient(120% 90% at 50% 30%, #fff4e2 0%, #ffe8cd 44%, #fbd8b6 100%);
 }
 
@@ -383,3 +383,6 @@
         animation: none;
     }
 }
+
+/* El resplandor decorativo es más ancho que el móvil: sin esto la página gana scroll horizontal */
+html, body { overflow-x: hidden; }

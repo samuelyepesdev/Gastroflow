@@ -6,20 +6,20 @@
 
 :root {
     /* Paleta base */
-    --sa-bg: #0b1220;
-    --sa-surface: #0f172a;
+    --sa-bg: #09131f;
+    --sa-surface: #0e1b2c;
     --sa-surface-2: #243247;
     --sa-surface-3: #2f4058;
     --sa-border: #3c4d63;
 
-    --sa-accent: #3b82f6;
-    --sa-accent-strong: #2563eb;
-    --sa-accent-soft: rgba(59, 130, 246, 0.16);
+    --sa-accent: #ff5a36;
+    --sa-accent-strong: #e8431f;
+    --sa-accent-soft: rgba(255, 90, 54, 0.16);
     --sa-accent-text: #ffffff;
 
-    --sa-text-primary: #f1f5f9;
-    --sa-text-secondary: #94a3b8;
-    --sa-text-muted: #64748b;
+    --sa-text-primary: #f3ede4;
+    --sa-text-secondary: #8a97a8;
+    --sa-text-muted: #5b6b7e;
 
     --sa-danger: #f87171;
     --sa-warning: #fbbf24;
@@ -31,7 +31,8 @@
     --sa-radius-lg: 20px;
     --sa-sidebar-w: 280px;
     --sa-header-h: 64px;
-    --sa-font: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    --sa-font: var(--gf-font-ui, 'Poppins', system-ui, -apple-system, sans-serif);
+    --sa-font-titulo: var(--gf-font-titulo, 'Montserrat', system-ui, sans-serif);
 }
 
 /* ---- Reset / scaffolding ---- */
@@ -54,17 +55,17 @@ body.admin-shell-body {
     flex-direction: column;
 
     /* Solo el sidebar queda oscuro/azul — el header y el contenido usan una paleta clara propia */
-    --sa-bg: #eef1f5;
+    --sa-bg: #f3ede4;
     --sa-surface: #ffffff;
     --sa-surface-2: #ffffff;
-    --sa-surface-3: #f1f5f9;
-    --sa-border: #e2e8f0;
+    --sa-surface-3: #f3ede4;
+    --sa-border: #e4dccf;
 
-    --sa-accent-soft: rgba(59, 130, 246, 0.12);
+    --sa-accent-soft: rgba(255, 90, 54, 0.12);
 
-    --sa-text-primary: #0f172a;
-    --sa-text-secondary: #475569;
-    --sa-text-muted: #7a8499;
+    --sa-text-primary: #0e1b2c;
+    --sa-text-secondary: #46566a;
+    --sa-text-muted: #8a97a8;
 
     --sa-danger: #dc2626;
     --sa-warning: #d97706;
@@ -102,12 +103,10 @@ body.admin-shell-body {
     border-bottom: 1px solid var(--sa-border);
 }
 .admin-sidebar-brand-icon {
-    width: 32px; height: 32px; border-radius: var(--sa-radius-sm);
-    background: var(--sa-accent-soft); color: var(--sa-accent);
-    display: flex; align-items: center; justify-content: center; font-size: 15px;
+    width: 32px; height: 32px; object-fit: contain; flex-shrink: 0;
 }
 .admin-sidebar-brand-text {
-    font-weight: 800; font-size: 15px; color: var(--sa-text-primary);
+    font-family: var(--sa-font-titulo); font-weight: 800; font-size: 15px; letter-spacing: .06em; text-transform: uppercase; color: var(--sa-text-primary);
     display: flex; flex-direction: column; line-height: 1.1;
 }
 .admin-sidebar-brand-text small {
@@ -332,7 +331,7 @@ body.admin-shell-body {
 .admin-shell-content .table {
     --bs-table-bg: transparent;
     --bs-table-color: var(--sa-text-primary);
-    --bs-table-striped-bg: rgba(15, 23, 42, 0.03);
+    --bs-table-striped-bg: rgba(14, 27, 44, 0.03);
     --bs-table-striped-color: var(--sa-text-primary);
     --bs-table-active-bg: var(--sa-surface-3);
     --bs-table-active-color: var(--sa-text-primary);

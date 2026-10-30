@@ -125,8 +125,8 @@ $(function () {
       <svg viewBox="0 0 140 140" style="width:140px; height:140px; display:block;">
         <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#eef1f4" stroke-width="${sw}" />
         ${segs}
-        <text x="${cx}" y="${cy - 3}" text-anchor="middle" style="font-size:12px; font-weight:800; fill:#0f172a; font-family:inherit;">${totalShort}</text>
-        <text x="${cx}" y="${cy + 13}" text-anchor="middle" style="font-size:8px; font-weight:700; fill:#8a94a6; font-family:inherit;">${centerLabel || 'Total mes'}</text>
+        <text x="${cx}" y="${cy - 3}" text-anchor="middle" style="font-size:12px; font-weight:800; fill:#0e1b2c; font-family:inherit;">${totalShort}</text>
+        <text x="${cx}" y="${cy + 13}" text-anchor="middle" style="font-size:8px; font-weight:700; fill:#8a97a8; font-family:inherit;">${centerLabel || 'Total mes'}</text>
       </svg>
     `;
   };
@@ -156,9 +156,9 @@ $(function () {
         <div style="display:flex; flex-direction:column; gap:7px;">
           <div style="display:flex; justify-content:space-between; font-size:13px;">
             <span style="font-weight:600; color:#3a4453;">${GF.escapeHtml(c.categoria_nombre)}</span>
-            <span style="font-weight:700; color:#0f172a; font-variant-numeric:tabular-nums;">${this.formatCurrency(val)}</span>
+            <span style="font-weight:700; color:#0e1b2c; font-variant-numeric:tabular-nums;">${this.formatCurrency(val)}</span>
           </div>
-          <div style="height:10px; background:#f0f2f5; border-radius:6px; overflow:hidden;">
+          <div style="height:10px; background:#f3ede4; border-radius:6px; overflow:hidden;">
             <div class="category-progress-bar" style="height:100%; width:${pct}%; border-radius:6px; background:linear-gradient(90deg, ${barColor}, ${this.activeTheme});"></div>
           </div>
         </div>
@@ -180,22 +180,22 @@ $(function () {
       const val = p.total_ventas || 0;
       const qty = p.total_cantidad || 0;
       const pct = (val / maxVal) * 100;
-      const rankBg = idx < 3 ? this.mix(this.activeTheme, '#ffffff', 0.85) : '#f1f3f6';
-      const rankColor = idx < 3 ? this.activeTheme : '#8a94a6';
+      const rankBg = idx < 3 ? this.mix(this.activeTheme, '#ffffff', 0.85) : '#f3ede4';
+      const rankColor = idx < 3 ? this.activeTheme : '#8a97a8';
 
       html += `
-        <div style="display:flex; align-items:center; gap:12px; padding:10px 0; border-bottom:${idx < 5 ? '1px solid #f1f3f6' : 'none'};">
+        <div style="display:flex; align-items:center; gap:12px; padding:10px 0; border-bottom:${idx < 5 ? '1px solid #f3ede4' : 'none'};">
           <span style="width:23px; height:23px; flex:0 0 23px; border-radius:7px; background:${rankBg}; color:${rankColor}; font-size:12px; font-weight:800; display:flex; align-items:center; justify-content:center;">${idx + 1}</span>
           <div style="flex:1; min-width:0;">
             <div style="display:flex; justify-content:space-between; gap:8px; margin-bottom:6px;">
-              <span style="font-size:13.5px; font-weight:600; color:#1e2733; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${GF.escapeHtml(p.nombre)}</span>
-              <span style="font-size:13px; font-weight:700; color:#0f172a; font-variant-numeric:tabular-nums; white-space:nowrap;">${this.formatCurrency(val)}</span>
+              <span style="font-size:13.5px; font-weight:600; color:#16283e; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${GF.escapeHtml(p.nombre)}</span>
+              <span style="font-size:13px; font-weight:700; color:#0e1b2c; font-variant-numeric:tabular-nums; white-space:nowrap;">${this.formatCurrency(val)}</span>
             </div>
-            <div style="height:6px; background:#f0f2f5; border-radius:6px; overflow:hidden;">
+            <div style="height:6px; background:#f3ede4; border-radius:6px; overflow:hidden;">
               <div style="height:100%; width:${pct}%; background:${this.activeTheme}; border-radius:6px;"></div>
             </div>
           </div>
-          <span style="font-size:12px; font-weight:600; color:#8a94a6; white-space:nowrap;">${qty} u.</span>
+          <span style="font-size:12px; font-weight:600; color:#8a97a8; white-space:nowrap;">${qty} u.</span>
         </div>
       `;
     });
@@ -338,10 +338,10 @@ $(function () {
             <span style="font-size:8.5px; font-weight:700; letter-spacing:.06em; margin-top:2px;">${start.toLocaleDateString('es-ES', {month: 'short'}).toUpperCase()}</span>
           </div>
           <div style="flex:1; min-width:0;">
-            <div style="font-size:13.5px; font-weight:600; color:#1e2733; text-overflow:ellipsis; overflow:hidden; white-space:nowrap;">${GF.escapeHtml(e.nombre)}</div>
-            <div style="font-size:12px; color:#8a94a6; margin-top:2px;">Confirmado</div>
+            <div style="font-size:13.5px; font-weight:600; color:#16283e; text-overflow:ellipsis; overflow:hidden; white-space:nowrap;">${GF.escapeHtml(e.nombre)}</div>
+            <div style="font-size:12px; color:#8a97a8; margin-top:2px;">Confirmado</div>
           </div>
-          <span style="font-size:13.5px; font-weight:700; color:#0f172a; font-variant-numeric:tabular-nums;">${this.formatCurrency(budget)}</span>
+          <span style="font-size:13.5px; font-weight:700; color:#0e1b2c; font-variant-numeric:tabular-nums;">${this.formatCurrency(budget)}</span>
         </div>
       `;
     });

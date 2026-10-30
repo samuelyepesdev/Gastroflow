@@ -32,15 +32,15 @@
                                     </td>
                                     <td id="tb-plan-<%= t.id %>">
                                         <% if (t.plan_slug==='basico' ) { %>
-                                            <span class="badge-plan" style="background:#64748b">
+                                            <span class="badge-plan" style="background:#5b6b7e">
                                                 <%= t.plan_nombre %>
                                             </span>
                                             <% } else if (t.plan_slug==='pro' ) { %>
-                                                <span class="badge-plan" style="background:#0d6efd">
+                                                <span class="badge-plan" style="background:#ff5a36">
                                                     <%= t.plan_nombre %>
                                                 </span>
                                                 <% } else if (t.plan_slug==='premium' ) { %>
-                                                    <span class="badge-plan" style="background:#6366f1">
+                                                    <span class="badge-plan" style="background:#ff5a36">
                                                         <%= t.plan_nombre %>
                                                     </span>
                                                     <% } else { %>

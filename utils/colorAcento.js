@@ -7,7 +7,7 @@
  * resto del panel.
  *
  * Prioridad: color configurado por el tenant > color del navbar (JWT legado /
- * tenant inactivo, ver middleware/navbarLocals.js) > verde por defecto.
+ * tenant inactivo, ver middleware/navbarLocals.js) > coral de marca por defecto.
  *
  * @param {object|null} tenant
  * @param {string|null} [colorNavbar] - nav.primaryColor, si la vista lo tiene
@@ -15,7 +15,7 @@
  * @returns {string}
  */
 function colorAcento(tenant, colorNavbar, porDefecto) {
-    const porDefectoFinal = porDefecto || '#2e7d46';
+    const porDefectoFinal = porDefecto || '#ff5a36';
     const colorTenant = tenant && tenant.config && tenant.config.colores && tenant.config.colores.primary;
     return colorTenant || colorNavbar || porDefectoFinal;
 }

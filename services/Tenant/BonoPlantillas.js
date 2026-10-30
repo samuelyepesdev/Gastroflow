@@ -125,7 +125,7 @@ const PLANTILLAS = [
         titulo: 'Un regalo para ti',
         mensajeSugerido: 'Disfruta una experiencia deliciosa por nuestra cuenta.',
         usaColorNegocio: true,
-        paleta: { titulo: '#1e293b', texto: '#334155', suave: '#64748b', acento: null },
+        paleta: { titulo: '#16283e', texto: '#223650', suave: '#5b6b7e', acento: null },
         fondo: color => {
             const claro = aclarar(color, 0.93);
             const medio = aclarar(color, 0.55);
@@ -168,7 +168,7 @@ const PLANTILLAS = [
         nombre: 'Día del Padre',
         titulo: 'Feliz Día del Padre',
         mensajeSugerido: 'Para el mejor papá, una comida a su altura.',
-        paleta: { titulo: '#f5d48a', texto: '#e2e8f0', suave: '#cbd5e1', acento: '#b8862f' },
+        paleta: { titulo: '#f5d48a', texto: '#e4dccf', suave: '#d6ccbd', acento: '#b8862f' },
         fondo: () =>
             svg(
                 gradiente('g', '#0f2744', '#1d3b63'),
@@ -216,9 +216,9 @@ const PLANTILLAS = [
             svg(
                 gradiente('g', '#fffbeb', '#ede9fe'),
                 `<rect width="${ANCHO}" height="${ALTO}" fill="url(#g)"/>
-                ${confeti(7, ['#f43f5e', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6'], 26, { x: 0, y: 0, w: 340, h: 60 })}
-                ${confeti(19, ['#f43f5e', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6'], 14, { x: 0, y: ALTO - 22, w: 340, h: 18 })}
-                ${globo(300, 40, 16, '#f43f5e', 0.9)}${globo(328, 62, 12, '#3b82f6', 0.85)}
+                ${confeti(7, ['#f43f5e', '#f59e0b', '#10b981', '#ff5a36', '#8b5cf6'], 26, { x: 0, y: 0, w: 340, h: 60 })}
+                ${confeti(19, ['#f43f5e', '#f59e0b', '#10b981', '#ff5a36', '#8b5cf6'], 14, { x: 0, y: ALTO - 22, w: 340, h: 18 })}
+                ${globo(300, 40, 16, '#f43f5e', 0.9)}${globo(328, 62, 12, '#ff5a36', 0.85)}
                 ${globo(ANCHO - 30, ALTO - 90, 22, '#f59e0b', 0.35)}`
             )
     },
@@ -246,7 +246,7 @@ const PLANTILLAS = [
         nombre: 'Año Nuevo',
         titulo: 'Feliz Año Nuevo',
         mensajeSugerido: 'Brindemos por un año lleno de buenos momentos.',
-        paleta: { titulo: '#f5c451', texto: '#f1f5f9', suave: '#cbd5e1', acento: '#b8892a' },
+        paleta: { titulo: '#f5c451', texto: '#f3ede4', suave: '#d6ccbd', acento: '#b8892a' },
         fondo: () =>
             svg(
                 gradiente('g', '#0b0b12', '#241b3a'),

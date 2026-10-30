@@ -2,41 +2,41 @@
    costeo.css — extraído de costeo.ejs
    ======================================== */
 
-body { background-color: #f8f9fa; }
+body { background-color: #fff9f2; }
         .card { border: none; box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.05); margin-bottom: 1.5rem; }
-        .card-header { background-color: #fff; border-bottom: 2px solid #f8f9fa; font-weight: 600; }
+        .card-header { background-color: #fff; border-bottom: 2px solid #fff9f2; font-weight: 600; }
         .nav-tabs .nav-link { font-weight: 500; }
         .costeo-resumen { background: #f0f7ff; border-radius: 0.5rem; padding: 1rem; }
-        .ingredientes-table tbody tr:hover { background: #f8f9fa; }
+        .ingredientes-table tbody tr:hover { background: #fff9f2; }
         /* Modal Calculadora Repostería - diseño limpio y amigable */
-        #modalCalculadoraReposteria .modal-header { border-bottom: 1px solid #e9ecef; padding: 1rem 1.25rem; }
-        #modalCalculadoraReposteria .modal-body { padding: 1.25rem 1.5rem; background: #fafbfc; }
-        #modalCalculadoraReposteria .calc-seccion { background: #fff; border-radius: 12px; padding: 1.25rem; margin-bottom: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.06); border: 1px solid #e9ecef; }
-        #modalCalculadoraReposteria .calc-seccion-titulo { font-size: 0.95rem; font-weight: 600; color: #495057; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid #0d6efd; display: flex; align-items: center; gap: 0.5rem; }
-        #modalCalculadoraReposteria .calc-seccion-titulo i { color: #0d6efd; }
-        #modalCalculadoraReposteria .calc-ayuda-btn { font-size: 0.85rem; color: #0d6efd; background: rgba(13,110,253,0.08); border: 1px solid rgba(13,110,253,0.2); border-radius: 8px; padding: 0.5rem 0.75rem; width: 100%; text-align: left; display: flex; align-items: center; justify-content: space-between; }
-        #modalCalculadoraReposteria .calc-ayuda-btn:hover { background: rgba(13,110,253,0.12); color: #0a58ca; }
-        #modalCalculadoraReposteria .calc-ayuda-body { font-size: 0.85rem; color: #6c757d; line-height: 1.5; padding-top: 0.75rem; }
+        #modalCalculadoraReposteria .modal-header { border-bottom: 1px solid #e4dccf; padding: 1rem 1.25rem; }
+        #modalCalculadoraReposteria .modal-body { padding: 1.25rem 1.5rem; background: #fff9f2; }
+        #modalCalculadoraReposteria .calc-seccion { background: #fff; border-radius: 12px; padding: 1.25rem; margin-bottom: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.06); border: 1px solid #e4dccf; }
+        #modalCalculadoraReposteria .calc-seccion-titulo { font-size: 0.95rem; font-weight: 600; color: #495057; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid #ff5a36; display: flex; align-items: center; gap: 0.5rem; }
+        #modalCalculadoraReposteria .calc-seccion-titulo i { color: #ff5a36; }
+        #modalCalculadoraReposteria .calc-ayuda-btn { font-size: 0.85rem; color: #ff5a36; background: rgba(13,110,253,0.08); border: 1px solid rgba(13,110,253,0.2); border-radius: 8px; padding: 0.5rem 0.75rem; width: 100%; text-align: left; display: flex; align-items: center; justify-content: space-between; }
+        #modalCalculadoraReposteria .calc-ayuda-btn:hover { background: rgba(13,110,253,0.12); color: #e8431f; }
+        #modalCalculadoraReposteria .calc-ayuda-body { font-size: 0.85rem; color: #5b6b7e; line-height: 1.5; padding-top: 0.75rem; }
         #modalCalculadoraReposteria .calc-costos-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 1rem; }
-        #modalCalculadoraReposteria .calc-costo-item { background: #f8f9fa; border-radius: 10px; padding: 0.75rem 1rem; border: 1px solid #e9ecef; transition: background 0.15s; }
-        #modalCalculadoraReposteria .calc-costo-item:focus-within { background: #fff; border-color: #0d6efd; box-shadow: 0 0 0 2px rgba(13,110,253,0.2); }
+        #modalCalculadoraReposteria .calc-costo-item { background: #fff9f2; border-radius: 10px; padding: 0.75rem 1rem; border: 1px solid #e4dccf; transition: background 0.15s; }
+        #modalCalculadoraReposteria .calc-costo-item:focus-within { background: #fff; border-color: #ff5a36; box-shadow: 0 0 0 2px rgba(13,110,253,0.2); }
         #modalCalculadoraReposteria .calc-costo-item label { font-size: 0.8rem; font-weight: 600; color: #495057; margin-bottom: 0.35rem; display: flex; align-items: center; gap: 0.4rem; }
-        #modalCalculadoraReposteria .calc-costo-item label i { font-size: 1rem; color: #6c757d; }
-        #modalCalculadoraReposteria .calc-costo-item .form-control { font-size: 0.9rem; border-radius: 6px; border: 1px solid #dee2e6; padding: 0.4rem 0.5rem; }
-        #modalCalculadoraReposteria .calc-costo-item .form-control:focus { border-color: #0d6efd; box-shadow: 0 0 0 2px rgba(13,110,253,0.15); }
-        #modalCalculadoraReposteria .calc-costo-item .texto-ayuda { font-size: 0.7rem; color: #6c757d; margin-top: 0.25rem; line-height: 1.3; }
-        #modalCalculadoraReposteria .calc-costo-item.readonly { background: #e9ecef; }
+        #modalCalculadoraReposteria .calc-costo-item label i { font-size: 1rem; color: #5b6b7e; }
+        #modalCalculadoraReposteria .calc-costo-item .form-control { font-size: 0.9rem; border-radius: 6px; border: 1px solid #e4dccf; padding: 0.4rem 0.5rem; }
+        #modalCalculadoraReposteria .calc-costo-item .form-control:focus { border-color: #ff5a36; box-shadow: 0 0 0 2px rgba(13,110,253,0.15); }
+        #modalCalculadoraReposteria .calc-costo-item .texto-ayuda { font-size: 0.7rem; color: #5b6b7e; margin-top: 0.25rem; line-height: 1.3; }
+        #modalCalculadoraReposteria .calc-costo-item.readonly { background: #e4dccf; }
         #modalCalculadoraReposteria .calc-resumen-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.75rem; }
-        #modalCalculadoraReposteria .calc-resumen-item { text-align: center; padding: 0.75rem; border-radius: 10px; background: #f8f9fa; border: 1px solid #e9ecef; }
-        #modalCalculadoraReposteria .calc-resumen-item .titulo { font-size: 0.75rem; color: #6c757d; text-transform: uppercase; letter-spacing: 0.02em; margin-bottom: 0.25rem; }
+        #modalCalculadoraReposteria .calc-resumen-item { text-align: center; padding: 0.75rem; border-radius: 10px; background: #fff9f2; border: 1px solid #e4dccf; }
+        #modalCalculadoraReposteria .calc-resumen-item .titulo { font-size: 0.75rem; color: #5b6b7e; text-transform: uppercase; letter-spacing: 0.02em; margin-bottom: 0.25rem; }
         #modalCalculadoraReposteria .calc-resumen-item .valor { font-size: 1rem; font-weight: 700; color: #212529; }
-        #modalCalculadoraReposteria .calc-resumen-item.total { background: #0d6efd; border-color: #0d6efd; color: #fff; }
+        #modalCalculadoraReposteria .calc-resumen-item.total { background: #ff5a36; border-color: #ff5a36; color: #fff; }
         #modalCalculadoraReposteria .calc-resumen-item.total .titulo { color: rgba(255,255,255,0.9); }
         #modalCalculadoraReposteria .calc-resumen-item.total .valor { color: #fff; }
         #modalCalculadoraReposteria .calc-margen-guia { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.75rem; }
-        #modalCalculadoraReposteria .calc-margen-guia span { font-size: 0.75rem; padding: 0.25rem 0.5rem; border-radius: 6px; background: #e7f1ff; color: #0d6efd; }
+        #modalCalculadoraReposteria .calc-margen-guia span { font-size: 0.75rem; padding: 0.25rem 0.5rem; border-radius: 6px; background: #e7f1ff; color: #ff5a36; }
         #modalCalculadoraReposteria .calc-resultados { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-        #modalCalculadoraReposteria .calc-resultado-precio { background: #fff; border: 2px solid #e9ecef; border-radius: 12px; padding: 1.25rem; text-align: center; }
+        #modalCalculadoraReposteria .calc-resultado-precio { background: #fff; border: 2px solid #e4dccf; border-radius: 12px; padding: 1.25rem; text-align: center; }
         #modalCalculadoraReposteria .calc-resultado-ganancia { background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%); border: 2px solid #28a745; border-radius: 12px; padding: 1.25rem; text-align: center; }
         #modalCalculadoraReposteria .calc-resultado-ganancia .valor { font-size: 1.5rem; font-weight: 800; color: #155724; }
         #modalCalculadoraReposteria .calc-resultado-precio .valor { font-size: 1.5rem; font-weight: 800; color: #212529; }

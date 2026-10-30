@@ -102,7 +102,7 @@ describe('BonoPublicoService.getVista', () => {
 
         const { negocio } = await BonoPublicoService.getVista(TOKEN);
 
-        expect(negocio.color).toBe('#6366f1');
+        expect(negocio.color).toBe('#ff5a36');
     });
 
     it('devuelve null si el tenant del bono ya no existe', async () => {

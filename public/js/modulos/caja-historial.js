@@ -8,6 +8,6 @@ function verNotas(notas) {
         text: notas,
         icon: 'info',
         confirmButtonText: 'Cerrar',
-        confirmButtonColor: '#6366f1'
+        confirmButtonColor: '#ff5a36'
     });
 }

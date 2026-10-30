@@ -7,9 +7,9 @@
  * RAM (un Chromium por PDF). Las gráficas van como SVG inline (`{ svg }`, ver
  * PdfCharts.js), que pdfmake dibuja de forma nativa.
  *
- * pdfmake usa las fuentes standard Roboto que trae el propio paquete (no hace
- * falta descargar ni embeber fuentes propias); se registran una sola vez de
- * forma perezosa, la primera vez que se pide un PDF.
+ * Tipografía de marca (Cloche): Poppins para texto y Montserrat para títulos, desde
+ * assets/fonts/ (licencia OFL). Se registran una sola vez de forma perezosa, la
+ * primera vez que se pide un PDF.
  */
 
 const path = require('node:path');
@@ -24,19 +24,25 @@ function getPdfMake() {
     // Lazy: igual que PdfBrowser con puppeteer, no cargar el módulo hasta que
     // de verdad se genere un PDF.
     const pdfMake = require('pdfmake');
-    const fontsDir = path.join(path.dirname(require.resolve('pdfmake/package.json')), 'fonts', 'Roboto');
+    const fontsDir = path.join(__dirname, '..', '..', 'assets', 'fonts');
 
     pdfMake.setFonts({
-        Roboto: {
-            normal: path.join(fontsDir, 'Roboto-Regular.ttf'),
-            bold: path.join(fontsDir, 'Roboto-Medium.ttf'),
-            italics: path.join(fontsDir, 'Roboto-Italic.ttf'),
-            bolditalics: path.join(fontsDir, 'Roboto-MediumItalic.ttf')
+        Poppins: {
+            normal: path.join(fontsDir, 'Poppins-Regular.ttf'),
+            bold: path.join(fontsDir, 'Poppins-Medium.ttf'),
+            italics: path.join(fontsDir, 'Poppins-Italic.ttf'),
+            bolditalics: path.join(fontsDir, 'Poppins-MediumItalic.ttf')
+        },
+        Montserrat: {
+            normal: path.join(fontsDir, 'Montserrat-SemiBold.ttf'),
+            bold: path.join(fontsDir, 'Montserrat-Bold.ttf'),
+            italics: path.join(fontsDir, 'Montserrat-SemiBold.ttf'),
+            bolditalics: path.join(fontsDir, 'Montserrat-Bold.ttf')
         }
     });
     // Los docDefinition de estos reportes no referencian imágenes ni archivos
     // externos -- se deniega cualquier acceso a disco/red salvo el de las
-    // propias fuentes Roboto (la carga de fuentes pasa por esta misma política).
+    // propias fuentes de marca (la carga de fuentes pasa por esta misma política).
     pdfMake.setUrlAccessPolicy(() => false);
     pdfMake.setLocalAccessPolicy(filePath => path.resolve(filePath).startsWith(fontsDir));
 
@@ -53,7 +59,7 @@ async function renderPdf(docDefinition) {
     const doc = pdfMake.createPdf({
         pageSize: 'A4',
         pageMargins: [40, 40, 40, 40],
-        defaultStyle: { font: 'Roboto', fontSize: 10, color: '#1e293b' },
+        defaultStyle: { font: 'Poppins', fontSize: 10, color: '#0e1b2c' },
         ...docDefinition
     });
     return doc.getBuffer();

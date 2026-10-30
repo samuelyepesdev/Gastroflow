@@ -1,7 +1,7 @@
 // POS UI — renderizado del catálogo, carrito y componentes visuales
 
 const CAT_PALETTE = [
-    { color: '#3b82f6', soft: '#eff6ff' },
+    { color: '#ff5a36', soft: '#eff6ff' },
     { color: '#10b981', soft: '#ecfdf5' },
     { color: '#f59e0b', soft: '#fffbeb' },
     { color: '#ef4444', soft: '#fef2f2' },
@@ -95,7 +95,7 @@ window.POS_UI = {
 
         grid.innerHTML = combosHtml + ordenados.map(p => {
             const fijado = pins.has(p.id);
-            const { color, soft } = paletteMap[p.categoria_id] || { color: '#6366f1', soft: '#ede9fe' };
+            const { color, soft } = paletteMap[p.categoria_id] || { color: '#ff5a36', soft: '#ede9fe' };
             const qty = cartMap[p.id] || 0;
             const badge = qty ? `<span class="ppc-qty-badge">${qty}</span>` : '';
             const inCartClass = qty ? ' ppc-in-cart' : '';
@@ -260,7 +260,7 @@ window.POS_UI = {
         const totalesEl = document.getElementById('posTotales');
         if (totalesEl) {
             const units = cart.reduce((s, i) => s + i.cantidad, 0);
-            const emptyColor = !cart.length ? '#9aa3b2' : '#0f172a';
+            const emptyColor = !cart.length ? '#8a97a8' : '#0e1b2c';
             totalesEl.innerHTML = `
                 <div class="pos-total-row">
                     <span>Subtotal <span class="pos-units-count">(${units} u.)</span></span>

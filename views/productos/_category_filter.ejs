@@ -4,7 +4,7 @@ const colorMap = {
     'Bebidas': '#0ea5e9',
     'Postres': '#f59e0b',
     'Cócteles': '#8b5cf6',
-    'Acompañamientos': '#64748b'
+    'Acompañamientos': '#5b6b7e'
 };
 %>
 <div class="category-filter-container" id="categoryFilterContainer">
@@ -12,7 +12,7 @@ const colorMap = {
         Todas
     </button>
     <% (categorias || []).forEach(function(cat) { 
-        const col = colorMap[cat.nombre] || '#64748b';
+        const col = colorMap[cat.nombre] || '#5b6b7e';
     %>
         <button type="button" class="category-filter-btn" data-categoria-id="<%= cat.id %>" data-color="<%= col %>">
             <%= cat.nombre %>

@@ -2,8 +2,8 @@
     <p class="text-muted small mb-3">Ajusta los precios de cada plan segun el tamano del negocio.</p>
     <div class="row g-4">
         <% for (var pi=0; pi < (plans ? plans.length : 0); pi++) { var p=plans[pi]; %>
-            <% var pGrad=p.slug==='pro' ? 'linear-gradient(135deg,#0d6efd,#0a58ca)' : p.slug==='premium'
-                ? 'linear-gradient(135deg,#6366f1,#4f46e5)' : 'linear-gradient(135deg,#64748b,#475569)' ; %>
+            <% var pGrad=p.slug==='pro' ? 'linear-gradient(135deg,#ff5a36,#e8431f)' : p.slug==='premium'
+                ? 'linear-gradient(135deg,#ff5a36,#e8431f)' : 'linear-gradient(135deg,#5b6b7e,#46566a)' ; %>
                 <div class="col-md-4">
                     <div class="plan-card">
                         <div class="plan-hdr" style="background:<%= pGrad %>">

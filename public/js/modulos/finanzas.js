@@ -42,7 +42,7 @@
             scales: {
                 y: {
                     beginAtZero: true,
-                    grid: { color: '#f1f5f9' },
+                    grid: { color: '#f3ede4' },
                     ticks: {
                         callback: function (v) {
                             return Math.abs(v) >= 1000 ? '$' + (v / 1000) + 'k' : '$' + v;
@@ -66,7 +66,7 @@
             labels: dataCat.map(function (row) { return row.categoria_gasto; }),
             datasets: [{
                 data: dataCat.map(function (row) { return row.total; }),
-                backgroundColor: '#1e293b',
+                backgroundColor: '#16283e',
                 borderRadius: 4
             }]
         },
@@ -101,7 +101,7 @@
                 title: 'Registro Exitoso',
                 text: 'La operación quedó asentada en el libro diario con la fecha indicada.',
                 icon: 'success',
-                confirmButtonColor: '#0f172a'
+                confirmButtonColor: '#0e1b2c'
             }).then(function () { location.reload(); });
         } catch (e) {
             GF.error(e.message);

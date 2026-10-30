@@ -4,8 +4,8 @@
     <!-- ── Panel izquierdo: marca ── -->
     <aside class="login-brand">
         <a href="/" class="brand-top" style="text-decoration: none;">
-            <div class="brand-icon"><i class="bi bi-shop"></i></div>
-            <span class="brand-name">GastroFlow</span>
+            <img class="brand-icon" src="/brand/isotipo/isotipo-oscuro.svg" alt="" width="44" height="44">
+            <span class="brand-name">GASTROFLOW</span>
         </a>
 
         <div class="brand-center">
@@ -43,9 +43,13 @@
         <div class="login-card">
 
             <a href="/" class="mobile-logo" style="text-decoration: none;">
-                <div class="mobile-logo-icon"><i class="bi bi-shop"></i></div>
-                <span class="mobile-logo-text">GastroFlow</span>
+                <img class="mobile-logo-icon" src="/brand/isotipo/isotipo-color.svg" alt="" width="40" height="40">
+                <span class="mobile-logo-text">GASTROFLOW</span>
             </a>
+
+            <video class="brand-anim" autoplay muted loop playsinline preload="auto" poster="/brand/isotipo/isotipo-color.png" aria-hidden="true">
+                <source src="/brand/animacion/videos/isotipo-revelado-transparente-1080.webm" type="video/webm">
+            </video>
 
             <h1 class="login-title">Bienvenido</h1>
             <p class="login-subtitle">Ingresa tus credenciales para continuar</p>
@@ -108,6 +112,14 @@
         </div>
 
     </main>
+
+    <!-- Bienvenida post-login: animación de marca (se muestra desde public/js/auth/login.js) -->
+    <div id="bienvenida" class="bienvenida" hidden role="status" aria-live="polite">
+        <video id="bienvenidaVideo" class="bienvenida-video" muted playsinline preload="auto" aria-hidden="true">
+            <source src="/brand/animacion/videos/logo-animado-oscuro-1920x1080.mp4" type="video/mp4">
+        </video>
+        <p id="bienvenidaSaludo" class="bienvenida-saludo"></p>
+    </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="/js/core/gf.js?v=<%= assetV %>"></script>
