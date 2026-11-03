@@ -67,6 +67,24 @@ describe('FinanzasService', () => {
         });
     });
 
+    describe('registrarIngresoVenta: venta de un evento en otro día', () => {
+        it('con fecha guarda ese día y no usa el turno de caja abierto', async () => {
+            const fecha = sumarDias(hoyColombia(), -2);
+            await FinanzasService.registrarIngresoVenta(1, { monto: 32000, factura_id: 15, usuario_id: 3, fecha });
+            const data = FinanzasRepository.createMovimiento.mock.calls[0][1];
+            expect(data.fecha_movimiento).toBe(fecha);
+            expect(data.sesion_id).toBeNull();
+            expect(CajaRepository.getSesionAbierta).not.toHaveBeenCalled();
+        });
+
+        it('sin fecha sigue entrando al turno de caja abierto de hoy', async () => {
+            await FinanzasService.registrarIngresoVenta(1, { monto: 32000, factura_id: 16, usuario_id: 3 });
+            const data = FinanzasRepository.createMovimiento.mock.calls[0][1];
+            expect(data.sesion_id).toBe(77);
+            expect(data.fecha_movimiento).toBeUndefined();
+        });
+    });
+
     describe('getDashboardData: fechas reales', () => {
         const hoy = hoyColombia();
         const hace = n => sumarDias(hoy, -n);

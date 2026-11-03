@@ -59,6 +59,13 @@ class EventoService {
     }
 
     static async delete(id, tenantId) {
+        // Borrarlo dejaría sus facturas sin evento y pasarían a contar en las ventas normales del restaurante.
+        const ventas = await EventoRepository.countVentas(id, tenantId);
+        if (ventas > 0) {
+            throw new Error(
+                `Este evento ya tiene ${ventas} venta${ventas === 1 ? '' : 's'} registrada${ventas === 1 ? '' : 's'} y no se puede eliminar. Desactívalo para dejar de usarlo.`
+            );
+        }
         const ok = await EventoRepository.delete(id, tenantId);
         if (!ok) {
             throw new Error('Evento no encontrado.');

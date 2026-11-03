@@ -78,6 +78,15 @@ class EventoRepository {
         return result.affectedRows > 0;
     }
 
+    /** Cantidad de facturas asociadas a un evento. */
+    static async countVentas(id, tenantId) {
+        const [rows] = await db.query('SELECT COUNT(*) AS total FROM facturas WHERE evento_id = ? AND tenant_id = ?', [
+            id,
+            tenantId
+        ]);
+        return parseInt(rows[0]?.total || 0);
+    }
+
     /** Count events in date range for tenant */
     static async countInRange(tenantId, desde, hasta) {
         const [rows] = await db.query(

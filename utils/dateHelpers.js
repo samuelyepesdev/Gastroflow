@@ -136,7 +136,43 @@ function toFechaDia(valor) {
     return String(valor).slice(0, 10);
 }
 
+// Un registro con fecha elegida a mano no puede ser más viejo que esto (típico error de digitación).
+const MAX_DIAS_ATRAS = 1826;
+
+/**
+ * Día elegido por el usuario para registrar algo ('YYYY-MM-DD', día Colombia). Vacío = hoy. Debe ser un
+ * día real, no futuro y no más de ~5 años atrás. `etiqueta` encabeza el mensaje de error.
+ */
+function resolverDiaPasado(fecha, etiqueta = 'La fecha') {
+    const hoy = hoyColombia();
+    if (fecha === undefined || fecha === null || fecha === '') {
+        return hoy;
+    }
+    const f = String(fecha).trim();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(f) || Number.isNaN(Date.parse(`${f}T12:00:00Z`)) || sumarDias(f, 0) !== f) {
+        throw new Error(`${etiqueta} no es válida`);
+    }
+    if (f > hoy) {
+        throw new Error(`${etiqueta} no puede ser futura`);
+    }
+    if (f < sumarDias(hoy, -MAX_DIAS_ATRAS)) {
+        throw new Error(`${etiqueta} es demasiado antigua (máximo 5 años atrás)`);
+    }
+    return f;
+}
+
+/**
+ * Instante UTC ('YYYY-MM-DD HH:mm:ss') para guardar una venta registrada en un día pasado: el mediodía
+ * de Colombia de ese día, así cae en el día correcto sin importar el desfase de zona horaria.
+ */
+function mediodiaUtcDeDia(dia) {
+    return `${dia} 17:00:00`;
+}
+
 module.exports = {
+    MAX_DIAS_ATRAS,
+    resolverDiaPasado,
+    mediodiaUtcDeDia,
     ZONA_COLOMBIA,
     fechaColombia,
     hoyColombia,

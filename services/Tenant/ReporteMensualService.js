@@ -7,15 +7,21 @@ const {
     productosTable,
     categoriaTable,
     medioPagoTable,
-    encabezadoMarca
+    encabezadoMarca,
+    MARCA,
+    tableHeaderCell,
+    tableCell,
+    emptyRow,
+    zebraTableLayout
 } = require('../Shared/PdfDocHelpers');
 const PdfCharts = require('../Shared/PdfCharts');
 const MailerService = require('../Shared/MailerService');
 const StatsRepository = require('../../repositories/Tenant/StatsRepository');
+const FinanzasService = require('./FinanzasService');
 const TenantService = require('../Admin/TenantService');
 const { hoyColombia } = require('../../utils/dateHelpers');
 
-const COLOR_REPORTE = '#28a745';
+const COLOR_REPORTE = MARCA.coral;
 // Por encima de este rango la línea diaria ya no se lee bien: se omite.
 const MAX_DIAS_GRAFICA_DIARIA = 62;
 
@@ -85,16 +91,32 @@ class ReporteMensualService {
     static async obtenerEstadisticas(tenantId, { firstDay, lastDayStr }) {
         const filtro = { desde: firstDay, hasta: lastDayStr };
         const conGraficaDiaria = diasEntre(firstDay, lastDayStr) <= MAX_DIAS_GRAFICA_DIARIA;
-        const [totalMes, facturasMes, topProductos, porCategoria, ventasDiarias, pagos, porMedio] = await Promise.all([
-            StatsRepository.getTotalSales(tenantId, filtro),
-            StatsRepository.getTotalInvoices(tenantId, filtro),
-            StatsRepository.getTopProducts(tenantId, 5, filtro),
-            StatsRepository.getSalesByCategory(tenantId, filtro),
-            conGraficaDiaria ? StatsRepository.getDailySalesRange(tenantId, firstDay, lastDayStr) : [],
-            StatsRepository.getTotalsByPaymentMethod(tenantId, filtro),
-            StatsRepository.getSalesByPaymentMethod(tenantId, filtro)
-        ]);
-        return { totalMes, facturasMes, topProductos, porCategoria, ventasDiarias, pagos, porMedio };
+        // Finanzas y eventos son un complemento: si fallan, el reporte de ventas sale igual.
+        const hasta = lastDayStr < hoyColombia() ? lastDayStr : hoyColombia();
+        const opcional = (promesa, etiqueta, vacio) =>
+            promesa.catch(err => {
+                console.error(`Reporte mensual: no se pudo obtener ${etiqueta}:`, err.message);
+                return vacio;
+            });
+        const [totalMes, facturasMes, topProductos, porCategoria, ventasDiarias, pagos, porMedio, finanzas, eventos] =
+            await Promise.all([
+                StatsRepository.getTotalSales(tenantId, filtro),
+                StatsRepository.getTotalInvoices(tenantId, filtro),
+                StatsRepository.getTopProducts(tenantId, 5, filtro),
+                StatsRepository.getSalesByCategory(tenantId, filtro),
+                conGraficaDiaria ? StatsRepository.getDailySalesRange(tenantId, firstDay, lastDayStr) : [],
+                StatsRepository.getTotalsByPaymentMethod(tenantId, filtro),
+                StatsRepository.getSalesByPaymentMethod(tenantId, filtro),
+                firstDay > hasta
+                    ? null
+                    : opcional(
+                          FinanzasService.getDashboardData(tenantId, diasEntre(firstDay, hasta), hasta),
+                          'las finanzas',
+                          null
+                      ),
+                opcional(StatsRepository.getVentasPorEventoEnRango(tenantId, firstDay, lastDayStr), 'los eventos', [])
+            ]);
+        return { totalMes, facturasMes, topProductos, porCategoria, ventasDiarias, pagos, porMedio, finanzas, eventos };
     }
 
     /** Gráfica de ventas por cada día del mes (misma serie que el dashboard). */
@@ -155,10 +177,96 @@ class ReporteMensualService {
     }
 
     /**
+     * Ventas de eventos del periodo. Van aparte del total de ventas (mostrador) igual que en el resto del
+     * sistema, así que se muestran con su propio total. Sin ventas de eventos no ocupa lugar en el reporte.
+     */
+    static eventosSection(eventos) {
+        if (!eventos || eventos.length === 0) {
+            return [];
+        }
+        const total = eventos.reduce((s, e) => s + (Number(e.total_ventas) || 0), 0);
+        const ventas = eventos.reduce((s, e) => s + (Number(e.cantidad_ventas) || 0), 0);
+        const body = [
+            [tableHeaderCell('Evento'), tableHeaderCell('Ventas', 'right'), tableHeaderCell('Total', 'right')]
+        ];
+        for (const e of eventos) {
+            body.push([
+                tableCell(e.evento_nombre),
+                tableCell(String(e.cantidad_ventas), 'right'),
+                tableCell(formatMoney(e.total_ventas), 'right')
+            ]);
+        }
+        body.push([
+            tableCell('Total eventos'),
+            tableCell(String(ventas), 'right'),
+            tableCell(formatMoney(total), 'right')
+        ]);
+        return [
+            sectionTitle('Ventas de Eventos', COLOR_REPORTE),
+            { table: { headerRows: 1, widths: ['*', 'auto', 'auto'], body }, layout: zebraTableLayout() },
+            {
+                text: 'Las ventas de eventos no están incluidas en el total de ventas de arriba.',
+                fontSize: 8,
+                color: MARCA.gris,
+                margin: [0, 4, 0, 0]
+            }
+        ];
+    }
+
+    /**
+     * Resumen de Finanzas del periodo (ingresos, egresos, utilidad y gastos por categoría). Si el
+     * restaurante no registró nada en el módulo, la sección se omite.
+     */
+    static finanzasSection(fin) {
+        if (!fin || !(fin.ingresos || fin.egresos || fin.aportes)) {
+            return [];
+        }
+        const categorias = [[tableHeaderCell('Categoría de egreso'), tableHeaderCell('Total', 'right')]];
+        if (fin.gastosPorCategoria && fin.gastosPorCategoria.length > 0) {
+            for (const c of fin.gastosPorCategoria) {
+                categorias.push([tableCell(c.categoria_gasto), tableCell(formatMoney(c.total), 'right')]);
+            }
+        } else {
+            categorias.push(emptyRow('Sin egresos de caja en el periodo.', 2));
+        }
+        return [
+            sectionTitle('Finanzas del Periodo', COLOR_REPORTE),
+            {
+                columns: [
+                    statCard('Ingresos', formatMoney(fin.ingresos), { valueColor: MARCA.tinta }),
+                    statCard('Egresos', formatMoney(fin.egresos), { valueColor: '#dc2626' }),
+                    statCard('Utilidad', formatMoney(fin.utilidad), {
+                        valueColor: fin.utilidad >= 0 ? MARCA.coralFuerte : '#dc2626'
+                    })
+                ],
+                columnGap: 12,
+                margin: [0, 0, 0, 10]
+            },
+            {
+                ul: [
+                    `Caja (compras de inventario, gastos manuales): ${formatMoney(fin.egresosCaja)}`,
+                    `Costos fijos del periodo (prorrateado): ${formatMoney(fin.costosFijosPeriodo)}`,
+                    `Facturas de proveedor del periodo: ${formatMoney(fin.proveedoresPeriodo)}`
+                ],
+                fontSize: 9,
+                margin: [0, 0, 0, 8]
+            },
+            { table: { headerRows: 1, widths: ['*', 'auto'], body: categorias }, layout: zebraTableLayout() },
+            {
+                text: 'Los ingresos de Finanzas incluyen el dinero de las ventas de eventos.',
+                fontSize: 8,
+                color: MARCA.gris,
+                margin: [0, 4, 0, 0]
+            }
+        ];
+    }
+
+    /**
      * Arma el docDefinition de pdfmake con las estadísticas del mes.
      */
     static buildDocDefinition(tenant, mesNombre, stats) {
-        const { totalMes, facturasMes, topProductos, porCategoria, ventasDiarias, pagos, porMedio } = stats;
+        const { totalMes, facturasMes, topProductos, porCategoria, ventasDiarias, pagos, porMedio, finanzas, eventos } =
+            stats;
         const mes = mesNombre.toUpperCase();
 
         return {
@@ -166,8 +274,8 @@ class ReporteMensualService {
                 ...encabezadoMarca(tenant.nombre, `Reporte de Ventas - ${mes}`),
                 {
                     columns: [
-                        statCard('Total Ingresos Brutos', formatMoney(totalMes), { valueColor: '#28a745' }),
-                        statCard('Total Facturas/Pedidos', String(facturasMes), { valueColor: '#28a745' })
+                        statCard('Total Ingresos Brutos', formatMoney(totalMes), { valueColor: MARCA.coralFuerte }),
+                        statCard('Total Facturas/Pedidos', String(facturasMes), { valueColor: MARCA.coralFuerte })
                     ],
                     columnGap: 16,
                     margin: [0, 0, 0, 10]
@@ -181,6 +289,8 @@ class ReporteMensualService {
                 sectionTitle('Ventas por Categoría', COLOR_REPORTE),
                 ...this.categoriasChartSection(porCategoria),
                 categoriaTable(porCategoria),
+                ...this.eventosSection(eventos),
+                ...this.finanzasSection(finanzas),
                 footerText('Este reporte fue generado de forma automática.')
             ]
         };

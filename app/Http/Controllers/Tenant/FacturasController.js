@@ -1,7 +1,7 @@
 const FacturaService = require('../../../../services/Tenant/FacturaService');
 const EventoService = require('../../../../services/Tenant/EventoService');
 const ConfiguracionService = require('../../../../services/Tenant/ConfiguracionService');
-const { toFechaISOUtc } = require('../../../../utils/dateHelpers');
+const { toFechaISOUtc, toFechaDia, hoyColombia } = require('../../../../utils/dateHelpers');
 
 class FacturasController {
     // GET /facturas/facturar
@@ -14,16 +14,32 @@ class FacturasController {
                     .render('errors/internal', { error: { message: 'Contexto de tenant no disponible' } });
             }
             let eventoFiltro = null;
+            let fechaVenta = null;
             if (req.query.evento_id) {
                 const ev = await EventoService.getById(req.query.evento_id, tenantId);
                 if (ev) {
-                    eventoFiltro = { id: ev.id, nombre: ev.nombre };
+                    eventoFiltro = {
+                        id: ev.id,
+                        nombre: ev.nombre,
+                        activo: !!ev.activo,
+                        inicio: toFechaDia(ev.fecha_inicio),
+                        fin: toFechaDia(ev.fecha_fin)
+                    };
+                    // Días en que se puede registrar la venta: los del evento que ya llegaron (nunca futuros).
+                    const hoy = hoyColombia();
+                    const min = toFechaDia(ev.fecha_inicio);
+                    const fin = toFechaDia(ev.fecha_fin);
+                    const max = fin < hoy ? fin : hoy;
+                    if (min <= max) {
+                        fechaVenta = { min, max, valor: hoy >= min && hoy <= fin ? hoy : max };
+                    }
                 }
             }
             res.render('pos/facturar_evento', {
                 user: req.user,
                 tenant: req.tenant,
-                eventoFiltro: eventoFiltro || null
+                eventoFiltro: eventoFiltro || null,
+                fechaVenta
             });
         } catch (error) {
             console.error('Error al cargar pantalla de facturación:', error);
@@ -42,7 +58,7 @@ class FacturasController {
             res.status(201).json(result);
         } catch (error) {
             console.error('Error al crear factura:', error);
-            if (error.message === 'Datos incompletos') {
+            if (error.message === 'Datos incompletos' || error.status === 400) {
                 return res.status(400).json({ error: error.message });
             }
             res.status(500).json({ error: 'Error al crear factura' });
