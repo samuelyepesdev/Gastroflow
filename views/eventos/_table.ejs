@@ -56,7 +56,8 @@ const esOcasional = (e) => (e.tipo || 'permanente') === 'ocasional';
                 <% } %>
                 <% if (puedeEliminar) { %>
                     <button type="button" class="btn btn-sm btn-outline-danger" data-accion="eliminar-evento"
-                        data-id="<%= e.id %>" data-nombre="<%= e.nombre %>" title="Eliminar"><i class="bi bi-trash"></i></button>
+                        data-id="<%= e.id %>" data-nombre="<%= e.nombre %>" <%= e.cantidad_ventas > 0 ? 'disabled' : '' %>
+                        title="<%= e.cantidad_ventas > 0 ? 'Tiene ventas: desactívalo en lugar de eliminarlo' : 'Eliminar' %>"><i class="bi bi-trash"></i></button>
                 <% } %>
             </div>
         </div>
@@ -123,7 +124,8 @@ const esOcasional = (e) => (e.tipo || 'permanente') === 'ocasional';
                             <% } %>
                             <% if (puedeEliminar) { %>
                                 <button type="button" class="btn btn-sm btn-outline-danger" data-accion="eliminar-evento"
-                                    data-id="<%= e.id %>" data-nombre="<%= e.nombre %>" title="Eliminar"><i class="bi bi-trash"></i></button>
+                                    data-id="<%= e.id %>" data-nombre="<%= e.nombre %>" <%= e.cantidad_ventas > 0 ? 'disabled' : '' %>
+                                    title="<%= e.cantidad_ventas > 0 ? 'Tiene ventas: desactívalo en lugar de eliminarlo' : 'Eliminar' %>"><i class="bi bi-trash"></i></button>
                             <% } %>
                         </td>
                     <% } %>

@@ -249,6 +249,8 @@ $(function () {
     if (!cid) return Swal.fire('Atención', 'Seleccione un cliente', 'warning');
     if (!mod.productosFactura.length) return Swal.fire('Atención', 'Agregue productos', 'warning');
 
+    const pago = datosPago();
+    if (pago.error) return Swal.fire('Atención', pago.error, 'warning');
     const fecha = $('#fechaVenta').val() || null;
     const totalVenta = mod.totalFactura;
     const btn = this;
@@ -261,6 +263,8 @@ $(function () {
         cliente_id: cid,
         total: mod.totalFactura,
         forma_pago: $('#formaPago').val(),
+        monto_efectivo: pago.efectivo,
+        monto_transferencia: pago.transferencia,
         codigo_bono: mod.bono ? mod.bono.codigo : null,
         evento_id: $('#eventoId').val() || null,
         fecha,
@@ -326,6 +330,10 @@ $(function () {
       if (mod.currentStep === 2 && mod.productosFactura.length === 0) {
         return Swal.fire('Atención', 'Agregue al menos un producto a la venta', 'warning');
       }
+      if (mod.currentStep === 3 && step >= 4) {
+        const pago = datosPago();
+        if (pago.error) return Swal.fire('Atención', pago.error, 'warning');
+      }
     }
 
     mod.currentStep = step;
@@ -365,9 +373,75 @@ $(function () {
     });
   }
 
+  // --- Pago mixto (efectivo + transferencia) ---
+  const ETIQUETA_PAGO = { efectivo: 'Efectivo', transferencia: 'Transferencia', mixto: 'Mixto' };
+  const aCobrar = () => Math.max(0, mod.totalFactura - mod.bonoMonto());
+  const esMixto = () => $('#formaPago').val() === 'mixto';
+  const montoMixto = id => MoneyInput.parse($(id).val());
+  const ponerMonto = (id, n) => $(id).val(n > 0 ? MoneyInput.format(String(Math.round(n))) : '');
+
+  function refrescarMixto() {
+    $('#wrapMixto').toggleClass('d-none', !esMixto() || aCobrar() <= 0);
+    if (!esMixto() || aCobrar() <= 0) return;
+    const falta = aCobrar() - montoMixto('#mixtoEfectivo') - montoMixto('#mixtoTransferencia');
+    const ok = Math.abs(falta) < 0.5 && montoMixto('#mixtoEfectivo') > 0 && montoMixto('#mixtoTransferencia') > 0;
+    let texto = 'Escribe uno de los dos montos y el otro se completa solo.';
+    if (montoMixto('#mixtoEfectivo') || montoMixto('#mixtoTransferencia')) {
+      if (ok) texto = 'Cuadra con el total a pagar.';
+      else if (falta > 0) texto = `Faltan ${GF.dinero(falta)} para completar el total.`;
+      else if (falta < 0) texto = `Se pasa por ${GF.dinero(-falta)} del total.`;
+      else texto = 'Ambos montos deben ser mayores a cero.';
+    }
+    const hayEntrada = montoMixto('#mixtoEfectivo') > 0 || montoMixto('#mixtoTransferencia') > 0;
+    $('#mixtoEstado').text(texto).toggleClass('text-success', ok).toggleClass('text-danger', hayEntrada && !ok);
+  }
+
+  $('#mixtoEfectivo').on('input', () => {
+    ponerMonto('#mixtoTransferencia', Math.max(0, aCobrar() - montoMixto('#mixtoEfectivo')));
+    refrescarMixto();
+  });
+  $('#mixtoTransferencia').on('input', () => {
+    ponerMonto('#mixtoEfectivo', Math.max(0, aCobrar() - montoMixto('#mixtoTransferencia')));
+    refrescarMixto();
+  });
+
+  // El total a pagar cambia con los productos y el bono: lo ya escrito deja de cuadrar, así que se limpia.
+  const refrescarBonoOriginal = mod.refrescarBono.bind(mod);
+  let ultimoCobrar = null;
+  mod.refrescarBono = function () {
+    refrescarBonoOriginal();
+    if (ultimoCobrar !== null && ultimoCobrar !== aCobrar()) {
+      $('#mixtoEfectivo, #mixtoTransferencia').val('');
+    }
+    ultimoCobrar = aCobrar();
+    refrescarMixto();
+  };
+
+  /** Lo que se envía del pago, o { error } si el mixto no cuadra. */
+  function datosPago() {
+    if (!esMixto() || aCobrar() <= 0) return { efectivo: null, transferencia: null };
+    const efectivo = montoMixto('#mixtoEfectivo');
+    const transferencia = montoMixto('#mixtoTransferencia');
+    if (efectivo <= 0 || transferencia <= 0) {
+      return { error: 'En un pago mixto indica el monto en efectivo y el de transferencia.' };
+    }
+    if (Math.abs(efectivo + transferencia - aCobrar()) >= 0.5) {
+      return { error: 'Efectivo y transferencia deben sumar exactamente el total a pagar.' };
+    }
+    return { efectivo, transferencia };
+  }
+
   function actualizarResumenFinal() {
     const subtotal = mod.totalFactura;
     const total = subtotal - mod.bonoMonto();
+    const pago = datosPago();
+    $('#resumenPago').text(
+      aCobrar() <= 0
+        ? 'Cubierto con bono'
+        : esMixto() && !pago.error
+          ? `Mixto · Efectivo ${GF.dinero(pago.efectivo)} + Transf. ${GF.dinero(pago.transferencia)}`
+          : ETIQUETA_PAGO[$('#formaPago').val()] || '—'
+    );
 
     $('#resumenSubtotal').text(`$${subtotal.toLocaleString('es-CO')}`);
     $('#resumenTotal').text(total.toLocaleString('es-CO'));
@@ -414,6 +488,7 @@ $(function () {
 
   $('input[name="forma_pago_radio"]').change(function() {
     $('#formaPago').val($(this).val());
+    refrescarMixto();
   });
 
   $(document).on('click', '.step-item.completed, .step-item.active', function() {

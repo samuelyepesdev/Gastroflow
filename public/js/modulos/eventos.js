@@ -39,7 +39,7 @@
     async function eliminarEvento(id, nombre) {
         const r = await Swal.fire({
             title: '¿Eliminar evento?',
-            text: nombre ? 'Se eliminará "' + nombre + '". Las facturas ya asociadas quedarán sin evento.' : '',
+            text: nombre ? 'Se eliminará "' + nombre + '". Solo se pueden eliminar eventos sin ventas.' : '',
             icon: 'warning',
             showCancelButton: true,
             confirmButtonText: 'Sí, eliminar',

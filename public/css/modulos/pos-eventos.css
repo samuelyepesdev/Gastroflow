@@ -188,7 +188,7 @@ body.pos-event-flow {
 
 /* Info Cards inside Flow */
 .info-box {
-    background: #eff6ff;
+    background: var(--gf-crema, #fff4e8);
     border: 1px solid #ffd0c4;
     border-radius: 0.75rem;
     padding: 1rem;
