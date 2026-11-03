@@ -27,12 +27,13 @@
                     <textarea class="form-control" id="eventoDescripcion" rows="2"
                         placeholder="Descripción del evento"></textarea>
                 </div>
-                <div class="mb-3">
-                    <label for="eventoTipo" class="form-label">Tipo de evento</label>
-                    <select class="form-select" id="eventoTipo">
-                        <option value="permanente">Permanente (sí cuenta para analítica)</option>
-                        <option value="ocasional">Ocasional (no cuenta para analítica)</option>
-                    </select>
+                <div class="form-check form-switch mb-3">
+                    <input type="checkbox" class="form-check-input" id="eventoIncluirVentas" role="switch">
+                    <label class="form-check-label fw-semibold" for="eventoIncluirVentas">Incluir en las ventas normales</label>
+                    <div class="form-text">
+                        Activado: sus ventas cuentan en los ingresos, la ganancia y las estadísticas del día y del mes,
+                        incluidas las que ya registraste. Desactivado: quedan aparte, solo dentro del evento.
+                    </div>
                 </div>
                 <div class="form-check" id="wrapActivo">
                     <input type="checkbox" class="form-check-input" id="eventoActivo" checked>

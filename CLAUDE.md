@@ -106,7 +106,7 @@ routes/ (thin)  →  middleware (auth, tenant, planFeature)  →  app/Http/Contr
   Auth itself is JWT via cookie (`auth_token`) or `Authorization: Bearer`, verified in `AuthService`.
 
 - **Migrations**: plain numbered SQL files in `database/migrations/` (`NNN_description.sql`, zero-padded,
-  currently up to `124`). `scripts/run-migrations.js` runs every `.sql` not yet recorded in the
+  currently up to `126`). `scripts/run-migrations.js` runs every `.sql` not yet recorded in the
   `schema_migrations` table, in filename order — add a new one as the next number, don't edit past ones.
   `config/env.js` validates required env vars (`JWT_SECRET` ≥ 32 chars, DB vars unless `MYSQL_URL`/
   `DATABASE_URL` is set) at process boot and throws before the app starts if they're missing/weak.
@@ -185,6 +185,13 @@ routes/ (thin)  →  middleware (auth, tenant, planFeature)  →  app/Http/Contr
   `encabezadoMarca()` (`PdfDocHelpers`); correos se envuelven solos en `MailerService`. La imagen OG se regenera con
   `npm run generate:og-image`. App en claro (Crema/Arena), landing/login en Tinta. El menú QR usa los colores de cada
   restaurante, no la marca.
+
+- **Eventos y ventas normales**: la venta de un evento guarda `facturas.evento_id` y `facturas.evento_aparte`. Todas las
+  estadísticas de "ventas normales" (dashboard, finanzas por forma de pago, productos, crecimiento, superadmin) filtran por
+  `evento_aparte = 0`, nunca por `evento_id IS NULL`. `evento_aparte` = 1 salvo que el evento tenga `incluir_en_ventas`;
+  `EventoRepository.update` lo re-marca en las facturas ya existentes dentro de la misma transacción. Una venta de evento
+  puede llevar otro día (`fecha`, solo dentro de las fechas del evento) y pago mixto (`monto_efectivo` + `monto_transferencia`,
+  ver `utils/desglosePago.js`). Un evento inactivo no recibe ventas y uno con ventas no se elimina.
 
 - **WhatsApp bot was removed (2026-09)** for RAM consumption — don't reintroduce `whatsapp-web.js` as a
   dependency; if you see references to it in older docs/migrations they're historical

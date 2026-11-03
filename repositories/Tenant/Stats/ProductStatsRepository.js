@@ -16,7 +16,7 @@ class ProductStatsRepository {
             INNER JOIN productos p ON df.producto_id = p.id
             LEFT JOIN categorias c ON p.categoria_id = c.id
             INNER JOIN facturas f ON df.factura_id = f.id
-            WHERE f.tenant_id = ? AND f.evento_id IS NULL AND p.activo = 1
+            WHERE f.tenant_id = ? AND f.evento_aparte = 0 AND p.activo = 1
         `;
         const params = [tenantId];
 
@@ -63,7 +63,7 @@ class ProductStatsRepository {
                    COUNT(DISTINCT df.factura_id) AS facturas_count
             FROM detalle_factura df
             INNER JOIN facturas f ON df.factura_id = f.id
-            WHERE f.tenant_id = ? AND f.evento_id IS NULL
+            WHERE f.tenant_id = ? AND f.evento_aparte = 0
         `;
         const params = [tenantId];
 
@@ -126,7 +126,7 @@ class ProductStatsRepository {
             INNER JOIN productos p ON df.producto_id = p.id
             LEFT JOIN categorias c ON p.categoria_id = c.id
             INNER JOIN facturas f ON df.factura_id = f.id
-            WHERE f.tenant_id = ? AND f.evento_id IS NULL AND p.activo = 1
+            WHERE f.tenant_id = ? AND f.evento_aparte = 0 AND p.activo = 1
         `;
         const params = [tenantId];
 
@@ -161,7 +161,7 @@ class ProductStatsRepository {
             INNER JOIN productos p ON df.producto_id = p.id
             LEFT JOIN categorias c ON p.categoria_id = c.id
             INNER JOIN facturas f ON df.factura_id = f.id
-            WHERE f.tenant_id = ? AND f.evento_id IS NULL AND p.activo = 1
+            WHERE f.tenant_id = ? AND f.evento_aparte = 0 AND p.activo = 1
         `;
         const params = [tenantId];
 

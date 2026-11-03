@@ -108,6 +108,18 @@ describe('FacturaService', () => {
                 expect(FacturaRepository.createWithDetails.mock.calls.map(c => c[1].fecha_venta)).toEqual([null, null]);
             });
 
+            it('la venta de un evento va aparte de las ventas normales, salvo que el evento se incluya en ventas', async () => {
+                await FacturaService.create(tenantId, { ...facturaValida, evento_id: 7 });
+                EventoRepository.findById.mockResolvedValue({ ...evento, incluir_en_ventas: 1 });
+                await FacturaService.create(tenantId, { ...facturaValida, evento_id: 7 });
+                await FacturaService.create(tenantId, facturaValida);
+                expect(FacturaRepository.createWithDetails.mock.calls.map(c => c[1].evento_aparte)).toEqual([
+                    true,
+                    false,
+                    false
+                ]);
+            });
+
             it('rechaza vender en un evento inactivo con error 400', async () => {
                 EventoRepository.findById.mockResolvedValue({ ...evento, activo: 0 });
                 await expect(FacturaService.create(tenantId, { ...facturaValida, evento_id: 7 })).rejects.toMatchObject(

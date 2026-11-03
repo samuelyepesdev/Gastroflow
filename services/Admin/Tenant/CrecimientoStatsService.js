@@ -58,12 +58,12 @@ class CrecimientoStatsService {
             `),
             db.query(
                 `SELECT COALESCE(SUM(total), 0) AS ventas, COUNT(*) AS facturas
-                 FROM facturas WHERE evento_id IS NULL AND fecha BETWEEN ? AND ?`,
+                 FROM facturas WHERE evento_aparte = 0 AND fecha BETWEEN ? AND ?`,
                 [utcDesde, utcHasta]
             ),
             db.query(
                 `SELECT COALESCE(SUM(total), 0) AS ventas, COUNT(*) AS facturas
-                 FROM facturas WHERE evento_id IS NULL AND fecha BETWEEN ? AND ?`,
+                 FROM facturas WHERE evento_aparte = 0 AND fecha BETWEEN ? AND ?`,
                 [utcDesdeAnt, utcHastaAnt]
             ),
             db.query(`SELECT COUNT(*) AS cantidad FROM tenants WHERE created_at BETWEEN ? AND ?`, [utcDesde, utcHasta]),
@@ -75,14 +75,14 @@ class CrecimientoStatsService {
                 `SELECT ${SQL_COLOMBIA.dia('fecha')} AS fecha_col,
                         SUM(total) AS ventas, COUNT(*) AS facturas
                  FROM facturas
-                 WHERE evento_id IS NULL AND fecha BETWEEN ? AND ?
+                 WHERE evento_aparte = 0 AND fecha BETWEEN ? AND ?
                  GROUP BY fecha_col ORDER BY fecha_col ASC`,
                 [utcDesde, utcHasta]
             ),
             db.query(
                 `SELECT t.id, t.nombre, COALESCE(SUM(f.total), 0) AS ventas, COUNT(f.id) AS facturas
                  FROM tenants t
-                 LEFT JOIN facturas f ON f.tenant_id = t.id AND f.evento_id IS NULL AND f.fecha BETWEEN ? AND ?
+                 LEFT JOIN facturas f ON f.tenant_id = t.id AND f.evento_aparte = 0 AND f.fecha BETWEEN ? AND ?
                  WHERE t.activo = 1
                  GROUP BY t.id, t.nombre
                  ORDER BY ventas DESC`,
@@ -91,7 +91,7 @@ class CrecimientoStatsService {
             db.query(
                 `SELECT t.id, COALESCE(SUM(f.total), 0) AS ventas
                  FROM tenants t
-                 LEFT JOIN facturas f ON f.tenant_id = t.id AND f.evento_id IS NULL AND f.fecha BETWEEN ? AND ?
+                 LEFT JOIN facturas f ON f.tenant_id = t.id AND f.evento_aparte = 0 AND f.fecha BETWEEN ? AND ?
                  WHERE t.activo = 1
                  GROUP BY t.id`,
                 [utcDesdeAnt, utcHastaAnt]
@@ -100,7 +100,7 @@ class CrecimientoStatsService {
                 `SELECT DATE_FORMAT(${SQL_COLOMBIA.aColombia('fecha')}, '%Y-%m') AS ym,
                         SUM(total) AS ventas, COUNT(*) AS facturas
                  FROM facturas
-                 WHERE evento_id IS NULL AND fecha >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 12 MONTH)
+                 WHERE evento_aparte = 0 AND fecha >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 12 MONTH)
                  GROUP BY ym ORDER BY ym ASC`
             )
         ]);
