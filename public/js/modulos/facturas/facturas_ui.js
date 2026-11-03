@@ -245,6 +245,8 @@ $(function () {
   });
 
   $('#generarFactura').click(function () {
+    // Tras generar la factura el botón queda bloqueado hasta que se recarga la pantalla (evita duplicados).
+    if ($(this).prop('disabled')) return;
     const cid = $('#cliente_id').val();
     if (!cid) return Swal.fire('Atención', 'Seleccione un cliente', 'warning');
     if (!mod.productosFactura.length) return Swal.fire('Atención', 'Agregue productos', 'warning');
@@ -293,17 +295,20 @@ $(function () {
           titulo: '¡Venta registrada!',
           detalle: `Factura #${res.numero ?? res.id} · ${GF.dinero(totalVenta)}${fecha ? ` · ${d}/${m}/${y}` : ''}`
         });
-        const modal = new bootstrap.Modal(document.getElementById('facturaModal'));
+        const modalEl = document.getElementById('facturaModal');
+        // Al cerrar la factura se recarga la pantalla: queda lista para otra venta (sin datos de la anterior)
+        // y no se puede volver a generar la misma factura. La query del evento se conserva en la URL.
+        modalEl.addEventListener('hidden.bs.modal', () => window.location.reload(), { once: true });
         $('#facturaFrame').attr('src', `/api/facturas/${res.id}/imprimir`);
-        modal.show();
+        new bootstrap.Modal(modalEl).show();
         mod.limpiarSesionProvisional();
         limpiarTodo();
       })
       .catch(err => {
         GF.cerrarCargando();
+        GF.cargando(btn, false);
         Swal.fire('Error', err.message || 'No se pudo generar factura', 'error');
-      })
-      .finally(() => GF.cargando(btn, false));
+      });
   });
 
   function limpiarTodo() {
