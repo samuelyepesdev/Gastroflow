@@ -21,6 +21,7 @@
                         <p class="flow-subtitle">
                             <% if (typeof eventoFiltro !=='undefined' && eventoFiltro) { %>
                                 <i class="bi bi-calendar-event me-1"></i><%= eventoFiltro.nombre %>
+                                <span class="ms-1">· <%= eventoFiltro.inicio %> a <%= eventoFiltro.fin %></span>
                             <% } else { %>
                                 Comidas
                             <% } %>
@@ -54,6 +55,13 @@
                     </div>
                 </div>
             </div>
+
+            <% if (typeof eventoFiltro !== 'undefined' && eventoFiltro && !eventoFiltro.activo) { %>
+                <div class="alert alert-warning d-flex align-items-center" role="alert" id="eventoInactivo">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    <div>Este evento está <strong>inactivo</strong>: no se pueden registrar ventas. Actívalo desde el listado de eventos.</div>
+                </div>
+            <% } %>
 
             <!-- Content Card -->
             <div class="flow-card">
@@ -172,10 +180,31 @@
                                             <span class="fw-medium">💳 Transferencia / Bancos</span>
                                         </div>
                                     </label>
+                                    <label for="pagoMixtoRadio" class="list-group-item d-flex align-items-center p-3 cursor-pointer">
+                                        <input class="form-check-input me-3" type="radio" id="pagoMixtoRadio" name="forma_pago_radio" value="mixto">
+                                        <div class="flex-grow-1">
+                                            <span class="fw-medium">🔀 Mixto</span>
+                                            <div class="small text-muted">Una parte en efectivo y otra por transferencia</div>
+                                        </div>
+                                    </label>
+                                </div>
+                                <div id="wrapMixto" class="border rounded-3 p-3 mt-3 bg-light d-none">
+                                    <div class="row g-2">
+                                        <div class="col-6">
+                                            <label for="mixtoEfectivo" class="form-label small fw-semibold mb-1">💵 Efectivo</label>
+                                            <input type="text" inputmode="decimal" class="form-control money-input" id="mixtoEfectivo" placeholder="0" autocomplete="off">
+                                        </div>
+                                        <div class="col-6">
+                                            <label for="mixtoTransferencia" class="form-label small fw-semibold mb-1">💳 Transferencia</label>
+                                            <input type="text" inputmode="decimal" class="form-control money-input" id="mixtoTransferencia" placeholder="0" autocomplete="off">
+                                        </div>
+                                    </div>
+                                    <div class="form-text mt-2" id="mixtoEstado">Escribe uno de los dos montos y el otro se completa solo.</div>
                                 </div>
                                 <select id="formaPago" class="d-none">
                                     <option value="efectivo">efectivo</option>
                                     <option value="transferencia">transferencia</option>
+                                    <option value="mixto">mixto</option>
                                 </select>
                             </div>
                             <div class="col-md-5">
@@ -195,12 +224,27 @@
                             <p class="text-muted small">Generar el comprobante de venta final</p>
                         </div>
 
+                        <% if (typeof fechaVenta !== 'undefined' && fechaVenta) { %>
+                            <div class="info-box mb-4" id="wrapFechaVenta">
+                                <label for="fechaVenta" class="form-label fw-bold small mb-1">
+                                    <i class="bi bi-calendar-check me-1"></i>Fecha de la venta
+                                </label>
+                                <input type="date" class="form-control flow-input" id="fechaVenta"
+                                    value="<%= fechaVenta.valor %>" min="<%= fechaVenta.min %>"
+                                    max="<%= fechaVenta.max %>" required>
+                                <div class="form-text">
+                                    Por defecto es hoy. Cambia el día para registrar una venta que ocurrió en otro día del evento
+                                    (<%= fechaVenta.min %> a <%= fechaVenta.max %>).
+                                </div>
+                            </div>
+                        <% } %>
+
                         <div class="alert alert-success border-0 bg-green-50 text-success d-flex align-items-center mb-4">
                             <i class="bi bi-check-circle-fill me-2 h4 mb-0"></i>
                             <span class="fw-medium">Listo para facturar. Verifique los montos.</span>
                         </div>
 
-                        <div class="summary-card mb-4 border-0" style="background: #fff9f2;">
+                        <div class="summary-card mb-4 border-0" style="background: var(--gf-crema, #fff4e8);">
                             <div class="d-flex justify-content-between py-2 border-bottom border-slate-200">
                                 <span class="text-muted">Subtotal</span>
                                 <span class="fw-bold" id="resumenSubtotal">$0.00</span>
@@ -208,6 +252,10 @@
                             <div class="d-flex justify-content-between py-2 border-bottom border-slate-200">
                                 <span class="text-muted">Descuentos</span>
                                 <span class="text-success fw-bold" id="resumenDescuento">$0.00</span>
+                            </div>
+                            <div class="d-flex justify-content-between py-2 border-bottom border-slate-200">
+                                <span class="text-muted">Forma de pago</span>
+                                <span class="fw-bold text-end" id="resumenPago">—</span>
                             </div>
                             <div id="resumenBonoWrap" class="d-flex justify-content-between py-2 border-bottom border-slate-200 d-none">
                                 <span class="text-muted"><i class="bi bi-gift me-1"></i>Bono aplicado</span>
@@ -219,14 +267,10 @@
                             </div>
                         </div>
 
-                        <div class="d-flex gap-2">
-                             <button type="button" class="btn btn-outline-secondary py-3 flex-grow-1" id="guardarPedido">
-                                <i class="bi bi-save me-2"></i>Guardar Borrador
-                            </button>
-                            <button class="btn btn-success btn-lg py-3 flex-grow-2" style="width: 60%" id="generarFactura">
-                                <i class="bi bi-receipt me-2"></i>Generar Factura
-                            </button>
-                        </div>
+                        <button class="btn btn-primary btn-lg py-3 w-100" id="generarFactura"
+                            <%= typeof eventoFiltro !== 'undefined' && eventoFiltro && !eventoFiltro.activo ? 'disabled' : '' %>>
+                            <i class="bi bi-receipt me-2"></i>Generar Factura
+                        </button>
                     </div>
                 </div>
             </div>

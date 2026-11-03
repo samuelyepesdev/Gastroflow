@@ -10,6 +10,47 @@ const ModificadorService = require('./ModificadorService');
 const ComboArmableService = require('./ComboArmableService');
 const TenantOwnership = require('./TenantOwnership');
 const FidelizacionService = require('./FidelizacionService');
+const EventoRepository = require('../../repositories/Tenant/EventoRepository');
+const { hoyColombia, resolverDiaPasado, toFechaDia } = require('../../utils/dateHelpers');
+
+/** Error de datos del usuario: el controlador lo devuelve como 400 con su mensaje. */
+function errorDeValidacion(mensaje) {
+    const err = new Error(mensaje);
+    err.status = 400;
+    return err;
+}
+
+/**
+ * Valida el evento (activo) y devuelve el día en que se registra la venta cuando NO es hoy ('YYYY-MM-DD'), o null si es hoy. Solo las ventas
+ * de un evento pueden llevar otra fecha (el POS y las mesas siempre venden "ahora"), y debe caer dentro
+ * de los días del evento.
+ */
+async function resolverDiaVenta(tenantId, fecha, eventoId) {
+    // Un evento inactivo no recibe ventas (se activa de nuevo desde el listado de eventos).
+    const evento = eventoId ? await EventoRepository.findById(eventoId, tenantId) : null;
+    if (evento && !evento.activo) {
+        throw errorDeValidacion('El evento está inactivo: no se pueden registrar ventas.');
+    }
+    if (fecha === undefined || fecha === null || fecha === '') {
+        return null;
+    }
+    let dia;
+    try {
+        dia = resolverDiaPasado(fecha, 'La fecha de la venta');
+    } catch (e) {
+        throw errorDeValidacion(e.message);
+    }
+    if (dia === hoyColombia()) {
+        return null;
+    }
+    if (!eventoId) {
+        throw errorDeValidacion('Solo las ventas de un evento pueden registrarse en otra fecha.');
+    }
+    if (evento && (dia < toFechaDia(evento.fecha_inicio) || dia > toFechaDia(evento.fecha_fin))) {
+        throw errorDeValidacion('La fecha de la venta debe estar dentro de los días del evento.');
+    }
+    return dia;
+}
 
 class FacturaService {
     /**
@@ -47,6 +88,7 @@ class FacturaService {
         // referenciaría clientes/productos de otro restaurante y los leería al imprimirse).
         await TenantOwnership.clientes(tenantId, cliente_id);
         await TenantOwnership.eventos(tenantId, evento_id);
+        const diaVenta = await resolverDiaVenta(tenantId, facturaData.fecha, evento_id);
         await TenantOwnership.productos(
             tenantId,
             productos.filter(p => !p.es_servicio).map(p => p.producto_id)
@@ -105,6 +147,9 @@ class FacturaService {
             forma_pago,
             productos,
             evento_id: evento_id || null,
+            fecha_venta: diaVenta,
+            monto_efectivo: facturaData.monto_efectivo,
+            monto_transferencia: facturaData.monto_transferencia,
             usuario_id: facturaData.usuario_id || null,
             efectivo_recibido: facturaData.efectivo_recibido || null,
             codigo_bono: facturaData.codigo_bono || null
@@ -179,7 +224,8 @@ class FacturaService {
                 monto: total,
                 factura_id: facturaId,
                 esCeramica: tieneCeramicas,
-                usuario_id: usuario_id
+                usuario_id: usuario_id,
+                fecha: diaVenta
             });
         } catch (finErr) {
             console.error('CRÍTICO: Error al registrar ingreso en finanzas:', finErr);
