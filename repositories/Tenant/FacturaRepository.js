@@ -7,6 +7,7 @@
 const db = require('../../config/database');
 const NumeracionRepository = require('./NumeracionRepository');
 const { SQL_COLOMBIA, toFechaISOUtc, mediodiaUtcDeDia } = require('../../utils/dateHelpers');
+const { desglosarPago } = require('../../utils/desglosePago');
 const TaxService = require('../../services/Shared/TaxService');
 const CajaRepository = require('./CajaRepository');
 const PedidoAbonoRepository = require('./PedidoAbonoRepository');
@@ -108,19 +109,23 @@ class FacturaRepository {
             // primero; lo que reste se cobra con la forma de pago elegida.
             const bono = await BonoService.validarParaRedimir(tenantId, facturaData.codigo_bono, connection);
 
-            // Desglose efectivo/transferencia/bono para el arqueo de caja. El POS/eventos
-            // envían un solo forma_pago (sin split), así que lo que no cubre el bono va
-            // íntegro al método usado; 'mixto' u otros quedan en 0/0 (la caja usa 0).
+            // Desglose efectivo/transferencia/bono para el arqueo de caja. Con un solo forma_pago, lo que no
+            // cubre el bono va íntegro a ese método; con 'mixto' se reparte según facturaData.monto_efectivo
+            // y monto_transferencia, que deben sumar lo que se cobra (ver utils/desglosePago).
             const totalNum = Number.parseFloat(facturaData.total) || 0;
             const montoBono = bono ? Math.round(Math.min(Number(bono.saldo_actual), totalNum) * 100) / 100 : 0;
             const pendiente = Math.round((totalNum - montoBono) * 100) / 100;
-            const montoEfectivo = facturaData.forma_pago === 'efectivo' ? pendiente : 0;
-            const montoTransferencia = facturaData.forma_pago === 'transferencia' ? pendiente : 0;
-
-            let formaPagoFinal = facturaData.forma_pago;
-            if (montoBono > 0) {
-                formaPagoFinal = pendiente > 0 ? 'mixto' : 'bono';
-            }
+            const {
+                formaPago: formaPagoFinal,
+                montoEfectivo,
+                montoTransferencia
+            } = desglosarPago({
+                formaPago: facturaData.forma_pago,
+                pendiente,
+                montoBono,
+                efectivo: facturaData.monto_efectivo,
+                transferencia: facturaData.monto_transferencia
+            });
 
             // Efectivo recibido: solo informativo (Recibido/Cambio en ticket y caja).
             // Se guarda únicamente si hubo cobro en efectivo y cubre lo que faltó tras el bono.

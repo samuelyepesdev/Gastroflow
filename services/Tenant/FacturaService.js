@@ -21,11 +21,16 @@ function errorDeValidacion(mensaje) {
 }
 
 /**
- * Día en que se registra la venta cuando NO es hoy ('YYYY-MM-DD'), o null si es hoy. Solo las ventas
+ * Valida el evento (activo) y devuelve el día en que se registra la venta cuando NO es hoy ('YYYY-MM-DD'), o null si es hoy. Solo las ventas
  * de un evento pueden llevar otra fecha (el POS y las mesas siempre venden "ahora"), y debe caer dentro
  * de los días del evento.
  */
 async function resolverDiaVenta(tenantId, fecha, eventoId) {
+    // Un evento inactivo no recibe ventas (se activa de nuevo desde el listado de eventos).
+    const evento = eventoId ? await EventoRepository.findById(eventoId, tenantId) : null;
+    if (evento && !evento.activo) {
+        throw errorDeValidacion('El evento está inactivo: no se pueden registrar ventas.');
+    }
     if (fecha === undefined || fecha === null || fecha === '') {
         return null;
     }
@@ -41,7 +46,6 @@ async function resolverDiaVenta(tenantId, fecha, eventoId) {
     if (!eventoId) {
         throw errorDeValidacion('Solo las ventas de un evento pueden registrarse en otra fecha.');
     }
-    const evento = await EventoRepository.findById(eventoId, tenantId);
     if (evento && (dia < toFechaDia(evento.fecha_inicio) || dia > toFechaDia(evento.fecha_fin))) {
         throw errorDeValidacion('La fecha de la venta debe estar dentro de los días del evento.');
     }
@@ -144,6 +148,8 @@ class FacturaService {
             productos,
             evento_id: evento_id || null,
             fecha_venta: diaVenta,
+            monto_efectivo: facturaData.monto_efectivo,
+            monto_transferencia: facturaData.monto_transferencia,
             usuario_id: facturaData.usuario_id || null,
             efectivo_recibido: facturaData.efectivo_recibido || null,
             codigo_bono: facturaData.codigo_bono || null

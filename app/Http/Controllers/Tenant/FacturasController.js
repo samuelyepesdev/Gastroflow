@@ -18,7 +18,13 @@ class FacturasController {
             if (req.query.evento_id) {
                 const ev = await EventoService.getById(req.query.evento_id, tenantId);
                 if (ev) {
-                    eventoFiltro = { id: ev.id, nombre: ev.nombre };
+                    eventoFiltro = {
+                        id: ev.id,
+                        nombre: ev.nombre,
+                        activo: !!ev.activo,
+                        inicio: toFechaDia(ev.fecha_inicio),
+                        fin: toFechaDia(ev.fecha_fin)
+                    };
                     // Días en que se puede registrar la venta: los del evento que ya llegaron (nunca futuros).
                     const hoy = hoyColombia();
                     const min = toFechaDia(ev.fecha_inicio);

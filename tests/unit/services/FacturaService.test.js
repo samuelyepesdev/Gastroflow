@@ -89,7 +89,7 @@ describe('FacturaService', () => {
         describe('fecha de la venta de un evento', () => {
             const hoy = hoyColombia();
             const ayer = sumarDias(hoy, -1);
-            const evento = { id: 7, fecha_inicio: sumarDias(hoy, -5), fecha_fin: sumarDias(hoy, 5) };
+            const evento = { id: 7, activo: 1, fecha_inicio: sumarDias(hoy, -5), fecha_fin: sumarDias(hoy, 5) };
 
             beforeEach(() => {
                 FacturaRepository.createWithDetails.mockResolvedValue({ insertId: 5 });
@@ -106,6 +106,29 @@ describe('FacturaService', () => {
                 await FacturaService.create(tenantId, { ...facturaValida, evento_id: 7 });
                 await FacturaService.create(tenantId, { ...facturaValida, evento_id: 7, fecha: hoy });
                 expect(FacturaRepository.createWithDetails.mock.calls.map(c => c[1].fecha_venta)).toEqual([null, null]);
+            });
+
+            it('rechaza vender en un evento inactivo con error 400', async () => {
+                EventoRepository.findById.mockResolvedValue({ ...evento, activo: 0 });
+                await expect(FacturaService.create(tenantId, { ...facturaValida, evento_id: 7 })).rejects.toMatchObject(
+                    {
+                        status: 400,
+                        message: expect.stringMatching(/inactivo/)
+                    }
+                );
+                expect(FacturaRepository.createWithDetails).not.toHaveBeenCalled();
+            });
+
+            it('pasa el pago mixto (efectivo y transferencia) al repositorio', async () => {
+                await FacturaService.create(tenantId, {
+                    ...facturaValida,
+                    evento_id: 7,
+                    forma_pago: 'mixto',
+                    monto_efectivo: 20000,
+                    monto_transferencia: 30000
+                });
+                const datos = FacturaRepository.createWithDetails.mock.calls[0][1];
+                expect(datos).toMatchObject({ forma_pago: 'mixto', monto_efectivo: 20000, monto_transferencia: 30000 });
             });
 
             it.each([

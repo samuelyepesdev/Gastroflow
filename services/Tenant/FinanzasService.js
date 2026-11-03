@@ -150,8 +150,9 @@ class FinanzasService {
      * Antes de este cambio esos dos se ignoraban por completo y la "utilidad"
      * mostrada podía ser positiva aunque el restaurante estuviera en rojo.
      */
-    static async getDashboardData(tenantId, dias = 30) {
-        const hoyDia = hoyColombia();
+    static async getDashboardData(tenantId, dias = 30, hastaDia = null) {
+        // `hastaDia` ("YYYY-MM-DD") cierra el periodo en otro día que hoy (p. ej. el último día de un mes).
+        const hoyDia = hastaDia || hoyColombia();
         const inicioDia = sumarDias(hoyDia, -(dias - 1));
         const { utcDesde, utcHasta } = rangoUtcColombia(inicioDia, hoyDia);
 
