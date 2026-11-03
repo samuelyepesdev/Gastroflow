@@ -14,7 +14,7 @@ class ConsolidadoSucursalesRepository {
         const [rows] = await db.query(
             `SELECT tenant_id, COUNT(*) AS facturas, COALESCE(SUM(total), 0) AS ventas
              FROM facturas
-             WHERE tenant_id IN (?) AND evento_id IS NULL AND fecha BETWEEN ? AND ?
+             WHERE tenant_id IN (?) AND evento_aparte = 0 AND fecha BETWEEN ? AND ?
              GROUP BY tenant_id`,
             [tenantIds, utcDesde, utcHasta]
         );
@@ -30,7 +30,7 @@ class ConsolidadoSucursalesRepository {
         const [rows] = await db.query(
             `SELECT forma_pago, COUNT(*) AS cantidad, COALESCE(SUM(total), 0) AS total
              FROM facturas
-             WHERE tenant_id IN (?) AND evento_id IS NULL AND fecha BETWEEN ? AND ?
+             WHERE tenant_id IN (?) AND evento_aparte = 0 AND fecha BETWEEN ? AND ?
              GROUP BY forma_pago`,
             [tenantIds, utcDesde, utcHasta]
         );
@@ -47,7 +47,7 @@ class ConsolidadoSucursalesRepository {
         const [rows] = await db.query(
             `SELECT ${SQL_COLOMBIA.dia('fecha')} AS dia, COUNT(*) AS facturas, COALESCE(SUM(total), 0) AS ventas
              FROM facturas
-             WHERE tenant_id IN (?) AND evento_id IS NULL AND fecha BETWEEN ? AND ?
+             WHERE tenant_id IN (?) AND evento_aparte = 0 AND fecha BETWEEN ? AND ?
              GROUP BY ${SQL_COLOMBIA.dia('fecha')}`,
             [tenantIds, utcDesde, utcHasta]
         );

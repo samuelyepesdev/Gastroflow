@@ -6,7 +6,7 @@
     const fechaInicio = document.getElementById('eventoFechaInicio');
     const fechaFin = document.getElementById('eventoFechaFin');
     const descInp = document.getElementById('eventoDescripcion');
-    const tipoInp = document.getElementById('eventoTipo');
+    const incluirInp = document.getElementById('eventoIncluirVentas');
     const activoInp = document.getElementById('eventoActivo');
     const wrapActivo = document.getElementById('wrapActivo');
 
@@ -18,19 +18,19 @@
         fechaInicio.value = hoy;
         fechaFin.value = hoy;
         descInp.value = '';
-        tipoInp.value = 'permanente';
+        incluirInp.checked = false;
         activoInp.checked = true;
         wrapActivo.style.display = '';
     });
 
-    function editarEvento({ id, nombre, fIni, fFin, desc, activo, tipo }) {
+    function editarEvento({ id, nombre, fIni, fFin, desc, activo, incluir }) {
         idInp.value = id;
         title.innerHTML = '<i class="bi bi-pencil me-2"></i>Editar evento';
         nombreInp.value = nombre || '';
         fechaInicio.value = fIni || '';
         fechaFin.value = fFin || '';
         descInp.value = desc || '';
-        tipoInp.value = (tipo === 'ocasional' ? 'ocasional' : 'permanente');
+        incluirInp.checked = !!incluir;
         activoInp.checked = !!activo;
         wrapActivo.style.display = '';
         new bootstrap.Modal(modal).show();
@@ -74,7 +74,7 @@
             fecha_inicio: fechaInicio.value,
             fecha_fin: fechaFin.value,
             descripcion: descInp.value.trim() || null,
-            tipo: tipoInp.value || 'permanente',
+            incluir_en_ventas: incluirInp.checked,
             activo: activoInp.checked
         };
         if (!payload.nombre || !payload.fecha_inicio || !payload.fecha_fin) {

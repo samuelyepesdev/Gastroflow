@@ -151,7 +151,7 @@ class FinanzasRepository {
                 COALESCE(SUM(monto_transferencia), 0) AS transferencia,
                 COALESCE(SUM(monto_bono), 0) AS bono
             FROM facturas
-            WHERE tenant_id = ? AND evento_id IS NULL AND fecha >= ? AND fecha < ?`,
+            WHERE tenant_id = ? AND evento_aparte = 0 AND fecha >= ? AND fecha < ?`,
             [tenantId, utcDesde, utcHasta]
         );
         return {

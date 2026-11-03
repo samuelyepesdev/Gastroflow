@@ -47,19 +47,19 @@ class CrecimientoStatsService {
         const [[[periodoRow]], [[periodoAntRow]], [tendenciaRows], [mensualRows]] = await Promise.all([
             db.query(
                 `SELECT COALESCE(SUM(total), 0) AS ventas, COUNT(*) AS facturas
-                 FROM facturas WHERE tenant_id = ? AND evento_id IS NULL AND fecha BETWEEN ? AND ?`,
+                 FROM facturas WHERE tenant_id = ? AND evento_aparte = 0 AND fecha BETWEEN ? AND ?`,
                 [tenantId, utcDesde, utcHasta]
             ),
             db.query(
                 `SELECT COALESCE(SUM(total), 0) AS ventas, COUNT(*) AS facturas
-                 FROM facturas WHERE tenant_id = ? AND evento_id IS NULL AND fecha BETWEEN ? AND ?`,
+                 FROM facturas WHERE tenant_id = ? AND evento_aparte = 0 AND fecha BETWEEN ? AND ?`,
                 [tenantId, utcDesdeAnt, utcHastaAnt]
             ),
             db.query(
                 `SELECT ${SQL_COLOMBIA.dia('fecha')} AS fecha_col,
                         SUM(total) AS ventas, COUNT(*) AS facturas
                  FROM facturas
-                 WHERE tenant_id = ? AND evento_id IS NULL AND fecha BETWEEN ? AND ?
+                 WHERE tenant_id = ? AND evento_aparte = 0 AND fecha BETWEEN ? AND ?
                  GROUP BY fecha_col ORDER BY fecha_col ASC`,
                 [tenantId, utcDesde, utcHasta]
             ),
@@ -67,7 +67,7 @@ class CrecimientoStatsService {
                 `SELECT DATE_FORMAT(${SQL_COLOMBIA.aColombia('fecha')}, '%Y-%m') AS ym,
                         SUM(total) AS ventas, COUNT(*) AS facturas
                  FROM facturas
-                 WHERE tenant_id = ? AND evento_id IS NULL AND fecha >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 12 MONTH)
+                 WHERE tenant_id = ? AND evento_aparte = 0 AND fecha >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 12 MONTH)
                  GROUP BY ym ORDER BY ym ASC`,
                 [tenantId]
             )

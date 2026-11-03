@@ -14,7 +14,7 @@ class EventStatsRepository {
         const [ventasEventos] = await db.query(
             `SELECT COALESCE(SUM(total), 0) AS total, COUNT(*) AS cantidad
              FROM facturas 
-             WHERE tenant_id = ? AND evento_id IS NOT NULL 
+             WHERE tenant_id = ? AND evento_aparte = 1 
              AND fecha BETWEEN ? AND ?`,
             [tenantId, utcDesde, utcHasta]
         );
@@ -32,7 +32,7 @@ class EventStatsRepository {
                     COUNT(f.id) AS cantidad_ventas,
                     COALESCE(SUM(f.total), 0) AS total_ventas
              FROM eventos e
-             INNER JOIN facturas f ON f.evento_id = e.id AND f.tenant_id = e.tenant_id
+             INNER JOIN facturas f ON f.evento_id = e.id AND f.tenant_id = e.tenant_id AND f.evento_aparte = 1
              WHERE e.tenant_id = ? AND f.fecha BETWEEN ? AND ?
              GROUP BY e.id, e.nombre
              ORDER BY total_ventas DESC`,

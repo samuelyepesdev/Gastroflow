@@ -19,9 +19,9 @@ const datosEvento = (e) => JSON.stringify({
     fFin: formatYMD(e.fecha_fin),
     desc: e.descripcion || '',
     activo: !!e.activo,
-    tipo: e.tipo || 'permanente'
+    incluir: !!e.incluir_en_ventas
 });
-const esOcasional = (e) => (e.tipo || 'permanente') === 'ocasional';
+const enVentas = (e) => !!e.incluir_en_ventas;
 %>
 <!-- Vista móvil: nombre, totales y botones -->
 <div class="d-block d-md-none eventos-mobile">
@@ -29,8 +29,9 @@ const esOcasional = (e) => (e.tipo || 'permanente') === 'ocasional';
         <div class="evento-mobile-item border rounded p-3 mb-3 bg-white">
             <div class="d-flex align-items-center flex-wrap gap-2 mb-1">
                 <span class="fw-semibold"><%= e.nombre %></span>
-                <span class="badge bg-<%= esOcasional(e) ? 'warning text-dark' : 'info' %>">
-                    <%= esOcasional(e) ? 'Ocasional' : 'Permanente' %>
+                <span class="badge bg-<%= enVentas(e) ? 'success' : 'secondary' %>"
+                    title="<%= enVentas(e) ? 'Sus ventas cuentan como ventas normales' : 'Sus ventas quedan aparte, solo dentro del evento' %>">
+                    <%= enVentas(e) ? 'En ventas normales' : 'Aparte' %>
                 </span>
                 <% if (!e.activo) { %><span class="badge bg-secondary">Inactivo</span><% } %>
             </div>
@@ -73,10 +74,10 @@ const esOcasional = (e) => (e.tipo || 'permanente') === 'ocasional';
         <thead class="table-light">
             <tr>
                 <th>Nombre</th>
-                <th>Tipo</th>
+                <th>Ventas cuentan</th>
                 <th>Fecha inicio</th>
                 <th>Fecha fin</th>
-                <th>Descripción</th>
+                <th class="d-none d-xxl-table-cell">Descripción</th>
                 <th>Estado</th>
                 <th class="text-end">Vendido</th>
                 <th>Ventas</th>
@@ -90,13 +91,14 @@ const esOcasional = (e) => (e.tipo || 'permanente') === 'ocasional';
                 <tr>
                     <td><strong><%= e.nombre %></strong></td>
                     <td>
-                        <span class="badge bg-<%= esOcasional(e) ? 'warning text-dark' : 'info' %>">
-                            <%= esOcasional(e) ? 'Ocasional' : 'Permanente' %>
+                        <span class="badge bg-<%= enVentas(e) ? 'success' : 'secondary' %>"
+                            title="<%= enVentas(e) ? 'Sus ventas cuentan como ventas normales' : 'Sus ventas quedan aparte, solo dentro del evento' %>">
+                            <%= enVentas(e) ? 'En ventas normales' : 'Aparte' %>
                         </span>
                     </td>
                     <td><%= formatDateUTC(e.fecha_inicio) %></td>
                     <td><%= formatDateUTC(e.fecha_fin) %></td>
-                    <td><%= e.descripcion ? e.descripcion.substring(0, 50) + (e.descripcion.length > 50 ? '…' : '') : '—' %></td>
+                    <td class="d-none d-xxl-table-cell"><%= e.descripcion ? e.descripcion.substring(0, 50) + (e.descripcion.length > 50 ? '…' : '') : '—' %></td>
                     <td>
                         <span class="badge bg-<%= e.activo ? 'success' : 'secondary' %>">
                             <%= e.activo ? 'Activo' : 'Inactivo' %>

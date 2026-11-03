@@ -29,6 +29,11 @@ class StoreEventoRequest extends BaseRequest {
                 .isDate()
                 .withMessage('Fecha de fin inválida'),
 
+            body('incluir_en_ventas')
+                .optional({ nullable: true })
+                .isBoolean()
+                .withMessage('Indica si el evento se incluye en las ventas normales'),
+
             body('presupuesto')
                 .optional({ checkFalsy: true })
                 .isNumeric()

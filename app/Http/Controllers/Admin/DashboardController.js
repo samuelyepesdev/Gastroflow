@@ -31,7 +31,7 @@ class DashboardController {
                        COUNT(f.id) AS facturas
                 FROM tenants t
                 LEFT JOIN facturas f ON f.tenant_id = t.id
-                    AND f.evento_id IS NULL
+                    AND f.evento_aparte = 0
                     -- Rango sobre la columna (usa idx_facturas_tenant_fecha) en vez de
                     -- comparar DATE(CONVERT_TZ(f.fecha...)), que evaluaba la función en
                     -- cada factura de todos los tenants. Mismo resultado: se
