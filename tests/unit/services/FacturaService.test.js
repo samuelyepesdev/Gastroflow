@@ -26,7 +26,12 @@ jest.mock('../../../services/Tenant/Mesas/AgregarItemService', () => ({
 }));
 
 jest.mock('../../../services/Tenant/FinanzasService', () => ({
-    registrarVenta: jest.fn().mockResolvedValue(undefined)
+    registrarVenta: jest.fn().mockResolvedValue(undefined),
+    registrarIngresoVenta: jest.fn().mockResolvedValue(1)
+}));
+
+jest.mock('../../../repositories/Tenant/EventoRepository', () => ({
+    findById: jest.fn()
 }));
 
 jest.mock('../../../repositories/Tenant/InsumoRepository', () => ({
@@ -46,6 +51,9 @@ jest.mock('../../../services/Tenant/ModificadorService', () => ({
 const FacturaService = require('../../../services/Tenant/FacturaService');
 const FacturaRepository = require('../../../repositories/Tenant/FacturaRepository');
 const ModificadorService = require('../../../services/Tenant/ModificadorService');
+const EventoRepository = require('../../../repositories/Tenant/EventoRepository');
+const FinanzasService = require('../../../services/Tenant/FinanzasService');
+const { hoyColombia, sumarDias } = require('../../../utils/dateHelpers');
 
 describe('FacturaService', () => {
     beforeEach(() => {
@@ -76,6 +84,44 @@ describe('FacturaService', () => {
             expect(TenantOwnership.eventos).toHaveBeenCalledWith(tenantId, 7);
             expect(TenantOwnership.productos).toHaveBeenCalledWith(tenantId, [1]);
             expect(TenantOwnership.servicios).toHaveBeenCalledWith(tenantId, [4]);
+        });
+
+        describe('fecha de la venta de un evento', () => {
+            const hoy = hoyColombia();
+            const ayer = sumarDias(hoy, -1);
+            const evento = { id: 7, fecha_inicio: sumarDias(hoy, -5), fecha_fin: sumarDias(hoy, 5) };
+
+            beforeEach(() => {
+                FacturaRepository.createWithDetails.mockResolvedValue({ insertId: 5 });
+                EventoRepository.findById.mockResolvedValue(evento);
+            });
+
+            it('una venta de evento con otro día pasa ese día al repositorio y a finanzas', async () => {
+                await FacturaService.create(tenantId, { ...facturaValida, evento_id: 7, fecha: ayer });
+                expect(FacturaRepository.createWithDetails.mock.calls[0][1].fecha_venta).toBe(ayer);
+                expect(FinanzasService.registrarIngresoVenta.mock.calls[0][1].fecha).toBe(ayer);
+            });
+
+            it('sin fecha, o con la de hoy, vende "ahora" (sin día propio)', async () => {
+                await FacturaService.create(tenantId, { ...facturaValida, evento_id: 7 });
+                await FacturaService.create(tenantId, { ...facturaValida, evento_id: 7, fecha: hoy });
+                expect(FacturaRepository.createWithDetails.mock.calls.map(c => c[1].fecha_venta)).toEqual([null, null]);
+            });
+
+            it.each([
+                ['una fecha futura', () => sumarDias(hoy, 1), 7, /futura/],
+                ['una fecha inválida', () => '2026-02-31', 7, /no es válida/],
+                ['un día fuera del evento', () => sumarDias(hoy, -6), 7, /dentro de los días del evento/],
+                ['otro día sin evento (POS/mesas)', () => ayer, null, /Solo las ventas de un evento/]
+            ])('rechaza %s con error 400 y no crea la factura', async (_nombre, fecha, eventoId, mensaje) => {
+                const intento = FacturaService.create(tenantId, {
+                    ...facturaValida,
+                    evento_id: eventoId,
+                    fecha: fecha()
+                });
+                await expect(intento).rejects.toMatchObject({ status: 400, message: expect.stringMatching(mensaje) });
+                expect(FacturaRepository.createWithDetails).not.toHaveBeenCalled();
+            });
         });
 
         it('rechaza un cliente de otro tenant y no crea la factura', async () => {

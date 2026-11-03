@@ -5,7 +5,7 @@
 const FinanzasRepository = require('../../repositories/Tenant/FinanzasRepository');
 const CajaRepository = require('../../repositories/Tenant/CajaRepository');
 const ProveedorFacturaRepository = require('../../repositories/Tenant/ProveedorFacturaRepository');
-const { hoyColombia, sumarDias, rangoUtcColombia } = require('../../utils/dateHelpers');
+const { hoyColombia, sumarDias, rangoUtcColombia, resolverDiaPasado } = require('../../utils/dateHelpers');
 const PdfMaker = require('../Shared/PdfMaker');
 const {
     formatMoney,
@@ -42,29 +42,9 @@ function sumarResumen(filas, tipo, aporte, metodo) {
         .reduce((acc, r) => acc + (Number.parseFloat(r.total) || 0), 0);
 }
 
-// Un movimiento manual no puede llevar una fecha más vieja que esto (típico error de digitación).
-const MAX_DIAS_ATRAS = 1826;
-
-/**
- * Fecha real de una transacción manual ('YYYY-MM-DD', día Colombia). Vacía = hoy. Debe ser un día
- * real, no futuro y no más de ~5 años atrás.
- */
+/** Fecha real de una transacción manual ('YYYY-MM-DD', día Colombia). Vacía = hoy. */
 function resolverFechaMovimiento(fecha) {
-    const hoy = hoyColombia();
-    if (fecha === undefined || fecha === null || fecha === '') {
-        return hoy;
-    }
-    const f = String(fecha).trim();
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(f) || Number.isNaN(Date.parse(`${f}T12:00:00Z`)) || sumarDias(f, 0) !== f) {
-        throw new Error('La fecha de la transacción no es válida');
-    }
-    if (f > hoy) {
-        throw new Error('La fecha de la transacción no puede ser futura');
-    }
-    if (f < sumarDias(hoy, -MAX_DIAS_ATRAS)) {
-        throw new Error('La fecha de la transacción es demasiado antigua (máximo 5 años atrás)');
-    }
-    return f;
+    return resolverDiaPasado(fecha, 'La fecha de la transacción');
 }
 
 /** Días 'YYYY-MM-DD' de desde a hasta, ambos inclusive. */
@@ -80,9 +60,12 @@ class FinanzasService {
     /**
      * Registra un ingreso por venta (automático)
      */
-    static async registrarIngresoVenta(tenantId, { monto, factura_id, detalle, esCeramica = false, usuario_id }) {
-        // Intentar obtener sesión de caja abierta
-        const sesion = await CajaRepository.getSesionAbierta(tenantId);
+    static async registrarIngresoVenta(
+        tenantId,
+        { monto, factura_id, detalle, esCeramica = false, usuario_id, fecha }
+    ) {
+        // Sesión de caja abierta: una venta de otro día ('YYYY-MM-DD', ya validada) no entra al turno de hoy.
+        const sesion = fecha ? null : await CajaRepository.getSesionAbierta(tenantId);
 
         // Prioridad de usuario: 1. El que viene en la req, 2. El de la sesión de caja, 3. Usuario 1 (admin)
         const finalUsuarioId = usuario_id || (sesion ? sesion.usuario_id : 1);
@@ -95,7 +78,8 @@ class FinanzasService {
             motivo: detalle || `Venta Factura #${factura_id}`,
             categoria_gasto: esCeramica ? 'Venta Cerámica' : 'Venta General',
             referencia_tipo: 'venta',
-            referencia_id: factura_id
+            referencia_id: factura_id,
+            fecha_movimiento: fecha || undefined
         });
     }
 

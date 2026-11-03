@@ -6,7 +6,7 @@
 
 const db = require('../../config/database');
 const NumeracionRepository = require('./NumeracionRepository');
-const { SQL_COLOMBIA, toFechaISOUtc } = require('../../utils/dateHelpers');
+const { SQL_COLOMBIA, toFechaISOUtc, mediodiaUtcDeDia } = require('../../utils/dateHelpers');
 const TaxService = require('../../services/Shared/TaxService');
 const CajaRepository = require('./CajaRepository');
 const PedidoAbonoRepository = require('./PedidoAbonoRepository');
@@ -86,13 +86,20 @@ class FacturaRepository {
 
             const evento_id = facturaData.evento_id || null;
             const numero = await NumeracionRepository.siguienteNumeroFactura(connection, tenantId);
-            const fechaEmisionUtc = new Date().toISOString().slice(0, 19).replace('T', ' ');
+            // Venta de un evento registrada en otro día (facturaData.fecha_venta, ya validada): lleva ese día
+            // y no entra al turno de caja abierto, que es de hoy y se descuadraría.
+            const diaVenta = facturaData.fecha_venta || null;
+            const fechaEmisionUtc = diaVenta
+                ? mediodiaUtcDeDia(diaVenta)
+                : new Date().toISOString().slice(0, 19).replace('T', ' ');
 
             // Buscar sesión de caja abierta para vincular la venta
-            const [sesiones] = await connection.query(
-                'SELECT id, usuario_id FROM caja_sesiones WHERE tenant_id = ? AND estado = "abierta" LIMIT 1',
-                [tenantId]
-            );
+            const [sesiones] = diaVenta
+                ? [[]]
+                : await connection.query(
+                      'SELECT id, usuario_id FROM caja_sesiones WHERE tenant_id = ? AND estado = "abierta" LIMIT 1',
+                      [tenantId]
+                  );
             const cajaSesionId = sesiones.length > 0 ? sesiones[0].id : null;
             const cajaSesionUsuarioId = sesiones.length > 0 ? sesiones[0].usuario_id : null;
 
