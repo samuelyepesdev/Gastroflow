@@ -7,44 +7,63 @@ const formatYMD = (d) => {
     if (!d) return '';
     return typeof d === 'string' ? d.split('T')[0] : d.toISOString().split('T')[0];
 };
+const dinero = (n) => '$ ' + Math.round(Number(n) || 0).toLocaleString('es-CO');
+const puedeEditar = !!(user && user.permisos && user.permisos.includes('eventos.editar'));
+const puedeEliminar = !!(user && user.permisos && user.permisos.includes('eventos.eliminar'));
+const puedeVender = !!(user && user.permisos && (user.permisos.includes('ventas_evento.realizar') || user.permisos.includes('facturas.crear')));
+// Datos del evento para el botón Editar (van en un data-*; el escapado de EJS protege las comillas).
+const datosEvento = (e) => JSON.stringify({
+    id: e.id,
+    nombre: e.nombre || '',
+    fIni: formatYMD(e.fecha_inicio),
+    fFin: formatYMD(e.fecha_fin),
+    desc: e.descripcion || '',
+    activo: !!e.activo,
+    tipo: e.tipo || 'permanente'
+});
+const esOcasional = (e) => (e.tipo || 'permanente') === 'ocasional';
 %>
-<!-- Vista móvil: solo nombre + botones -->
+<!-- Vista móvil: nombre, totales y botones -->
 <div class="d-block d-md-none eventos-mobile">
     <% (eventos || []).forEach(function(e) { %>
         <div class="evento-mobile-item border rounded p-3 mb-3 bg-white">
-            <div class="d-flex align-items-center gap-2 mb-2">
-                <span class="fw-semibold">
-                    <%= e.nombre %>
+            <div class="d-flex align-items-center flex-wrap gap-2 mb-1">
+                <span class="fw-semibold"><%= e.nombre %></span>
+                <span class="badge bg-<%= esOcasional(e) ? 'warning text-dark' : 'info' %>">
+                    <%= esOcasional(e) ? 'Ocasional' : 'Permanente' %>
                 </span>
-                <span class="badge bg-<%= (e.tipo || 'permanente') === 'ocasional' ? 'warning text-dark' : 'info' %>">
-                    <%= (e.tipo || 'permanente' )==='ocasional' ? 'Ocasional' : 'Permanente' %>
-                </span>
+                <% if (!e.activo) { %><span class="badge bg-secondary">Inactivo</span><% } %>
+            </div>
+            <div class="small text-muted mb-1">
+                <i class="bi bi-calendar3 me-1"></i><%= formatDateUTC(e.fecha_inicio) %> – <%= formatDateUTC(e.fecha_fin) %>
+            </div>
+            <div class="small mb-2">
+                <strong><%= dinero(e.total_ventas) %></strong>
+                <span class="text-muted">· <%= e.cantidad_ventas %> venta<%= e.cantidad_ventas === 1 ? '' : 's' %></span>
             </div>
             <div class="d-flex flex-wrap gap-2">
-                <a href="/facturas/facturar?evento_id=<%= e.id %>" class="btn btn-sm btn-success">
-                    <i class="bi bi-cart-plus me-1"></i>Ventas
-                </a>
+                <% if (puedeVender) { %>
+                    <a href="/facturas/facturar?evento_id=<%= e.id %>" class="btn btn-sm btn-primary">
+                        <i class="bi bi-cart-plus me-1"></i>Ventas
+                    </a>
+                <% } %>
                 <a href="/ventas?evento_id=<%= e.id %>" class="btn btn-sm btn-outline-secondary">
                     <i class="bi bi-list-ul me-1"></i>Ver
                 </a>
-                <% if (user && user.permisos && user.permisos.includes('eventos.editar')) { %>
-                    <button type="button" class="btn btn-sm btn-outline-primary"
-                        onclick="editarEvento({id: <%= e.id %>, nombre: '<%= (e.nombre || '').replace(/'/g, '\\\'') %>', fIni: '<%= formatYMD(e.fecha_inicio) %>', fFin: '<%= formatYMD(e.fecha_fin) %>', desc: '<%= (e.descripcion || '').replace(/'/g, '\\\'') %>', activo: <%= e.activo ? 'true' : 'false' %>, tipo: '<%= (e.tipo || 'permanente') %>'})">
-                        <i class="bi bi-pencil"></i>
-                    </button>
-                    <% } %>
-                        <% if (user && user.permisos && user.permisos.includes('eventos.eliminar')) { %>
-                            <button type="button" class="btn btn-sm btn-outline-danger"
-                                onclick="eliminarEvento(<%= e.id %>, '<%= (e.nombre || '').replace(/'/g, '\\\'') %>')">
-                                <i class="bi bi-trash"></i>
-                            </button>
-                            <% } %>
+                <% if (puedeEditar) { %>
+                    <button type="button" class="btn btn-sm btn-outline-primary" data-accion="editar-evento"
+                        data-evento="<%= datosEvento(e) %>" title="Editar"><i class="bi bi-pencil"></i></button>
+                <% } %>
+                <% if (puedeEliminar) { %>
+                    <button type="button" class="btn btn-sm btn-outline-danger" data-accion="eliminar-evento"
+                        data-id="<%= e.id %>" data-nombre="<%= e.nombre %>" title="Eliminar"><i class="bi bi-trash"></i></button>
+                <% } %>
             </div>
         </div>
-        <% }); %>
-            <% if (!eventos || eventos.length===0) { %>
-                <p class="text-muted text-center py-4 mb-0">No hay eventos. Crea uno para asociar ventas.</p>
-                <% } %>
+    <% }); %>
+    <% if (!eventos || eventos.length === 0) { %>
+        <p class="text-muted text-center py-4 mb-0">No hay eventos. Crea uno para asociar ventas.</p>
+    <% } %>
 </div>
 
 <!-- Vista escritorio: tabla completa -->
@@ -58,65 +77,65 @@ const formatYMD = (d) => {
                 <th>Fecha fin</th>
                 <th>Descripción</th>
                 <th>Estado</th>
+                <th class="text-end">Vendido</th>
                 <th>Ventas</th>
-                <% if (user && user.permisos && (user.permisos.includes('eventos.editar') ||
-                    user.permisos.includes('eventos.eliminar'))) { %>
+                <% if (puedeEditar || puedeEliminar) { %>
                     <th class="text-end">Acciones</th>
-                    <% } %>
+                <% } %>
             </tr>
         </thead>
         <tbody>
             <% (eventos || []).forEach(function(e) { %>
                 <tr>
-                    <td><strong>
-                            <%= e.nombre %>
-                        </strong></td>
-                    <td><span
-                            class="badge bg-<%= (e.tipo || 'permanente') === 'ocasional' ? 'warning text-dark' : 'info' %>">
-                            <%= (e.tipo || 'permanente' )==='ocasional' ? 'Ocasional' : 'Permanente' %>
-                        </span></td>
+                    <td><strong><%= e.nombre %></strong></td>
                     <td>
-                        <%= formatDateUTC(e.fecha_inicio) %>
+                        <span class="badge bg-<%= esOcasional(e) ? 'warning text-dark' : 'info' %>">
+                            <%= esOcasional(e) ? 'Ocasional' : 'Permanente' %>
+                        </span>
                     </td>
+                    <td><%= formatDateUTC(e.fecha_inicio) %></td>
+                    <td><%= formatDateUTC(e.fecha_fin) %></td>
+                    <td><%= e.descripcion ? e.descripcion.substring(0, 50) + (e.descripcion.length > 50 ? '…' : '') : '—' %></td>
                     <td>
-                        <%= formatDateUTC(e.fecha_fin) %>
-                    </td>
-                    <td>
-                        <%= e.descripcion ? e.descripcion.substring(0, 50) + (e.descripcion.length> 50 ? '…' : '') : '—'
-                            %>
-                    </td>
-                    <td><span class="badge bg-<%= e.activo ? 'success' : 'secondary' %>">
+                        <span class="badge bg-<%= e.activo ? 'success' : 'secondary' %>">
                             <%= e.activo ? 'Activo' : 'Inactivo' %>
-                        </span></td>
-                    <td>
-                        <a href="/facturas/facturar?evento_id=<%= e.id %>" class="btn btn-sm btn-success me-1"><i
-                                class="bi bi-cart-plus me-1"></i>Realizar ventas</a>
-                        <a href="/ventas?evento_id=<%= e.id %>" class="btn btn-sm btn-outline-secondary"><i
-                                class="bi bi-list-ul me-1"></i>Ver ventas</a>
+                        </span>
                     </td>
-                    <% if (user && user.permisos && (user.permisos.includes('eventos.editar') ||
-                        user.permisos.includes('eventos.eliminar'))) { %>
-                        <td class="text-end">
-                            <% if (user.permisos.includes('eventos.editar')) { %>
-                                <button type="button" class="btn btn-sm btn-outline-primary me-1"
-                                    onclick="editarEvento({id: <%= e.id %>, nombre: '<%= (e.nombre || '').replace(/'/g, '\\\'') %>', fIni: '<%= formatYMD(e.fecha_inicio) %>', fFin: '<%= formatYMD(e.fecha_fin) %>', desc: '<%= (e.descripcion || '').replace(/'/g, '\\\'') %>', activo: <%= e.activo ? 'true' : 'false' %>, tipo: '<%= (e.tipo || 'permanente') %>'})"
-                                    title="Editar"><i class="bi bi-pencil"></i></button>
-                                <% } %>
-                                    <% if (user.permisos.includes('eventos.eliminar')) { %>
-                                        <button type="button" class="btn btn-sm btn-outline-danger"
-                                            onclick="eliminarEvento(<%= e.id %>, '<%= (e.nombre || '').replace(/'/g, '\\\'') %>')"
-                                            title="Eliminar"><i class="bi bi-trash"></i></button>
-                                        <% } %>
+                    <td class="text-end text-nowrap">
+                        <strong><%= dinero(e.total_ventas) %></strong>
+                        <div class="small text-muted"><%= e.cantidad_ventas %> venta<%= e.cantidad_ventas === 1 ? '' : 's' %></div>
+                    </td>
+                    <td class="text-nowrap">
+                        <% if (puedeVender) { %>
+                            <a href="/facturas/facturar?evento_id=<%= e.id %>" class="btn btn-sm btn-primary me-1">
+                                <i class="bi bi-cart-plus me-1"></i>Realizar ventas
+                            </a>
+                        <% } %>
+                        <a href="/ventas?evento_id=<%= e.id %>" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-list-ul me-1"></i>Ver ventas
+                        </a>
+                    </td>
+                    <% if (puedeEditar || puedeEliminar) { %>
+                        <td class="text-end text-nowrap">
+                            <% if (puedeEditar) { %>
+                                <button type="button" class="btn btn-sm btn-outline-primary me-1" data-accion="editar-evento"
+                                    data-evento="<%= datosEvento(e) %>" title="Editar"><i class="bi bi-pencil"></i></button>
+                            <% } %>
+                            <% if (puedeEliminar) { %>
+                                <button type="button" class="btn btn-sm btn-outline-danger" data-accion="eliminar-evento"
+                                    data-id="<%= e.id %>" data-nombre="<%= e.nombre %>" title="Eliminar"><i class="bi bi-trash"></i></button>
+                            <% } %>
                         </td>
-                        <% } %>
+                    <% } %>
                 </tr>
-                <% }); %>
-                    <% if (!eventos || eventos.length===0) { %>
-                        <tr>
-                            <td colspan="<%= (user && user.permisos && (user.permisos.includes('eventos.editar') || user.permisos.includes('eventos.eliminar'))) ? 8 : 7 %>"
-                                class="text-muted text-center py-4">No hay eventos. Crea uno para asociar ventas (sus estadísticas se mantendrán aisladas de la venta diaria).</td>
-                        </tr>
-                        <% } %>
+            <% }); %>
+            <% if (!eventos || eventos.length === 0) { %>
+                <tr>
+                    <td colspan="<%= (puedeEditar || puedeEliminar) ? 9 : 8 %>" class="text-muted text-center py-4">
+                        No hay eventos. Crea uno para asociar ventas (sus estadísticas se mantendrán aisladas de la venta diaria).
+                    </td>
+                </tr>
+            <% } %>
         </tbody>
     </table>
 </div>

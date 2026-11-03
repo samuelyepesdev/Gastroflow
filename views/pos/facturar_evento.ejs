@@ -195,6 +195,21 @@
                             <p class="text-muted small">Generar el comprobante de venta final</p>
                         </div>
 
+                        <% if (typeof fechaVenta !== 'undefined' && fechaVenta) { %>
+                            <div class="info-box mb-4" id="wrapFechaVenta">
+                                <label for="fechaVenta" class="form-label fw-bold small mb-1">
+                                    <i class="bi bi-calendar-check me-1"></i>Fecha de la venta
+                                </label>
+                                <input type="date" class="form-control flow-input" id="fechaVenta"
+                                    value="<%= fechaVenta.valor %>" min="<%= fechaVenta.min %>"
+                                    max="<%= fechaVenta.max %>" required>
+                                <div class="form-text">
+                                    Por defecto es hoy. Cambia el día para registrar una venta que ocurrió en otro día del evento
+                                    (<%= fechaVenta.min %> a <%= fechaVenta.max %>).
+                                </div>
+                            </div>
+                        <% } %>
+
                         <div class="alert alert-success border-0 bg-green-50 text-success d-flex align-items-center mb-4">
                             <i class="bi bi-check-circle-fill me-2 h4 mb-0"></i>
                             <span class="fw-medium">Listo para facturar. Verifique los montos.</span>
@@ -223,7 +238,7 @@
                              <button type="button" class="btn btn-outline-secondary py-3 flex-grow-1" id="guardarPedido">
                                 <i class="bi bi-save me-2"></i>Guardar Borrador
                             </button>
-                            <button class="btn btn-success btn-lg py-3 flex-grow-2" style="width: 60%" id="generarFactura">
+                            <button class="btn btn-primary btn-lg py-3 flex-grow-2" style="width: 60%" id="generarFactura">
                                 <i class="bi bi-receipt me-2"></i>Generar Factura
                             </button>
                         </div>

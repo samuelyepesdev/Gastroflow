@@ -14,15 +14,16 @@
         idInp.value = '';
         title.innerHTML = '<i class="bi bi-calendar-plus me-2"></i>Nuevo evento';
         nombreInp.value = '';
-        fechaInicio.value = '';
-        fechaFin.value = '';
+        const hoy = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Bogota' });
+        fechaInicio.value = hoy;
+        fechaFin.value = hoy;
         descInp.value = '';
         tipoInp.value = 'permanente';
         activoInp.checked = true;
         wrapActivo.style.display = '';
     });
 
-    window.editarEvento = function ({ id, nombre, fIni, fFin, desc, activo, tipo }) {
+    function editarEvento({ id, nombre, fIni, fFin, desc, activo, tipo }) {
         idInp.value = id;
         title.innerHTML = '<i class="bi bi-pencil me-2"></i>Editar evento';
         nombreInp.value = nombre || '';
@@ -33,10 +34,9 @@
         activoInp.checked = !!activo;
         wrapActivo.style.display = '';
         new bootstrap.Modal(modal).show();
-    };
+    }
 
-    // Extraída para no anidar un .then() dentro de otro .then() (SonarQube S2004).
-    window.eliminarEvento = async function (id, nombre) {
+    async function eliminarEvento(id, nombre) {
         const r = await Swal.fire({
             title: '¿Eliminar evento?',
             text: nombre ? 'Se eliminará "' + nombre + '". Las facturas ya asociadas quedarán sin evento.' : '',
@@ -49,12 +49,23 @@
 
         try {
             await GF.api.delete('/eventos/' + id, 'No se pudo eliminar el evento');
-            Swal.fire({ icon: 'success', title: 'Evento eliminado' });
+            await Swal.fire({ ...GF.marca.swalIcono('exito'), title: 'Evento eliminado', timer: 1400, showConfirmButton: false });
             window.location.reload();
         } catch (err) {
             Swal.fire({ icon: 'error', title: err.message });
         }
-    };
+    }
+
+    // Los botones de la tabla llevan sus datos en data-* (el HTML ya viene escapado del servidor).
+    document.addEventListener('click', function (e) {
+        const btn = e.target.closest('[data-accion]');
+        if (!btn) return;
+        if (btn.dataset.accion === 'editar-evento') {
+            editarEvento(JSON.parse(btn.dataset.evento));
+        } else if (btn.dataset.accion === 'eliminar-evento') {
+            eliminarEvento(btn.dataset.id, btn.dataset.nombre);
+        }
+    });
 
     document.getElementById('btnGuardarEvento').addEventListener('click', async function () {
         const id = idInp.value;
@@ -70,6 +81,10 @@
             Swal.fire({ icon: 'warning', title: 'Completa nombre, fecha inicio y fecha fin.' });
             return;
         }
+        if (payload.fecha_fin < payload.fecha_inicio) {
+            Swal.fire({ icon: 'warning', title: 'La fecha fin debe ser igual o posterior a la fecha inicio.' });
+            return;
+        }
         const url = id ? '/eventos/' + id : '/eventos';
         const method = id ? 'PUT' : 'POST';
 
@@ -83,7 +98,12 @@
             await GF.api(url, { method, body: payload }, 'No se pudo guardar el evento');
             cerrarModal();
             setTimeout(async function () {
-                await Swal.fire({ icon: 'success', title: id ? 'Evento actualizado' : 'Evento creado' });
+                await Swal.fire({
+                    ...GF.marca.swalIcono('exito'),
+                    title: id ? 'Evento actualizado' : 'Evento creado',
+                    timer: 1600,
+                    showConfirmButton: false
+                });
                 window.location.reload();
             }, 150);
         } catch (err) {

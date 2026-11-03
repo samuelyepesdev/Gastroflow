@@ -249,17 +249,21 @@ $(function () {
     if (!cid) return Swal.fire('Atención', 'Seleccione un cliente', 'warning');
     if (!mod.productosFactura.length) return Swal.fire('Atención', 'Agregue productos', 'warning');
 
-    Swal.fire({ title: 'Generando factura...', didOpen: () => Swal.showLoading() });
-    $.ajax({
-      url: '/api/facturas',
+    const fecha = $('#fechaVenta').val() || null;
+    const totalVenta = mod.totalFactura;
+    const btn = this;
+    GF.cargando(btn, true);
+    GF.cargandoPantalla('Generando factura...');
+    GF.api('/api/facturas', {
       method: 'POST',
-      contentType: 'application/json',
-      data: JSON.stringify({
+      headers: { 'Idempotency-Key': crypto.randomUUID() },
+      body: {
         cliente_id: cid,
         total: mod.totalFactura,
         forma_pago: $('#formaPago').val(),
         codigo_bono: mod.bono ? mod.bono.codigo : null,
         evento_id: $('#eventoId').val() || null,
+        fecha,
         productos: mod.productosFactura.map(p => {
           const bruto = p.cantidad * p.precio;
           const neto = p.descuento_valor > 0
@@ -276,17 +280,26 @@ $(function () {
             descuento_valor: p.descuento_valor > 0 ? p.descuento_valor : null
           };
         })
-      }),
-      success: res => {
-        Swal.close();
+      }
+    }, 'No se pudo generar factura')
+      .then(async res => {
+        GF.cerrarCargando();
+        const [y, m, d] = (fecha || '').split('-');
+        await GF.marca.exito({
+          titulo: '¡Venta registrada!',
+          detalle: `Factura #${res.numero ?? res.id} · ${GF.dinero(totalVenta)}${fecha ? ` · ${d}/${m}/${y}` : ''}`
+        });
         const modal = new bootstrap.Modal(document.getElementById('facturaModal'));
         $('#facturaFrame').attr('src', `/api/facturas/${res.id}/imprimir`);
         modal.show();
         mod.limpiarSesionProvisional();
         limpiarTodo();
-      },
-      error: xhr => Swal.fire('Error', xhr.responseJSON?.error || 'No se pudo generar factura', 'error')
-    });
+      })
+      .catch(err => {
+        GF.cerrarCargando();
+        Swal.fire('Error', err.message || 'No se pudo generar factura', 'error');
+      })
+      .finally(() => GF.cargando(btn, false));
   });
 
   function limpiarTodo() {
