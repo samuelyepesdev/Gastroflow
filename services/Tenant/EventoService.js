@@ -3,6 +3,7 @@
  */
 
 const EventoRepository = require('../../repositories/Tenant/EventoRepository');
+const CacheService = require('../Shared/CacheService');
 
 class EventoService {
     static async list(tenantId, filters = {}) {
@@ -56,6 +57,9 @@ class EventoService {
             throw new Error('La fecha fin debe ser mayor o igual a la fecha inicio.');
         }
         await EventoRepository.update(id, tenantId, data);
+        // Incluir o sacar un evento de las ventas normales cambia las cifras del dashboard al instante.
+        CacheService.deleteByPrefix(`tenant_dashboard_stats_${tenantId}`);
+        CacheService.delete('superadmin_dashboard_stats');
     }
 
     static async delete(id, tenantId) {

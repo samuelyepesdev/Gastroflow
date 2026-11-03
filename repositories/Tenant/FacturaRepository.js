@@ -134,7 +134,7 @@ class FacturaRepository {
                 montoEfectivo > 0 && efectivoRecibidoNum >= montoEfectivo ? efectivoRecibidoNum : null;
 
             const [result] = await connection.query(
-                'INSERT INTO facturas (tenant_id, numero, cliente_id, total, forma_pago, evento_id, fecha, caja_sesion_id, monto_efectivo, monto_transferencia, efectivo_recibido, monto_bono) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                'INSERT INTO facturas (tenant_id, numero, cliente_id, total, forma_pago, evento_id, evento_aparte, fecha, caja_sesion_id, monto_efectivo, monto_transferencia, efectivo_recibido, monto_bono) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
                 [
                     tenantId,
                     numero,
@@ -142,6 +142,7 @@ class FacturaRepository {
                     facturaData.total,
                     formaPagoFinal,
                     evento_id,
+                    evento_id && facturaData.evento_aparte !== false ? 1 : 0,
                     fechaEmisionUtc,
                     cajaSesionId,
                     montoEfectivo,

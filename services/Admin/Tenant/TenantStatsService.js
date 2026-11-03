@@ -42,16 +42,16 @@ class TenantStatsService {
         const [usuariosRow] = await db.query(`
             SELECT COUNT(*) AS total FROM usuarios WHERE tenant_id IS NOT NULL
         `);
-        const [facturasRows] = await db.query(`SELECT COUNT(*) AS cnt FROM facturas WHERE evento_id IS NULL`);
+        const [facturasRows] = await db.query(`SELECT COUNT(*) AS cnt FROM facturas WHERE evento_aparte = 0`);
         const [ventasMontoRows] = await db.query(
-            `SELECT COALESCE(SUM(total), 0) AS total FROM facturas WHERE evento_id IS NULL`
+            `SELECT COALESCE(SUM(total), 0) AS total FROM facturas WHERE evento_aparte = 0`
         );
 
         // Desglose de monto total vendido por método de pago para todos los restaurantes
         const [montoPorFormaPagoRows] = await db.query(`
             SELECT forma_pago, COALESCE(SUM(total), 0) AS total 
             FROM facturas 
-            WHERE evento_id IS NULL 
+            WHERE evento_aparte = 0 
             GROUP BY forma_pago
         `);
         let totalEfectivo = 0;
@@ -99,7 +99,7 @@ class TenantStatsService {
             `
             SELECT ${SQL_COLOMBIA.dia('fecha')} AS fecha_colombia, SUM(total) as total
             FROM facturas
-            WHERE evento_id IS NULL AND fecha BETWEEN ? AND ?
+            WHERE evento_aparte = 0 AND fecha BETWEEN ? AND ?
             GROUP BY fecha_colombia
             ORDER BY fecha_colombia ASC
         `,
@@ -125,7 +125,7 @@ class TenantStatsService {
             `
             SELECT ${SQL_COLOMBIA.dia('fecha')} AS fecha_colombia, SUM(total) as total
             FROM facturas
-            WHERE evento_id IS NOT NULL AND fecha BETWEEN ? AND ?
+            WHERE evento_aparte = 1 AND fecha BETWEEN ? AND ?
             GROUP BY fecha_colombia
             ORDER BY fecha_colombia ASC
         `,
@@ -167,7 +167,7 @@ class TenantStatsService {
             `
             SELECT ${SQL_COLOMBIA.dia('fecha')} AS fecha_colombia, SUM(total) as total
             FROM facturas
-            WHERE evento_id IS NULL AND fecha BETWEEN ? AND ?
+            WHERE evento_aparte = 0 AND fecha BETWEEN ? AND ?
             GROUP BY fecha_colombia
             ORDER BY fecha_colombia ASC
         `,
@@ -205,7 +205,7 @@ class TenantStatsService {
             SELECT t.nombre AS tenant_nombre, ${SQL_COLOMBIA.dia('f.fecha')} AS fecha_colombia, SUM(f.total) as total
             FROM facturas f
             JOIN tenants t ON f.tenant_id = t.id
-            WHERE f.evento_id IS NULL AND f.fecha BETWEEN ? AND ?
+            WHERE f.evento_aparte = 0 AND f.fecha BETWEEN ? AND ?
             GROUP BY f.tenant_id, fecha_colombia
             ORDER BY fecha_colombia ASC
         `,
@@ -240,7 +240,7 @@ class TenantStatsService {
             SELECT t.nombre AS tenant_nombre, COALESCE(SUM(f.total), 0) AS total, COUNT(f.id) AS facturas
             FROM tenants t
             LEFT JOIN facturas f ON f.tenant_id = t.id
-                AND f.evento_id IS NULL
+                AND f.evento_aparte = 0
                 AND f.fecha BETWEEN ? AND ?
             WHERE t.activo = 1
             GROUP BY t.id, t.nombre
@@ -263,7 +263,7 @@ class TenantStatsService {
             SELECT e.nombre, COALESCE(SUM(f.total), 0) AS total
             FROM facturas f
             JOIN eventos e ON f.evento_id = e.id
-            WHERE f.fecha BETWEEN ? AND ?
+            WHERE f.evento_aparte = 1 AND f.fecha BETWEEN ? AND ?
             GROUP BY e.id, e.nombre
             ORDER BY total DESC
             LIMIT 5

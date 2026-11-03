@@ -21,16 +21,11 @@ function errorDeValidacion(mensaje) {
 }
 
 /**
- * Valida el evento (activo) y devuelve el día en que se registra la venta cuando NO es hoy ('YYYY-MM-DD'), o null si es hoy. Solo las ventas
- * de un evento pueden llevar otra fecha (el POS y las mesas siempre venden "ahora"), y debe caer dentro
- * de los días del evento.
+ * Día en que se registra la venta cuando NO es hoy ('YYYY-MM-DD'), o null si es hoy. Solo las ventas de un
+ * evento pueden llevar otra fecha (el POS y las mesas siempre venden "ahora"), y debe caer dentro de los
+ * días del evento.
  */
-async function resolverDiaVenta(tenantId, fecha, eventoId) {
-    // Un evento inactivo no recibe ventas (se activa de nuevo desde el listado de eventos).
-    const evento = eventoId ? await EventoRepository.findById(eventoId, tenantId) : null;
-    if (evento && !evento.activo) {
-        throw errorDeValidacion('El evento está inactivo: no se pueden registrar ventas.');
-    }
+function resolverDiaVenta(fecha, eventoId, evento) {
     if (fecha === undefined || fecha === null || fecha === '') {
         return null;
     }
@@ -50,6 +45,22 @@ async function resolverDiaVenta(tenantId, fecha, eventoId) {
         throw errorDeValidacion('La fecha de la venta debe estar dentro de los días del evento.');
     }
     return dia;
+}
+
+/**
+ * Reglas de la venta de un evento: el evento debe estar activo, la fecha elegida debe ser válida y se decide
+ * si la factura cuenta aparte de las ventas normales (eventoAparte) según `eventos.incluir_en_ventas`.
+ * @returns {Promise<{ dia: string|null, eventoAparte: boolean }>}
+ */
+async function resolverVentaDeEvento(tenantId, fecha, eventoId) {
+    const evento = eventoId ? await EventoRepository.findById(eventoId, tenantId) : null;
+    if (evento && !evento.activo) {
+        throw errorDeValidacion('El evento está inactivo: no se pueden registrar ventas.');
+    }
+    return {
+        dia: resolverDiaVenta(fecha, eventoId, evento),
+        eventoAparte: Boolean(eventoId) && !(evento && evento.incluir_en_ventas)
+    };
 }
 
 class FacturaService {
@@ -88,7 +99,7 @@ class FacturaService {
         // referenciaría clientes/productos de otro restaurante y los leería al imprimirse).
         await TenantOwnership.clientes(tenantId, cliente_id);
         await TenantOwnership.eventos(tenantId, evento_id);
-        const diaVenta = await resolverDiaVenta(tenantId, facturaData.fecha, evento_id);
+        const { dia: diaVenta, eventoAparte } = await resolverVentaDeEvento(tenantId, facturaData.fecha, evento_id);
         await TenantOwnership.productos(
             tenantId,
             productos.filter(p => !p.es_servicio).map(p => p.producto_id)
@@ -148,6 +159,7 @@ class FacturaService {
             productos,
             evento_id: evento_id || null,
             fecha_venta: diaVenta,
+            evento_aparte: eventoAparte,
             monto_efectivo: facturaData.monto_efectivo,
             monto_transferencia: facturaData.monto_transferencia,
             usuario_id: facturaData.usuario_id || null,

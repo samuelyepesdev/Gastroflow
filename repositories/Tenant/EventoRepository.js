@@ -9,7 +9,7 @@ const { SQL_COLOMBIA } = require('../../utils/dateHelpers');
 class EventoRepository {
     static async findAllByTenant(tenantId, filters = {}) {
         let query = `
-            SELECT id, tenant_id, nombre, fecha_inicio, fecha_fin, descripcion, activo, tipo, created_at
+            SELECT id, tenant_id, nombre, fecha_inicio, fecha_fin, descripcion, activo, tipo, incluir_en_ventas, created_at
             FROM eventos
             WHERE tenant_id = ?
         `;
@@ -44,19 +44,22 @@ class EventoRepository {
     }
 
     static async create(tenantId, data) {
-        const { nombre, fecha_inicio, fecha_fin, descripcion, tipo } = data;
-        const tipoVal = tipo === 'ocasional' ? 'ocasional' : 'permanente';
+        const { nombre, fecha_inicio, fecha_fin, descripcion, incluir_en_ventas } = data;
         const [result] = await db.query(
-            `INSERT INTO eventos (tenant_id, nombre, fecha_inicio, fecha_fin, descripcion, activo, tipo)
+            `INSERT INTO eventos (tenant_id, nombre, fecha_inicio, fecha_fin, descripcion, activo, incluir_en_ventas)
              VALUES (?, ?, ?, ?, ?, TRUE, ?)`,
-            [tenantId, nombre, fecha_inicio, fecha_fin, descripcion || null, tipoVal]
+            [tenantId, nombre, fecha_inicio, fecha_fin, descripcion || null, incluir_en_ventas ? 1 : 0]
         );
         return result.insertId;
     }
 
+    /**
+     * Actualiza el evento. Si cambia `incluir_en_ventas`, sus facturas se re-marcan en la misma transacción
+     * (facturas.evento_aparte) para que las estadísticas cuenten —o dejen de contar— sus ventas como normales,
+     * incluidas las ya registradas.
+     */
     static async update(id, tenantId, data) {
-        const { nombre, fecha_inicio, fecha_fin, descripcion, activo, tipo } = data;
-        const tipoVal = tipo === 'ocasional' ? 'ocasional' : tipo === 'permanente' ? 'permanente' : undefined;
+        const { nombre, fecha_inicio, fecha_fin, descripcion, activo, incluir_en_ventas } = data;
         const updates = [
             'nombre = ?',
             'fecha_inicio = ?',
@@ -65,12 +68,31 @@ class EventoRepository {
             'activo = COALESCE(?, activo)'
         ];
         const params = [nombre, fecha_inicio, fecha_fin, descripcion || null, activo];
-        if (tipoVal !== undefined) {
-            updates.push('tipo = ?');
-            params.push(tipoVal);
+        const cambiaInclusion = incluir_en_ventas !== undefined && incluir_en_ventas !== null;
+        if (cambiaInclusion) {
+            updates.push('incluir_en_ventas = ?');
+            params.push(incluir_en_ventas ? 1 : 0);
         }
         params.push(id, tenantId);
-        await db.query(`UPDATE eventos SET ${updates.join(', ')} WHERE id = ? AND tenant_id = ?`, params);
+
+        const connection = await db.getConnection();
+        try {
+            await connection.beginTransaction();
+            await connection.query(`UPDATE eventos SET ${updates.join(', ')} WHERE id = ? AND tenant_id = ?`, params);
+            if (cambiaInclusion) {
+                await connection.query('UPDATE facturas SET evento_aparte = ? WHERE evento_id = ? AND tenant_id = ?', [
+                    incluir_en_ventas ? 0 : 1,
+                    id,
+                    tenantId
+                ]);
+            }
+            await connection.commit();
+        } catch (error) {
+            await connection.rollback();
+            throw error;
+        } finally {
+            connection.release();
+        }
     }
 
     static async delete(id, tenantId) {

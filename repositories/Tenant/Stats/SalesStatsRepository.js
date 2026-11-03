@@ -3,7 +3,7 @@ const { SQL_COLOMBIA, hoyColombia, rangoUtcColombia, sumarDias, toFechaDia } = r
 
 class SalesStatsRepository {
     static async getTotalSales(tenantId, filters = {}) {
-        let query = 'SELECT COALESCE(SUM(total), 0) AS total FROM facturas WHERE tenant_id = ? AND evento_id IS NULL';
+        let query = 'SELECT COALESCE(SUM(total), 0) AS total FROM facturas WHERE tenant_id = ? AND evento_aparte = 0';
         const params = [tenantId];
 
         if (filters.desde && filters.hasta) {
@@ -17,7 +17,7 @@ class SalesStatsRepository {
     }
 
     static async getTotalSalesAllTime(tenantId) {
-        const query = 'SELECT COALESCE(SUM(total), 0) AS total FROM facturas WHERE tenant_id = ? AND evento_id IS NULL';
+        const query = 'SELECT COALESCE(SUM(total), 0) AS total FROM facturas WHERE tenant_id = ? AND evento_aparte = 0';
         const [result] = await db.query(query, [tenantId]);
         return parseFloat(result[0]?.total || 0);
     }
@@ -26,7 +26,7 @@ class SalesStatsRepository {
     static async getPrimeraFechaVenta(tenantId) {
         const [rows] = await db.query(
             `SELECT ${SQL_COLOMBIA.dia('MIN(fecha)')} AS primera
-             FROM facturas WHERE tenant_id = ? AND evento_id IS NULL`,
+             FROM facturas WHERE tenant_id = ? AND evento_aparte = 0`,
             [tenantId]
         );
         return toFechaDia(rows[0]?.primera);
@@ -37,7 +37,7 @@ class SalesStatsRepository {
         const { utcDesde, utcHasta } = rangoUtcColombia(hoy);
         const [rows] = await db.query(
             `SELECT COALESCE(SUM(total), 0) AS total, COUNT(*) AS cantidad
-             FROM facturas WHERE tenant_id = ? AND evento_id IS NULL AND fecha BETWEEN ? AND ?`,
+             FROM facturas WHERE tenant_id = ? AND evento_aparte = 0 AND fecha BETWEEN ? AND ?`,
             [tenantId, utcDesde, utcHasta]
         );
         const r = rows[0] || {};
@@ -56,7 +56,7 @@ class SalesStatsRepository {
 
         const [rows] = await db.query(
             `SELECT COALESCE(SUM(total), 0) AS total, COUNT(*) AS cantidad
-             FROM facturas WHERE tenant_id = ? AND evento_id IS NULL AND fecha BETWEEN ? AND ?`,
+             FROM facturas WHERE tenant_id = ? AND evento_aparte = 0 AND fecha BETWEEN ? AND ?`,
             [tenantId, utcDesde, utcHasta]
         );
         const r = rows[0] || {};
@@ -67,7 +67,7 @@ class SalesStatsRepository {
     }
 
     static async getTotalInvoices(tenantId, filters = {}) {
-        let query = 'SELECT COUNT(*) AS total FROM facturas WHERE tenant_id = ? AND evento_id IS NULL';
+        let query = 'SELECT COUNT(*) AS total FROM facturas WHERE tenant_id = ? AND evento_aparte = 0';
         const params = [tenantId];
 
         if (filters.desde && filters.hasta) {
@@ -81,7 +81,7 @@ class SalesStatsRepository {
     }
 
     static async getTotalInvoicesAllTime(tenantId) {
-        const query = 'SELECT COUNT(*) AS total FROM facturas WHERE tenant_id = ? AND evento_id IS NULL';
+        const query = 'SELECT COUNT(*) AS total FROM facturas WHERE tenant_id = ? AND evento_aparte = 0';
         const [result] = await db.query(query, [tenantId]);
         return parseInt(result[0]?.total || 0);
     }
@@ -90,7 +90,7 @@ class SalesStatsRepository {
         let query = `
             SELECT forma_pago, COUNT(*) AS cantidad, SUM(total) AS total
             FROM facturas
-            WHERE tenant_id = ? AND evento_id IS NULL
+            WHERE tenant_id = ? AND evento_aparte = 0
         `;
         const params = [tenantId];
 
@@ -125,7 +125,7 @@ class SalesStatsRepository {
                 WHERE df.es_servicio = 1 AND s.es_externo = 1
                 GROUP BY df.factura_id
             ) t_ext ON t_ext.factura_id = f.id
-            WHERE f.tenant_id = ? AND f.evento_id IS NULL
+            WHERE f.tenant_id = ? AND f.evento_aparte = 0
         `;
         const params = [tenantId];
 
@@ -190,7 +190,7 @@ class SalesStatsRepository {
                 COUNT(*) AS cantidad_facturas,
                 SUM(total) AS total_ventas
             FROM facturas
-            WHERE tenant_id = ? AND evento_id IS NULL
+            WHERE tenant_id = ? AND evento_aparte = 0
               AND fecha >= ?
             GROUP BY ${SQL_COLOMBIA.dia('fecha')}
             ORDER BY fecha ASC
@@ -236,7 +236,7 @@ class SalesStatsRepository {
                     COUNT(*) AS cantidad_facturas,
                     SUM(total) AS total_ventas
              FROM facturas
-             WHERE tenant_id = ? AND evento_id IS NULL AND fecha BETWEEN ? AND ?
+             WHERE tenant_id = ? AND evento_aparte = 0 AND fecha BETWEEN ? AND ?
              GROUP BY ${SQL_COLOMBIA.dia('fecha')}`,
             [tenantId, utcDesde, utcHasta]
         );
@@ -266,7 +266,7 @@ class SalesStatsRepository {
               AND f.fecha >= ${SQL_COLOMBIA.aUtc(`DATE_FORMAT(DATE_SUB(${SQL_COLOMBIA.hoy}, INTERVAL ? MONTH), '%Y-%m-01')`)}
         `;
         if (options.excludeEventos) {
-            query += ` AND f.evento_id IS NULL`;
+            query += ` AND f.evento_aparte = 0`;
         }
         query += `
             GROUP BY year, month
