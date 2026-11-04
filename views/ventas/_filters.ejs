@@ -45,7 +45,7 @@
             <i class="bi bi-x-circle me-1"></i> Limpiar
         </button>
         <% if (typeof allowedByPlan !== 'undefined' && allowedByPlan && allowedByPlan.plantillas && user && user.permisos && user.permisos.includes('plantillas.ver')) { %>
-            <button type="button" class="btn-premium-print" id="exportarVentas" style="height: 38px; padding: 0 16px; display: inline-flex; align-items: center; background: #10b981; color: #fff; border-color: #10b981;">
+            <button type="button" class="btn-premium-print" id="exportarVentas" style="height: 38px; padding: 0 16px; display: inline-flex; align-items: center; background: var(--gf-coral, #ff5a36); color: #fff; border-color: var(--gf-coral, #ff5a36);">
                 <i class="bi bi-file-earmark-excel me-1"></i> Exportar
             </button>
         <% } %>

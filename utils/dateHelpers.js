@@ -112,6 +112,21 @@ function toFechaISOUtc(fecha) {
 }
 
 /**
+ * Instante guardado en la BD (UTC) como `Date` cuya hora UTC es la hora de pared de Colombia. Excel no
+ * tiene zona horaria: ExcelJS escribe la hora UTC del Date tal cual, así que para que la celda muestre
+ * la hora que vio el restaurante hay que restar el desfase (UTC-5 fijo).
+ * @param {Date|string|null} fecha - Date o string MySQL 'YYYY-MM-DD HH:mm:ss' (UTC)
+ * @returns {Date|null}
+ */
+function aHoraColombiaParaExcel(fecha) {
+    const iso = toFechaISOUtc(fecha);
+    if (!iso) {
+        return null;
+    }
+    return new Date(new Date(iso).getTime() - 5 * 3600 * 1000);
+}
+
+/**
  * Normaliza una columna DATE (o un DATE(...) calculado en SQL) a 'YYYY-MM-DD'.
  * No usar con DATETIME/TIMESTAMP: para esos, fechaColombia().
  * En producción (MYSQL_URL) mysql2 devuelve las DATE como objetos Date (ver
@@ -181,5 +196,6 @@ module.exports = {
     rangoUtcColombia,
     SQL_COLOMBIA,
     toFechaISOUtc,
+    aHoraColombiaParaExcel,
     toFechaDia
 };

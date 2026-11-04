@@ -16,7 +16,9 @@ window.POS = {
         mesaCocinaId: null,
         // Id del borrador cargado al carrito (si viene de "Órdenes guardadas"). Se usa
         // para actualizar esa misma fila al guardar de nuevo, y para borrarla al cobrar.
-        borradorId: null
+        borradorId: null,
+        // Lo ya abonado a la cuenta de esta orden (ver pos_abonos.js)
+        abonado: 0
     },
 
     // ─── Inicialización ────────────────────────────────────────────
@@ -315,6 +317,7 @@ window.POS = {
         this.state.pedidoCocinaId = null;
         this.state.mesaCocinaId = null;
         this.state.borradorId = null;
+        this.state.abonado = 0;
         POS_UI.renderCart();
         // Restaurar cliente por defecto
         const inputEl = document.getElementById('posClienteInput');
@@ -338,6 +341,35 @@ window.POS = {
 
     getTotal() {
         return this.state.cart.reduce((sum, item) => sum + this.itemSubtotal(item), 0);
+    },
+
+    /** Lo que falta por cobrar: el total menos lo ya abonado a la cuenta. */
+    getSaldo() {
+        return Math.max(0, Math.round((this.getTotal() - (this.state.abonado || 0)) * 100) / 100);
+    },
+
+    /**
+     * Deja la orden guardada (sin vaciar el carrito) para poder abonar: los abonos cuelgan del pedido de
+     * cocina que se crea al guardar. Si ya estaba guardada, la actualiza con lo que hay en el carrito.
+     */
+    async asegurarOrdenGuardada() {
+        const nombre = document.getElementById('posClienteInput')?.value?.trim() || 'Consumidor final';
+        const r = await POS_API.saveBorrador({
+            cliente_id: this.state.cliente?.id || null,
+            nombre_cliente: nombre,
+            items: this.state.cart,
+            total: this.getTotal(),
+            pedido_cocina_id: this.state.pedidoCocinaId || null,
+            mesa_cocina_id: this.state.mesaCocinaId || null,
+            borrador_id: this.state.borradorId || null
+        });
+        this.state.borradorId = r.id;
+        this.state.pedidoCocinaId = r.pedido_cocina_id || null;
+        this.state.mesaCocinaId = r.mesa_cocina_id || null;
+        if (!this.state.pedidoCocinaId) {
+            throw new Error('No se pudo abrir la cuenta de la orden. Intenta de nuevo.');
+        }
+        await this.recargarBorradores();
     },
 
     // ─── Cliente ──────────────────────────────────────────────────
@@ -457,10 +489,13 @@ window.POS = {
         // antes de volver a guardar o cobrar, la orden se perdía por completo). Se
         // mantiene en la BD; guardarOrden lo actualiza en el sitio y el cobro lo borra.
         this.state.borradorId = borrador.id;
+        this.state.abonado = 0;
         if (borrador.cliente_id) {
             this.setCliente({ id: borrador.cliente_id, nombre: borrador.nombre_cliente });
         }
         POS_UI.renderCart();
+        // La orden puede traer abonos ya registrados: se leen y se repinta el saldo.
+        POS_ABONOS.recargar();
         POS_UI.updateBorradoresCount();
         bootstrap.Modal.getInstance(document.getElementById('posBorradoresModal'))?.hide();
     },
@@ -497,6 +532,8 @@ window.POS = {
             if (!POS.state.cart.length) return;
             POS_PAGO.abrirModal();
         });
+
+        document.getElementById('posBtnAbonar')?.addEventListener('click', () => POS_ABONOS.abonar());
 
         document.getElementById('posBtnAparcar')?.addEventListener('click', () => {
             if (!POS.state.cart.length) {

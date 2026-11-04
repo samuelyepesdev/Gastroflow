@@ -49,7 +49,7 @@ class AbonoPedidoService {
      * pago ya recibido que se descuenta del saldo, y que FacturarPedidoService
      * compone en `forma_pago`/montos de la factura final al cerrar la mesa.
      */
-    static async registrar({ tenantId, pedidoId, monto, forma_pago, usuarioId, nota }) {
+    static async registrar({ tenantId, pedidoId, monto, forma_pago, usuarioId, nota, totalVenta }) {
         if (!FORMAS_VALIDAS.includes(forma_pago)) {
             throw new Error('Forma de pago requerida y debe ser efectivo o transferencia');
         }
@@ -58,9 +58,19 @@ class AbonoPedidoService {
             throw new Error('El monto del abono debe ser mayor a cero');
         }
 
-        const { pedido, saldoPendiente } = await this.getSaldoPendiente(tenantId, pedidoId);
+        const { pedido, saldoPendiente: saldoItems, totalAbonado } = await this.getSaldoPendiente(tenantId, pedidoId);
         if (pedido.estado === 'cerrado' || pedido.estado === 'cancelado') {
             throw new Error('No se puede abonar a un pedido ya cerrado o cancelado');
+        }
+        // El POS aplica descuentos que el pedido no conoce: si manda el total real de la venta, el abono
+        // tampoco puede pasarse de lo que falta de ese total.
+        let saldoPendiente = saldoItems;
+        const totalVentaNum = Number.parseFloat(totalVenta);
+        if (Number.isFinite(totalVentaNum) && totalVentaNum >= 0) {
+            saldoPendiente = Math.min(
+                saldoPendiente,
+                Math.max(0, Math.round((totalVentaNum - totalAbonado) * 100) / 100)
+            );
         }
         if (montoNum > saldoPendiente) {
             throw new Error(`El abono no puede superar el saldo pendiente (${saldoPendiente})`);

@@ -193,6 +193,8 @@ routes/ (thin)  →  middleware (auth, tenant, planFeature)  →  app/Http/Contr
   puede llevar otro día (`fecha`, solo dentro de las fechas del evento) y pago mixto (`monto_efectivo` + `monto_transferencia`,
   ver `utils/desglosePago.js`). Un evento inactivo no recibe ventas y uno con ventas no se elimina.
 
+- **Abonos a la cuenta (Mesas y POS)**: un abono es una fila de `pedido_abonos` colgada de un `pedido_id`. En Mesas es el pedido de la mesa; en el POS es el pedido de cocina que se crea al guardar la orden (`pos_borradores.pedido_cocina_id`), por eso abonar en el POS guarda la orden primero (`POS.asegurarOrdenGuardada`). Las rutas del POS (`/pos/pedidos/:id/abonos`, `/pos/abonos/:id`, permiso `pos.vender`) solo aceptan pedidos que sean una orden guardada del POS (`POSService._exigirPedidoPOS`). Al cobrar, `FacturaRepository.createWithDetails` lee los abonos del pedido DENTRO de la transacción (nunca montos del cliente), los resta antes de aplicar el bono, los suma a `monto_efectivo`/`monto_transferencia` y los liga con `marcarFacturados`. Una orden con abonos no se puede borrar.
+
 - **WhatsApp bot was removed (2026-09)** for RAM consumption — don't reintroduce `whatsapp-web.js` as a
   dependency; if you see references to it in older docs/migrations they're historical
   (`091_limpiar_permisos_whatsapp.sql`, `docs/modulos/10_whatsapp_bot.md`).

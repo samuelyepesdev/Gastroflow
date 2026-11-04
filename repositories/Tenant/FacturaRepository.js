@@ -113,13 +113,34 @@ class FacturaRepository {
             // cubre el bono va íntegro a ese método; con 'mixto' se reparte según facturaData.monto_efectivo
             // y monto_transferencia, que deben sumar lo que se cobra (ver utils/desglosePago).
             const totalNum = Number.parseFloat(facturaData.total) || 0;
-            const montoBono = bono ? Math.round(Math.min(Number(bono.saldo_actual), totalNum) * 100) / 100 : 0;
-            const pendiente = Math.round((totalNum - montoBono) * 100) / 100;
-            const {
-                formaPago: formaPagoFinal,
-                montoEfectivo,
-                montoTransferencia
-            } = desglosarPago({
+
+            // Abonos ya recibidos de la orden guardada del POS (pedido en cocina): solo cuentan si ese pedido
+            // es de verdad una orden guardada de este restaurante. Se leen aquí dentro (no del cliente) y
+            // reducen lo que falta por cobrar; el bono y la forma de pago aplican sobre el resto.
+            const pedidoAbonoId = Number.parseInt(facturaData.pedido_abono_id, 10) || null;
+            let abonos = { efectivo: 0, transferencia: 0 };
+            if (pedidoAbonoId) {
+                const [esOrdenPOS] = await connection.query(
+                    'SELECT 1 FROM pos_borradores WHERE pedido_cocina_id = ? AND tenant_id = ? LIMIT 1',
+                    [pedidoAbonoId, tenantId]
+                );
+                if (esOrdenPOS.length > 0) {
+                    abonos = await PedidoAbonoRepository.sumByPedido(pedidoAbonoId, tenantId, connection);
+                }
+            }
+            const totalAbonos = Math.round((abonos.efectivo + abonos.transferencia) * 100) / 100;
+            if (totalAbonos - totalNum > 0.01) {
+                const err = new Error(
+                    `Los abonos registrados (${totalAbonos}) superan el total de la venta (${totalNum}). Elimina o ajusta los abonos.`
+                );
+                err.status = 400;
+                throw err;
+            }
+            const restante = Math.round((totalNum - totalAbonos) * 100) / 100;
+
+            const montoBono = bono ? Math.round(Math.min(Number(bono.saldo_actual), restante) * 100) / 100 : 0;
+            const pendiente = Math.round((restante - montoBono) * 100) / 100;
+            const cobro = desglosarPago({
                 formaPago: facturaData.forma_pago,
                 pendiente,
                 montoBono,
@@ -128,10 +149,28 @@ class FacturaRepository {
             });
 
             // Efectivo recibido: solo informativo (Recibido/Cambio en ticket y caja).
-            // Se guarda únicamente si hubo cobro en efectivo y cubre lo que faltó tras el bono.
+            // Se guarda únicamente si hubo cobro en efectivo y cubre lo que faltó tras abonos y bono.
             const efectivoRecibidoNum = Number.parseFloat(facturaData.efectivo_recibido) || 0;
             const efectivoRecibido =
-                montoEfectivo > 0 && efectivoRecibidoNum >= montoEfectivo ? efectivoRecibidoNum : null;
+                cobro.montoEfectivo > 0 && efectivoRecibidoNum >= cobro.montoEfectivo ? efectivoRecibidoNum : null;
+
+            // Lo abonado antes se suma al desglose (para el arqueo) y la forma de pago pasa a 'mixto' si la
+            // venta se pagó por más de una vía.
+            const montoEfectivo = Math.round((cobro.montoEfectivo + abonos.efectivo) * 100) / 100;
+            const montoTransferencia = Math.round((cobro.montoTransferencia + abonos.transferencia) * 100) / 100;
+            let formaPagoFinal = cobro.formaPago;
+            if (totalAbonos > 0) {
+                const vias = [montoEfectivo > 0, montoTransferencia > 0, montoBono > 0].filter(Boolean).length;
+                if (vias > 1) {
+                    formaPagoFinal = 'mixto';
+                } else if (montoBono > 0) {
+                    formaPagoFinal = 'bono';
+                } else if (montoEfectivo > 0) {
+                    formaPagoFinal = 'efectivo';
+                } else if (montoTransferencia > 0) {
+                    formaPagoFinal = 'transferencia';
+                }
+            }
 
             const [result] = await connection.query(
                 'INSERT INTO facturas (tenant_id, numero, cliente_id, total, forma_pago, evento_id, evento_aparte, fecha, caja_sesion_id, monto_efectivo, monto_transferencia, efectivo_recibido, monto_bono) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
@@ -153,6 +192,10 @@ class FacturaRepository {
             );
 
             const factura_id = result.insertId;
+
+            if (totalAbonos > 0) {
+                await PedidoAbonoRepository.marcarFacturados(pedidoAbonoId, factura_id, connection);
+            }
 
             if (bono && montoBono > 0) {
                 await BonoRepository.redimir(
