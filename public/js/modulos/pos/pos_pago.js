@@ -10,6 +10,16 @@ window.POS_PAGO = {
         const total = POS.getTotal();
         const { cart } = POS.state;
 
+        // Si se quitaron productos después de abonar, los abonos pueden pasar del total: se corrige antes de cobrar.
+        if ((POS.state.abonado || 0) - total > 0.01) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Los abonos superan el total',
+                text: `Abonado: ${GF.dinero(POS.state.abonado)} · Total: ${GF.dinero(total)}. Elimina un abono o agrega productos antes de cobrar.`
+            }).then(() => POS_ABONOS.ver());
+            return;
+        }
+
         // Resumen de ítems
         document.getElementById('posPagoItems').innerHTML = cart.map(item => {
             const sub = POS.itemSubtotal(item);
@@ -49,9 +59,14 @@ window.POS_PAGO = {
         setTimeout(() => document.getElementById('posEfectivoRecibido')?.focus(), 300);
     },
 
-    /** Lo que de verdad se cobra en efectivo/transferencia: total menos el bono aplicado. */
+    /** Lo que de verdad se cobra en efectivo/transferencia: el saldo (total menos abonos) menos el bono aplicado. */
     getTotalACobrar() {
-        return Math.max(0, Math.round((POS.getTotal() - (this._bono?.monto || 0)) * 100) / 100);
+        return Math.max(0, Math.round((POS.getSaldo() - (this._bono?.monto || 0)) * 100) / 100);
+    },
+
+    /** Abonos o bono dejan la venta sin nada por cobrar en dinero. */
+    _cubiertoSinDinero() {
+        return this.getTotalACobrar() <= 0 && (!!this._bono || (POS.state.abonado || 0) > 0);
     },
 
     _setBonoInfo(texto, ok) {
@@ -65,7 +80,17 @@ window.POS_PAGO = {
     // Repinta total, líneas de bono y métodos según lo que falte por cobrar.
     _refrescarTotales() {
         const aCobrar = this.getTotalACobrar();
-        const cubreTodo = !!this._bono && aCobrar <= 0;
+        const cubreTodo = this._cubiertoSinDinero();
+        const abonado = POS.state.abonado || 0;
+
+        document.getElementById('posAbonadoLinea')?.classList.toggle('d-none', abonado <= 0);
+        const montoAbonado = document.getElementById('posAbonadoMonto');
+        if (montoAbonado) montoAbonado.textContent = '-$ ' + abonado.toLocaleString('es-CO');
+        const aviso = document.getElementById('posAvisoBonoCubre');
+        if (aviso) {
+            const quien = abonado > 0 && this._bono ? 'Los abonos y el bono cubren' : abonado > 0 ? 'Los abonos cubren' : 'El bono cubre';
+            aviso.innerHTML = `<i class="bi bi-check-circle-fill me-1"></i>${quien} el total, no se necesita otro pago.`;
+        }
 
         document.getElementById('posPagoTotal').textContent = '$ ' + aCobrar.toLocaleString('es-CO');
         document.getElementById('posBonoAplicadoLinea')?.classList.toggle('d-none', !this._bono);
@@ -97,7 +122,7 @@ window.POS_PAGO = {
             // El código canónico lo da el servidor (la entrada pudo ser una URL).
             const codigo = d.codigo;
             input.value = codigo;
-            this._bono = { codigo, monto: Math.min(Number(d.saldo_actual), POS.getTotal()) };
+            this._bono = { codigo, monto: Math.min(Number(d.saldo_actual), POS.getSaldo()) };
             this._setBonoInfo(`Bono aplicado · saldo disponible: ${GF.dinero(d.saldo_actual)}`, true);
             input.disabled = true;
             document.getElementById('posValidarBonoBtn').classList.add('d-none');
@@ -166,7 +191,7 @@ window.POS_PAGO = {
         const total = POS.getTotal();
         const bono = this._bono;
         // Si el bono cubre todo no se eligió método: el servidor solo cobra por ahí lo que sobre.
-        const cubreTodo = !!bono && this.getTotalACobrar() <= 0;
+        const cubreTodo = this._cubiertoSinDinero();
         // Efectivo recibido (informativo, para "Recibido/Cambio" en el ticket).
         const efectivoRecibido =
             formaPago === 'efectivo' && !cubreTodo ? MoneyInput.parse(document.getElementById('posEfectivoRecibido')?.value) : 0;
@@ -182,6 +207,7 @@ window.POS_PAGO = {
                 nombre_cliente: nombreCliente,
                 // Si la orden ya se había guardado (y por eso ya está en cocina), se
                 // completa allá al cobrarla en vez de crear un pedido de cocina nuevo.
+                // (el servidor toma los abonos de este pedido: no se mandan montos desde aquí)
                 pedido_cocina_id: POS.state.pedidoCocinaId || null,
                 // Si viene de una orden guardada cargada al carrito, se borra al cobrarla.
                 borrador_id: POS.state.borradorId || null,

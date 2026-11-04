@@ -20,6 +20,11 @@ router.get('/borradores', POSController.getBorradores);
 router.post('/borradores', requirePermission('pos.vender'), POSController.saveBorrador);
 router.delete('/borradores/:id', POSController.deleteBorrador);
 
+// API: Abonos a la cuenta de una orden guardada (misma lógica que los abonos de Mesas)
+router.post('/pedidos/:pedidoId/abonos', requirePermission('pos.vender'), POSController.registrarAbono);
+router.get('/pedidos/:pedidoId/abonos', POSController.listarAbonos);
+router.delete('/abonos/:abonoId', requirePermission('pos.vender'), POSController.eliminarAbono);
+
 // API: Venta POS (accesible con pos.vender, sin necesitar facturas.ver)
 router.get('/consumidor-final', POSController.getConsumidorFinal);
 router.post('/vender', requirePermission('pos.vender'), POSController.vender);

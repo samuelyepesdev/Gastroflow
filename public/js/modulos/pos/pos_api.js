@@ -36,6 +36,19 @@ window.POS_API = {
         );
     },
 
+    // Abonos a la cuenta de una orden guardada (el pedido de cocina de la orden)
+    registrarAbono(pedidoId, datos) {
+        return GF.api.post(`/pos/pedidos/${pedidoId}/abonos`, datos, 'Error al registrar el abono');
+    },
+
+    getAbonos(pedidoId) {
+        return GF.api(`/pos/pedidos/${pedidoId}/abonos`, {}, 'Error al cargar los abonos');
+    },
+
+    eliminarAbono(abonoId) {
+        return GF.api(`/pos/abonos/${abonoId}`, { method: 'DELETE' }, 'No se pudo eliminar el abono');
+    },
+
     // Ruta propia del POS — no requiere facturas.ver
     crearFactura(payload) {
         return GF.api.post('/pos/vender', payload, 'Error al generar la factura');

@@ -125,6 +125,12 @@
                         <i class="bi bi-bookmark-fill me-1"></i>Guardadas
                         <span class="pos-saved-badge posBorradoresCount">0</span>
                     </button>
+                    <% if (user && user.permisos && user.permisos.includes('pos.vender')) { %>
+                    <button class="pos-aux-btn pos-btn-abonar" id="posBtnAbonar" disabled
+                        title="Registrar un pago parcial de la cuenta antes de cobrar">
+                        <i class="bi bi-piggy-bank me-1"></i>Abonar a la cuenta
+                    </button>
+                    <% } %>
                 </div>
 
                 <!-- Botones principales: Guardar y Cobrar -->
@@ -205,6 +211,10 @@
                         <span class="pos-vuelto-val" id="posVueltoAmount">$ 0</span>
                     </div>
                 </div>
+                </div>
+                <div id="posAbonadoLinea" class="d-flex justify-content-between small text-success mb-1 d-none">
+                    <span><i class="bi bi-piggy-bank me-1"></i>Abonado a la cuenta</span>
+                    <span id="posAbonadoMonto">-$ 0</span>
                 </div>
                 <div id="posBonoAplicadoLinea" class="d-flex justify-content-between small text-success mb-1 d-none">
                     <span><i class="bi bi-gift me-1"></i>Bono aplicado</span>
@@ -439,5 +449,6 @@
 <script src="/js/modulos/pos/pos_core.js?v=<%= assetV %>"></script>
 <script src="/js/modulos/pos/pos_ui.js?v=<%= assetV %>"></script>
 <script src="/js/modulos/pos/pos_pago.js?v=<%= assetV %>"></script>
+<script src="/js/modulos/pos/pos_abonos.js?v=<%= assetV %>"></script>
 </body>
 </html>

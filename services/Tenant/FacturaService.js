@@ -163,6 +163,7 @@ class FacturaService {
             monto_efectivo: facturaData.monto_efectivo,
             monto_transferencia: facturaData.monto_transferencia,
             usuario_id: facturaData.usuario_id || null,
+            pedido_abono_id: facturaData.pedido_abono_id || null,
             efectivo_recibido: facturaData.efectivo_recibido || null,
             codigo_bono: facturaData.codigo_bono || null
         });
