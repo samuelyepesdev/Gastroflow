@@ -229,6 +229,24 @@ class POSRepository {
         );
     }
 
+    /** El pedido (de cocina) pertenece a una orden guardada del POS de este restaurante. */
+    static async esPedidoPOS(tenantId, pedidoId) {
+        const [rows] = await db.query(
+            'SELECT 1 FROM pos_borradores WHERE pedido_cocina_id = ? AND tenant_id = ? LIMIT 1',
+            [pedidoId, tenantId]
+        );
+        return rows.length > 0;
+    }
+
+    /** Pedido de cocina de una orden guardada (null si no existe o no lo tiene). */
+    static async getPedidoDeBorrador(id, tenantId) {
+        const [rows] = await db.query('SELECT pedido_cocina_id FROM pos_borradores WHERE id = ? AND tenant_id = ?', [
+            id,
+            tenantId
+        ]);
+        return rows[0]?.pedido_cocina_id || null;
+    }
+
     static async deleteBorrador(id, tenantId) {
         const [rows] = await db.query(`SELECT pedido_cocina_id FROM pos_borradores WHERE id = ? AND tenant_id = ?`, [
             id,

@@ -28,6 +28,29 @@ class VentaService {
     }
 
     /**
+     * Cuánto de una factura se pagó en efectivo, por transferencia y con bono. Las facturas hechas con la
+     * lógica actual traen el desglose guardado (monto_*); las antiguas no, y se deducen de la forma de pago.
+     * @returns {{ efectivo: number, transferencia: number, bono: number }}
+     */
+    static desglosePago(row) {
+        const total = Number.parseFloat(row.total) || 0;
+        const efectivo = Number.parseFloat(row.monto_efectivo) || 0;
+        const transferencia = Number.parseFloat(row.monto_transferencia) || 0;
+        const bono = Number.parseFloat(row.monto_bono) || 0;
+        if (efectivo + transferencia + bono > 0) {
+            return { efectivo, transferencia, bono };
+        }
+        const fp = String(row.forma_pago || '')
+            .toLowerCase()
+            .trim();
+        return {
+            efectivo: fp === 'efectivo' ? total : 0,
+            transferencia: fp === 'transferencia' ? total : 0,
+            bono: fp === 'bono' ? total : 0
+        };
+    }
+
+    /**
      * Get tables with orders ready to pay (scoped by tenant)
      * @param {number} tenantId - Tenant ID
      * @returns {Promise<Array>} Array of tables with orders ready to pay
@@ -38,4 +61,3 @@ class VentaService {
 }
 
 module.exports = VentaService;
-

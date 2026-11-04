@@ -3,6 +3,14 @@ const PromocionService = require('./PromocionService');
 const RealtimeEvents = require('../Shared/RealtimeEvents');
 const TenantOwnership = require('./TenantOwnership');
 const ComboArmableService = require('./ComboArmableService');
+const AbonoPedidoService = require('./Mesas/AbonoPedidoService');
+const PedidoAbonoRepository = require('../../repositories/Tenant/PedidoAbonoRepository');
+
+function errorDeValidacion(mensaje) {
+    const err = new Error(mensaje);
+    err.status = 400;
+    return err;
+}
 
 class POSService {
     static async getProductosForPOS(tenantId) {
@@ -72,7 +80,7 @@ class POSService {
                 pedido_cocina_id: pedidoCocinaId,
                 mesa_cocina_id: mesaCocinaId
             });
-            return { id: data.borrador_id };
+            return { id: data.borrador_id, pedido_cocina_id: pedidoCocinaId, mesa_cocina_id: mesaCocinaId };
         }
 
         const id = await POSRepository.createBorrador(tenantId, usuarioId, {
@@ -80,7 +88,38 @@ class POSService {
             pedido_cocina_id: pedidoCocinaId,
             mesa_cocina_id: mesaCocinaId
         });
-        return { id };
+        return { id, pedido_cocina_id: pedidoCocinaId, mesa_cocina_id: mesaCocinaId };
+    }
+
+    /** Verifica que el pedido sea una orden guardada del POS del restaurante (el POS no toca pedidos de mesas). */
+    static async _exigirPedidoPOS(tenantId, pedidoId) {
+        if (!(await POSRepository.esPedidoPOS(tenantId, pedidoId))) {
+            throw errorDeValidacion('La orden no está guardada en el POS');
+        }
+    }
+
+    /**
+     * Abono a la cuenta de una orden del POS: mismo registro que el abono de las mesas (pedido_abonos),
+     * pero sobre el pedido de cocina de la orden guardada. `totalVenta` es el total real del carrito
+     * (con descuentos) y funciona como tope extra.
+     */
+    static async registrarAbono({ tenantId, usuarioId, pedidoId, monto, forma_pago, nota, totalVenta }) {
+        await this._exigirPedidoPOS(tenantId, pedidoId);
+        return AbonoPedidoService.registrar({ tenantId, pedidoId, monto, forma_pago, usuarioId, nota, totalVenta });
+    }
+
+    static async listarAbonos(tenantId, pedidoId) {
+        await this._exigirPedidoPOS(tenantId, pedidoId);
+        return AbonoPedidoService.listar(tenantId, pedidoId);
+    }
+
+    static async eliminarAbono(tenantId, abonoId) {
+        const abono = await PedidoAbonoRepository.findById(abonoId, tenantId);
+        if (!abono) {
+            throw errorDeValidacion('Abono no encontrado');
+        }
+        await this._exigirPedidoPOS(tenantId, abono.pedido_id);
+        return AbonoPedidoService.eliminar({ tenantId, abonoId });
     }
 
     /**
@@ -89,6 +128,14 @@ class POSService {
      * (skipCocina), ese pedido se cancela y sale de la cola también.
      */
     static async deleteBorrador(id, tenantId, { skipCocina = false } = {}) {
+        // Una orden con abonos ya tiene dinero recibido: borrarla lo dejaría sin dueño en la caja.
+        const pedidoConAbonos = await POSRepository.getPedidoDeBorrador(id, tenantId);
+        if (pedidoConAbonos) {
+            const abonos = await PedidoAbonoRepository.sumByPedido(pedidoConAbonos, tenantId);
+            if (abonos.efectivo + abonos.transferencia > 0) {
+                throw errorDeValidacion('La orden tiene abonos registrados. Elimina primero los abonos para borrarla.');
+            }
+        }
         const deleted = await POSRepository.deleteBorrador(id, tenantId);
         if (!deleted) {
             return false;

@@ -529,6 +529,16 @@ body.pos-terminal-body .navbar-collapse.collapsing {
     transition: all .15s ease;
     white-space: nowrap;
 }
+.pos-btn-abonar { grid-column: 1 / -1; color: #1b7a4b; border-color: #cfe6d8; background: #f2faf5; }
+.pos-btn-abonar:hover:not(:disabled) { background: #e3f4ea; border-color: #b4d8c2; color: #14603a; }
+.pos-btn-abonar:disabled { opacity: .5; cursor: not-allowed; }
+
+.pos-total-abonado { color: #1b7a4b; }
+.pos-link-abonos {
+    border: 0; background: none; padding: 0 0 0 4px; color: inherit; font: inherit;
+    text-decoration: underline; cursor: pointer;
+}
+
 .pos-aux-btn:hover {
     background: #f3ede4;
     border-color: #d6ccbd;

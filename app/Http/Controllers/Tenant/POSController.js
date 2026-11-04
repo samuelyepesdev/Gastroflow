@@ -74,8 +74,48 @@ class POSController {
             }
             res.json({ ok: true });
         } catch (err) {
+            if (err.status === 400) {
+                return res.status(400).json({ error: err.message });
+            }
             logger.error('POS deleteBorrador error', { err: err.message });
             res.status(500).json({ error: 'Error al eliminar la orden' });
+        }
+    }
+
+    // POST /pos/pedidos/:pedidoId/abonos
+    static async registrarAbono(req, res) {
+        try {
+            const { monto, forma_pago, nota, total } = req.body;
+            const resultado = await POSService.registrarAbono({
+                tenantId: req.tenant?.id,
+                usuarioId: req.user.id,
+                pedidoId: parseInt(req.params.pedidoId),
+                monto,
+                forma_pago,
+                nota,
+                totalVenta: total
+            });
+            res.status(201).json(resultado);
+        } catch (err) {
+            res.status(400).json({ error: err.message });
+        }
+    }
+
+    // GET /pos/pedidos/:pedidoId/abonos
+    static async listarAbonos(req, res) {
+        try {
+            res.json(await POSService.listarAbonos(req.tenant?.id, parseInt(req.params.pedidoId)));
+        } catch (err) {
+            res.status(400).json({ error: err.message });
+        }
+    }
+
+    // DELETE /pos/abonos/:abonoId
+    static async eliminarAbono(req, res) {
+        try {
+            res.json(await POSService.eliminarAbono(req.tenant?.id, parseInt(req.params.abonoId)));
+        } catch (err) {
+            res.status(400).json({ error: err.message });
         }
     }
 
@@ -158,6 +198,8 @@ class POSController {
                 productos,
                 usuario_id: req.user.id,
                 puedeUsarModificadores,
+                // Si la orden ya tenía abonos, la factura los toma del pedido (ver createWithDetails).
+                pedido_abono_id: pedido_cocina_id || null,
                 efectivo_recibido,
                 codigo_bono
             });

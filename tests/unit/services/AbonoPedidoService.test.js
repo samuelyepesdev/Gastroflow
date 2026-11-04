@@ -62,6 +62,19 @@ describe('AbonoPedidoService', () => {
             ).rejects.toThrow('no puede superar el saldo pendiente');
         });
 
+        it('con totalVenta (POS con descuentos) el abono tampoco puede pasar de lo que falta de ese total', async () => {
+            mockSaldo(30000); // los ítems suman 30000, pero el carrito con descuento vale 20000
+            await expect(
+                AbonoPedidoService.registrar({
+                    tenantId: 1,
+                    pedidoId: 10,
+                    monto: 25000,
+                    forma_pago: 'efectivo',
+                    totalVenta: 20000
+                })
+            ).rejects.toThrow('no puede superar el saldo pendiente (20000)');
+        });
+
         it('rechaza abonar a un pedido ya cerrado', async () => {
             mockSaldo(10000, 'cerrado');
             await expect(

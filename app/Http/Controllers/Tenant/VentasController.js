@@ -2,7 +2,7 @@ const VentaService = require('../../../../services/Tenant/VentaService');
 const ConfiguracionService = require('../../../../services/Tenant/ConfiguracionService');
 const EventoService = require('../../../../services/Tenant/EventoService');
 const SalesStatsRepository = require('../../../../repositories/Tenant/Stats/SalesStatsRepository');
-const { hoyColombia, toFechaISOUtc } = require('../../../../utils/dateHelpers');
+const { hoyColombia, toFechaISOUtc, aHoraColombiaParaExcel } = require('../../../../utils/dateHelpers');
 let ExcelJS;
 
 class VentasController {
@@ -133,59 +133,82 @@ class VentasController {
                 .join('  •  ');
             const rango = `Rango: ${req.query.desde || '-'} a ${req.query.hasta || '-'}${req.query.q ? '  •  Filtro: ' + req.query.q : ''}`;
 
-            ws.mergeCells('B1:E1');
-            ws.mergeCells('B2:E2');
-            ws.mergeCells('B3:E3');
-            ws.getRow(1).values = ['', titulo];
-            ws.getRow(2).values = ['', subInfo];
-            ws.getRow(3).values = ['', rango];
+            const COLUMNAS = [
+                { header: 'Factura #', key: 'numero', width: 11 },
+                { header: 'Fecha', key: 'fecha', width: 18, numFmt: 'dd/mm/yyyy hh:mm' },
+                { header: 'Cliente', key: 'cliente', width: 28 },
+                { header: 'Tipo de venta', key: 'tipo', width: 24 },
+                { header: 'Forma de pago', key: 'forma_pago', width: 15 },
+                { header: 'Efectivo', key: 'efectivo', width: 14, numFmt: '#,##0.00' },
+                { header: 'Transferencia', key: 'transferencia', width: 15, numFmt: '#,##0.00' },
+                { header: 'Bono', key: 'bono', width: 13, numFmt: '#,##0.00' },
+                { header: 'Total', key: 'total', width: 15, numFmt: '#,##0.00' }
+            ];
+            const ultimaCol = String.fromCharCode(64 + COLUMNAS.length);
+            const TINTA = 'FF0E1B2C';
+            const CORAL = 'FFFF5A36';
+            const GRIS = 'FF5B6B7E';
+
+            ws.columns = COLUMNAS.map(({ key, width }) => ({ key, width }));
+            [1, 2, 3].forEach(n => ws.mergeCells(`A${n}:${ultimaCol}${n}`));
+            ws.getCell('A1').value = titulo;
+            ws.getCell('A2').value = subInfo;
+            ws.getCell('A3').value = rango;
             ws.getRow(1).font = { bold: true, size: 16, color: { argb: 'FFFFFFFF' } };
-            ws.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF007BFF' } };
-            ws.getRow(2).font = { size: 10, color: { argb: 'FF6C757D' } };
-            ws.getRow(3).font = { size: 9, color: { argb: 'FF6C757D' } };
+            ws.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: TINTA } };
+            ws.getRow(2).font = { size: 10, color: { argb: GRIS } };
+            ws.getRow(3).font = { size: 9, color: { argb: GRIS } };
             ws.getRow(1).alignment = { horizontal: 'center', vertical: 'middle' };
             ws.getRow(1).height = 25;
 
-            ws.addRow([]);
-            const headerRow = ws.addRow(['Factura #', 'Fecha', 'Cliente', 'Forma de Pago', 'Total']);
+            const FILA_ENCABEZADO = 5;
+            const headerRow = ws.getRow(FILA_ENCABEZADO);
+            headerRow.values = COLUMNAS.map(c => c.header);
             headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
-            headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF495057' } };
+            headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: CORAL } };
             headerRow.alignment = { horizontal: 'center' };
 
+            const totales = { efectivo: 0, transferencia: 0, bono: 0, total: 0 };
             rows.forEach(row => {
-                ws.addRow([
-                    row.numero !== null && row.numero !== undefined ? row.numero : row.id,
-                    new Date(row.fecha),
-                    row.cliente,
-                    row.forma_pago,
-                    parseFloat(row.total || 0)
-                ]);
+                const pago = VentaService.desglosePago(row);
+                const total = parseFloat(row.total || 0);
+                totales.efectivo += pago.efectivo;
+                totales.transferencia += pago.transferencia;
+                totales.bono += pago.bono;
+                totales.total += total;
+                ws.addRow({
+                    numero: row.numero !== null && row.numero !== undefined ? row.numero : row.id,
+                    fecha: aHoraColombiaParaExcel(row.fecha),
+                    cliente: row.cliente,
+                    tipo: row.tipo_venta,
+                    forma_pago: row.forma_pago,
+                    efectivo: pago.efectivo,
+                    transferencia: pago.transferencia,
+                    bono: pago.bono,
+                    total
+                });
+            });
+            COLUMNAS.forEach((c, i) => {
+                if (c.numFmt) {
+                    ws.getColumn(i + 1).numFmt = c.numFmt;
+                }
             });
 
-            ws.columns = [
-                { key: 'numero', width: 10 },
-                { key: 'fecha', width: 18 },
-                { key: 'cliente', width: 30 },
-                { key: 'forma_pago', width: 15 },
-                { key: 'total', width: 15 }
-            ];
-
-            ws.getColumn(2).numFmt = 'dd/mm/yyyy hh:mm';
-            ws.getColumn(5).numFmt = '#,##0.00';
-
-            const sumRow = ws.addRow([
-                '',
-                '',
-                '',
-                'TOTAL:',
-                {
-                    formula: `SUM(E6:E${ws.rowCount - 1})`,
-                    result: rows.reduce((acc, r) => acc + parseFloat(r.total || 0), 0)
-                }
-            ]);
-            sumRow.getCell(4).font = { bold: true };
-            sumRow.getCell(5).font = { bold: true };
-            sumRow.getCell(5).numFmt = '#,##0.00';
+            // Fila de totales con fórmulas SUM (las hojas se recalculan al editar) y el valor ya calculado.
+            const primera = FILA_ENCABEZADO + 1;
+            const ultima = ws.rowCount;
+            const filaTotal = ws.addRow({ forma_pago: 'TOTAL:' });
+            ['efectivo', 'transferencia', 'bono', 'total'].forEach(key => {
+                const idx = COLUMNAS.findIndex(c => c.key === key) + 1;
+                const col = String.fromCharCode(64 + idx);
+                filaTotal.getCell(idx).value = rows.length
+                    ? { formula: `SUM(${col}${primera}:${col}${ultima})`, result: totales[key] }
+                    : 0;
+                filaTotal.getCell(idx).numFmt = '#,##0.00';
+            });
+            filaTotal.font = { bold: true };
+            filaTotal.getCell(COLUMNAS.findIndex(c => c.key === 'forma_pago') + 1).alignment = { horizontal: 'right' };
+            ws.views = [{ state: 'frozen', ySplit: FILA_ENCABEZADO }];
 
             res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
             res.setHeader(

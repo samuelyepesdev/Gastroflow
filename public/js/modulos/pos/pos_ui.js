@@ -257,28 +257,40 @@ window.POS_UI = {
 
         // Totales
         const total = POS.getTotal();
+        const abonado = POS.state.abonado || 0;
+        const saldo = POS.getSaldo();
         const totalesEl = document.getElementById('posTotales');
         if (totalesEl) {
             const units = cart.reduce((s, i) => s + i.cantidad, 0);
             const emptyColor = !cart.length ? '#8a97a8' : '#0e1b2c';
+            const lineaAbonos = abonado > 0 ? `
+                <div class="pos-total-row pos-total-abonado">
+                    <span><i class="bi bi-piggy-bank me-1"></i>Abonado
+                        <button type="button" class="pos-link-abonos" id="posBtnVerAbonos">Ver</button></span>
+                    <span>-${GF.dinero(abonado)}</span>
+                </div>` : '';
             totalesEl.innerHTML = `
                 <div class="pos-total-row">
                     <span>Subtotal <span class="pos-units-count">(${units} u.)</span></span>
                     <span>${GF.dinero(total)}</span>
                 </div>
+                ${lineaAbonos}
                 <div class="pos-total-divider"></div>
                 <div class="pos-total-row pos-total-main">
-                    <span>Total</span>
-                    <span class="pos-total-amount" style="color:${emptyColor}">${GF.dinero(total)}</span>
+                    <span>${abonado > 0 ? 'Saldo' : 'Total'}</span>
+                    <span class="pos-total-amount" style="color:${emptyColor}">${GF.dinero(saldo)}</span>
                 </div>`;
+            document.getElementById('posBtnVerAbonos')?.addEventListener('click', () => POS_ABONOS.ver());
         }
 
         const cobrarBtn = document.getElementById('posBtnCobrar');
         if (cobrarBtn) {
             cobrarBtn.disabled = !cart.length;
             const totalSpan = document.getElementById('posCobrarTotal');
-            if (totalSpan) totalSpan.textContent = GF.dinero(total);
+            if (totalSpan) totalSpan.textContent = GF.dinero(saldo);
         }
+        const abonarBtn = document.getElementById('posBtnAbonar');
+        if (abonarBtn) abonarBtn.disabled = !cart.length;
 
         // Badge del tab "Carrito" en móvil
         const mobileBadge = document.getElementById('posMobileCartBadge');
