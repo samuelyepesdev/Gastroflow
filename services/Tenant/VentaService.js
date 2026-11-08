@@ -17,6 +17,23 @@ class VentaService {
         return await VentaRepository.getAllWithFilters(tenantId, filters);
     }
 
+    /** Página de ventas del tenant + total de ventas que cumplen los filtros. */
+    static async getPagina(tenantId, filters, { page, limit }) {
+        const [ventas, total] = await Promise.all([
+            VentaRepository.getAllWithFilters(tenantId, filters, { page, limit }),
+            VentaRepository.contarConFilters(tenantId, filters)
+        ]);
+        return { ventas, total };
+    }
+
+    static async contarHoy(tenantId) {
+        return await VentaRepository.contarHoy(tenantId);
+    }
+
+    static async getPaginaAdmin(tenantId, filters, paginacion) {
+        return await VentaRepository.getPaginaAdmin(tenantId, filters, paginacion);
+    }
+
     /**
      * Get sales for Excel export (scoped by tenant)
      * @param {number} tenantId - Tenant ID

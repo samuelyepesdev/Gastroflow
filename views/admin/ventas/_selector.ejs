@@ -32,17 +32,22 @@ const getTenantColor = function(name) {
         </div>
 
         <!-- Segmentador de Pago y Buscador -->
-        <div class="d-flex align-items-center gap-3 flex-wrap">
+        <!-- Los filtros se aplican en el servidor (GET) para poder paginar. -->
+        <form method="get" action="/admin/ventas" id="formFiltrosVentas" class="d-flex align-items-center gap-3 flex-wrap">
+            <input type="hidden" name="tenantId" value="<%= activeTenantId %>">
+            <% if (filtros.desde) { %><input type="hidden" name="desde" value="<%= filtros.desde %>"><% } %>
+            <% if (filtros.hasta) { %><input type="hidden" name="hasta" value="<%= filtros.hasta %>"><% } %>
+
             <div class="segmented-control">
-                <button type="button" class="active" data-pay-filter="todos">Todas</button>
-                <button type="button" data-pay-filter="efectivo">Efectivo</button>
-                <button type="button" data-pay-filter="transferencia">Transf.</button>
+                <button type="submit" name="pago" value="" class="<%= !filtros.formaPago ? 'active' : '' %>">Todas</button>
+                <button type="submit" name="pago" value="efectivo" class="<%= filtros.formaPago === 'efectivo' ? 'active' : '' %>">Efectivo</button>
+                <button type="submit" name="pago" value="transferencia" class="<%= filtros.formaPago === 'transferencia' ? 'active' : '' %>">Transf.</button>
             </div>
-            
+
             <div class="search-wrapper">
                 <i class="bi bi-search text-muted fs-14"></i>
-                <input type="text" id="searchFactura" placeholder="# factura o cliente...">
+                <input type="search" id="searchFactura" name="q" value="<%= filtros.q || '' %>" placeholder="# factura o cliente..." enterkeyhint="search">
             </div>
-        </div>
+        </form>
     </div>
 </div>

@@ -5,6 +5,9 @@ const SalesStatsRepository = require('../../../../repositories/Tenant/Stats/Sale
 const { hoyColombia, toFechaISOUtc, aHoraColombiaParaExcel } = require('../../../../utils/dateHelpers');
 let ExcelJS;
 
+const PAGE_SIZE = 25;
+const FORMAS_PAGO_FILTRO = ['efectivo', 'transferencia'];
+
 class VentasController {
     // GET /ventas
     static async index(req, res) {
@@ -19,7 +22,8 @@ class VentasController {
                 desde: req.query.desde,
                 hasta: req.query.hasta,
                 q: req.query.q,
-                evento_id: req.query.evento_id || null
+                evento_id: req.query.evento_id || null,
+                formaPago: FORMAS_PAGO_FILTRO.includes(req.query.pago) ? req.query.pago : undefined
             };
             let eventoFiltro = null;
             if (filters.evento_id) {
@@ -32,39 +36,29 @@ class VentasController {
             // rango de filtro de arriba), desglosado por medio de pago igual que el dashboard.
             const hoy = hoyColombia();
 
-            const [ventas, mesasListas, hoyTotals] = await Promise.all([
-                VentaService.getWithFilters(tenantId, filters),
+            // La lista se pagina en SQL: no se cargan todas las ventas del rango.
+            let page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+            const [paginaVentas, mesasListas, hoyTotals, facturasHoy] = await Promise.all([
+                VentaService.getPagina(tenantId, filters, { page, limit: PAGE_SIZE }),
                 VentaService.getTablesReadyToPay(tenantId),
-                SalesStatsRepository.getTotalsByPaymentMethod(tenantId, { desde: hoy, hasta: hoy })
+                SalesStatsRepository.getTotalsByPaymentMethod(tenantId, { desde: hoy, hasta: hoy }),
+                VentaService.contarHoy(tenantId)
             ]);
+            const totalVentas = paginaVentas.total;
+            const totalPaginas = Math.max(Math.ceil(totalVentas / PAGE_SIZE), 1);
+            let ventas = paginaVentas.ventas;
+            if (page > totalPaginas) {
+                page = totalPaginas;
+                ventas = (await VentaService.getPagina(tenantId, filters, { page, limit: PAGE_SIZE })).ventas;
+            }
             const ventasHoy = {
                 efectivo: hoyTotals.efectivo || 0,
                 transferencia: hoyTotals.transferencia || 0,
                 serviciosExternos: hoyTotals.serviciosExternos || 0,
-                total: (hoyTotals.efectivo || 0) + (hoyTotals.transferencia || 0)
+                total: (hoyTotals.efectivo || 0) + (hoyTotals.transferencia || 0),
+                facturas: facturasHoy
             };
-            let totalEfectivo = 0,
-                totalTransferencia = 0,
-                totalGeneral = 0,
-                totalServiciosExternos = 0;
             (ventas || []).forEach(function (v) {
-                const totalFactura = Number(v.total) || 0;
-                const totalExternos = Number(v.total_servicios_externos) || 0;
-                const netSale = totalFactura - totalExternos;
-
-                totalGeneral += netSale; // Solo sumamos la venta neta (productos)
-                totalServiciosExternos += totalExternos;
-
-                const fp = String(v.forma_pago || '')
-                    .toLowerCase()
-                    .trim();
-                // Proporcionalmente asignamos a efectivo/transf
-                if (fp === 'efectivo') {
-                    totalEfectivo += netSale;
-                } else if (fp === 'transferencia') {
-                    totalTransferencia += netSale;
-                }
-
                 v.fechaISO = toFechaISOUtc(v.fecha);
             });
 
@@ -72,11 +66,12 @@ class VentasController {
                 ventas,
                 mesasListas: mesasListas || [],
                 eventoFiltro,
-                totalEfectivo,
-                totalTransferencia,
-                totalGeneral, // Ahora es el total de solo productos
-                totalServiciosExternos,
                 ventasHoy,
+                filtros: filters,
+                page,
+                totalPaginas,
+                totalVentas,
+                pageSize: PAGE_SIZE,
                 user: req.user,
                 tenant: req.tenant,
                 allowedByPlan: res.locals.allowedByPlan || {}

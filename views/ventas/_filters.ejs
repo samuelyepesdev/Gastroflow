@@ -30,9 +30,10 @@
     <div class="filter-group">
         <span class="filter-label">Forma de pago</span>
         <div class="payment-segment-container" id="payFilterContainer">
-            <button type="button" class="payment-segment-btn active" data-pay="todos">Todos</button>
-            <button type="button" class="payment-segment-btn" data-pay="efectivo">Efectivo</button>
-            <button type="button" class="payment-segment-btn" data-pay="transferencia">Transf.</button>
+            <% const pagoActivo = (typeof filtros !== 'undefined' && filtros && filtros.formaPago) || 'todos'; %>
+            <button type="button" class="payment-segment-btn <%= pagoActivo === 'todos' ? 'active' : '' %>" data-pay="todos">Todos</button>
+            <button type="button" class="payment-segment-btn <%= pagoActivo === 'efectivo' ? 'active' : '' %>" data-pay="efectivo">Efectivo</button>
+            <button type="button" class="payment-segment-btn <%= pagoActivo === 'transferencia' ? 'active' : '' %>" data-pay="transferencia">Transf.</button>
         </div>
     </div>
 

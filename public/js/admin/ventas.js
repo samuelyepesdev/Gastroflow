@@ -1,67 +1,46 @@
 (function () {
     var tbodyVentas = document.getElementById('tbodyVentas');
     var searchFactura = document.getElementById('searchFactura');
-    var payFilters = document.querySelectorAll('[data-pay-filter]');
-    
+    var formFiltros = document.getElementById('formFiltrosVentas');
+
     var shownInvoicesCount = document.getElementById('shownInvoicesCount');
     var shownTotalAmount = document.getElementById('shownTotalAmount');
     var deletedSessionCountEl = document.getElementById('deletedSessionCount');
     var noVentasMsg = document.getElementById('noVentasMsg');
 
-    var currentPayFilter = 'todos';
     var deletedCount = 0;
 
-    // Función de filtrado y recálculo
-    function applyFilters() {
-        var searchQuery = searchFactura ? searchFactura.value.trim().toLowerCase() : '';
-        var visibleCount = 0;
-        var visibleTotal = 0;
-
-        var rows = document.querySelectorAll('.venta-row');
-        rows.forEach(function (row) {
-            var num = row.getAttribute('data-numero').toLowerCase();
-            var cliente = row.getAttribute('data-cliente').toLowerCase();
-            var payMethod = row.getAttribute('data-forma-pago').toLowerCase();
-            var total = parseFloat(row.getAttribute('data-total') || '0');
-
-            var matchesSearch = !searchQuery || num.indexOf(searchQuery) >= 0 || cliente.indexOf(searchQuery) >= 0;
-            var matchesPay = currentPayFilter === 'todos' || payMethod === currentPayFilter;
-
-            if (matchesSearch && matchesPay) {
-                row.style.display = '';
-                visibleCount++;
-                visibleTotal += total;
-            } else {
-                row.style.display = 'none';
-            }
+    // El filtrado (búsqueda y forma de pago) lo hace el servidor para poder paginar:
+    // el formulario GET recarga la lista desde la página 1. La búsqueda se envía sola
+    // al dejar de escribir.
+    var debounceBusqueda = null;
+    if (searchFactura && formFiltros) {
+        searchFactura.addEventListener('input', function () {
+            clearTimeout(debounceBusqueda);
+            debounceBusqueda = setTimeout(function () { formFiltros.submit(); }, 500);
         });
+    }
 
-        // Actualizar estadísticas en tiempo real
-        if (shownInvoicesCount) shownInvoicesCount.textContent = visibleCount;
+    function parseMonto(texto) {
+        return parseFloat(String(texto || '0').replace(/[^\d]/g, '')) || 0;
+    }
+
+    // Tras eliminar una fila: ajusta los totales (de todas las páginas) y, si la página
+    // quedó vacía, recarga para traer filas de la siguiente (o ir a la página anterior).
+    function actualizarTrasEliminar(totalEliminado) {
+        if (shownInvoicesCount) {
+            var n = parseMonto(shownInvoicesCount.textContent) - 1;
+            shownInvoicesCount.textContent = Math.max(n, 0).toLocaleString('es-CO');
+        }
         if (shownTotalAmount) {
-            shownTotalAmount.textContent = '$' + Math.round(visibleTotal).toLocaleString('es-CO');
+            var monto = parseMonto(shownTotalAmount.textContent) - Math.round(totalEliminado);
+            shownTotalAmount.textContent = '$' + Math.max(monto, 0).toLocaleString('es-CO');
         }
-
-        // Mostrar u ocultar mensaje sin resultados
-        if (noVentasMsg) {
-            noVentasMsg.style.display = visibleCount === 0 ? 'block' : 'none';
+        if (document.querySelectorAll('.venta-row').length === 0) {
+            // El servidor ajusta la página si ya no existe; con filas restantes muestra la misma.
+            window.location.reload();
         }
     }
-
-    // Escuchar cambios en buscador
-    if (searchFactura) {
-        searchFactura.addEventListener('input', applyFilters);
-    }
-
-    // Escuchar cambios en segmentadores de forma de pago
-    payFilters.forEach(function (btn) {
-        btn.addEventListener('click', function () {
-            payFilters.forEach(function (b) { b.classList.remove('active'); });
-            this.classList.add('active');
-            currentPayFilter = this.getAttribute('data-pay-filter');
-            applyFilters();
-        });
-    });
 
     // ─── Modificar venta ───────────────────────────────────────────
     var modalEditarEl = document.getElementById('modalEditarVenta');
@@ -224,8 +203,7 @@
                         deletedSessionCountEl.textContent = deletedCount;
                     }
 
-                    // Reaplicar filtros y recálculos
-                    applyFilters();
+                    actualizarTrasEliminar(parseFloat(total) || 0);
                 })
                 .catch(function (err) {
                     Swal.fire({ icon: 'error', title: 'Error al eliminar', text: err.message || 'No se pudo eliminar la factura.' });

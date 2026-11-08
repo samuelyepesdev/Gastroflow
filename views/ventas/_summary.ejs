@@ -1,18 +1,4 @@
 <%
-const formatoFechaLocal = new Intl.DateTimeFormat('es-CO', { timeZone: 'America/Bogota', year: 'numeric', month: '2-digit', day: '2-digit' });
-const hoyColombiaFormat = formatoFechaLocal.format(new Date());
-let facturasHoyCount = 0;
-(ventas || []).forEach(v => {
-    try {
-        const f = v.fechaISO ? new Date(v.fechaISO) : new Date(v.fecha);
-        if (formatoFechaLocal.format(f) === hoyColombiaFormat) {
-            facturasHoyCount++;
-        }
-    } catch (e) {
-        // ignore
-    }
-});
-
 const fmtNum = (n) => '$ ' + (Number(n) || 0).toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 // Los montos son SIEMPRE del día de hoy (neto = venta − servicios externos),
 // independientes del rango de fechas de arriba (que solo filtra la tabla).
@@ -53,6 +39,6 @@ const vHoy = (typeof ventasHoy !== 'undefined' && ventasHoy) ? ventasHoy : { efe
             <span class="kpi-card-icon" style="background: var(--accentSoft); color: var(--accent);"><i class="bi bi-receipt"></i></span>
             <span class="kpi-card-title">Facturas Hoy</span>
         </div>
-        <div class="kpi-card-value" id="facturasHoyVal"><%= facturasHoyCount %></div>
+        <div class="kpi-card-value" id="facturasHoyVal"><%= vHoy.facturas || 0 %></div>
     </div>
 </div>

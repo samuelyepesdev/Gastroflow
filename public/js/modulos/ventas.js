@@ -175,6 +175,8 @@ document.getElementById('filtrarVentas').addEventListener('click', function () {
         return;
     }
     const params = new URLSearchParams({ desde, hasta, q });
+    const pago = pagoSeleccionado();
+    if (pago !== 'todos') params.set('pago', pago);
     const eventoId = new URLSearchParams(window.location.search).get('evento_id');
     if (eventoId) params.set('evento_id', eventoId);
     window.location.href = `/ventas?${params.toString()}`;
@@ -186,6 +188,8 @@ document.getElementById('limpiarFiltrosVentas').addEventListener('click', functi
     params.delete('desde');
     params.delete('hasta');
     params.delete('q');
+    params.delete('pago');
+    params.delete('page');
     window.location.href = (params.toString() ? '/ventas?' + params.toString() : '/ventas');
 });
 
@@ -205,106 +209,38 @@ if (btnExportar) {
     });
 }
 
-// Local live filters logic
-function rowMatchesSearch(row) {
-    const q = (document.getElementById('buscarVentas').value || '').trim().toLowerCase();
-    if (!q) return true;
-    
-    const invoiceId = row.querySelector('.factura-id')?.textContent.toLowerCase() || '';
-    const clientName = row.cells[2]?.textContent.toLowerCase() || '';
-    
-    return invoiceId.includes(q) || clientName.includes(q);
+// Los filtros (búsqueda y forma de pago) los aplica el servidor para poder paginar:
+// cada cambio recarga la lista desde la página 1 conservando el resto de filtros.
+function pagoSeleccionado() {
+    return document.querySelector('.payment-segment-btn.active')?.dataset.pay || 'todos';
 }
 
-function recalculateVisibleStats() {
-    // Las tarjetas Efectivo / Transferencia / Total Neto son fijas del día de hoy
-    // (render del servidor) y NO se recalculan con los filtros de la tabla; estos
-    // solo afectan los subtotales por grupo y el contador "Facturas Hoy".
-    const groupHeaders = document.querySelectorAll('.table-group-header');
-    groupHeaders.forEach(header => {
-        let next = header.nextElementSibling;
-        let groupTotal = 0;
-        let groupCount = 0;
-
-        while (next && !next.classList.contains('table-group-header')) {
-            if (next.style.display !== 'none') {
-                groupTotal += Number(next.dataset.total || 0);
-                groupCount++;
-            }
-            next = next.nextElementSibling;
-        }
-
-        const summarySpan = header.querySelector('.group-summary');
-        if (summarySpan) {
-            summarySpan.innerHTML = groupCount + ' facturas · <b>$ ' + Math.round(groupTotal).toLocaleString('es-CO') + '</b>';
-        }
-
-        if (groupCount === 0) {
-            header.style.setProperty('display', 'none', 'important');
-        } else {
-            header.style.setProperty('display', 'table-row', 'important');
-        }
-    });
-
-    const elCount = document.getElementById('facturasHoyVal');
-    if (elCount) {
-        let hoyCount = 0;
-        document.querySelectorAll('.venta-row').forEach(row => {
-            if (row.style.display !== 'none') {
-                let prev = row.previousElementSibling;
-                while (prev && !prev.classList.contains('table-group-header')) {
-                    prev = prev.previousElementSibling;
-                }
-                if (prev?.classList.contains('today')) {
-                    hoyCount++;
-                }
-            }
-        });
-        elCount.textContent = hoyCount;
-    }
+function aplicarFiltrosEnServidor(pago) {
+    const params = new URLSearchParams(window.location.search);
+    params.delete('page');
+    const q = (document.getElementById('buscarVentas').value || '').trim();
+    if (q) params.set('q', q); else params.delete('q');
+    if (pago && pago !== 'todos') params.set('pago', pago); else params.delete('pago');
+    window.location.href = '/ventas' + (params.toString() ? '?' + params.toString() : '');
 }
 
-// Payment method segment click handler
-$(document).on('click', '.payment-segment-btn', function() {
-    $('.payment-segment-btn').removeClass('active');
-    $(this).addClass('active');
-    
-    const selectedPay = $(this).data('pay');
-    
-    document.querySelectorAll('.venta-row').forEach(row => {
-        const rowPay = row.dataset.formaPago;
-        const matchesSearch = rowMatchesSearch(row);
-        const matchesPay = (selectedPay === 'todos' || rowPay === selectedPay);
-        
-        if (matchesSearch && matchesPay) {
-            row.style.setProperty('display', 'table-row', 'important');
-        } else {
-            row.style.setProperty('display', 'none', 'important');
-        }
-    });
-    
-    recalculateVisibleStats();
+$(document).on('click', '.payment-segment-btn', function () {
+    aplicarFiltrosEnServidor($(this).data('pay'));
 });
 
-// Search input key press local trigger
+// Búsqueda: se envía al dejar de escribir (o con Enter).
 const searchInput = document.getElementById('buscarVentas');
 if (searchInput) {
-    searchInput.addEventListener('input', function() {
-        const selectedPay = document.querySelector('.payment-segment-btn.active')?.dataset.pay || 'todos';
-        
-        document.querySelectorAll('.venta-row').forEach(row => {
-            const rowPay = row.dataset.formaPago;
-            const matchesSearch = rowMatchesSearch(row);
-            const matchesPay = (selectedPay === 'todos' || rowPay === selectedPay);
-            
-            if (matchesSearch && matchesPay) {
-                row.style.setProperty('display', 'table-row', 'important');
-            } else {
-                row.style.setProperty('display', 'none', 'important');
-            }
-        });
-        
-        recalculateVisibleStats();
+    let debounceBusqueda = null;
+    searchInput.addEventListener('input', function () {
+        clearTimeout(debounceBusqueda);
+        debounceBusqueda = setTimeout(function () { aplicarFiltrosEnServidor(pagoSeleccionado()); }, 500);
+    });
+    searchInput.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') {
+            clearTimeout(debounceBusqueda);
+            aplicarFiltrosEnServidor(pagoSeleccionado());
+        }
     });
 }
 
