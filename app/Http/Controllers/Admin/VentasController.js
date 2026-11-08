@@ -3,6 +3,9 @@ const VentaService = require('../../../../services/Tenant/VentaService');
 const FacturaRepository = require('../../../../repositories/Tenant/FacturaRepository');
 const { toFechaISOUtc } = require('../../../../utils/dateHelpers');
 
+const PAGE_SIZE = 25;
+const FORMAS_PAGO_FILTRO = ['efectivo', 'transferencia'];
+
 class VentasController {
     // GET /admin/ventas
     static async index(req, res) {
@@ -15,24 +18,39 @@ class VentasController {
                 activeTenantId = Number(activeTenantId);
             }
 
-            let ventas = [];
-            if (activeTenantId) {
-                ventas = await VentaService.getWithFilters(activeTenantId, {
-                    desde: req.query.desde || undefined,
-                    hasta: req.query.hasta || undefined,
-                    q: req.query.q || undefined
-                });
-                // La vista formatea la fecha en el servidor (UTC en Railway): se pasa
-                // en ISO UTC explícito para convertirla a hora Colombia al mostrarla.
-                ventas.forEach(v => {
-                    v.fechaISO = toFechaISOUtc(v.fecha);
-                });
+            const filtros = {
+                desde: req.query.desde || undefined,
+                hasta: req.query.hasta || undefined,
+                q: (req.query.q || '').trim() || undefined,
+                formaPago: FORMAS_PAGO_FILTRO.includes(req.query.pago) ? req.query.pago : undefined
+            };
+
+            let page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+            let resultado = await VentaService.getPaginaAdmin(activeTenantId, filtros, { page, limit: PAGE_SIZE });
+            const totalPaginas = Math.max(Math.ceil(resultado.total / PAGE_SIZE), 1);
+            if (page > totalPaginas) {
+                // Página fuera de rango (p. ej. se borró la última fila de la última página).
+                page = totalPaginas;
+                resultado = await VentaService.getPaginaAdmin(activeTenantId, filtros, { page, limit: PAGE_SIZE });
             }
+
+            // La vista formatea la fecha en el servidor (UTC en Railway): se pasa
+            // en ISO UTC explícito para convertirla a hora Colombia al mostrarla.
+            const ventas = resultado.ventas;
+            ventas.forEach(v => {
+                v.fechaISO = toFechaISOUtc(v.fecha);
+            });
+
             res.render('admin/ventas', {
                 user: req.user,
                 tenants,
                 ventas,
-                activeTenantId
+                activeTenantId,
+                filtros,
+                page,
+                totalPaginas,
+                totalVentas: resultado.total,
+                montoTotal: resultado.montoTotal
             });
         } catch (error) {
             console.error('Error al cargar ventas admin:', error);

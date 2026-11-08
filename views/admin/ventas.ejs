@@ -16,17 +16,14 @@
                 <span class="stat-icon"><i class="bi bi-receipt"></i></span>
                 <span class="stat-title">Facturas mostradas</span>
             </div>
-            <div class="stat-val" id="shownInvoicesCount"><%= (ventas || []).length %></div>
+            <div class="stat-val" id="shownInvoicesCount"><%= Number(totalVentas || 0).toLocaleString('es-CO') %></div>
         </div>
         <div class="stat-card">
             <div class="stat-card-header">
                 <span class="stat-icon"><i class="bi bi-cash-stack"></i></span>
                 <span class="stat-title">Monto mostrado</span>
             </div>
-            <%
-            let totalVal = (ventas || []).reduce((acc, curr) => acc + Number(curr.total || 0), 0);
-            %>
-            <div class="stat-val" id="shownTotalAmount">$<%= Math.round(totalVal).toLocaleString('es-CO') %></div>
+            <div class="stat-val" id="shownTotalAmount">$<%= Math.round(Number(montoTotal || 0)).toLocaleString('es-CO') %></div>
         </div>
         <div class="stat-card">
             <div class="stat-card-header">
@@ -58,6 +55,9 @@
 
     <!-- Tabla de Ventas -->
     <%- include('ventas/_table', { ...locals, ventas }) %>
+
+    <!-- Paginación -->
+    <%- include('ventas/_paginacion', { ...locals }) %>
 
     <!-- Modal Modificar Venta -->
     <div class="modal fade" id="modalEditarVenta" tabindex="-1" aria-hidden="true">

@@ -83,7 +83,7 @@ const formatMoney = (n) => '$ ' + Math.round(n).toLocaleString('es-CO');
                                     <%= getGroupTitle(g) %>
                                 </span>
                                 <span class="group-summary">
-                                    <%= rows.length %> facturas · <b><%= formatMoney(subtotal) %></b>
+                                    <%= rows.length %> facturas<%= totalPaginas > 1 ? ' en esta página' : '' %> · <b><%= formatMoney(subtotal) %></b>
                                 </span>
                             </div>
                         </td>

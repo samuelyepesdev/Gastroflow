@@ -1,0 +1,43 @@
+<% if (totalPaginas > 1) { %>
+    <%
+        // Solo se serializan filtros con valor: URLSearchParams convierte null/undefined
+        // en el texto "null"/"undefined", que el controller leería como un filtro real.
+        const construirUrlPagina = function (n) {
+            const params = { page: n };
+            if (filtros.desde) params.desde = filtros.desde;
+            if (filtros.hasta) params.hasta = filtros.hasta;
+            if (filtros.q) params.q = filtros.q;
+            if (filtros.formaPago) params.pago = filtros.formaPago;
+            if (filtros.evento_id) params.evento_id = filtros.evento_id;
+            return '/ventas?' + new URLSearchParams(params).toString();
+        };
+        // Ventana: primera, última y 2 a cada lado de la actual (con "…").
+        const paginasVisibles = [];
+        for (let i = 1; i <= totalPaginas; i++) {
+            if (i === 1 || i === totalPaginas || Math.abs(i - page) <= 2) paginasVisibles.push(i);
+        }
+        const desdeFila = (page - 1) * pageSize + 1;
+        const hastaFila = Math.min(page * pageSize, totalVentas);
+    %>
+    <nav class="mt-3 mb-4" aria-label="Paginación de ventas">
+        <p class="text-center text-muted small mb-2">
+            Mostrando <%= desdeFila %>–<%= hastaFila %> de <%= Number(totalVentas).toLocaleString('es-CO') %> ventas
+        </p>
+        <ul class="pagination pagination-sm justify-content-center flex-wrap">
+            <li class="page-item <%= page <= 1 ? 'disabled' : '' %>">
+                <a class="page-link" href="<%= construirUrlPagina(Math.max(page - 1, 1)) %>" aria-label="Anterior">&laquo;</a>
+            </li>
+            <% paginasVisibles.forEach(function (n, idx) { %>
+                <% if (idx > 0 && n - paginasVisibles[idx - 1] > 1) { %>
+                    <li class="page-item disabled"><span class="page-link">…</span></li>
+                <% } %>
+                <li class="page-item <%= n === page ? 'active' : '' %>">
+                    <a class="page-link" href="<%= construirUrlPagina(n) %>"><%= n %></a>
+                </li>
+            <% }); %>
+            <li class="page-item <%= page >= totalPaginas ? 'disabled' : '' %>">
+                <a class="page-link" href="<%= construirUrlPagina(Math.min(page + 1, totalPaginas)) %>" aria-label="Siguiente">&raquo;</a>
+            </li>
+        </ul>
+    </nav>
+<% } %>
