@@ -68,11 +68,14 @@ script que se ajustaron al corregir los hallazgos (no se volvió a ejecutar comp
 
 ## 5. Pendiente
 
-- **Límite global de peticiones (verificado):** la clave del limitador es `getClientIp` (`utils/clientIp.js`,
-  `app.js:266`), que acepta `cf-connecting-ip` si es una IP válida. Quien llegue directo al servidor, sin pasar por
-  Cloudflare, puede rotar esa cabecera y no acumula peticiones: la suite de carga lo hizo y no recibió ningún 429.
-  Es un riesgo solo si el origen es alcanzable sin Cloudflare. Mitigación: aceptar la cabecera únicamente cuando la
-  conexión venga de los rangos de Cloudflare, o bloquear el acceso directo al origen. Requiere decisión.
+- **Límite global de peticiones (verificado, mitigación implementada):** la clave del limitador es `getClientIp`
+  (`utils/clientIp.js`, `app.js:266`), que aceptaba `cf-connecting-ip` sin comprobar de dónde venía. Con
+  `curl -I` se confirmó que `*.up.railway.app` responde sin Cloudflare (`Server: railway-hikari`, sin `cf-ray`),
+  mientras que `gastroflow.digital` sí pasa por Cloudflare. Borrar el dominio de Railway no basta (el borde enruta
+  por `Host`). Ahora la cabecera solo se acepta si la petición trae `X-Origin-Secret` igual a `CF_ORIGIN_SECRET`.
+  **Para activarlo:** definir `CF_ORIGIN_SECRET` en Railway y crear en Cloudflare una regla *Transform Rules →
+  Modify Request Header* que añada `X-Origin-Secret` con el mismo valor. Sin la variable, el comportamiento no
+  cambia.
 - **Migración 127:** aplicada solo en `gastroflow_stress`; falta aplicarla en desarrollo y producción.
 - **`/api/clientes`:** paginar cambia el contrato de la API y la interfaz; requiere decisión.
 - **`/api/productos`, `/api/mesas`, insumos y `getPaginaAdmin`:** sin optimizar.
