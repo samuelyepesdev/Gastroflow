@@ -25,6 +25,33 @@
             opacity: 0.8;
         }
 
+        /* Títulos de sección, hamburguesa y divisores heredan el color de texto del cliente
+           (antes llevaban blanco fijo y se perdían con un navbar claro). */
+        .navbar .nav-grupo-h,
+        .navbar .navbar-toggler {
+            color: var(--n-text-color) !important;
+        }
+
+        .navbar .nav-grupo,
+        .navbar .ndiv {
+            border-color: color-mix(in srgb, var(--n-text-color) 20%, transparent) !important;
+        }
+
+        .navbar .ndiv {
+            background: color-mix(in srgb, var(--n-text-color) 20%, transparent) !important;
+        }
+
+        .navbar .navbar-toggler {
+            border: 1px solid color-mix(in srgb, var(--n-text-color) 40%, transparent) !important;
+        }
+
+        .navbar .navbar-toggler-icon {
+            background-image: none !important;
+            background-color: var(--n-text-color);
+            -webkit-mask: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='black' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e") center / contain no-repeat;
+            mask: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='black' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e") center / contain no-repeat;
+        }
+
         .btn-primary {
             background-color: var(--bs-primary) !important;
             border-color: var(--bs-primary) !important;
