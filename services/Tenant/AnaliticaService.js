@@ -14,6 +14,8 @@ function nombreMes(month) {
     return nombres[month - 1] || '';
 }
 
+const CacheService = require('../Shared/CacheService');
+
 class AnaliticaService {
     /**
      * Resumen de ventas por mes (últimos N meses) para gráficos y análisis
@@ -94,11 +96,15 @@ class AnaliticaService {
      * Datos para la página de analítica: resumen + predicción
      */
     static async getAnaliticaCompleta(tenantId) {
-        const [resumen, prediccion] = await Promise.all([
-            this.getResumenUltimosMeses(tenantId, 3),
-            this.getPrediccionProximoMes(tenantId)
-        ]);
-        return { resumen, prediccion };
+        // Agrega todo el histórico de facturas (~250 ms con 60k facturas) y son datos mensuales:
+        // 2 min de caché, y una sola ejecución aunque varias pestañas la pidan a la vez.
+        return CacheService.remember(`analitica:${tenantId}`, 120, async () => {
+            const [resumen, prediccion] = await Promise.all([
+                this.getResumenUltimosMeses(tenantId, 3),
+                this.getPrediccionProximoMes(tenantId)
+            ]);
+            return { resumen, prediccion };
+        });
     }
 }
 

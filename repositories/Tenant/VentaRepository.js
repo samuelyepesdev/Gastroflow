@@ -16,7 +16,29 @@ class VentaRepository {
      */
     static async getAllWithFilters(tenantId, filters, paginacion) {
         const { where, params } = VentaRepository._whereVentas(tenantId, filters);
-        let query = `
+        // Paginado: primero se eligen los ids de la página con un FROM mínimo (solo facturas + clientes, lo que
+        // usan los filtros) y recién ahí se hacen los demás JOIN y las subconsultas, SOLO para esas filas.
+        // Con todos los JOIN en una sola consulta, MySQL materializaba y ordenaba TODAS las facturas del tenant
+        // (y calculaba las subconsultas por fila) antes de aplicar el LIMIT: ~2 s con 60k facturas.
+        const paginado = Boolean(paginacion);
+        const desde = paginado
+            ? `FROM (
+                SELECT f.id FROM facturas f
+                LEFT JOIN clientes c ON f.cliente_id = c.id AND c.tenant_id = f.tenant_id
+                ${where}
+                ORDER BY f.fecha DESC, f.id DESC
+                LIMIT ? OFFSET ?
+            ) pagina
+            JOIN facturas f ON f.id = pagina.id
+            JOIN tenants t ON f.tenant_id = t.id
+            LEFT JOIN clientes c ON f.cliente_id = c.id AND c.tenant_id = f.tenant_id
+            LEFT JOIN eventos e ON f.evento_id = e.id AND e.tenant_id = f.tenant_id
+            LEFT JOIN facturas_electronicas fe ON fe.factura_id = f.id`
+            : VentaRepository._fromVentas;
+        if (paginado) {
+            params.push(paginacion.limit, (Math.max(paginacion.page, 1) - 1) * paginacion.limit);
+        }
+        const query = `
             SELECT f.id, f.numero, DATE_FORMAT(f.fecha, '%Y-%m-%d %H:%i:%s') AS fecha, f.cliente_id, f.forma_pago, f.total, f.evento_id,
                    c.nombre AS cliente_nombre,
                    e.nombre AS evento_nombre,
@@ -25,14 +47,9 @@ class VentaRepository {
                    fe.estado AS estado_fe,
                    (SELECT COALESCE(SUM(df.subtotal), 0) FROM detalle_factura df JOIN servicios s ON s.id = df.servicio_id WHERE df.factura_id = f.id AND df.es_servicio = 1 AND s.es_externo = 1) AS total_servicios_externos,
                    (SELECT COALESCE(SUM(df.subtotal), 0) FROM detalle_factura df WHERE df.factura_id = f.id AND (df.es_servicio = 0 OR df.es_servicio IS NULL)) AS total_productos
-            ${VentaRepository._fromVentas}
-            ${where}
+            ${desde}
+            ${paginado ? '' : where}
             ORDER BY f.fecha DESC, f.id DESC`;
-        if (paginacion) {
-            // Sin paginación se devuelve todo (comportamiento original).
-            query += ' LIMIT ? OFFSET ?';
-            params.push(paginacion.limit, (Math.max(paginacion.page, 1) - 1) * paginacion.limit);
-        }
         const [ventas] = await db.query(query, params);
         return ventas;
     }
