@@ -133,7 +133,7 @@
     "@playwright/test": "^1.60.0",
     "@types/node": "25.3.0",
     "artillery": "^1.7.9",
-    "autocannon": "^2.0.1",
+    "autocannon": "^7.15.0",
     "electron": "^43.1.0",
     "electron-builder": "^26.15.3",
     "eslint": "^10.4.1",

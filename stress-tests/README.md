@@ -110,3 +110,34 @@ Puedes fijar credenciales y URL sin tocar el código:
 2. Tener **usuarios y tenants de prueba** creados (`npm run create-admin` y, si aplica, `npm run seed-tenants`).
 3. Si la base de datos está en la misma máquina, el cuello de botella suele ser MySQL o el límite del pool; monitorea conexiones y consultas lentas.
 4. Añadir `env-stress.yml` (con credenciales) al `.gitignore` si no quieres subirlo al repositorio.
+
+---
+
+## Suite de rendimiento (2026-11) — entorno aislado
+
+Mide capacidad real, consultas costosas y cuellos de botella. **Solo local**: se niega a correr contra hosts
+que no sean localhost o si la BD no contiene `stress` en el nombre.
+
+```bash
+# 1. BD aislada + datos de volumen (60k facturas, 12k pedidos, 3k clientes)
+mysql -uroot -e "CREATE DATABASE gastroflow_stress CHARACTER SET utf8mb4"
+DB_NAME=gastroflow_stress npm run migrate && DB_NAME=gastroflow_stress npm run create-admin
+DB_NAME=gastroflow_stress node stress-tests/seed-stress-data.js
+# plan premium para que todos los módulos respondan 200 (no 403)
+mysql -uroot gastroflow_stress -e "UPDATE tenants SET plan_id=3 WHERE id=1"
+
+# 2. App contra esa BD (terminal aparte)
+DB_NAME=gastroflow_stress PORT=3100 node server.js
+
+# 3. Verificar rutas y correr la suite (~25 min con los valores por defecto)
+node stress-tests/check-endpoints.js http://localhost:3100 /api/mesas /pos/productos
+node stress-tests/gf-suite.js --url http://localhost:3100 --sweep 8 --soak 60
+```
+
+`gf-suite.js` hace: barrido de ~35 endpoints (rps, p50/p99, consultas SQL y filas examinadas por petición),
+escenarios mixtos (baseline / 50 / 100 / 250 conexiones / soak), CPU y RAM del proceso, conexiones MySQL y las
+consultas más costosas (`performance_schema`). Informe en `stress-tests/reports/suite-<ts>.json`.
+
+Notas: el login admite 5 intentos/min por IP (la suite inicia sesión una sola vez). Para no medir solo 429 del
+limitador global, cada petición lleva un `cf-connecting-ip` aleatorio; usa `--keep-limiter` para medir con él.
+`/api/*` que respondan 301/403/404 en `check-endpoints.js` no miden carga real: corrige la ruta o el plan.
