@@ -9,11 +9,17 @@ class LoginRequest extends BaseRequest {
     static rules() {
         return [
             body('username')
-                .notEmpty().withMessage('El nombre de usuario es requerido')
+                .notEmpty()
+                .withMessage('El nombre de usuario es requerido')
+                .isLength({ max: 100 })
+                .withMessage('El nombre de usuario es demasiado largo')
                 .trim(),
 
             body('password')
-                .notEmpty().withMessage('La contraseña es requerida')
+                .notEmpty()
+                .withMessage('La contraseña es requerida')
+                .isLength({ max: 200 })
+                .withMessage('La contraseña es demasiado larga')
         ];
     }
 }

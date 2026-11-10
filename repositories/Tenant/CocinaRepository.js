@@ -35,7 +35,7 @@ class CocinaRepository {
             WHERE p.tenant_id = ?
               AND (pr.id IS NOT NULL OR cb.id IS NOT NULL)
               AND COALESCE(c.nombre, '') <> 'Cerámicas'
-              AND p.estado NOT IN ('cerrado', 'cancelado')
+              AND p.estado IN ('abierto','en_cocina','preparando','listo','servido')
               AND i.estado IN ('enviado','preparando','listo')
             ORDER BY COALESCE(i.enviado_at, i.created_at) ASC, i.id ASC
         `,

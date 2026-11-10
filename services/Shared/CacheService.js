@@ -1,6 +1,7 @@
 class CacheService {
     constructor() {
         this.cache = new Map();
+        this.enVuelo = new Map();
     }
 
     /**
@@ -32,6 +33,35 @@ class CacheService {
             value,
             expiresAt: Date.now() + ttlSeconds * 1000
         });
+    }
+
+    /**
+     * Devuelve el valor cacheado o lo calcula UNA sola vez aunque lleguen muchas peticiones a la vez
+     * (evita el "cache stampede": N peticiones simultáneas con la caché fría ejecutaban N veces
+     * las mismas consultas pesadas). Si el cálculo falla no se cachea y el error llega a todos los que esperan.
+     * @param {string} key
+     * @param {number} ttlSeconds
+     * @param {() => Promise<any>} producer
+     */
+    async remember(key, ttlSeconds, producer) {
+        const hit = this.get(key);
+        if (hit) {
+            return hit;
+        }
+        if (this.enVuelo.has(key)) {
+            return this.enVuelo.get(key);
+        }
+        const promesa = (async () => {
+            try {
+                const value = await producer();
+                this.set(key, value, ttlSeconds);
+                return value;
+            } finally {
+                this.enVuelo.delete(key);
+            }
+        })();
+        this.enVuelo.set(key, promesa);
+        return promesa;
     }
 
     /**

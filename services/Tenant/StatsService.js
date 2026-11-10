@@ -26,11 +26,11 @@ class StatsService {
      */
     static async getDashboardStats(tenantId, filters = {}) {
         const cacheKey = `tenant_dashboard_stats_${tenantId}_${JSON.stringify(filters)}`;
-        const cached = cacheService.get(cacheKey);
-        if (cached) {
-            return cached;
-        }
+        return cacheService.remember(cacheKey, 120, () => StatsService._calcularDashboardStats(tenantId, filters));
+    }
 
+    /** Calcula las estadísticas del dashboard (sin caché; ver getDashboardStats). */
+    static async _calcularDashboardStats(tenantId, filters = {}) {
         // Calcular fechas en timezone Colombia (America/Bogota), no en UTC
         const fechaHoyColombia = hoyColombia(); // 'YYYY-MM-DD'
         const [anioColombia, mesColombia] = fechaHoyColombia.split('-').map(Number);
@@ -150,7 +150,6 @@ class StatsService {
         };
 
         // Cachear por 2 minutos (120 segundos)
-        cacheService.set(cacheKey, stats, 120);
         return stats;
     }
 

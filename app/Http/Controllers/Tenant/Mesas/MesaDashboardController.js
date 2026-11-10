@@ -21,7 +21,7 @@ class MesaDashboardController {
                 `
                 SELECT m.*, (
                     SELECT COUNT(*) FROM pedidos p 
-                    WHERE p.mesa_id = m.id AND p.estado NOT IN ('cerrado','cancelado')
+                    WHERE p.mesa_id = m.id AND p.estado IN ('abierto','en_cocina','preparando','listo','servido')
                 ) AS pedidos_abiertos
                 FROM mesas m
                 WHERE m.tenant_id = ?
@@ -71,7 +71,7 @@ class MesaDashboardController {
                 `
                 SELECT m.*, (
                     SELECT COUNT(*) FROM pedidos p 
-                    WHERE p.mesa_id = m.id AND p.estado NOT IN ('cerrado','cancelado')
+                    WHERE p.mesa_id = m.id AND p.estado IN ('abierto','en_cocina','preparando','listo','servido')
                 ) AS pedidos_abiertos
                 FROM mesas m
                 WHERE m.tenant_id = ? AND (m.tipo = 'fisica' OR m.estado <> 'libre')
