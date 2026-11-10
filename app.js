@@ -318,26 +318,6 @@ if (process.env.SENTRY_DSN) {
 }
 
 // Manejo de Errores Global (500)
-app.use((err, req, res, next) => {
-    const logger = require('./utils/logger');
-    logger.error('Error en la aplicación', {
-        error: err.message,
-        stack: err.stack,
-        url: req.originalUrl,
-        method: req.method
-    });
-
-    if (req.xhr || (req.headers.accept && req.headers.accept.indexOf('json') > -1)) {
-        res.status(500).json({
-            error: 'Error interno del servidor'
-        });
-    } else {
-        res.status(500).render('errors/internal', {
-            error: {
-                message: 'Error interno del servidor'
-            }
-        });
-    }
-});
+app.use(require('./middleware/errorHandler'));
 
 module.exports = app;
