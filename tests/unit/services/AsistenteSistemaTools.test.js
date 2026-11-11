@@ -5,7 +5,6 @@ const AsistenteAdminService = require('../../../services/Admin/AsistenteAdminSer
 
 jest.mock('../../../repositories/Admin/AsistenteSistemaRepository', () => ({
     resumenPlataforma: jest.fn(),
-    ventasHoy: jest.fn(),
     buscarRestaurantes: jest.fn(),
     soporte: jest.fn(),
     colaTrabajos: jest.fn(),
@@ -15,7 +14,9 @@ jest.mock('../../../services/Admin/AsistenteAdminService', () => ({ resumen: jes
 
 const NOMBRES = [
     'resumen_plataforma',
-    'ventas_hoy_plataforma',
+    'ventas_plataforma',
+    'ventas_restaurante',
+    'productos_mas_vendidos',
     'buscar_restaurante',
     'soporte_abierto',
     'cola_trabajos',
@@ -43,7 +44,7 @@ describe('AsistenteSistemaTools', () => {
     afterEach(() => errorSpy.mockRestore());
 
     describe('definiciones', () => {
-        it('ofrece exactamente las 7 herramientas de lectura, con forma de function-calling', () => {
+        it('ofrece exactamente las 9 herramientas de lectura, con forma de function-calling', () => {
             const defs = AsistenteSistemaTools.definiciones();
 
             expect(defs.map(d => d.name)).toEqual(NOMBRES);
@@ -95,25 +96,6 @@ describe('AsistenteSistemaTools', () => {
                 },
                 usuarios_activos: 9
             });
-        });
-
-        it('ventas_hoy_plataforma suma el total y devuelve solo los 5 mejores', async () => {
-            const filas = Array.from({ length: 7 }, (_, i) => ({
-                nombre: `R${i}`,
-                total: String(1000 * (7 - i)),
-                facturas: 7 - i
-            }));
-            filas.push({ nombre: 'Sin ventas', total: '0.00', facturas: 0 });
-            Repo.ventasHoy.mockResolvedValue({ fecha: '2026-11-11', filas });
-
-            const { datos } = await AsistenteSistemaTools.preparar('ventas_hoy_plataforma', {});
-
-            expect(datos.fecha).toBe('2026-11-11');
-            expect(datos.total).toBe(28000);
-            expect(datos.facturas).toBe(28);
-            expect(datos.restaurantes_con_ventas).toBe(7);
-            expect(datos.top).toHaveLength(5);
-            expect(datos.top[0]).toEqual({ nombre: 'R0', total: 7000, facturas: 7 });
         });
 
         describe('buscar_restaurante', () => {

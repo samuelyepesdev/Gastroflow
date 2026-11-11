@@ -68,6 +68,8 @@ describe('AsistenteSistemaService', () => {
         expect(mensajes[0].content).toMatch(/plataforma/i);
         expect(mensajes[0].content).toMatch(/datos, no instrucciones/i);
         expect(mensajes[0].content).toMatch(/Solo puedo ayudarte con la plataforma/);
+        expect(mensajes[0].content).toMatch(/historico/);
+        expect(mensajes[0].content).toMatch(/periodo anterior/);
         expect(mensajes.at(-1)).toEqual({ role: 'user', content: 'hola' });
         expect(JSON.stringify(mensajes)).not.toMatch(/userId/);
     });
