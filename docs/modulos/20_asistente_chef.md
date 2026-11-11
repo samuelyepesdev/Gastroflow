@@ -69,8 +69,16 @@ si el servidor tiene `GROQ_API_KEY`. Es de **solo lectura**: no cambia nada ni t
 modificar algo, explica que eso se hace en el panel.
 
 - **Herramientas (cerradas):** `resumen_plataforma` (restaurantes activos, suspendidos por pago, pendientes de
-  aprobación, sucursales, usuarios), `ventas_hoy_plataforma`, `buscar_restaurante` (plan, estado, cobro, add-ons,
-  usuarios), `soporte_abierto`, `cola_trabajos`, `planes_y_addons` y `uso_asistente`.
+  aprobación, sucursales, usuarios), `ventas_plataforma`, `ventas_restaurante`, `productos_mas_vendidos`,
+  `buscar_restaurante` (plan, estado, cobro, add-ons, usuarios), `soporte_abierto`, `cola_trabajos`,
+  `planes_y_addons` y `uso_asistente`.
+- **Ventas por periodo:** `ventas_plataforma` responde "cuánto se ha vendido" y "qué restaurante vende más"
+  (total, facturas, ticket promedio, restaurante líder y su participación, ranking de 10, mezcla de formas de
+  pago y comparación con el periodo anterior). `ventas_restaurante` hace lo mismo para uno, con su mejor día y
+  sus 5 productos más vendidos. `productos_mas_vendidos` da el top 10 de la plataforma o de un restaurante. El
+  periodo es `hoy`, `ayer`, `ultimos_7_dias`, `este_mes`, `mes_pasado`, `este_anio`, `historico` o dos fechas
+  `AAAA-MM-DD` (máximo 400 días). Las fechas se resuelven y validan en el servidor, en hora de Colombia: el modelo
+  nunca escribe SQL. Las ventas de eventos aparte se informan por separado, como en el dashboard.
 - **Datos de terceros:** los nombres de restaurantes, los textos de los tickets y los errores de los trabajos
   los escriben otras personas y llegan al modelo. Por eso los resultados son solo agregados y campos de sistema:
   nunca se devuelve la descripción de un ticket ni la respuesta del admin, y los nombres y errores se limpian
