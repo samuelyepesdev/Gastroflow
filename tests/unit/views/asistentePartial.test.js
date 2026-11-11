@@ -28,4 +28,25 @@ describe('vista del asistente', () => {
         expect(navbar).toMatch(guarda);
         expect(navbar.match(/_asistente/g)).toHaveLength(1);
     });
+
+    it('por defecto habla con la API del restaurante; el panel del superadmin la cambia por parámetro', async () => {
+        const normal = await ejs.renderFile(path.join(VISTAS, '_asistente.ejs'), { assetV: 'test' });
+        const admin = await ejs.renderFile(path.join(VISTAS, '_asistente.ejs'), {
+            assetV: 'test',
+            asistenteApi: '/admin/asistente/api/chat',
+            asistenteAyuda: 'Pregúntame por restaurantes.'
+        });
+
+        expect(normal).toContain('data-api="/api/asistente"');
+        expect(admin).toContain('data-api="/admin/asistente/api/chat"');
+        expect(admin).toContain('data-ayuda="Pregúntame por restaurantes."');
+    });
+
+    it('el shell del superadmin incluye el panel solo si el asistente del sistema está disponible', () => {
+        const cierre = fs.readFileSync(path.join(__dirname, '../../../views/admin/_shell/_close.ejs'), 'utf8');
+
+        expect(cierre).toMatch(/asistenteSistema/);
+        expect(cierre).toContain("include('../../partials/_asistente'");
+        expect(cierre).toContain('/admin/asistente/api/chat');
+    });
 });

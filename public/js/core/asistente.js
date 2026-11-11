@@ -115,7 +115,7 @@
             $('asistente-titulo').textContent = nombre;
             campo.placeholder = 'Dile algo a ' + nombre;
             fab.setAttribute('aria-label', 'Abrir ' + nombre);
-            burbuja('asistente', 'Hola, soy ' + nombre + '. Dime un pedido o pregúntame por tus mesas.');
+            burbuja('asistente', 'Hola, soy ' + nombre + '. ' + (panel.dataset.ayuda || 'Dime un pedido o pregúntame por tus mesas.'));
         }
         campo.focus();
     }
