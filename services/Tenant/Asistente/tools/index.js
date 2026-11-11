@@ -9,6 +9,7 @@ module.exports = {
     agregar_items: require('./agregarItems'),
     cancelar_item: require('./cancelarItem'),
     liberar_mesa: require('./liberarMesa'),
+    liberar_mesas_vacias: require('./liberarMesasVacias'),
     consultar_mesa: require('./consultarMesa'),
     mesas_libres: require('./mesasLibres'),
     estado_mesas: require('./estadoMesas'),
