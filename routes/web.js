@@ -27,6 +27,7 @@ const clientesRoutes = require('./tenant/clientes');
 const facturasRoutes = require('./tenant/facturas');
 const mesasRoutes = require('./tenant/mesas');
 const cocinaRoutes = require('./tenant/cocina');
+const asistenteRoutes = require('./tenant/asistente');
 const configuracionRoutes = require('./tenant/configuracion');
 const ventasRoutes = require('./tenant/ventas');
 const dashboardRoutes = require('./tenant/dashboard');
@@ -316,6 +317,8 @@ router.use(
     cocinaRoutes
 );
 router.use('/api/dashboard', requireAuthWithTenant, requirePlanFeature('dashboard'), dashboardRoutes);
+// Asistente Chef: el control de acceso (add-on + permiso + clave del proveedor) vive dentro de asistenteRoutes.
+router.use('/api/asistente', requireAuthWithTenant, asistenteRoutes);
 
 // --- RUTA DE NOTIFICACIONES (SSE) ---
 router.get('/api/notifications/subscribe', requireAuthWithTenant, NotificationController.subscribe);
@@ -337,6 +340,7 @@ router.use('/admin/rendimiento', requireSuperadmin, adminRendimientoRoutes);
 router.use('/admin/jobs', requireSuperadmin, adminJobsRoutes);
 router.use('/admin/landing', requireSuperadmin, adminLandingRoutes);
 router.use('/admin/anuncios', requireSuperadmin, adminAnunciosRoutes);
+router.use('/admin/asistente', requireSuperadmin, require('./admin/asistente'));
 router.use('/admin/sucursales', requireSuperadmin, require('./admin/sucursales'));
 
 module.exports = router;

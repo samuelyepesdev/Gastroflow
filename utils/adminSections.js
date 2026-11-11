@@ -37,6 +37,7 @@ const ADMIN_SECTIONS = [
         collapsible: true,
         items: [
             { key: 'permisos', label: 'Permisos por usuario', icon: 'bi-shield-lock', href: '/admin/permisos' },
+            { key: 'asistente', label: 'Asistente Chef', icon: 'bi-chat-dots', href: '/admin/asistente' },
             {
                 key: 'permisos-masivo',
                 label: 'Permisos masivos y roles',

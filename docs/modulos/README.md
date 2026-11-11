@@ -25,6 +25,9 @@ Este directorio contiene la documentación lógica y operativa detallada por cad
 * **[17. Promociones](17_promociones.md):** Descuento automático por día/hora sobre productos, categorías o todo el catálogo — visible en Mesas, POS y Menú QR, sin restricción de plan.
 * **[18. Combos](18_combos.md):** Combos fijos a precio fijo (un producto con componentes): una línea en Mesas/POS/QR, llega completo a una estación de cocina y descuenta el inventario de cada componente.
 
+## 🤖 Asistente
+* **[20. Asistente "Chef"](20_asistente_chef.md):** Asistente por texto con Groq que toma pedidos y responde consultas con herramientas cerradas, confirmación de escrituras y acceso por add-on y permiso (Fase 1, solo backend).
+
 ## 🌐 Integraciones y SaaS Global
 * **[11. Panel de Superadmin](11_superadmin.md):** Gestión multi-tenant, planes de suscripción globales, creación y bloqueo de sucursales.
 * **[19. Sucursales](19_sucursales.md):** Sucursales ligadas a un restaurante padre: creación con su administrador, control del dueño, consolidado de ventas y cambio de sucursal con un solo login.

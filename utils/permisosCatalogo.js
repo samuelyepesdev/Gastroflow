@@ -297,6 +297,17 @@ const SECCIONES = [
         ]
     },
     {
+        seccion: 'Asistente',
+        permisos: [
+            {
+                nombre: 'asistente.usar',
+                descripcion: 'Usar el asistente Chef (pedidos y consultas por voz o texto)',
+                modulo: 'asistente',
+                roles: NINGUNO
+            }
+        ]
+    },
+    {
         seccion: 'Perfil',
         permisos: [
             {
