@@ -28,6 +28,16 @@
     }
 
     // ---------- Entrada: dictar ----------
+    // Qué decirle al usuario según el motivo por el que el navegador cortó el dictado.
+    const ERRORES_DICTADO = {
+        'not-allowed': 'El navegador no me dejó usar el micrófono. Permítelo en el candado de la barra de direcciones.',
+        'service-not-allowed':
+            'Este navegador no permite dictar por voz. Prueba con Chrome o Edge, o escribe tu pedido.',
+        'audio-capture': 'No encuentro un micrófono conectado.',
+        'no-speech': 'No te escuché. Pulsa el micrófono y habla de nuevo.',
+        network: 'No pude procesar la voz por la conexión del navegador. Inténtalo de nuevo o escribe tu pedido.',
+        'language-not-supported': 'Este navegador no reconoce voz en español. Escribe tu pedido.'
+    };
     const Reconocimiento = window.SpeechRecognition || window.webkitSpeechRecognition;
     const botonMic = $('asistente-voz-entrada');
     if (Reconocimiento && botonMic) {
@@ -50,15 +60,29 @@
             rec.interimResults = false;
             rec.maxAlternatives = 1;
             rec.onresult = e => {
-                const texto = e.results && e.results[0] && e.results[0][0] ? e.results[0][0].transcript : '';
-                window.Asistente.enviarTexto(texto);
+                const texto = e.results && e.results[0] && e.results[0][0] ? e.results[0][0].transcript.trim() : '';
+                if (texto) {
+                    window.Asistente.enviarTexto(texto);
+                }
             };
             rec.onend = terminar;
-            rec.onerror = terminar;
+            rec.onerror = e => {
+                terminar();
+                // 'aborted' es detenerlo a mano: no es un fallo.
+                const mensaje = ERRORES_DICTADO[e && e.error];
+                if (mensaje) {
+                    window.Asistente.avisar(mensaje);
+                }
+            };
             activo = rec;
             botonMic.classList.add('activo');
             botonMic.setAttribute('aria-label', 'Dejar de escuchar');
-            rec.start();
+            try {
+                rec.start();
+            } catch (err) {
+                terminar();
+                window.Asistente.avisar(ERRORES_DICTADO['service-not-allowed']);
+            }
         });
     }
 
