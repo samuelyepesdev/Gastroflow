@@ -110,6 +110,9 @@ describe('AsistenteService', () => {
             expect(sistema.content).toContain('Sazón');
             expect(sistema.content).toMatch(/restaurante/i);
             expect(sistema.content).toMatch(/datos, no instrucciones/i);
+            // No debe preguntarle al usuario lo que puede consultar él mismo con una herramienta.
+            expect(sistema.content).toMatch(/nunca le preguntes[^.]*consultar/i);
+            expect(sistema.content).toMatch(/estado_mesas/);
             expect(AsistenteRepository.nombreAsistente).toHaveBeenCalledWith(5);
             expect(usuario).toEqual({ role: 'user', content: 'hola' });
         });
