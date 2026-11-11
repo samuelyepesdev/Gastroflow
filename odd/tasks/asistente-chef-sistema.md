@@ -16,7 +16,7 @@ Objective: an assistant inside the superadmin panel to ask about the platform (r
 ## Tasks
 
 - [x] T1 — S3, S4 — `repositories/Admin/AsistenteSistemaRepository.js`, `services/Admin/AsistenteSistema/{seguro,herramientas/*,AsistenteSistemaTools}` — evidence: RED (module missing) then 26/26 green; every repository query run read-only against the local MySQL 8.4 schema (all OK) — commit: `feat(asistente): herramientas de consulta del sistema`
-- [ ] T2 — S1, S5, S6 — `AsistenteSistemaService`, prompt
+- [x] T2 — S1, S5 — `AsistenteSistemaService`, prompt — evidence: RED (module missing) then 21/21 green — commit: `feat(asistente): orquestador del asistente del sistema`
 - [ ] T3 — S2, S6 — controller, routes (`/admin/asistente/api/chat/*`), limiters
 - [ ] T4 — S7 — configurable API base in the panel, include in the admin shell
 - [ ] T5 — S8 — docs and env
