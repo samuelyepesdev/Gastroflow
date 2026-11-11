@@ -4,7 +4,9 @@
  * para que el panel los pinte igual que cualquier respuesta.
  */
 (function () {
-    const BASE = '/api/asistente';
+    // El botón del panel indica con qué API habla (el panel del superadmin usa otra ruta).
+    const fab = typeof document !== 'undefined' ? document.getElementById('asistente-fab') : null;
+    const BASE = (fab && fab.dataset && fab.dataset.api) || '/api/asistente';
     const MENSAJES = {
         limite: 'Vas muy rápido. Espera un momento e inténtalo de nuevo.',
         grande: 'El audio es demasiado largo. Habla más corto e inténtalo de nuevo.',

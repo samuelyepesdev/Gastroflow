@@ -11,6 +11,7 @@
  */
 
 const db = require('../config/database');
+const { asistenteConfigurado } = require('../services/Tenant/Asistente/llm');
 const { ADMIN_SECTIONS, ADMIN_QUICK_LINKS } = require('../utils/adminSections');
 
 module.exports = async function adminLocals(req, res, next) {
@@ -38,6 +39,8 @@ module.exports = async function adminLocals(req, res, next) {
     }
 
     res.locals.adminBadges = { soporteAbiertos, onboardingPendientes };
+    // El panel del asistente del sistema solo aparece si el servidor tiene la clave del proveedor de IA.
+    res.locals.asistenteSistema = asistenteConfigurado();
 
     next();
 };

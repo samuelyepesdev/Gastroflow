@@ -2,12 +2,12 @@
 <link rel="stylesheet" href="/css/core/asistente.css?v=<%= assetV %>">
 
 <button type="button" id="asistente-fab" class="asistente-fab" aria-label="Abrir el asistente" aria-expanded="false"
-    aria-controls="asistente-panel">
+    aria-controls="asistente-panel" data-api="<%= typeof asistenteApi !== 'undefined' ? asistenteApi : '/api/asistente' %>">
     <i class="bi bi-chat-dots-fill" aria-hidden="true"></i>
 </button>
 
 <section id="asistente-panel" class="asistente-panel" role="dialog" aria-modal="false" aria-labelledby="asistente-titulo"
-    hidden>
+    data-ayuda="<%= typeof asistenteAyuda !== 'undefined' ? asistenteAyuda : 'Dime un pedido o pregúntame por tus mesas.' %>" hidden>
     <header class="asistente-cabecera">
         <h2 id="asistente-titulo" class="asistente-titulo">Chef</h2>
         <div class="asistente-acciones">

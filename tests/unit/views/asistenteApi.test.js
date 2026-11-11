@@ -4,9 +4,18 @@ const vm = require('vm');
 
 const SCRIPT = fs.readFileSync(path.join(__dirname, '../../../public/js/core/asistente-api.js'), 'utf8');
 
-function montar(respuesta) {
+function montar(respuesta, base) {
     const fetch = jest.fn().mockResolvedValue(respuesta);
-    const contexto = { console, Date, Math, Blob, fetch, window: { crypto: { randomUUID: () => 'llave-1' } } };
+    const fab = { dataset: base ? { api: base } : {} };
+    const contexto = {
+        console,
+        Date,
+        Math,
+        Blob,
+        fetch,
+        document: { getElementById: id => (id === 'asistente-fab' ? fab : null) },
+        window: { crypto: { randomUUID: () => 'llave-1' } }
+    };
     vm.runInNewContext(SCRIPT, contexto);
     return { api: contexto.window.AsistenteApi, fetch };
 }
@@ -46,5 +55,27 @@ describe('cliente HTTP del asistente / transcribir', () => {
         const [, opciones] = fetch.mock.calls[0];
         expect(opciones.headers['Content-Type']).toBe('application/json');
         expect(JSON.parse(opciones.body)).toEqual({ texto: 'hola', historial: [] });
+    });
+
+    it('usa la base indicada por el botón (el panel del superadmin habla con otra ruta)', async () => {
+        const { api, fetch } = montar(resp(200, { tipo: 'respuesta', texto: 'ok' }), '/admin/asistente/api/chat');
+
+        await api.comando('hola', []);
+        await api.transcribir(new Blob(['x'], { type: 'audio/webm' }));
+        await api.nombre().catch(() => {});
+
+        expect(fetch.mock.calls.map(c => c[0])).toEqual([
+            '/admin/asistente/api/chat/comando',
+            '/admin/asistente/api/chat/transcribir',
+            '/admin/asistente/api/chat/estado'
+        ]);
+    });
+
+    it('sin base en el botón usa la del asistente de los restaurantes', async () => {
+        const { api, fetch } = montar(resp(200, { tipo: 'respuesta', texto: 'ok' }));
+
+        await api.comando('hola', []);
+
+        expect(fetch.mock.calls[0][0]).toBe('/api/asistente/comando');
     });
 });

@@ -44,6 +44,17 @@ function crearLimitesAsistente(env = process.env) {
             clave: req => `v:${req.tenant.id}:${req.user.id}`,
             mensaje: 'Demasiados dictados seguidos. Espera un momento.'
         }),
+        // Asistente del superadmin: no tiene restaurante, se cuenta solo por usuario.
+        sistema: crearLimitador({
+            max: entero(env.ASISTENTE_LIMITE_SISTEMA_MIN, 20),
+            clave: req => `sa:${req.user.id}`,
+            mensaje: 'Vas muy rápido con el asistente del sistema. Espera un momento.'
+        }),
+        sistemaVoz: crearLimitador({
+            max: entero(env.ASISTENTE_LIMITE_SISTEMA_VOZ_MIN, 20),
+            clave: req => `sav:${req.user.id}`,
+            mensaje: 'Demasiados dictados seguidos. Espera un momento.'
+        }),
         confirmar: crearLimitador({
             max: entero(env.ASISTENTE_LIMITE_CONFIRMAR_MIN, 60),
             clave: req => `c:${req.tenant.id}:${req.user.id}`,

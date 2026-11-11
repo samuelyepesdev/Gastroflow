@@ -30,4 +30,14 @@ function requireAsistente(req, res, next) {
     next();
 }
 
-module.exports = { requireAsistente };
+/** Solo la clave del proveedor: para el asistente del superadmin, que no depende de add-on ni de restaurante. */
+function requireProveedorIA(req, res, next) {
+    if (!asistenteConfigurado()) {
+        return res
+            .status(503)
+            .json({ tipo: 'error', codigo: 'no_configurado', texto: 'El asistente no está configurado.' });
+    }
+    next();
+}
+
+module.exports = { requireAsistente, requireProveedorIA };
