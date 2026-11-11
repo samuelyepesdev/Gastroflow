@@ -15,9 +15,9 @@ Objective: one page in the superadmin panel (`/admin/asistente`) to see and mana
 ## Tasks
 
 - [x] T1 — S1, S2, S3, S4, S5 — inline — `repositories/Admin/AsistenteAdminRepository.js`, `services/Admin/AsistenteAdminService.js` — evidence: RED (module missing) then 26/26 green, eslint clean; summary SQL checked read-only against the local MySQL 8.4 (found and fixed an error-count bug in the JSON comparison); NOT run end to end because migration 128 is not applied locally — commit: `feat(asistente): servicio de administracion del asistente`
-- [ ] T2 — S6, S7 — inline — `app/Http/Controllers/Admin/AsistenteController.js`, `routes/admin/asistente.js`, mount in `routes/web.js`, sidebar item in `utils/adminSections.js` — commit: —
-- [ ] T3 — S1–S5 UI — inline — `views/admin/asistente/index.ejs`, `public/js/admin/asistente.js` — commit: —
-- [ ] T4 — S7 — inline — docs — commit: —
+- [x] T2 — S6, S7 — inline — `app/Http/Controllers/Admin/AsistenteController.js`, `routes/admin/asistente.js`, mount in `routes/web.js`, sidebar item in `utils/adminSections.js` — evidence: RED (module missing) then 12/12 green — commit: `feat(asistente): rutas del modulo de administracion`
+- [x] T3 — S1–S5 UI — inline — `views/admin/asistente/index.ejs`, `public/js/admin/asistente.js`, `public/css/admin/asistente.css` — evidence: 2 static view tests; browser pane against a mock server (table, add-on switch, invalid name error dialog, users modal, exception change, XSS in names stays text). Found and fixed: GF errors need SweetAlert2 loaded in the page. NOT checked against the real DB — commit: `feat(asistente): pantalla de administracion del asistente`
+- [x] T4 — S7 — inline — docs — commit: `docs(asistente): documentar la administracion del asistente`
 
 ## Log
 
