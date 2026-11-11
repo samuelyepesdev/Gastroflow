@@ -37,6 +37,28 @@ clave del proveedor, las mismas capas que la API.
 - **Archivos:** `views/partials/_asistente.ejs`, `public/css/core/asistente.css`,
   `public/js/core/asistente-api.js` (HTTP), `asistente.js` (panel) y `asistente-voz.js` (voz).
 
+## Administración (superadmin)
+
+`/admin/asistente` (menú "Usuarios y accesos" > "Asistente Chef"), solo superadmin. Una sola pantalla para ver y
+gestionar el asistente en todos los restaurantes:
+
+- **Estado del servidor:** si `GROQ_API_KEY` está configurada y qué modelo se usa (nunca se muestra la clave).
+- **Tabla por restaurante:** add-on activado o no, nombre del asistente, usuarios con acceso y uso de los
+  últimos 30 días (comandos, errores y tokens, calculados desde `tenant_audit`). El texto que escriben los
+  usuarios no se muestra.
+- **Add-on:** el interruptor reutiliza `AddonService` (invalida la caché y deja auditoría). Si el add-on no
+  existe en el catálogo avisa que falta correr la migración 128.
+- **Nombre:** de 1 a 24 caracteres (letras, números, espacio, `.`, `'`, `-`). Un nombre inválido se rechaza,
+  no se corrige en silencio. Queda auditado (`asistente.admin_nombre`).
+- **Usuarios:** por restaurante muestra quién tiene acceso a `asistente.usar` y de dónde viene (rol y plan,
+  concedido o denegado). Cada usuario se puede dejar en **Estándar**, **Conceder** o **Denegar**; solo cambia
+  la excepción del asistente y conserva el resto de las del usuario. Un usuario de otro restaurante responde
+  404. Los admins de planes Premium y Definitivo aparecen marcados: sus excepciones no se aplican. Auditado
+  (`asistente.admin_acceso`).
+- **Archivos:** `routes/admin/asistente.js`, `app/Http/Controllers/Admin/AsistenteController.js`,
+  `services/Admin/AsistenteAdminService.js`, `repositories/Admin/AsistenteAdminRepository.js`,
+  `views/admin/asistente/index.ejs`, `public/js/admin/asistente.js`.
+
 ## API
 
 | Ruta | Cuerpo | Respuesta |
@@ -96,5 +118,5 @@ Migración `128_asistente_chef.sql`: add-on `asistente` (precio 0) y tabla `asis
 ## Pendiente antes de producción
 
 Probar contra Groq real con una clave, confirmar el modelo por defecto y los límites del plan gratuito, y
-correr la migración 128 en una BD real. Quedan para fases siguientes: edición del nombre desde el superadmin, cuota mensual por restaurante y almacén compartido de
+correr la migración 128 en una BD real. Quedan para fases siguientes: cuota mensual por restaurante y almacén compartido de
 confirmaciones para varios procesos.

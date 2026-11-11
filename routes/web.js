@@ -340,6 +340,7 @@ router.use('/admin/rendimiento', requireSuperadmin, adminRendimientoRoutes);
 router.use('/admin/jobs', requireSuperadmin, adminJobsRoutes);
 router.use('/admin/landing', requireSuperadmin, adminLandingRoutes);
 router.use('/admin/anuncios', requireSuperadmin, adminAnunciosRoutes);
+router.use('/admin/asistente', requireSuperadmin, require('./admin/asistente'));
 router.use('/admin/sucursales', requireSuperadmin, require('./admin/sucursales'));
 
 module.exports = router;

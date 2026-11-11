@@ -1,0 +1,17 @@
+/* Administración del asistente Chef (superadmin). Usa los tokens de brand.css. */
+
+#asistente-tabla .js-nombre {
+    min-width: 8rem;
+}
+
+#asistente-tabla td {
+    white-space: nowrap;
+}
+
+#asistente-tabla .form-switch .form-check-input {
+    cursor: pointer;
+}
+
+#asistente-usuarios .js-modo {
+    min-width: 8rem;
+}
