@@ -1,5 +1,5 @@
 const db = require('../../config/database');
-const { SQL_COLOMBIA, hoyColombia } = require('../../utils/dateHelpers');
+const { SQL_COLOMBIA } = require('../../utils/dateHelpers');
 
 /**
  * Consultas de SOLO LECTURA para el asistente del superadmin. Devuelven agregados y campos de sistema:
@@ -21,22 +21,81 @@ class AsistenteSistemaRepository {
         return { ...fila, usuarios_activos: usuarios.activos };
     }
 
-    /** Ventas normales de hoy (día Colombia) por restaurante, de mayor a menor. */
-    static async ventasHoy() {
-        const hoy = hoyColombia();
-        const [filas] = await db.query(
-            `SELECT t.nombre, COALESCE(SUM(f.total), 0) AS total, COUNT(f.id) AS facturas
+    /**
+     * Ventas normales (sin las de eventos) por restaurante en un rango de días Colombia, de mayor a menor, más el
+     * total de ventas de eventos aparte. Incluye restaurantes ya desactivados si vendieron en el rango.
+     */
+    static async ventasPorRestaurante(desde, hasta) {
+        const [restaurantes] = await db.query(
+            `SELECT t.id, t.nombre,
+                    COALESCE(SUM(f.total), 0) AS total, COUNT(f.id) AS facturas,
+                    COALESCE(SUM(f.monto_efectivo), 0) AS efectivo,
+                    COALESCE(SUM(f.monto_transferencia), 0) AS transferencia,
+                    COALESCE(SUM(f.monto_bono), 0) AS bono
              FROM tenants t
-             LEFT JOIN facturas f ON f.tenant_id = t.id
-                 AND f.evento_aparte = 0
-                 AND f.fecha >= ${SQL_COLOMBIA.desdeDia()}
-                 AND f.fecha < ${SQL_COLOMBIA.hastaDia()}
-             WHERE t.activo = 1
-             GROUP BY t.id, t.nombre
+             LEFT JOIN facturas f ON f.tenant_id = t.id AND f.evento_aparte = 0
+                 AND f.fecha >= ${SQL_COLOMBIA.desdeDia()} AND f.fecha < ${SQL_COLOMBIA.hastaDia()}
+             GROUP BY t.id, t.nombre, t.activo
+             HAVING t.activo = 1 OR COUNT(f.id) > 0
              ORDER BY total DESC`,
-            [hoy, hoy]
+            [desde, hasta]
         );
-        return { fecha: hoy, filas };
+        const [[eventos]] = await db.query(
+            `SELECT COALESCE(SUM(total), 0) AS total, COUNT(*) AS facturas FROM facturas
+             WHERE evento_aparte = 1 AND fecha >= ${SQL_COLOMBIA.desdeDia()} AND fecha < ${SQL_COLOMBIA.hastaDia()}`,
+            [desde, hasta]
+        );
+        return { restaurantes, eventos };
+    }
+
+    /** Ventas de UN restaurante en un rango: totales, eventos aparte y su mejor día. */
+    static async ventasDeRestaurante(tenantId, desde, hasta) {
+        const rango = `fecha >= ${SQL_COLOMBIA.desdeDia()} AND fecha < ${SQL_COLOMBIA.hastaDia()}`;
+        const [[resumen]] = await db.query(
+            `SELECT COALESCE(SUM(total), 0) AS total, COUNT(*) AS facturas,
+                    COALESCE(SUM(monto_efectivo), 0) AS efectivo,
+                    COALESCE(SUM(monto_transferencia), 0) AS transferencia,
+                    COALESCE(SUM(monto_bono), 0) AS bono
+             FROM facturas WHERE tenant_id = ? AND evento_aparte = 0 AND ${rango}`,
+            [tenantId, desde, hasta]
+        );
+        const [[eventos]] = await db.query(
+            `SELECT COALESCE(SUM(total), 0) AS total, COUNT(*) AS facturas
+             FROM facturas WHERE tenant_id = ? AND evento_aparte = 1 AND ${rango}`,
+            [tenantId, desde, hasta]
+        );
+        const [[mejorDia]] = await db.query(
+            `SELECT ${SQL_COLOMBIA.dia('fecha')} AS dia, SUM(total) AS total
+             FROM facturas WHERE tenant_id = ? AND evento_aparte = 0 AND ${rango}
+             GROUP BY dia ORDER BY total DESC LIMIT 1`,
+            [tenantId, desde, hasta]
+        );
+        return { resumen, eventos, mejorDia: mejorDia || null };
+    }
+
+    /** Productos más vendidos (por unidades) en un rango, de un restaurante o de toda la plataforma. */
+    static async topProductos({ tenantId = null, desde, hasta, limite = 10 }) {
+        const params = [desde, hasta];
+        let filtroTenant = '';
+        if (tenantId !== null) {
+            filtroTenant = 'AND f.tenant_id = ?';
+            params.push(tenantId);
+        }
+        params.push(limite);
+        const [filas] = await db.query(
+            `SELECT MIN(p.nombre) AS nombre, SUM(df.cantidad) AS unidades, SUM(df.subtotal) AS total
+             FROM detalle_factura df
+             INNER JOIN facturas f ON f.id = df.factura_id
+             INNER JOIN productos p ON p.id = df.producto_id
+             WHERE f.evento_aparte = 0
+               AND f.fecha >= ${SQL_COLOMBIA.desdeDia()} AND f.fecha < ${SQL_COLOMBIA.hastaDia()}
+               ${filtroTenant}
+             GROUP BY LOWER(p.nombre)
+             ORDER BY unidades DESC, total DESC
+             LIMIT ?`,
+            params
+        );
+        return filas;
     }
 
     /** Restaurantes cuyo nombre contiene el texto (comodines LIKE escapados). */
