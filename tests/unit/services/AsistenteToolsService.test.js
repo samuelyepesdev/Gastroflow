@@ -15,6 +15,7 @@ jest.mock('../../../services/Tenant/Asistente/AsistenteResolverService', () => (
 }));
 jest.mock('../../../repositories/Tenant/AsistenteRepository', () => ({
     listarMesas: jest.fn(),
+    mesasOcupadasSinItems: jest.fn(),
     pedidoAbiertoDeMesa: jest.fn(),
     itemDelTenant: jest.fn()
 }));
@@ -421,6 +422,129 @@ describe('AsistenteToolsService', () => {
             const ok = await AsistenteToolsService.ejecutar(ctx(), prep.accion);
             expect(LiberarMesaService.execute).toHaveBeenLastCalledWith({ tenantId: 5, mesaId: 40 });
             expect(ok.tipo).toBe('resultado');
+        });
+    });
+
+    describe('liberar_mesas_vacias', () => {
+        const vacia = (id, numero, descripcion = null) => ({
+            id,
+            numero,
+            descripcion,
+            tipo: 'fisica',
+            estado: 'ocupada'
+        });
+
+        it('prepara UNA confirmación con la lista y no libera nada todavía', async () => {
+            AsistenteRepository.mesasOcupadasSinItems.mockResolvedValue([vacia(30, '3'), vacia(70, 'T1', 'Terraza 1')]);
+
+            const r = await AsistenteToolsService.preparar(ctx(), 'liberar_mesas_vacias', {});
+
+            expect(AsistenteRepository.mesasOcupadasSinItems).toHaveBeenCalledWith(5);
+            expect(r.tipo).toBe('confirmacion');
+            expect(r.resumen).toContain('mesa 3');
+            expect(r.resumen).toContain('mesa T1 (Terraza 1)');
+            expect(r.accion).toEqual({ tool: 'liberar_mesas_vacias', payload: { mesa_ids: [30, 70] } });
+            expect(LiberarMesaService.execute).not.toHaveBeenCalled();
+        });
+
+        it('si no hay mesas ocupadas sin productos lo dice y no pide confirmar', async () => {
+            AsistenteRepository.mesasOcupadasSinItems.mockResolvedValue([]);
+
+            const r = await AsistenteToolsService.preparar(ctx(), 'liberar_mesas_vacias', {});
+
+            expect(r.tipo).toBe('resultado');
+            expect(r.datos.mensaje).toMatch(/no hay mesas/i);
+        });
+
+        it('acota la lista a 30 mesas por confirmación', async () => {
+            const muchas = Array.from({ length: 45 }, (_, i) => vacia(i + 1, String(i + 1)));
+            AsistenteRepository.mesasOcupadasSinItems.mockResolvedValue(muchas);
+
+            const r = await AsistenteToolsService.preparar(ctx(), 'liberar_mesas_vacias', {});
+
+            expect(r.accion.payload.mesa_ids).toHaveLength(30);
+        });
+
+        it('al confirmar libera cada mesa con el servicio de siempre, que vuelve a revisar los items', async () => {
+            LiberarMesaService.execute.mockResolvedValue({ message: 'Mesa liberada' });
+
+            const r = await AsistenteToolsService.ejecutar(ctx(), {
+                tool: 'liberar_mesas_vacias',
+                payload: { mesa_ids: [30, 70] }
+            });
+
+            expect(LiberarMesaService.execute).toHaveBeenCalledTimes(2);
+            expect(LiberarMesaService.execute).toHaveBeenCalledWith({ tenantId: 5, mesaId: 30 });
+            expect(LiberarMesaService.execute).toHaveBeenCalledWith({ tenantId: 5, mesaId: 70 });
+            expect(r.tipo).toBe('resultado');
+            expect(r.datos.mensaje).toMatch(/2 mesas/);
+        });
+
+        it('si una mesa recibió productos entre la lista y el sí, esa se omite y las demás se liberan', async () => {
+            LiberarMesaService.execute
+                .mockResolvedValueOnce({ message: 'Mesa liberada' })
+                .mockRejectedValueOnce(new Error('La mesa tiene items activos, no se puede liberar'));
+
+            const r = await AsistenteToolsService.ejecutar(ctx(), {
+                tool: 'liberar_mesas_vacias',
+                payload: { mesa_ids: [30, 70] }
+            });
+
+            expect(LiberarMesaService.execute).toHaveBeenCalledTimes(2);
+            expect(r.tipo).toBe('resultado');
+            expect(r.datos.mensaje).toMatch(/1 mesa/);
+            expect(r.datos.mensaje).toMatch(/no se liberó/i);
+        });
+
+        it('si ninguna se pudo liberar devuelve error', async () => {
+            LiberarMesaService.execute.mockRejectedValue(new Error('La mesa tiene items activos, no se puede liberar'));
+
+            const r = await AsistenteToolsService.ejecutar(ctx(), {
+                tool: 'liberar_mesas_vacias',
+                payload: { mesa_ids: [30] }
+            });
+
+            expect(r.tipo).toBe('error');
+        });
+
+        it.each([
+            [undefined],
+            [[]],
+            ['30'],
+            [[30, '70']],
+            [[0]],
+            [[1.5]],
+            [Array.from({ length: 31 }, (_, i) => i + 1)]
+        ])('rechaza una acción con ids inválidos (%p) sin liberar nada', async mesa_ids => {
+            const r = await AsistenteToolsService.ejecutar(ctx(), {
+                tool: 'liberar_mesas_vacias',
+                payload: { mesa_ids }
+            });
+
+            expect(r.tipo).toBe('error');
+            expect(LiberarMesaService.execute).not.toHaveBeenCalled();
+        });
+
+        it('ignora ids repetidos: cada mesa se libera una sola vez', async () => {
+            LiberarMesaService.execute.mockResolvedValue({ message: 'Mesa liberada' });
+
+            await AsistenteToolsService.ejecutar(ctx(), {
+                tool: 'liberar_mesas_vacias',
+                payload: { mesa_ids: [30, 30, 70] }
+            });
+
+            expect(LiberarMesaService.execute).toHaveBeenCalledTimes(2);
+        });
+
+        it('sin permiso de mesas el modelo no puede usarla', async () => {
+            const r = await AsistenteToolsService.preparar(
+                ctx({ permisos: ['ventas.ver'] }),
+                'liberar_mesas_vacias',
+                {}
+            );
+
+            expect(r.tipo).toBe('error');
+            expect(AsistenteRepository.mesasOcupadasSinItems).not.toHaveBeenCalled();
         });
     });
 

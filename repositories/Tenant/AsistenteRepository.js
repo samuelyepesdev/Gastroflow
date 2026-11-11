@@ -23,6 +23,32 @@ class AsistenteRepository {
     }
 
     /**
+     * Mesas ocupadas cuyo pedido abierto no tiene ningún item activo ni abonos (nada que perder al liberarlas).
+     * Es solo la propuesta: al liberar, LiberarMesaService vuelve a revisar los items bajo bloqueo.
+     * @param {number} tenantId
+     * @returns {Promise<Array<{id:number, numero:string, descripcion:string|null, tipo:string, estado:string}>>}
+     */
+    static async mesasOcupadasSinItems(tenantId) {
+        const [mesas] = await db.query(
+            `SELECT m.id, m.numero, m.descripcion, m.tipo, m.estado
+             FROM mesas m
+             WHERE m.tenant_id = ? AND m.estado = 'ocupada'
+               AND NOT EXISTS (
+                   SELECT 1 FROM pedidos p
+                   WHERE p.mesa_id = m.id AND p.tenant_id = m.tenant_id
+                     AND p.estado NOT IN ('cerrado','cancelado')
+                     AND (
+                         EXISTS (SELECT 1 FROM pedido_items pi WHERE pi.pedido_id = p.id AND pi.estado <> 'cancelado')
+                         OR EXISTS (SELECT 1 FROM pedido_abonos pa WHERE pa.pedido_id = p.id)
+                     )
+               )
+             ORDER BY CAST(m.numero AS UNSIGNED), m.numero`,
+            [tenantId]
+        );
+        return mesas;
+    }
+
+    /**
      * Nombre configurado del asistente para el tenant, o null si no se ha personalizado.
      * @param {number} tenantId
      * @returns {Promise<string|null>}
