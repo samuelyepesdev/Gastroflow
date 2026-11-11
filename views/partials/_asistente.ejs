@@ -1,0 +1,40 @@
+<%# Botón flotante y panel del asistente. Solo se incluye si nav.can.asistente (ver navbar.ejs). %>
+<link rel="stylesheet" href="/css/core/asistente.css?v=<%= assetV %>">
+
+<button type="button" id="asistente-fab" class="asistente-fab" aria-label="Abrir el asistente" aria-expanded="false"
+    aria-controls="asistente-panel">
+    <i class="bi bi-chat-dots-fill" aria-hidden="true"></i>
+</button>
+
+<section id="asistente-panel" class="asistente-panel" role="dialog" aria-modal="false" aria-labelledby="asistente-titulo"
+    hidden>
+    <header class="asistente-cabecera">
+        <h2 id="asistente-titulo" class="asistente-titulo">Chef</h2>
+        <div class="asistente-acciones">
+            <button type="button" id="asistente-voz-salida" class="asistente-icono" aria-pressed="false"
+                aria-label="Leer las respuestas en voz alta" hidden>
+                <i class="bi bi-volume-mute" aria-hidden="true"></i>
+            </button>
+            <button type="button" id="asistente-cerrar" class="asistente-icono" aria-label="Cerrar el asistente">
+                <i class="bi bi-x-lg" aria-hidden="true"></i>
+            </button>
+        </div>
+    </header>
+
+    <div id="asistente-mensajes" class="asistente-mensajes" role="log" aria-live="polite"></div>
+
+    <form id="asistente-form" class="asistente-form" autocomplete="off">
+        <button type="button" id="asistente-voz-entrada" class="asistente-icono" aria-label="Dictar por voz" hidden>
+            <i class="bi bi-mic-fill" aria-hidden="true"></i>
+        </button>
+        <input id="asistente-texto" class="asistente-texto" type="text" maxlength="500"
+            placeholder="Escribe tu pedido o pregunta" aria-label="Mensaje para el asistente">
+        <button type="submit" id="asistente-enviar" class="asistente-enviar" aria-label="Enviar">
+            <i class="bi bi-send-fill" aria-hidden="true"></i>
+        </button>
+    </form>
+</section>
+
+<script src="/js/core/asistente-api.js?v=<%= assetV %>" defer></script>
+<script src="/js/core/asistente.js?v=<%= assetV %>" defer></script>
+<script src="/js/core/asistente-voz.js?v=<%= assetV %>" defer></script>

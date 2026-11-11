@@ -1,5 +1,6 @@
 const AsistenteService = require('../../../../services/Tenant/Asistente/AsistenteService');
 const auditoria = require('../../../../services/Tenant/Asistente/auditoria');
+const AsistenteRepository = require('../../../../repositories/Tenant/AsistenteRepository');
 
 // Código de error del servicio -> estado HTTP. Lo no listado es un fallo interno.
 const ESTADOS = {
@@ -48,6 +49,18 @@ function falloInterno(res, e) {
 }
 
 class AsistenteController {
+    // GET /api/asistente/estado: lo que el panel necesita para presentarse (hoy, solo el nombre).
+    static async estado(req, res) {
+        try {
+            const nombre = await AsistenteRepository.nombreAsistente(req.tenant.id);
+            return res.json({ nombre: nombre || 'Chef' });
+        } catch (e) {
+            // eslint-disable-next-line no-console
+            console.error('[asistente] error leyendo el estado:', e?.name, e?.message);
+            return res.json({ nombre: 'Chef' });
+        }
+    }
+
     // POST /api/asistente/comando
     static async comando(req, res) {
         try {

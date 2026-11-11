@@ -7,6 +7,7 @@
  */
 
 const { MODULE_LABELS } = require('../utils/planPermissions');
+const { asistenteConfigurado } = require('../services/Tenant/Asistente/llm');
 
 module.exports = function navbarLocals(req, res, next) {
     res.locals.moduleLabels = MODULE_LABELS;
@@ -66,7 +67,14 @@ module.exports = function navbarLocals(req, res, next) {
                 servicios: hp('servicios.ver') && cs('servicios'),
                 pos: hp('pos.ver') && cs('ventas'),
                 clasificacion: hp('clasificacion.ver'),
-                alertas: hp('alertas.configurar') && cs('configuracion')
+                alertas: hp('alertas.configurar') && cs('configuracion'),
+                // Mismas tres capas que requireAsistente: add-on del restaurante, permiso y clave del proveedor.
+                asistente:
+                    hp('asistente.usar') &&
+                    !!tenant &&
+                    Array.isArray(tenant.addonSlugs) &&
+                    tenant.addonSlugs.includes('asistente') &&
+                    asistenteConfigurado()
             };
 
             const hasMas =
