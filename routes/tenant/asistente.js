@@ -10,6 +10,7 @@ const limites = crearLimitesAsistente();
 // límites para que quien no tiene acceso no pueda gastar la cuota del restaurante.
 router.use(requireAsistente);
 
+router.get('/estado', AsistenteController.estado);
 router.post('/comando', limites.usuario, limites.tenant, AsistenteController.comando);
 router.post('/confirmar', limites.confirmar, AsistenteController.confirmar);
 
