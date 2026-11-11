@@ -11,6 +11,9 @@ const limites = crearLimitesAsistente();
 router.use(requireAsistente);
 
 router.get('/estado', AsistenteController.estado);
+// Audio crudo (no multipart): tope de 1 MB, de sobra para ~20 s de voz. El tipo lo valida el servicio.
+const audioCrudo = express.raw({ type: () => true, limit: '1mb' });
+router.post('/transcribir', limites.transcribir, audioCrudo, AsistenteController.transcribir);
 router.post('/comando', limites.usuario, limites.tenant, AsistenteController.comando);
 router.post('/confirmar', limites.confirmar, AsistenteController.confirmar);
 

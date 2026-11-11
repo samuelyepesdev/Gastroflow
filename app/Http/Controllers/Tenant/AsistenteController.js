@@ -1,5 +1,6 @@
 const AsistenteService = require('../../../../services/Tenant/Asistente/AsistenteService');
 const auditoria = require('../../../../services/Tenant/Asistente/auditoria');
+const TranscripcionService = require('../../../../services/Tenant/Asistente/TranscripcionService');
 const AsistenteRepository = require('../../../../repositories/Tenant/AsistenteRepository');
 
 // Código de error del servicio -> estado HTTP. Lo no listado es un fallo interno.
@@ -7,6 +8,7 @@ const ESTADOS = {
     sesion: 401,
     permisos: 403,
     solicitud: 400,
+    formato: 415,
     confirmacion_invalida: 400,
     ejecucion: 400,
     iteraciones: 422,
@@ -58,6 +60,23 @@ class AsistenteController {
             // eslint-disable-next-line no-console
             console.error('[asistente] error leyendo el estado:', e?.name, e?.message);
             return res.json({ nombre: 'Chef' });
+        }
+    }
+
+    // POST /api/asistente/transcribir: cuerpo = audio crudo. Solo devuelve el texto; el comando lo envía el cliente.
+    static async transcribir(req, res) {
+        try {
+            const ctx = contextoDe(req, res);
+            const resultado = await TranscripcionService.transcribir({
+                audio: req.body,
+                tipo: req.headers['content-type']
+            });
+            await auditoria.registrar(ctx, 'asistente.transcribir', resultado, {
+                bytes: resultado.meta?.bytes ?? null
+            });
+            return responder(res, resultado);
+        } catch (e) {
+            return falloInterno(res, e);
         }
     }
 

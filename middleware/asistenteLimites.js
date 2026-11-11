@@ -39,6 +39,11 @@ function crearLimitesAsistente(env = process.env) {
             clave: req => `t:${req.tenant.id}`,
             mensaje: 'Tu restaurante está usando mucho el asistente. Inténtalo de nuevo en un momento.'
         }),
+        transcribir: crearLimitador({
+            max: entero(env.ASISTENTE_LIMITE_TRANSCRIBIR_MIN, 20),
+            clave: req => `v:${req.tenant.id}:${req.user.id}`,
+            mensaje: 'Demasiados dictados seguidos. Espera un momento.'
+        }),
         confirmar: crearLimitador({
             max: entero(env.ASISTENTE_LIMITE_CONFIRMAR_MIN, 60),
             clave: req => `c:${req.tenant.id}:${req.user.id}`,

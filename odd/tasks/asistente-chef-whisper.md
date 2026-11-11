@@ -12,8 +12,8 @@ Objective: dictation that works in every browser (Brave, Firefox, Safari, mobile
 
 ## Tasks
 
-- [ ] T1 — S1 — `services/Tenant/Asistente/llm/GroqTranscriber.js`, factory in `llm/index.js`
-- [ ] T2 — S2, S3 — `TranscripcionService`, controller action, route, limiter
+- [x] T1 — S1 — `services/Tenant/Asistente/llm/GroqTranscriber.js`, factory in `llm/index.js` — evidence: RED (module missing) then 15/15 green — commit: `feat(asistente): transcriptor de voz con Groq Whisper`
+- [x] T2 — S2, S3 — `TranscripcionService`, controller action, route, limiter — evidence: RED (22 failing) then 23/23 green; NOT called against the real Groq API yet — commit: `feat(asistente): endpoint de transcripcion de voz`
 - [ ] T3 — S4 — `public/js/core/asistente-dictado.js` (+ api method), partial
 - [ ] T4 — S5 — docs, `.env.example`
 
