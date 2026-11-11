@@ -13,7 +13,7 @@ Objective: let the superadmin ask things like "how much has been sold", "which r
 
 ## Tasks
 
-- [ ] T1 — S1 — `services/Admin/AsistenteSistema/periodos.js`
+- [x] T1 — S1 — `services/Admin/AsistenteSistema/periodos.js` — evidence: RED (module missing) then 37/37 green; the tests caught a real bug (month 13 threw RangeError instead of asking to clarify), fixed — commit: `feat(asistente): periodos de tiempo para las consultas del sistema`
 - [ ] T2 — S2, S3, S4, S5 — repository queries + the three tools (replacing `ventas_hoy_plataforma`)
 - [ ] T3 — S6 — docs, prompt hint
 
