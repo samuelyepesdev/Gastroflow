@@ -1,5 +1,5 @@
 /**
- * Voz del asistente como mejora progresiva: si el navegador no soporta reconocimiento o síntesis,
+ * Voz de salida del asistente (leer las respuestas) como mejora progresiva: si el navegador no soporta reconocimiento o síntesis,
  * el botón correspondiente simplemente no aparece y el chat de texto sigue igual.
  * El audio lo procesa el propio navegador; el servidor solo recibe el texto reconocido.
  */
@@ -25,65 +25,6 @@
         } catch (e) {
             /* sin almacenamiento: la preferencia dura solo esta página */
         }
-    }
-
-    // ---------- Entrada: dictar ----------
-    // Qué decirle al usuario según el motivo por el que el navegador cortó el dictado.
-    const ERRORES_DICTADO = {
-        'not-allowed': 'El navegador no me dejó usar el micrófono. Permítelo en el candado de la barra de direcciones.',
-        'service-not-allowed':
-            'Este navegador no permite dictar por voz. Prueba con Chrome o Edge, o escribe tu pedido.',
-        'audio-capture': 'No encuentro un micrófono conectado.',
-        'no-speech': 'No te escuché. Pulsa el micrófono y habla de nuevo.',
-        network: 'No pude procesar la voz por la conexión del navegador. Inténtalo de nuevo o escribe tu pedido.',
-        'language-not-supported': 'Este navegador no reconoce voz en español. Escribe tu pedido.'
-    };
-    const Reconocimiento = window.SpeechRecognition || window.webkitSpeechRecognition;
-    const botonMic = $('asistente-voz-entrada');
-    if (Reconocimiento && botonMic) {
-        botonMic.hidden = false;
-        let activo = null;
-
-        const terminar = () => {
-            botonMic.classList.remove('activo');
-            botonMic.setAttribute('aria-label', 'Dictar por voz');
-            activo = null;
-        };
-
-        botonMic.addEventListener('click', () => {
-            if (activo) {
-                activo.stop();
-                return;
-            }
-            const rec = new Reconocimiento();
-            rec.lang = IDIOMA;
-            rec.interimResults = false;
-            rec.maxAlternatives = 1;
-            rec.onresult = e => {
-                const texto = e.results && e.results[0] && e.results[0][0] ? e.results[0][0].transcript.trim() : '';
-                if (texto) {
-                    window.Asistente.enviarTexto(texto);
-                }
-            };
-            rec.onend = terminar;
-            rec.onerror = e => {
-                terminar();
-                // 'aborted' es detenerlo a mano: no es un fallo.
-                const mensaje = ERRORES_DICTADO[e && e.error];
-                if (mensaje) {
-                    window.Asistente.avisar(mensaje);
-                }
-            };
-            activo = rec;
-            botonMic.classList.add('activo');
-            botonMic.setAttribute('aria-label', 'Dejar de escuchar');
-            try {
-                rec.start();
-            } catch (err) {
-                terminar();
-                window.Asistente.avisar(ERRORES_DICTADO['service-not-allowed']);
-            }
-        });
     }
 
     // ---------- Salida: leer las respuestas ----------

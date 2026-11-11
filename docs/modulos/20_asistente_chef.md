@@ -30,12 +30,14 @@ clave del proveedor, las mismas capas que la API.
   pulsar uno se deshabilitan ambos y se muestra el resultado. Cada petición lleva su `Idempotency-Key`.
 - **Seguridad:** todo texto del servidor entra con `textContent` (puede traer nombres de productos o notas de
   clientes), nunca como HTML.
-- **Voz (opcional):** el micrófono dicta en `es-CO` y envía el texto reconocido; el altavoz (apagado por
-  defecto, se recuerda en el navegador) lee las respuestas. Usan el reconocimiento y la síntesis del propio
-  navegador: si no existen, los botones no aparecen. Reconocimiento de voz funciona bien en Chrome y Edge, y
-  en Safari/Firefox puede faltar.
+- **Voz (opcional):** el micrófono graba hasta 20 segundos con `MediaRecorder`, el servidor transcribe el
+  audio con Whisper de Groq y el texto se envía como un comando normal. Funciona en cualquier navegador
+  (Brave, Firefox, Safari, móviles). Si el navegador no puede grabar, usa de respaldo el reconocimiento de voz
+  del propio navegador (en Brave ese siempre falla). Si el dictado falla, el chat explica el motivo. El altavoz
+  (apagado por defecto, se recuerda en el navegador) lee las respuestas con la síntesis del navegador.
 - **Archivos:** `views/partials/_asistente.ejs`, `public/css/core/asistente.css`,
-  `public/js/core/asistente-api.js` (HTTP), `asistente.js` (panel) y `asistente-voz.js` (voz).
+  `public/js/core/asistente-api.js` (HTTP), `asistente.js` (panel), `asistente-dictado.js` (micrófono) y
+  `asistente-voz.js` (altavoz).
 
 ## Administración (superadmin)
 
@@ -64,6 +66,7 @@ gestionar el asistente en todos los restaurantes:
 | Ruta | Cuerpo | Respuesta |
 |---|---|---|
 | `GET /api/asistente/estado` | — | `{ nombre }` (nombre del asistente del restaurante, "Chef" por defecto) |
+| `POST /api/asistente/transcribir` | audio crudo (`Content-Type: audio/webm`, `ogg`, `mp4`, `mpeg`, `wav`...), máx. 1 MB | `{ tipo: 'transcripcion', texto }` |
 | `POST /api/asistente/comando` | `{ texto, historial? }` | `{ tipo: 'respuesta' \| 'confirmacion' \| 'aclaracion' \| 'error', ... }` |
 | `POST /api/asistente/confirmar` | `{ confirmationId, aceptar }` | resultado de la acción o error |
 
@@ -87,9 +90,12 @@ número, descripción (alias) y coincidencia aproximada, siempre dentro del tena
 ## Controles
 
 - **Límites** (`middleware/asistenteLimites.js`, por restaurante y usuario, no por IP): 15 comandos/min
-  por usuario, 60/min por restaurante, 60 confirmaciones/min por usuario. Configurables con
-  `ASISTENTE_LIMITE_USUARIO_MIN`, `ASISTENTE_LIMITE_TENANT_MIN`, `ASISTENTE_LIMITE_CONFIRMAR_MIN`.
+  por usuario, 60/min por restaurante, 60 confirmaciones/min y 20 dictados/min por usuario. Configurables con
+  `ASISTENTE_LIMITE_USUARIO_MIN`, `ASISTENTE_LIMITE_TENANT_MIN`, `ASISTENTE_LIMITE_CONFIRMAR_MIN`,
+  `ASISTENTE_LIMITE_TRANSCRIBIR_MIN`.
   Van después del control de acceso para que quien no tiene permiso no gaste la cuota.
+- **Dictado:** `GROQ_STT_MODEL` (por defecto `whisper-large-v3-turbo`). El audio se procesa en memoria, no se
+  guarda ni se registra; la auditoría (`asistente.transcribir`) solo anota el tamaño y el resultado.
 - **Proveedor**: `GROQ_API_KEY`, `GROQ_MODEL` (por defecto `llama-3.3-70b-versatile`, verificar contra la
   lista vigente de Groq), `GROQ_TIMEOUT_MS`. Máximo 5 llamadas a herramientas por respuesta y 4 vueltas
   por comando.

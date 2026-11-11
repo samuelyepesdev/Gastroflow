@@ -1,4 +1,5 @@
 const GroqProvider = require('./GroqProvider');
+const GroqTranscriber = require('./GroqTranscriber');
 
 // Modelo por defecto: el de los ejemplos de la documentación de Groq. Los modelos cambian y se retiran con
 // frecuencia: confirmar en console.groq.com/docs/models y fijarlo con GROQ_MODEL en el entorno.
@@ -24,4 +25,18 @@ function crearProveedor(env = process.env, { fetchImpl } = {}) {
     });
 }
 
-module.exports = { crearProveedor, asistenteConfigurado, MODELO_DEFECTO };
+// Whisper para dictar. Confirmar el modelo vigente en console.groq.com/docs/models; se fija con GROQ_STT_MODEL.
+const MODELO_TRANSCRIPCION_DEFECTO = 'whisper-large-v3-turbo';
+
+/** Transcriptor de voz a partir del entorno: GROQ_API_KEY, GROQ_STT_MODEL y GROQ_TIMEOUT_MS (opcionales). */
+function crearTranscriptor(env = process.env, { fetchImpl } = {}) {
+    const timeoutMs = Number.parseInt(env.GROQ_TIMEOUT_MS, 10);
+    return new GroqTranscriber({
+        apiKey: (env.GROQ_API_KEY || '').trim(),
+        model: (env.GROQ_STT_MODEL || '').trim() || MODELO_TRANSCRIPCION_DEFECTO,
+        timeoutMs: timeoutMs > 0 ? timeoutMs : undefined,
+        fetchImpl
+    });
+}
+
+module.exports = { crearProveedor, crearTranscriptor, asistenteConfigurado, MODELO_DEFECTO };
