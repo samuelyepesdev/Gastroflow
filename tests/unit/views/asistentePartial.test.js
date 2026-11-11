@@ -14,6 +14,10 @@ describe('vista del asistente', () => {
         expect(html).toContain('id="asistente-mensajes"');
         expect(html).toContain('/js/core/asistente-api.js?v=test');
         expect(html).toContain('/js/core/asistente.js?v=test');
+        expect(html).toContain('/js/core/asistente-voz.js?v=test');
+        // La voz es opcional: ambos botones nacen ocultos y solo el script los muestra si el navegador puede.
+        expect(html).toMatch(/id="asistente-voz-entrada"[^>]*hidden/);
+        expect(html).toMatch(/id="asistente-voz-salida"[^>]*hidden/);
     });
 
     it('el navbar solo incluye el parcial cuando el usuario tiene acceso (nav.can.asistente)', () => {
