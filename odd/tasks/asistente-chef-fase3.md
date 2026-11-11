@@ -20,7 +20,7 @@ Objective: a floating button on every authenticated page that opens a chat panel
 - [x] T1 — S1, S2 — inline — `GET /api/asistente/estado`, `nav.can.asistente` in `middleware/navbarLocals.js` — evidence: RED (8 failing) then 9/9 green, eslint clean — commit: `feat(asistente): estado del asistente y visibilidad del boton`
 - [x] T2 — S3, S4, S5, S6, S9 — inline — partial `views/partials/_asistente.ejs` (included from `navbar.ejs` only when `nav.can.asistente`), `public/css/core/asistente.css`, `public/js/core/asistente.js` (+ small helper files) — evidence: 2 view tests green; checked in the browser pane against a mock server (open, ask, confirm, XSS text stays text, 429 keeps the input, mobile width, Esc returns focus); NOT yet checked against the real app/DB — commit: `feat(asistente): panel de chat del asistente`
 - [x] T3 — S7, S8 — inline — `public/js/core/asistente-voz.js` — evidence: view test green; browser pane with stubbed SpeechRecognition/speechSynthesis: dictation sends the recognized text, replies are spoken in es-CO, preference persists in localStorage, muting cancels speech; real microphone NOT tested (blocked in the pane) — commit: `feat(asistente): voz de entrada y salida del asistente`
-- [ ] T4 — S10 — inline — docs + final checks in the browser pane — commit: —
+- [x] T4 — S10 — inline — `docs/modulos/20_asistente_chef.md` updated (panel, `/estado`, voice limits) — commit: `docs(asistente): documentar el panel y la voz`
 
 ## Log
 

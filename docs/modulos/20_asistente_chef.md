@@ -1,8 +1,8 @@
-# 20. Asistente "Chef" (Fase 1: backend de texto)
+# 20. Asistente "Chef"
 
-Asistente conversacional por texto que toma pedidos y responde consultas del restaurante usando un modelo
-de Groq. Esta fase entrega solo el backend; la voz y la interfaz son fases posteriores. Especificación y
-decisiones: `odd/tasks/asistente-chef-fase1.md`.
+Asistente conversacional que toma pedidos y responde consultas del restaurante usando un modelo de Groq,
+por texto o por voz desde un panel flotante. Especificación y decisiones: `odd/tasks/asistente-chef-fase1.md`
+(backend) y `odd/tasks/asistente-chef-fase3.md` (interfaz).
 
 ## Quién lo puede usar
 
@@ -17,10 +17,31 @@ Se necesitan las tres condiciones a la vez (`middleware/asistente.js`, en este o
 > Los usuarios con rol `admin` de un restaurante con el add-on lo reciben automáticamente, porque su plan
 > se calcula en vivo. Para dejarlo en una sola persona hay que denegarlo por usuario.
 
+## Interfaz (panel flotante)
+
+Un botón circular en la esquina inferior derecha de todas las páginas con navbar abre un panel de chat. Solo
+existe en el HTML si `nav.can.asistente` (`middleware/navbarLocals.js`): add-on, permiso `asistente.usar` y
+clave del proveedor, las mismas capas que la API.
+
+- **Chat:** burbujas de usuario y asistente, estado "Pensando…", Enter envía, máximo 500 caracteres. El texto
+  que falla vuelve al campo para reintentar. `Esc` cierra y devuelve el foco al botón. En teléfono el panel
+  ocupa todo el ancho.
+- **Confirmación:** cuando el asistente propone una escritura aparecen **Confirmar** y **Cancelar**; al
+  pulsar uno se deshabilitan ambos y se muestra el resultado. Cada petición lleva su `Idempotency-Key`.
+- **Seguridad:** todo texto del servidor entra con `textContent` (puede traer nombres de productos o notas de
+  clientes), nunca como HTML.
+- **Voz (opcional):** el micrófono dicta en `es-CO` y envía el texto reconocido; el altavoz (apagado por
+  defecto, se recuerda en el navegador) lee las respuestas. Usan el reconocimiento y la síntesis del propio
+  navegador: si no existen, los botones no aparecen. Reconocimiento de voz funciona bien en Chrome y Edge, y
+  en Safari/Firefox puede faltar.
+- **Archivos:** `views/partials/_asistente.ejs`, `public/css/core/asistente.css`,
+  `public/js/core/asistente-api.js` (HTTP), `asistente.js` (panel) y `asistente-voz.js` (voz).
+
 ## API
 
 | Ruta | Cuerpo | Respuesta |
 |---|---|---|
+| `GET /api/asistente/estado` | — | `{ nombre }` (nombre del asistente del restaurante, "Chef" por defecto) |
 | `POST /api/asistente/comando` | `{ texto, historial? }` | `{ tipo: 'respuesta' \| 'confirmacion' \| 'aclaracion' \| 'error', ... }` |
 | `POST /api/asistente/confirmar` | `{ confirmationId, aceptar }` | resultado de la acción o error |
 
@@ -75,6 +96,5 @@ Migración `128_asistente_chef.sql`: add-on `asistente` (precio 0) y tabla `asis
 ## Pendiente antes de producción
 
 Probar contra Groq real con una clave, confirmar el modelo por defecto y los límites del plan gratuito, y
-correr la migración 128 en una BD real. Quedan para fases siguientes: voz de entrada y salida, botón y
-pantalla, edición del nombre desde el superadmin, cuota mensual por restaurante y almacén compartido de
+correr la migración 128 en una BD real. Quedan para fases siguientes: edición del nombre desde el superadmin, cuota mensual por restaurante y almacén compartido de
 confirmaciones para varios procesos.
