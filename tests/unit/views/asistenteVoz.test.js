@@ -94,6 +94,57 @@ describe('voz de salida del asistente', () => {
         expect(ninguna.dicho[0].lang).toBe('es-CO');
     });
 
+    describe('elige la voz menos robótica', () => {
+        const hablar = voces => {
+            const m = montar({ voces, almacenado: '1' });
+            m.responder('hola');
+            jest.advanceTimersByTime(200);
+            return m.dicho[0].voice.name;
+        };
+
+        it('prefiere una voz natural/neural en línea sobre una de escritorio, aunque sea de otro país', () => {
+            const nombre = hablar([
+                { lang: 'es-MX', name: 'Microsoft Sabina Desktop - Spanish (Mexico)', localService: true },
+                { lang: 'es-ES', name: 'Microsoft Alvaro Online (Natural) - Spanish (Spain)', localService: false },
+                { lang: 'es-CO', name: 'Microsoft Salome Desktop - Spanish (Colombia)', localService: true }
+            ]);
+
+            expect(nombre).toBe('Microsoft Alvaro Online (Natural) - Spanish (Spain)');
+        });
+
+        it('entre dos voces naturales, gana la de Colombia y luego las latinas', () => {
+            expect(
+                hablar([
+                    { lang: 'es-MX', name: 'Microsoft Dalia Online (Natural) - Spanish (Mexico)', localService: false },
+                    {
+                        lang: 'es-CO',
+                        name: 'Microsoft Salome Online (Natural) - Spanish (Colombia)',
+                        localService: false
+                    },
+                    { lang: 'es-ES', name: 'Microsoft Elvira Online (Natural) - Spanish (Spain)', localService: false }
+                ])
+            ).toBe('Microsoft Salome Online (Natural) - Spanish (Colombia)');
+        });
+
+        it('una voz de Google en línea gana a una local de escritorio', () => {
+            expect(
+                hablar([
+                    { lang: 'es-MX', name: 'Microsoft Raul Desktop - Spanish (Mexico)', localService: true },
+                    { lang: 'es-US', name: 'Google español de Estados Unidos', localService: false }
+                ])
+            ).toBe('Google español de Estados Unidos');
+        });
+
+        it('si todas son iguales de calidad, sigue prefiriendo es-CO', () => {
+            expect(
+                hablar([
+                    { lang: 'es-ES', name: 'Voz A', localService: true },
+                    { lang: 'es-CO', name: 'Voz B', localService: true }
+                ])
+            ).toBe('Voz B');
+        });
+    });
+
     it('no habla en el mismo instante que cancela: Chrome descartaría la locución', () => {
         const { responder, llamadas } = montar({ almacenado: '1' });
 

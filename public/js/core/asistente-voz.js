@@ -38,16 +38,26 @@
 
         const normalizar = lang => String(lang || '').toLowerCase().replace('_', '-');
 
-        /** Una voz en español: es-CO si existe, luego otras variantes latinas, luego cualquiera. */
+        // Puntos por país (preferimos español latino) y por calidad: las voces neuronales en línea de Edge/Chrome
+        // ("Natural", "Online", Google) suenan mucho menos robóticas que las locales de escritorio.
+        const PUNTOS_PAIS = { 'es-co': 30, 'es-419': 20, 'es-mx': 18, 'es-us': 16, 'es-ar': 10, 'es-es': 5 };
+
+        function puntuar(voz) {
+            const nombre = String(voz.name || '');
+            let puntos = PUNTOS_PAIS[normalizar(voz.lang)] || 0;
+            if (/natural|neural/i.test(nombre)) puntos += 100;
+            if (/online/i.test(nombre)) puntos += 60;
+            if (/google/i.test(nombre)) puntos += 40;
+            if (voz.localService === false) puntos += 20;
+            if (/desktop/i.test(nombre)) puntos -= 30;
+            if (/espeak|compact/i.test(nombre)) puntos -= 50;
+            return puntos;
+        }
+
+        /** La mejor voz en español disponible, o null si no hay ninguna. */
         function elegirVoz() {
             const espanol = sintesis.getVoices().filter(v => normalizar(v.lang).startsWith('es'));
-            for (const idioma of [IDIOMA, 'es-419', 'es-mx', 'es-us', 'es-es']) {
-                const voz = espanol.find(v => normalizar(v.lang) === normalizar(idioma));
-                if (voz) {
-                    return voz;
-                }
-            }
-            return espanol[0] || null;
+            return espanol.reduce((mejor, v) => (!mejor || puntuar(v) > puntuar(mejor) ? v : mejor), null);
         }
 
         function hablar(texto) {

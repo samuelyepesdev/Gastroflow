@@ -480,6 +480,50 @@ describe('AsistenteToolsService', () => {
             expect(r.datos.mesas).toEqual(['mesa 1', 'mesa 3 (Terraza)']);
         });
 
+        it('estado_mesas resume TODAS las mesas del tenant: total, libres y ocupadas con sus conteos', async () => {
+            AsistenteRepository.listarMesas.mockResolvedValue([
+                { id: 1, numero: '1', descripcion: null, estado: 'libre' },
+                { id: 2, numero: '2', descripcion: 'Barra', estado: 'ocupada' },
+                { id: 3, numero: '3', descripcion: 'Terraza', estado: 'libre' },
+                { id: 4, numero: '4', descripcion: null, estado: 'ocupada' },
+                { id: 5, numero: 'D', descripcion: 'Domicilio', estado: 'ocupada' },
+                { id: 6, numero: '6', descripcion: null, estado: 'reservada' }
+            ]);
+
+            const r = await AsistenteToolsService.preparar(ctx(), 'estado_mesas', {});
+
+            expect(AsistenteRepository.listarMesas).toHaveBeenCalledWith(5);
+            expect(r.tipo).toBe('resultado');
+            expect(r.datos.total).toBe(6);
+            expect(r.datos.libres).toEqual({ cantidad: 2, mesas: ['mesa 1', 'mesa 3 (Terraza)'] });
+            expect(r.datos.ocupadas).toEqual({
+                cantidad: 3,
+                mesas: ['mesa 2 (Barra)', 'mesa 4', 'mesa D (Domicilio)']
+            });
+            expect(r.datos.otras).toEqual({ cantidad: 1, mesas: ['mesa 6'] });
+        });
+
+        it('estado_mesas sin mesas devuelve ceros, sin inventar nada', async () => {
+            AsistenteRepository.listarMesas.mockResolvedValue([]);
+
+            const r = await AsistenteToolsService.preparar(ctx(), 'estado_mesas', {});
+
+            expect(r.datos.total).toBe(0);
+            expect(r.datos.libres.cantidad).toBe(0);
+            expect(r.datos.ocupadas.cantidad).toBe(0);
+        });
+
+        it('estado_mesas exige el permiso y el módulo de mesas como el resto', async () => {
+            const sinPermiso = await AsistenteToolsService.preparar(
+                ctx({ permisos: ['ventas.ver'] }),
+                'estado_mesas',
+                {}
+            );
+
+            expect(sinPermiso.tipo).toBe('error');
+            expect(AsistenteRepository.listarMesas).not.toHaveBeenCalled();
+        });
+
         it('consultar_menu devuelve precio y disponibilidad, y las coincidencias si es ambiguo', async () => {
             AsistenteResolverService.resolverProducto.mockResolvedValueOnce({ estado: 'ok', producto: ramen });
             const uno = await AsistenteToolsService.preparar(ctx(), 'consultar_menu', { producto: 'ramen' });

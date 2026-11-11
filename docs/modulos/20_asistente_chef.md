@@ -34,7 +34,9 @@ clave del proveedor, las mismas capas que la API.
   audio con Whisper de Groq y el texto se envía como un comando normal. Funciona en cualquier navegador
   (Brave, Firefox, Safari, móviles). Si el navegador no puede grabar, usa de respaldo el reconocimiento de voz
   del propio navegador (en Brave ese siempre falla). Si el dictado falla, el chat explica el motivo. El altavoz
-  (apagado por defecto, se recuerda en el navegador) lee las respuestas con la síntesis del navegador.
+  (apagado por defecto, se recuerda en el navegador) lee las respuestas con la síntesis del navegador, eligiendo la
+  voz en español menos robótica que haya: prefiere las neuronales en línea ("Natural" en Edge, voces de Google) y el
+  español latino. La calidad depende de las voces que tenga instaladas el dispositivo.
 - **Archivos:** `views/partials/_asistente.ejs`, `public/css/core/asistente.css`,
   `public/js/core/asistente-api.js` (HTTP), `asistente.js` (panel), `asistente-dictado.js` (micrófono) y
   `asistente-voz.js` (altavoz).
@@ -115,7 +117,7 @@ modificar algo, explica que eso se hace en el panel.
 
 El modelo solo puede invocar estas, y solo las que el usuario puede usar (permiso Y módulo del plan):
 `agregar_items` (hasta 20 líneas, cantidad 1–50), `cancelar_item` (solo `pendiente`), `liberar_mesa`,
-`consultar_mesa`, `mesas_libres`, `consultar_menu`, `ventas_hoy` (permiso `ventas.ver`).
+`consultar_mesa`, `mesas_libres`, `estado_mesas` (total de mesas y cuáles están libres u ocupadas), `consultar_menu`, `ventas_hoy` (permiso `ventas.ver`).
 
 El modelo nunca ve ni envía `tenant_id`, ni genera SQL. Mesa y producto se resuelven en el servidor por
 número, descripción (alias) y coincidencia aproximada, siempre dentro del tenant de la sesión

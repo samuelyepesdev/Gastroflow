@@ -11,6 +11,7 @@ module.exports = {
     liberar_mesa: require('./liberarMesa'),
     consultar_mesa: require('./consultarMesa'),
     mesas_libres: require('./mesasLibres'),
+    estado_mesas: require('./estadoMesas'),
     consultar_menu: require('./consultarMenu'),
     ventas_hoy: require('./ventasHoy')
 };
