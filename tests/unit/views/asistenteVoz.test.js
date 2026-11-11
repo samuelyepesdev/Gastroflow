@@ -20,11 +20,17 @@ function elemento() {
     };
 }
 
-function montar({ voces = [], almacenado = null } = {}) {
+function montar({ voces = [], almacenado = null, reconocimiento = false } = {}) {
     const dicho = [];
     const llamadas = [];
     const elementos = { 'asistente-voz-salida': elemento(), 'asistente-voz-entrada': elemento() };
     let responder = () => {};
+    const reconocedores = [];
+    function Reconocedor() {
+        this.start = jest.fn();
+        this.stop = jest.fn();
+        reconocedores.push(this);
+    }
     function Locucion(texto) {
         this.text = texto;
     }
@@ -33,7 +39,8 @@ function montar({ voces = [], almacenado = null } = {}) {
         setTimeout,
         document: { getElementById: id => elementos[id] || null },
         window: {
-            Asistente: { enviarTexto: jest.fn(), alResponder: fn => (responder = fn) },
+            Asistente: { enviarTexto: jest.fn(), avisar: jest.fn(), alResponder: fn => (responder = fn) },
+            ...(reconocimiento ? { SpeechRecognition: Reconocedor } : {}),
             SpeechSynthesisUtterance: Locucion,
             speechSynthesis: {
                 speaking: false,
@@ -50,7 +57,7 @@ function montar({ voces = [], almacenado = null } = {}) {
         }
     };
     vm.runInNewContext(SCRIPT, contexto);
-    return { elementos, dicho, llamadas, responder: t => responder(t), contexto };
+    return { elementos, dicho, llamadas, reconocedores, responder: t => responder(t), contexto };
 }
 
 describe('voz de salida del asistente', () => {
@@ -123,5 +130,63 @@ describe('voz de salida del asistente', () => {
 
         expect(llamadas).toContain('cancel');
         expect(dicho).toHaveLength(0);
+    });
+});
+
+describe('dictado por voz del asistente', () => {
+    const pulsarMic = montado => {
+        montado.elementos['asistente-voz-entrada'].click();
+        return montado.reconocedores[montado.reconocedores.length - 1];
+    };
+
+    it('muestra el micrófono solo si el navegador sabe reconocer voz', () => {
+        expect(montar().elementos['asistente-voz-entrada'].hidden).toBe(true);
+        expect(montar({ reconocimiento: true }).elementos['asistente-voz-entrada'].hidden).toBe(false);
+    });
+
+    it('escucha en español de Colombia y envía lo dictado como comando', () => {
+        const m = montar({ reconocimiento: true });
+        const rec = pulsarMic(m);
+
+        expect(rec.lang).toBe('es-CO');
+        expect(rec.start).toHaveBeenCalled();
+        rec.onresult({ results: [[{ transcript: '4 ramen para la mesa 8' }]] });
+
+        expect(m.contexto.window.Asistente.enviarTexto).toHaveBeenCalledWith('4 ramen para la mesa 8');
+    });
+
+    it.each([
+        ['not-allowed', /permiso|micr[oó]fono/i],
+        ['service-not-allowed', /permiso|micr[oó]fono|navegador/i],
+        ['audio-capture', /micr[oó]fono/i],
+        ['no-speech', /no te escuch/i],
+        ['network', /conexi[oó]n|navegador/i],
+        ['language-not-supported', /idioma|navegador/i]
+    ])('si el dictado falla (%s) lo dice en el chat en vez de callar', (codigo, esperado) => {
+        const m = montar({ reconocimiento: true });
+        const rec = pulsarMic(m);
+
+        rec.onerror({ error: codigo });
+
+        expect(m.contexto.window.Asistente.avisar).toHaveBeenCalledTimes(1);
+        expect(m.contexto.window.Asistente.avisar.mock.calls[0][0]).toMatch(esperado);
+    });
+
+    it('detenerlo a mano (aborted) no es un error y no avisa', () => {
+        const m = montar({ reconocimiento: true });
+        const rec = pulsarMic(m);
+
+        rec.onerror({ error: 'aborted' });
+
+        expect(m.contexto.window.Asistente.avisar).not.toHaveBeenCalled();
+    });
+
+    it('un dictado vacío no envía nada', () => {
+        const m = montar({ reconocimiento: true });
+        const rec = pulsarMic(m);
+
+        rec.onresult({ results: [[{ transcript: '   ' }]] });
+
+        expect(m.contexto.window.Asistente.enviarTexto).not.toHaveBeenCalled();
     });
 });

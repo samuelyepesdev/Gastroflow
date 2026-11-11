@@ -146,6 +146,8 @@
 
     window.Asistente = {
         enviarTexto,
+        // Mensaje del propio panel (no viene del modelo), p. ej. por qué falló el micrófono.
+        avisar: texto => burbuja('asistente error', texto),
         alResponder: fn => oyentes.push(fn)
     };
 })();
