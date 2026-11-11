@@ -1,0 +1,127 @@
+/**
+ * Voz de salida del asistente: se ejecuta el script real del navegador dentro de un contexto simulado
+ * (sin navegador) para comprobar cómo habla, qué voz elige y que el botón da señal audible.
+ */
+const fs = require('fs');
+const path = require('path');
+const vm = require('vm');
+
+const SCRIPT = fs.readFileSync(path.join(__dirname, '../../../public/js/core/asistente-voz.js'), 'utf8');
+
+function elemento() {
+    const oyentes = {};
+    return {
+        hidden: true,
+        classList: { toggle: jest.fn(), add: jest.fn(), remove: jest.fn() },
+        firstElementChild: { className: '' },
+        setAttribute: jest.fn(),
+        addEventListener: (tipo, fn) => (oyentes[tipo] = fn),
+        click: () => oyentes.click && oyentes.click()
+    };
+}
+
+function montar({ voces = [], almacenado = null } = {}) {
+    const dicho = [];
+    const llamadas = [];
+    const elementos = { 'asistente-voz-salida': elemento(), 'asistente-voz-entrada': elemento() };
+    let responder = () => {};
+    function Locucion(texto) {
+        this.text = texto;
+    }
+    const contexto = {
+        console,
+        setTimeout,
+        document: { getElementById: id => elementos[id] || null },
+        window: {
+            Asistente: { enviarTexto: jest.fn(), alResponder: fn => (responder = fn) },
+            SpeechSynthesisUtterance: Locucion,
+            speechSynthesis: {
+                speaking: false,
+                paused: false,
+                getVoices: () => voces,
+                cancel: () => llamadas.push('cancel'),
+                resume: () => llamadas.push('resume'),
+                speak: u => {
+                    llamadas.push('speak');
+                    dicho.push(u);
+                }
+            },
+            localStorage: { getItem: () => almacenado, setItem: jest.fn() }
+        }
+    };
+    vm.runInNewContext(SCRIPT, contexto);
+    return { elementos, dicho, llamadas, responder: t => responder(t), contexto };
+}
+
+describe('voz de salida del asistente', () => {
+    beforeEach(() => jest.useFakeTimers());
+    afterEach(() => jest.useRealTimers());
+
+    it('elige una voz en español, prefiriendo es-CO, y la usa con su idioma', () => {
+        const voces = [
+            { lang: 'en-US', name: 'Inglés' },
+            { lang: 'es_ES', name: 'España' },
+            { lang: 'es-CO', name: 'Colombia' },
+            { lang: 'es-MX', name: 'México' }
+        ];
+        const { responder, dicho } = montar({ voces, almacenado: '1' });
+
+        responder('Hay 3 mesas libres');
+        jest.advanceTimersByTime(200);
+
+        expect(dicho).toHaveLength(1);
+        expect(dicho[0].voice.name).toBe('Colombia');
+        expect(dicho[0].lang).toBe('es-CO');
+    });
+
+    it('si no hay es-CO usa otra voz en español; sin ninguna, pide es-CO y deja que el navegador decida', () => {
+        const otra = montar({ voces: [{ lang: 'es-419', name: 'Latam' }], almacenado: '1' });
+        otra.responder('hola');
+        jest.advanceTimersByTime(200);
+        expect(otra.dicho[0].voice.name).toBe('Latam');
+
+        const ninguna = montar({ voces: [{ lang: 'en-US', name: 'Inglés' }], almacenado: '1' });
+        ninguna.responder('hola');
+        jest.advanceTimersByTime(200);
+        expect(ninguna.dicho[0].voice).toBeUndefined();
+        expect(ninguna.dicho[0].lang).toBe('es-CO');
+    });
+
+    it('no habla en el mismo instante que cancela: Chrome descartaría la locución', () => {
+        const { responder, llamadas } = montar({ almacenado: '1' });
+
+        responder('hola');
+        expect(llamadas).not.toContain('speak');
+
+        jest.advanceTimersByTime(200);
+        expect(llamadas.indexOf('cancel')).toBeLessThan(llamadas.indexOf('speak'));
+    });
+
+    it('apagado no habla', () => {
+        const { responder, llamadas } = montar({ almacenado: '0' });
+
+        responder('hola');
+        jest.advanceTimersByTime(200);
+
+        expect(llamadas).not.toContain('speak');
+    });
+
+    it('al encender el botón confirma en voz alta, para que se oiga si funciona', () => {
+        const { elementos, dicho } = montar({ almacenado: '0' });
+
+        elementos['asistente-voz-salida'].click();
+        jest.advanceTimersByTime(200);
+
+        expect(dicho.map(d => d.text)).toEqual(['Voz activada']);
+    });
+
+    it('al apagarlo cancela lo que estuviera hablando y no dice nada', () => {
+        const { elementos, dicho, llamadas } = montar({ almacenado: '1' });
+
+        elementos['asistente-voz-salida'].click();
+        jest.advanceTimersByTime(200);
+
+        expect(llamadas).toContain('cancel');
+        expect(dicho).toHaveLength(0);
+    });
+});
