@@ -23,6 +23,16 @@ class AsistenteRepository {
     }
 
     /**
+     * Nombre configurado del asistente para el tenant, o null si no se ha personalizado.
+     * @param {number} tenantId
+     * @returns {Promise<string|null>}
+     */
+    static async nombreAsistente(tenantId) {
+        const [rows] = await db.query('SELECT nombre FROM asistente_config WHERE tenant_id = ?', [tenantId]);
+        return rows[0]?.nombre ?? null;
+    }
+
+    /**
      * Pedido vivo (no cerrado ni cancelado) de una mesa del tenant, o null.
      * @param {number} tenantId
      * @param {number} mesaId
