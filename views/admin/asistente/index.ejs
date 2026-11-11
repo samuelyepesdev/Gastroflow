@@ -1,0 +1,71 @@
+<%- include('../_shell/_open', {
+    title: 'Asistente Chef',
+    currentAdminPage: 'asistente',
+    pageCss: '/css/admin/asistente.css'
+}) %>
+
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+        <h2 class="mb-0"><i class="bi bi-chat-dots me-2"></i>Asistente Chef</h2>
+        <button type="button" class="btn btn-outline-secondary btn-sm" id="asistente-recargar">
+            <i class="bi bi-arrow-clockwise me-1"></i>Actualizar
+        </button>
+    </div>
+
+    <div id="asistente-servidor" class="alert alert-secondary py-2" role="status">Cargando estado…</div>
+
+    <p class="text-muted small mb-3">
+        Activa el asistente por restaurante y decide qué usuarios lo usan. El uso son los últimos 30 días y solo
+        cuenta comandos; el texto que escriben los usuarios no se muestra aquí.
+    </p>
+
+    <div class="table-responsive">
+        <table class="table table-hover align-middle" id="asistente-tabla">
+            <thead class="table-light">
+                <tr>
+                    <th>Restaurante</th>
+                    <th>Add-on</th>
+                    <th>Nombre del asistente</th>
+                    <th class="text-end">Con acceso</th>
+                    <th class="text-end">Comandos</th>
+                    <th class="text-end">Errores</th>
+                    <th class="text-end">Tokens</th>
+                    <th>Último uso</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody id="asistente-filas">
+                <tr><td colspan="9" class="text-center text-muted py-4">Cargando…</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="modal fade" id="asistente-modal-usuarios" tabindex="-1" aria-labelledby="asistente-modal-titulo"
+        aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="asistente-modal-titulo">Usuarios</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="small text-muted">
+                        <strong>Estándar</strong> sigue al rol y al plan (los admins lo reciben solos).
+                        <strong>Conceder</strong> y <strong>Denegar</strong> son excepciones solo para ese usuario.
+                        En planes Premium y Definitivo las excepciones de un admin no se aplican.
+                    </p>
+                    <div class="table-responsive">
+                        <table class="table align-middle mb-0">
+                            <thead class="table-light">
+                                <tr><th>Usuario</th><th>Rol</th><th>Acceso</th><th>Excepción</th></tr>
+                            </thead>
+                            <tbody id="asistente-usuarios"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<%- include('../_shell/_close', {
+    extraScripts: '<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script><script src="/js/admin/asistente.js?v=' + assetV + '"></script>'
+}) %>
