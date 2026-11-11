@@ -53,4 +53,41 @@ describe('EliminarItemService', () => {
         expect(SincronizarPrecioPromoService.ejecutar).not.toHaveBeenCalled();
         expect(mockConn.rollback).toHaveBeenCalled();
     });
+
+    describe('soloPendiente (lo usa el asistente)', () => {
+        it('si el item ya no está pendiente no borra nada y revierte', async () => {
+            mockConn.query.mockResolvedValueOnce([
+                [{ id: 5, producto_id: 3, pedido_id: 10, mesa_id: 1, estado: 'preparando' }]
+            ]);
+
+            await expect(EliminarItemService.execute({ tenantId: 1, itemId: 5, soloPendiente: true })).rejects.toThrow(
+                'ya no está pendiente'
+            );
+
+            expect(mockConn.query).toHaveBeenCalledTimes(1);
+            expect(mockConn.rollback).toHaveBeenCalled();
+        });
+
+        it('si sigue pendiente borra como siempre', async () => {
+            mockConn.query
+                .mockResolvedValueOnce([[{ id: 5, producto_id: 3, pedido_id: 10, mesa_id: 1, estado: 'pendiente' }]])
+                .mockResolvedValueOnce([{ affectedRows: 1 }])
+                .mockResolvedValueOnce([[{ cnt: 1 }]]);
+
+            await EliminarItemService.execute({ tenantId: 1, itemId: 5, soloPendiente: true });
+
+            expect(mockConn.commit).toHaveBeenCalled();
+        });
+
+        it('sin el parámetro el comportamiento no cambia: borra aunque ya esté en preparación', async () => {
+            mockConn.query
+                .mockResolvedValueOnce([[{ id: 5, producto_id: 3, pedido_id: 10, mesa_id: 1, estado: 'preparando' }]])
+                .mockResolvedValueOnce([{ affectedRows: 1 }])
+                .mockResolvedValueOnce([[{ cnt: 1 }]]);
+
+            await EliminarItemService.execute({ tenantId: 1, itemId: 5 });
+
+            expect(mockConn.commit).toHaveBeenCalled();
+        });
+    });
 });
