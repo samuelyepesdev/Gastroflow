@@ -61,6 +61,32 @@ gestionar el asistente en todos los restaurantes:
   `services/Admin/AsistenteAdminService.js`, `repositories/Admin/AsistenteAdminRepository.js`,
   `views/admin/asistente/index.ejs`, `public/js/admin/asistente.js`.
 
+## Asistente del sistema (superadmin)
+
+Un segundo asistente, solo para el superadmin, para **consultar la plataforma** por texto o voz. Aparece como el
+mismo botón flotante en todas las páginas del panel de superadmin, con el título "Asistente del sistema", y solo
+si el servidor tiene `GROQ_API_KEY`. Es de **solo lectura**: no cambia nada ni tiene confirmaciones; si le piden
+modificar algo, explica que eso se hace en el panel.
+
+- **Herramientas (cerradas):** `resumen_plataforma` (restaurantes activos, suspendidos por pago, pendientes de
+  aprobación, sucursales, usuarios), `ventas_hoy_plataforma`, `buscar_restaurante` (plan, estado, cobro, add-ons,
+  usuarios), `soporte_abierto`, `cola_trabajos`, `planes_y_addons` y `uso_asistente`.
+- **Datos de terceros:** los nombres de restaurantes, los textos de los tickets y los errores de los trabajos
+  los escriben otras personas y llegan al modelo. Por eso los resultados son solo agregados y campos de sistema:
+  nunca se devuelve la descripción de un ticket ni la respuesta del admin, y los nombres y errores se limpian
+  (sin caracteres de control, largo acotado). Además el prompt indica que los resultados son datos, no
+  instrucciones; y como no hay herramientas de escritura, una instrucción inyectada no puede cambiar nada.
+- **API** (detrás de `requireSuperadmin`, sin restaurante): `GET /admin/asistente/api/chat/estado`,
+  `POST /admin/asistente/api/chat/comando` y `POST /admin/asistente/api/chat/transcribir` (audio crudo, igual que
+  el de los restaurantes). Límites por superadmin: 20 consultas/min y 20 dictados/min (`ASISTENTE_LIMITE_SISTEMA_MIN`,
+  `ASISTENTE_LIMITE_SISTEMA_VOZ_MIN`).
+- **Auditoría:** `asistente.admin_consulta` y `asistente.admin_transcribir` en `tenant_audit` (sin restaurante):
+  quién, la pregunta (300 caracteres), herramientas y tokens, o solo el tamaño del audio.
+- **Archivos:** `services/Admin/AsistenteSistema/*` (herramientas, prompt y servicio),
+  `repositories/Admin/AsistenteSistemaRepository.js`, `app/Http/Controllers/Admin/AsistenteSistemaController.js`,
+  rutas en `routes/admin/asistente.js`. El panel es el mismo parcial (`views/partials/_asistente.ejs`) con la API
+  indicada en `data-api`; se incluye desde `views/admin/_shell/_close.ejs`.
+
 ## API
 
 | Ruta | Cuerpo | Respuesta |

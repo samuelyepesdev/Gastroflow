@@ -18,8 +18,8 @@ Objective: an assistant inside the superadmin panel to ask about the platform (r
 - [x] T1 — S3, S4 — `repositories/Admin/AsistenteSistemaRepository.js`, `services/Admin/AsistenteSistema/{seguro,herramientas/*,AsistenteSistemaTools}` — evidence: RED (module missing) then 26/26 green; every repository query run read-only against the local MySQL 8.4 schema (all OK) — commit: `feat(asistente): herramientas de consulta del sistema`
 - [x] T2 — S1, S5 — `AsistenteSistemaService`, prompt — evidence: RED (module missing) then 21/21 green — commit: `feat(asistente): orquestador del asistente del sistema`
 - [x] T3 — S2, S6 — controller, routes (`/admin/asistente/api/chat/*`), limiters — evidence: RED (17 failing) then 17/17 green; the shared HTTP helpers were extracted from the tenant controller (`asistenteHttp.js`) with its existing tests still green (129 route tests) — commit: `feat(asistente): rutas del asistente del sistema`
-- [ ] T4 — S7 — configurable API base in the panel, include in the admin shell
-- [ ] T5 — S8 — docs and env
+- [x] T4 — S7 — configurable API base in the panel, include in the admin shell — evidence: RED (5 failing) then green; browser pane against a mock: title, greeting, requests go to `/admin/asistente/api/chat`; real Groq NOT tested — commit: `feat(asistente): panel del asistente del sistema en el superadmin`
+- [x] T5 — S8 — docs and env — commit: `docs(asistente): documentar el asistente del sistema`
 
 ## Log
 
