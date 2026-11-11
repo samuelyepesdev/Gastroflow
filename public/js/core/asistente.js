@@ -148,6 +148,8 @@
         enviarTexto,
         // Mensaje del propio panel (no viene del modelo), p. ej. por qué falló el micrófono.
         avisar: texto => burbuja('asistente error', texto),
+        // Estado pasajero (p. ej. "Escuchando…"): devuelve la burbuja para quitarla al terminar.
+        nota: texto => burbuja('asistente pensando', texto),
         alResponder: fn => oyentes.push(fn)
     };
 })();

@@ -7,6 +7,7 @@
     const BASE = '/api/asistente';
     const MENSAJES = {
         limite: 'Vas muy rápido. Espera un momento e inténtalo de nuevo.',
+        grande: 'El audio es demasiado largo. Habla más corto e inténtalo de nuevo.',
         red: 'No pude conectar con el asistente. Revisa tu conexión e inténtalo de nuevo.'
     };
 
@@ -17,17 +18,19 @@
         return 'gf-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
     }
 
+    // `cuerpo` puede ser un objeto (se envía como JSON) o un Blob de audio (se envía crudo con su tipo).
     async function enviar(ruta, cuerpo) {
+        const esAudio = typeof Blob !== 'undefined' && cuerpo instanceof Blob;
         try {
             const resp = await fetch(BASE + ruta, {
                 method: 'POST',
                 credentials: 'same-origin',
                 headers: {
-                    'Content-Type': 'application/json',
+                    'Content-Type': esAudio ? cuerpo.type : 'application/json',
                     Accept: 'application/json',
                     'Idempotency-Key': llaveIdempotencia()
                 },
-                body: JSON.stringify(cuerpo)
+                body: esAudio ? cuerpo : JSON.stringify(cuerpo)
             });
             const datos = await resp.json().catch(() => null);
             if (datos && datos.tipo) {
@@ -35,6 +38,9 @@
             }
             if (resp.status === 429) {
                 return { tipo: 'error', codigo: 'limite', texto: MENSAJES.limite };
+            }
+            if (resp.status === 413) {
+                return { tipo: 'error', codigo: 'grande', texto: MENSAJES.grande };
             }
             const texto = (datos && (datos.error || datos.texto)) || MENSAJES.red;
             return { tipo: 'error', codigo: 'http_' + resp.status, texto };
@@ -59,6 +65,7 @@
     window.AsistenteApi = {
         nombre,
         comando: (texto, historial) => enviar('/comando', { texto, historial }),
+        transcribir: audio => enviar('/transcribir', audio),
         confirmar: (confirmationId, aceptar) => enviar('/confirmar', { confirmationId, aceptar })
     };
 })();
