@@ -21,6 +21,10 @@ jest.mock('../../../repositories/Tenant/AsistenteRepository', () => ({
 }));
 jest.mock('../../../repositories/Tenant/ProductRepository', () => ({ findById: jest.fn() }));
 jest.mock('../../../repositories/Tenant/StatsRepository', () => ({ getVentasHoy: jest.fn() }));
+jest.mock('../../../repositories/Admin/AsistenteSistemaRepository', () => ({
+    ventasDeRestaurante: jest.fn(),
+    topProductos: jest.fn()
+}));
 jest.mock('../../../services/Tenant/Mesas/AbrirPedidoService', () => ({ execute: jest.fn() }));
 jest.mock('../../../services/Tenant/Mesas/AgregarItemService', () => ({ execute: jest.fn() }));
 jest.mock('../../../services/Tenant/Mesas/EliminarItemService', () => ({ execute: jest.fn() }));
@@ -67,7 +71,7 @@ describe('AsistenteToolsService', () => {
             const nombres = AsistenteToolsService.definiciones(
                 ctx({ allowedByPlan: { mesas: false, productos: true, ventas: true } })
             ).map(d => d.name);
-            expect(nombres).toEqual(['consultar_menu', 'ventas_hoy']);
+            expect(nombres).toEqual(['consultar_menu', 'ventas_hoy', 'ventas_periodo']);
         });
 
         it('cada definición tiene forma de function-calling y nunca expone tenant_id', () => {
@@ -674,7 +678,20 @@ describe('AsistenteToolsService', () => {
             const r = await AsistenteToolsService.preparar(ctx(), 'ventas_hoy', {});
 
             expect(StatsRepository.getVentasHoy).toHaveBeenCalledWith(5);
-            expect(r.datos).toEqual({ total: 350000, cantidad_ventas: 12 });
+            expect(r.datos).toEqual({
+                moneda: expect.stringMatching(/colombian/i),
+                total: 350000,
+                total_texto: '350.000 pesos',
+                cantidad_ventas: 12
+            });
+        });
+
+        it('ventas_periodo está registrada con el permiso y módulo de ventas', () => {
+            const defs = AsistenteToolsService.definiciones(ctx());
+            expect(defs.map(d => d.name)).toContain('ventas_periodo');
+
+            const sinVentas = AsistenteToolsService.definiciones(ctx({ permisos: ['mesas.ver'] })).map(d => d.name);
+            expect(sinVentas).not.toContain('ventas_periodo');
         });
 
         it('ejecutar jamás corre una herramienta de lectura con un payload inventado', async () => {

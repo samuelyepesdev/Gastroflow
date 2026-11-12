@@ -118,7 +118,9 @@ modificar algo, explica que eso se hace en el panel.
 El modelo solo puede invocar estas, y solo las que el usuario puede usar (permiso Y módulo del plan):
 `agregar_items` (hasta 20 líneas, cantidad 1–50), `cancelar_item` (solo `pendiente`), `liberar_mesa`,
 `liberar_mesas_vacias` (una sola confirmación para liberar todas las mesas ocupadas sin items activos ni abonos, máx. 30; cada una se revisa de nuevo bajo bloqueo al ejecutar y las que ya tienen productos se omiten),
-`consultar_mesa`, `mesas_libres`, `estado_mesas` (total de mesas y cuáles están libres u ocupadas), `consultar_menu`, `ventas_hoy` (permiso `ventas.ver`).
+`consultar_mesa`, `mesas_libres`, `estado_mesas` (total de mesas y cuáles están libres u ocupadas), `consultar_menu`, `ventas_hoy` y `ventas_periodo` (permiso `ventas.ver`; periodos hoy, ayer, 7 días, mes, mes pasado, año, histórico o dos fechas, con comparación y top de productos).
+
+El dinero se entrega al modelo ya escrito en pesos colombianos (`utils/pesosTexto.js`, campos `*_texto` + `moneda`) y el prompt le exige usarlos tal cual: así no inventa monedas (euros) ni deja cifras sin puntos de miles.
 
 El modelo nunca ve ni envía `tenant_id`, ni genera SQL. Mesa y producto se resuelven en el servidor por
 número, descripción (alias) y coincidencia aproximada, siempre dentro del tenant de la sesión
