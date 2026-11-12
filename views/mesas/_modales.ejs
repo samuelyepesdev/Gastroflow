@@ -439,6 +439,25 @@
                         <span class="visually-hidden">Cargando...</span>
                     </div>
                 </div>
+                <div class="border-top pt-3 mt-3">
+                    <button type="button" class="btn btn-sm btn-outline-success rounded-pill w-100"
+                        id="btnClienteRapidoToggle">
+                        <i class="bi bi-person-plus me-1"></i>Crear cliente rápido
+                    </button>
+                    <form id="formClienteRapidoMesa" class="d-none mt-3" autocomplete="off" novalidate>
+                        <div class="mb-2">
+                            <input id="clienteRapidoNombre" class="form-control" placeholder="Nombre *" maxlength="255"
+                                required>
+                        </div>
+                        <div class="mb-3">
+                            <input id="clienteRapidoTelefono" class="form-control" placeholder="Teléfono"
+                                inputmode="numeric" maxlength="20">
+                        </div>
+                        <button type="submit" class="btn btn-success w-100 rounded-pill" id="btnClienteRapidoGuardar">
+                            <i class="bi bi-check-lg me-1"></i>Guardar y asignar
+                        </button>
+                    </form>
+                </div>
             </div>
             <div class="modal-footer border-0 bg-light py-2">
                 <button type="button" class="btn btn-sm btn-primary rounded-pill px-4"
