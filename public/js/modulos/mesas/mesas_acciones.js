@@ -14,30 +14,35 @@ function crearItemResultadoCliente(mod, list, modalClienteMesa, c) {
         <i class="bi bi-chevron-right text-muted"></i>
       </div>
     </a>`);
-  item.on('click', async e => {
+  item.on('click', e => {
     e.preventDefault();
-    const originalCliente = { ...mod.clienteActual };
-    mod.clienteActual = { id: c.id, nombre: c.nombre };
-
-    if (mod.pedidoActual?.id) {
-      try {
-        await GF.api(`/api/mesas/pedidos/${mod.pedidoActual.id}/cliente`, {
-          method: 'PUT',
-          body: { cliente_id: c.id }
-        }, 'No se pudo asociar el cliente');
-      } catch (err) {
-        console.error('Error al asociar cliente:', err);
-        mod.clienteActual = originalCliente;
-        return Swal.fire({ icon: 'error', title: 'Error al asociar cliente', text: err.message || 'No se pudo completar la operación.' });
-      }
-    }
-
-    mod.actualizarUICliente();
-    modalClienteMesa.hide();
-    $('#buscarClienteInputMesa').val('');
-    list.empty();
+    asignarClienteMesa(mod, list, modalClienteMesa, c);
   });
   return item;
+}
+
+// Deja `c` como cliente del pedido actual (y lo guarda si el pedido ya existe).
+async function asignarClienteMesa(mod, list, modalClienteMesa, c) {
+  const originalCliente = { ...mod.clienteActual };
+  mod.clienteActual = { id: c.id, nombre: c.nombre };
+
+  if (mod.pedidoActual?.id) {
+    try {
+      await GF.api(`/api/mesas/pedidos/${mod.pedidoActual.id}/cliente`, {
+        method: 'PUT',
+        body: { cliente_id: c.id }
+      }, 'No se pudo asociar el cliente');
+    } catch (err) {
+      console.error('Error al asociar cliente:', err);
+      mod.clienteActual = originalCliente;
+      return Swal.fire({ icon: 'error', title: 'Error al asociar cliente', text: err.message || 'No se pudo completar la operación.' });
+    }
+  }
+
+  mod.actualizarUICliente();
+  modalClienteMesa.hide();
+  $('#buscarClienteInputMesa').val('');
+  list.empty();
 }
 
 $(function () {
@@ -157,6 +162,35 @@ $(function () {
   $('#btnBuscarClienteMesa').on('click', function () {
     modalClienteMesa.show();
     setTimeout(() => $('#buscarClienteInputMesa').focus(), 500);
+  });
+
+  // Cliente rápido: solo nombre y teléfono, queda asignado al pedido.
+  const $formRapido = $('#formClienteRapidoMesa');
+  $('#btnClienteRapidoToggle').on('click', function () {
+    $formRapido.toggleClass('d-none');
+    if (!$formRapido.hasClass('d-none')) $('#clienteRapidoNombre').trigger('focus');
+  });
+  document.getElementById('modalBuscarClienteMesa').addEventListener('hidden.bs.modal', function () {
+    $formRapido.addClass('d-none')[0].reset();
+  });
+
+  $formRapido.on('submit', async function (e) {
+    e.preventDefault();
+    const nombre = $('#clienteRapidoNombre').val().trim();
+    const telefono = $('#clienteRapidoTelefono').val().replace(/\D/g, '');
+    if (!nombre) {
+      return Swal.fire({ icon: 'warning', title: 'Escribe el nombre del cliente' });
+    }
+    const $btn = $('#btnClienteRapidoGuardar');
+    GF.cargando($btn[0], true);
+    try {
+      const res = await GF.api.post('/api/clientes', { nombre, telefono }, 'No se pudo crear el cliente');
+      await asignarClienteMesa(mod, $('#resultadosClienteMesa'), modalClienteMesa, { id: res.id, nombre });
+    } catch (err) {
+      Swal.fire({ icon: 'error', title: err.message || 'No se pudo crear el cliente' });
+    } finally {
+      GF.cargando($btn[0], false);
+    }
   });
 
   $('#btnResetClienteDefault').on('click', async function () {

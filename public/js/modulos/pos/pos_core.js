@@ -605,8 +605,7 @@ window.POS = {
             try {
                 const cliente = await POS_API.crearCliente({
                     nombre,
-                    telefono: document.getElementById('posNuevoClienteTel')?.value.trim() || null,
-                    direccion: document.getElementById('posNuevoClienteDir')?.value.trim() || null
+                    telefono: document.getElementById('posNuevoClienteTel')?.value.replace(/\D/g, '') || null
                 });
                 POS.setCliente(cliente);
                 bootstrap.Modal.getInstance(document.getElementById('posNuevoClienteModal'))?.hide();
