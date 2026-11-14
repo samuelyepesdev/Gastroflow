@@ -79,3 +79,55 @@ describe('POSRepository.resincronizarItemsPedido es transaccional', () => {
         expect(conn.commit).toHaveBeenCalled();
     });
 });
+
+describe('CajaRepository.getEstadisticasSesion: una consulta de facturas en vez de cuatro', () => {
+    beforeEach(() => jest.clearAllMocks());
+
+    test('hace 1 consulta sobre facturas + 1 de movimientos y mapea todas las cifras', async () => {
+        db.query.mockImplementation(async sql => {
+            if (/FROM facturas/.test(sql)) {
+                return [
+                    [
+                        {
+                            ventas_efectivo: '70000.00',
+                            ventas_transferencia: '30000.00',
+                            ventas: '100000.00',
+                            recibido: '80000.00',
+                            cambio: '10000.00'
+                        }
+                    ]
+                ];
+            }
+            return [
+                [
+                    { tipo: 'entrada', metodo_pago: 'efectivo', total: '5000' },
+                    { tipo: 'salida', metodo_pago: 'efectivo', total: '2000' },
+                    { tipo: 'salida', metodo_pago: 'transferencia', total: '1000' }
+                ]
+            ];
+        });
+
+        const r = await CajaRepository.getEstadisticasSesion(9);
+
+        const consultasFacturas = db.query.mock.calls.filter(([sql]) => /FROM facturas/.test(sql));
+        expect(consultasFacturas).toHaveLength(1);
+        expect(db.query).toHaveBeenCalledTimes(2);
+        expect(r).toEqual({
+            ventas_efectivo: 70000,
+            ventas_transferencia: 30000,
+            ventas: 100000,
+            entradas: 5000,
+            salidas: 2000,
+            entradas_transferencia: 0,
+            salidas_transferencia: 1000,
+            efectivo_recibido_total: 80000,
+            cambio_entregado_total: 10000
+        });
+    });
+
+    test('turno sin ventas devuelve ceros (sin NaN)', async () => {
+        db.query.mockImplementation(async sql => (/FROM facturas/.test(sql) ? [[{}]] : [[]]));
+        const r = await CajaRepository.getEstadisticasSesion(9);
+        expect(Object.values(r).every(n => n === 0)).toBe(true);
+    });
+});
