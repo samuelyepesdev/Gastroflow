@@ -413,7 +413,11 @@ const MESA_ESTADO = {
         if (!window.QR_TOKEN) { return; }
         try {
             const json = await GF.api.getOr(`/api/qr/pedidos/estado?qr_token=${encodeURIComponent(window.QR_TOKEN)}`, null);
-            if (json && json.success) { this.render(json.data); }
+            if (json && json.success) {
+                // Solo vale la pena sondear si la mesa tiene un pedido en curso
+                this._hayPedido = Boolean(json.data && json.data.pedido);
+                this.render(json.data);
+            }
         } catch (_) {
             // Silencioso: es polling de fondo, no molestar al cliente.
         }
@@ -508,9 +512,17 @@ const MESA_ESTADO = {
     },
 
     start() {
+        this._inicio = Date.now();
         this.fetchEstado();
+        // Un comensal que solo mira el menú no genera consultas: se sondea únicamente si hay un pedido en
+        // curso (el primer fetch lo detecta; tras enviar un pedido se vuelve a consultar), y se detiene a
+        // los 90 minutos de abierta la página.
         this._timer = setInterval(() => {
-            if (document.visibilityState === 'visible') { this.fetchEstado(); }
+            if (Date.now() - this._inicio > 90 * 60 * 1000) {
+                clearInterval(this._timer);
+                return;
+            }
+            if (document.visibilityState === 'visible' && this._hayPedido) { this.fetchEstado(); }
         }, 30000);
         document.addEventListener('visibilitychange', () => {
             if (document.visibilityState === 'visible') { this.fetchEstado(); }
