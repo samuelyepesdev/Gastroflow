@@ -68,6 +68,35 @@ describe('FacturarPedidoService', () => {
         db.getConnection.mockResolvedValue(mockConn);
     });
 
+    describe('permiso de descuento manual', () => {
+        const base = { tenantId: 1, pedidoId: 10, cliente_id: 1, forma_pago: 'efectivo', propinaBody: 0 };
+
+        it.each([[{ 5: 10 }], [{ 5: { tipo: 'porcentaje', valor: 15 } }], [{ 5: { tipo: 'valor', valor: 2000 } }]])(
+            'sin permiso rechaza con 403 el descuento %j y no abre transacción',
+            async descuentosMap => {
+                await expect(FacturarPedidoService.execute({ ...base, descuentosMap })).rejects.toMatchObject({
+                    status: 403,
+                    codigo: 'DESCUENTO_NO_AUTORIZADO'
+                });
+                expect(db.getConnection).not.toHaveBeenCalled();
+            }
+        );
+
+        it('sin permiso, descuentos en 0 o vacíos no bloquean', async () => {
+            mockConn.query.mockResolvedValueOnce([[]]); // pedido no existe: llegó a la transacción
+            await expect(
+                FacturarPedidoService.execute({ ...base, descuentosMap: { 5: 0, 6: { tipo: 'valor', valor: 0 } } })
+            ).rejects.toThrow('Pedido no encontrado');
+        });
+
+        it('con permiso el descuento sigue su curso normal', async () => {
+            mockConn.query.mockResolvedValueOnce([[]]);
+            await expect(
+                FacturarPedidoService.execute({ ...base, descuentosMap: { 5: 10 }, puedeAplicarDescuento: true })
+            ).rejects.toThrow('Pedido no encontrado');
+        });
+    });
+
     it('lanza "Pedido no encontrado" si el pedido no existe', async () => {
         mockConn.query.mockResolvedValueOnce([[]]); // SELECT pedidos
 

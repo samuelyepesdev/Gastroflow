@@ -26,8 +26,23 @@ class FacturarPedidoService {
         propinaBody,
         usuarioId = null,
         efectivoRecibido = null,
-        codigoBono = null
+        codigoBono = null,
+        puedeAplicarDescuento = false
     }) {
+        // El descuento manual por línea llega del cliente: solo con permiso. Los precios ya vienen de
+        // pedido_items (con la promoción sincronizada), así que lo único manipulable aquí es descuentosMap.
+        if (!puedeAplicarDescuento) {
+            const hayDescuento = Object.values(descuentosMap || {}).some(
+                d => FacturarPedidoService._normalizarDescuento(d).valor > 0
+            );
+            if (hayDescuento) {
+                throw Object.assign(new Error('No tienes permiso para aplicar descuentos'), {
+                    status: 403,
+                    codigo: 'DESCUENTO_NO_AUTORIZADO'
+                });
+            }
+        }
+
         await TenantOwnership.clientes(tenantId, cliente_id);
 
         const connection = await db.getConnection();
