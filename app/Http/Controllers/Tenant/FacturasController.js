@@ -1,4 +1,5 @@
 const FacturaService = require('../../../../services/Tenant/FacturaService');
+const AuthService = require('../../../../services/Shared/AuthService');
 const EventoService = require('../../../../services/Tenant/EventoService');
 const ConfiguracionService = require('../../../../services/Tenant/ConfiguracionService');
 const { toFechaISOUtc, toFechaDia, hoyColombia } = require('../../../../utils/dateHelpers');
@@ -53,11 +54,15 @@ class FacturasController {
             const tenantId = req.tenant?.id;
             const result = await FacturaService.create(tenantId, {
                 ...req.body,
-                usuario_id: req.user.id
+                usuario_id: req.user.id,
+                puedeAplicarDescuento: AuthService.hasPermission(req.user?.permisos, 'ventas.aplicar_descuento')
             });
             res.status(201).json(result);
         } catch (error) {
             console.error('Error al crear factura:', error);
+            if (error.status === 403) {
+                return res.status(403).json({ error: error.message });
+            }
             if (error.message === 'Datos incompletos' || error.status === 400) {
                 return res.status(400).json({ error: error.message });
             }

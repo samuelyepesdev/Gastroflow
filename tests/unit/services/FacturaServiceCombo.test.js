@@ -3,6 +3,9 @@
  * validación de stock de lo elegido y descuento de inventario. Dependencias mockeadas.
  */
 
+jest.mock('../../../services/Tenant/PrecioCatalogoService', () => ({
+    exigirSinDescuentoNoAutorizado: jest.fn().mockResolvedValue()
+}));
 jest.mock('../../../services/Tenant/TenantOwnership', () => ({
     clientes: jest.fn().mockResolvedValue(),
     productos: jest.fn().mockResolvedValue(),

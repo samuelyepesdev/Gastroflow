@@ -16,6 +16,10 @@ jest.mock('../../../repositories/Tenant/FacturaRepository', () => ({
     getDetailsForAPI: jest.fn()
 }));
 
+jest.mock('../../../services/Tenant/PrecioCatalogoService', () => ({
+    exigirSinDescuentoNoAutorizado: jest.fn().mockResolvedValue()
+}));
+
 jest.mock('../../../services/Tenant/InventarioService', () => ({
     checkStockParaProducto: jest.fn().mockResolvedValue({ ok: true }),
     descontarStockPorFactura: jest.fn().mockResolvedValue(undefined)

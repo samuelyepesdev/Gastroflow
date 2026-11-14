@@ -140,6 +140,13 @@ const SECCIONES = [
         seccion: 'POS',
         permisos: [
             { nombre: 'pos.ver', descripcion: 'Ver y usar el terminal POS', modulo: 'ventas', roles: CAJA },
+            {
+                nombre: 'ventas.aplicar_descuento',
+                descripcion:
+                    'Aplicar descuentos manuales o cambiar precios al vender (POS y facturación); las promociones vigentes no lo requieren',
+                modulo: 'ventas',
+                roles: CAJA
+            },
             { nombre: 'pos.vender', descripcion: 'Realizar ventas en el terminal POS', modulo: 'ventas', roles: CAJA },
             {
                 nombre: 'pos.nombrar_cliente',

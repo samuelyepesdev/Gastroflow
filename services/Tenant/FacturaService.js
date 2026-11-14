@@ -9,6 +9,7 @@ const { validarLineas, exigirMonto } = require('../../utils/validacionLineas');
 const InventarioService = require('./InventarioService');
 const ModificadorService = require('./ModificadorService');
 const ComboArmableService = require('./ComboArmableService');
+const PrecioCatalogoService = require('./PrecioCatalogoService');
 const TenantOwnership = require('./TenantOwnership');
 const FidelizacionService = require('./FidelizacionService');
 const EventoRepository = require('../../repositories/Tenant/EventoRepository');
@@ -71,7 +72,15 @@ class FacturaService {
      * @returns {Promise<Object>} Created invoice result
      */
     static async create(tenantId, facturaData) {
-        const { cliente_id, total, forma_pago, productos, evento_id, puedeUsarModificadores = true } = facturaData;
+        const {
+            cliente_id,
+            total,
+            forma_pago,
+            productos,
+            evento_id,
+            puedeUsarModificadores = true,
+            puedeAplicarDescuento = false
+        } = facturaData;
 
         if (!cliente_id || !productos || productos.length === 0) {
             throw new Error('Datos incompletos');
@@ -132,8 +141,12 @@ class FacturaService {
                         p.subtotal = p.precio * (parseFloat(p.cantidad) || 1);
                     }
                     p._modificadoresSnapshot = lineasSnapshot;
+                    p._precioAdicional = precioAdicionalTotal;
                 })
         );
+
+        // Sin permiso de descuento, solo vale catálogo - promoción vigente (calculada aquí, no por el cliente).
+        await PrecioCatalogoService.exigirSinDescuentoNoAutorizado(tenantId, productos, total, puedeAplicarDescuento);
 
         // Chequeo de stock en paralelo (cada producto es independiente) en vez de
         // secuencial: para una venta de N productos evita N round-trips en serie.
