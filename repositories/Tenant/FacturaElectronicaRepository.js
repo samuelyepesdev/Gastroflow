@@ -106,7 +106,7 @@ class FacturaElectronicaRepository {
                     c.direccion AS cliente_direccion, c.telefono AS cliente_telefono,
                     t.nombre AS tenant_nombre, t.nit, t.direccion AS tenant_direccion, t.ciudad, t.regimen_fiscal
              FROM facturas f
-             JOIN clientes c ON f.cliente_id = c.id AND c.tenant_id = f.tenant_id
+             LEFT JOIN clientes c ON f.cliente_id = c.id AND c.tenant_id = f.tenant_id
              JOIN tenants t ON f.tenant_id = t.id
              WHERE f.id = ? AND f.tenant_id = ?`,
             [facturaId, tenantId]
@@ -132,15 +132,17 @@ class FacturaElectronicaRepository {
     }
 
     /**
-     * Reintento manual: vuelve la fila a 'pendiente' e inmediata (sin esperar backoff).
+     * Reintento manual: vuelve la fila a 'pendiente' e inmediata (sin esperar backoff) y reinicia los intentos,
+     * así vuelve a tener los 5 intentos con backoff (antes el primer fallo de red la dejaba en 'error' definitivo).
+     * Una factura ya 'emitida' NO se toca: reenviarla duplicaría el documento ante la DIAN.
      * @param {number} facturaId
      * @param {number} tenantId
      */
     static async reintentar(facturaId, tenantId) {
         const [result] = await db.query(
             `UPDATE facturas_electronicas
-             SET estado = 'pendiente', proximo_intento = NULL
-             WHERE factura_id = ? AND tenant_id = ?`,
+             SET estado = 'pendiente', proximo_intento = NULL, intentos = 0
+             WHERE factura_id = ? AND tenant_id = ? AND estado <> 'emitida'`,
             [facturaId, tenantId]
         );
         return result.affectedRows > 0;
