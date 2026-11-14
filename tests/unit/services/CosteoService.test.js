@@ -9,7 +9,8 @@ jest.mock('../../../repositories/Tenant/RecetaRepository', () => ({
     findById: jest.fn(),
     findByProductoId: jest.fn(),
     findAll: jest.fn(),
-    getIngredientes: jest.fn()
+    getIngredientes: jest.fn(),
+    getIngredientesPorRecetas: jest.fn()
 }));
 jest.mock('../../../repositories/Tenant/ConfiguracionCosteoRepository', () => ({
     findOne: jest.fn(),
@@ -27,6 +28,7 @@ const CosteoService = require('../../../services/Tenant/CosteoService');
 const RecetaRepository = require('../../../repositories/Tenant/RecetaRepository');
 const ConfiguracionCosteoRepository = require('../../../repositories/Tenant/ConfiguracionCosteoRepository');
 const CostosFijosRepository = require('../../../repositories/Tenant/CostosFijosRepository');
+const ProductRepository = require('../../../repositories/Tenant/ProductRepository');
 
 const {
     calcularCostoDirecto,
@@ -244,5 +246,71 @@ describe('CosteoService.getCosteoReceta - integración con costo real e independ
         // directo/porción = 100*1/2 = 50; indirecto 20% = 10; CVU = 60; precio sugerido = 60*3 = 180
         expect(costeo.costo_total_porcion).toBe(60);
         expect(costeo.precio_sugerido).toBe(180);
+    });
+});
+
+describe('CosteoService - getAlertas y getResumenFinanciero no hacen consultas por receta', () => {
+    const tenantId = 1;
+    const recetas = [
+        { id: 1, producto_id: 11, nombre_receta: 'A', porciones: 1, precio_venta_actual: 1000 },
+        { id: 2, producto_id: 12, nombre_receta: 'B', porciones: 1, precio_venta_actual: 5000 }
+    ];
+    const ing = (recetaId, costo) => ({
+        receta_id: recetaId,
+        insumo_id: recetaId,
+        cantidad: 1,
+        unidad: 'UND',
+        costo_promedio: costo,
+        precio_compra: costo,
+        cantidad_compra: 1,
+        unidad_compra: 'UND',
+        rendimiento_pct: 100
+    });
+
+    beforeEach(() => {
+        jest.clearAllMocks();
+        ConfiguracionCosteoRepository.findOne.mockResolvedValue({
+            metodo_indirectos: 'porcentaje',
+            metodo_precio: 'margen',
+            porcentaje_indirectos: 0,
+            margen_objetivo_default: 50,
+            margen_minimo_alerta: 30
+        });
+        CostosFijosRepository.getTotalActivo.mockResolvedValue(0);
+        RecetaRepository.findAll.mockResolvedValue(recetas);
+        ProductRepository.findAll.mockResolvedValue([
+            { id: 11 },
+            { id: 12 },
+            { id: 13, codigo: 'C', nombre: 'Sin receta' }
+        ]);
+        RecetaRepository.getIngredientesPorRecetas.mockResolvedValue(
+            new Map([
+                [1, [ing(1, 2000)]], // cuesta 2000, se vende a 1000: precio bajo costo
+                [2, [ing(2, 1000)]] // cuesta 1000, se vende a 5000: margen sano
+            ])
+        );
+    });
+
+    it('getAlertas: 1 consulta de ingredientes para todas las recetas y sin findById/getIngredientes por receta', async () => {
+        const r = await CosteoService.getAlertas(tenantId);
+        expect(RecetaRepository.getIngredientesPorRecetas).toHaveBeenCalledTimes(1);
+        expect(RecetaRepository.getIngredientesPorRecetas).toHaveBeenCalledWith([1, 2], tenantId);
+        expect(RecetaRepository.findById).not.toHaveBeenCalled();
+        expect(RecetaRepository.getIngredientes).not.toHaveBeenCalled();
+        expect(r.precioBajoCosto.map(i => i.receta_id)).toEqual([1]);
+        expect(r.sinReceta.map(p => p.id)).toEqual([13]);
+    });
+
+    it('getResumenFinanciero: mismo costeo con 1 consulta de ingredientes', async () => {
+        const r = await CosteoService.getResumenFinanciero(tenantId);
+        expect(RecetaRepository.getIngredientesPorRecetas).toHaveBeenCalledTimes(1);
+        expect(RecetaRepository.findById).not.toHaveBeenCalled();
+        expect(RecetaRepository.getIngredientes).not.toHaveBeenCalled();
+        expect(JSON.stringify(r)).toContain('"cvu_porcion":2000');
+    });
+
+    it('una receta sin ingredientes en el Map se costea con lista vacía (no revienta)', async () => {
+        RecetaRepository.getIngredientesPorRecetas.mockResolvedValue(new Map());
+        await expect(CosteoService.getAlertas(tenantId)).resolves.toBeDefined();
     });
 });
