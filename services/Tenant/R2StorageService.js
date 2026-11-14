@@ -1,6 +1,6 @@
 const { S3Client, PutObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
 const crypto = require('node:crypto');
-const path = require('node:path');
+const { exigirMimeReal } = require('../../utils/validadorArchivos');
 
 class R2StorageService {
     constructor() {
@@ -35,8 +35,10 @@ class R2StorageService {
             throw new Error('Las credenciales de Cloudflare R2 no están configuradas correctamente.');
         }
 
-        const ext = path.extname(originalName) || '.jpg';
-        const fileName = `${folder}/${Date.now()}-${crypto.randomUUID()}${ext}`;
+        // Tipo y extensión salen del contenido real: ni originalName ni mimeType (del cliente) se usan.
+        const tipo = exigirMimeReal(fileBuffer);
+        mimeType = tipo.mime;
+        const fileName = `${folder}/${Date.now()}-${crypto.randomUUID()}${tipo.ext}`;
 
         try {
             const command = new PutObjectCommand({

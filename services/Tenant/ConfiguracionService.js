@@ -5,6 +5,7 @@
  */
 
 const ConfiguracionRepository = require('../../repositories/Tenant/ConfiguracionRepository');
+const { exigirMimeReal } = require('../../utils/validadorArchivos');
 
 class ConfiguracionService {
     /**
@@ -156,7 +157,8 @@ class ConfiguracionService {
         }
         if (files?.qr) {
             configToSave.qr_data = files.qr[0].buffer;
-            configToSave.qr_tipo = files.qr[0].mimetype.split('/')[1];
+            // Tipo real por contenido (antes salía del mimetype del cliente: 'svg+xml' llegaba a un data: URI)
+            configToSave.qr_tipo = exigirMimeReal(files.qr[0].buffer, { soloImagenes: true }).mime.split('/')[1];
         }
 
         if (!existingConfig) {
