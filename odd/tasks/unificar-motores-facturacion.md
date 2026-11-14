@@ -35,9 +35,11 @@ Test runner: `npx jest`.
   (finanzas + inventario + detección de cerámica) y los efectos tras el commit (factura electrónica, sello de
   fidelización, caché); ambos motores lo usan. Route: inline. Estado: HECHA (rama refactor/unificar-facturacion-paso1;
   los tests de caracterización existentes de ambos motores pasan sin modificar + 11 tests nuevos del servicio).
-- T2 Extraer número de factura + turno de caja a un único helper (decidir qué hacer con el LOCK IN SHARE MODE). Pendiente.
-- T3 Extraer redención de bono y salida por servicio externo a un helper común. Pendiente.
-- T4 Extraer el desglose de impuestos por línea. Pendiente.
+- T2 Número de factura + turno de caja en un único helper (`NucleoFacturaRepository.obtenerNumeroYTurno`). HECHA.
+  Cambio intencional: Mesas ahora lee el turno con LOCK IN SHARE MODE como el POS (antes no lo bloqueaba y podía
+  colarse una factura entre el cálculo del teórico y el cierre de caja).
+- T3 Redención de bono y salida de caja por servicio externo comunes (`redimirBono`, `compensarServiciosExternos`). HECHA.
+- T4 Carga de tasas y desglose de impuesto por línea comunes (`cargarTasas`, `desglosarLinea`). HECHA.
 - T5 Decidir con el usuario si `detalle_factura.precio_original` debe guardarse también en facturas de mesa. Pendiente
   (decisión de producto: hoy las facturas de mesa no lo guardan).
 
@@ -46,3 +48,5 @@ Test runner: `npx jest`.
 - L1 (2026-11-14, usuario): "sigue con el de unificar los motores de facturacion"
 - L2 (2026-11-14): T1 elegida primero porque es lo más idéntico y ya tiene tests de ambos motores (FacturaService,
   FacturaServiceCombo, FacturarPedidoService, FacturaRepositoryAbonos).
+- L3 (2026-11-14, usuario): "Seguir T2 a T4". Hechas en refactor/unificar-facturacion-paso2: los tests de caracterización de ambos
+  motores pasan sin modificar; +13 tests de NucleoFacturaRepository y 1 de Mesas (lock del turno).
