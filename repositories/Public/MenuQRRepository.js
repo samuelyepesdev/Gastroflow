@@ -21,7 +21,10 @@ class MenuQRRepository {
             logo_src = `data:image/${row.logo_tipo};base64,${Buffer.from(row.logo_data).toString('base64')}`;
         }
 
-        // Extraer paleta de colores completa de la configuración
+        // Extraer paleta de colores completa de la configuración (solo hex válidos: van a <style>)
+        if (config.colores) {
+            config.colores = require('../../utils/colorAcento').sanitizarColores(config.colores);
+        }
         const themeColors = {
             primary: (config.colores && config.colores.primary) ? config.colores.primary : '#e63946',
             navbar: (config.colores && config.colores.navbar) ? config.colores.navbar : '#ffffff',

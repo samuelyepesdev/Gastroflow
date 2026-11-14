@@ -2,6 +2,7 @@ const TenantService = require('../../../../services/Admin/TenantService');
 const StatsService = require('../../../../services/Tenant/StatsService');
 const ReporteMensualService = require('../../../../services/Tenant/ReporteMensualService');
 const CrecimientoStatsService = require('../../../../services/Tenant/CrecimientoStatsService');
+const { sanitizarColores } = require('../../../../utils/colorAcento');
 
 const PERIODOS_VALIDOS = [7, 30, 90, 180, 365];
 
@@ -34,7 +35,7 @@ class PerfilController {
             }
 
             if (colores) {
-                newConfig.colores = JSON.parse(colores);
+                newConfig.colores = sanitizarColores(JSON.parse(colores));
             }
 
             if (horario) {

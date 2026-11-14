@@ -379,7 +379,7 @@ class ProductosController {
             res.json({ url });
         } catch (error) {
             console.error('Error al subir imagen:', error);
-            res.status(500).json({ error: error.message || 'Error al subir imagen' });
+            res.status(error.status || 500).json({ error: error.message || 'Error al subir imagen' });
         }
     }
 }

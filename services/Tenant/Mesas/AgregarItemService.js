@@ -1,4 +1,5 @@
 const db = require('../../../config/database');
+const { exigirCantidad, exigirMonto } = require('../../../utils/validacionLineas');
 const InventarioService = require('../InventarioService');
 const ModificadorService = require('../ModificadorService');
 const SincronizarPrecioPromoService = require('./SincronizarPrecioPromoService');
@@ -20,6 +21,8 @@ class AgregarItemService {
         if (!producto_id || cantidad === null || cantidad === undefined || precio === null || precio === undefined) {
             throw new Error('producto_id, cantidad y precio son requeridos');
         }
+        exigirCantidad(cantidad);
+        exigirMonto(precio, 'El precio');
 
         let realProductId = producto_id;
 

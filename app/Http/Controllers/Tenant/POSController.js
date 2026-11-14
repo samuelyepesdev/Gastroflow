@@ -198,6 +198,7 @@ class POSController {
                 productos,
                 usuario_id: req.user.id,
                 puedeUsarModificadores,
+                puedeAplicarDescuento: AuthService.hasPermission(req.user?.permisos, 'ventas.aplicar_descuento'),
                 // Si la orden ya tenía abonos, la factura los toma del pedido (ver createWithDetails).
                 pedido_abono_id: pedido_cocina_id || null,
                 efectivo_recibido,
@@ -238,7 +239,7 @@ class POSController {
             res.status(201).json(result);
         } catch (err) {
             logger.warn('POS vender error', { err: err.message });
-            res.status(400).json({ error: err.message });
+            res.status(err.status === 403 ? 403 : 400).json({ error: err.message });
         }
     }
 }

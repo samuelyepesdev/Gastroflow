@@ -1,4 +1,5 @@
 const AbrirPedidoService = require('../../../../../services/Tenant/Mesas/AbrirPedidoService');
+const AuthService = require('../../../../../services/Shared/AuthService');
 const GetPedidoDetailsService = require('../../../../../services/Tenant/Mesas/GetPedidoDetailsService');
 const UpdatePropinaService = require('../../../../../services/Tenant/Mesas/UpdatePropinaService');
 const AsociarClientePedidoService = require('../../../../../services/Tenant/Mesas/AsociarClientePedidoService');
@@ -86,11 +87,12 @@ class PedidoController {
                 propinaBody: propina,
                 usuarioId: req.user?.id || null,
                 efectivoRecibido: efectivo_recibido ?? null,
-                codigoBono: codigo_bono || null
+                codigoBono: codigo_bono || null,
+                puedeAplicarDescuento: AuthService.hasPermission(req.user?.permisos, 'ventas.aplicar_descuento')
             });
             return res.status(201).json(resultado);
         } catch (error) {
-            return res.status(500).json({ error: error.message });
+            return res.status(error.status === 403 ? 403 : 500).json({ error: error.message });
         }
     }
 
