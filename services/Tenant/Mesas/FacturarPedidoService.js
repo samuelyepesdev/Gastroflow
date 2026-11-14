@@ -248,17 +248,19 @@ class FacturarPedidoService {
                 );
             }
 
-            await connection.commit();
+            // Ingreso en finanzas e inventario ATÓMICOS con la factura: se escriben con ESTA conexión (la que
+            // tiene bloqueada la fila del tenant por NumeracionRepository). Antes iban después del commit por
+            // otra conexión del pool porque, dentro de la transacción, esa otra conexión esperaba el lock del
+            // tenant (cada insumo tardaba 50 s de lock wait y fallaba); con la misma conexión no hay espera.
+            // Si algo falla aquí se revierte la venta completa (antes quedaba cobrada sin ingreso o sin descuento).
+            await FacturarPedidoService._registrarEfectosEnTransaccion(connection, {
+                tenantId,
+                facturaId,
+                lineasFactura,
+                totalConPropina
+            });
 
-            // El inventario se descuenta DESPUÉS del commit: usa otra conexión del
-            // pool y sus INSERT en movimientos_inventario (FK a tenants) necesitan
-            // un lock compartido sobre la fila del tenant, que esta transacción tiene
-            // bloqueada (NumeracionRepository) hasta el commit. Dentro de la
-            // transacción se esperaban mutuamente: cada insumo tardaba 50 s (lock
-            // wait timeout) y el descuento fallaba. Ya era best-effort (no bloquea
-            // la venta si falla), así que hacerlo tras el commit no cambia la
-            // semántica.
-            await FacturarPedidoService._descontarInventario(tenantId, lineasFactura, facturaId);
+            await connection.commit();
 
             // Sello de fidelización: después del commit y sin lanzar nunca; si algo falla,
             // la venta ya está cobrada y el sello es idempotente por factura.
@@ -555,21 +557,42 @@ class FacturarPedidoService {
         );
     }
 
-    static async _descontarInventario(tenantId, lineasFactura, facturaId) {
+    /**
+     * Efectos que deben quedar atómicos con la factura de la mesa: ingreso en finanzas y descuento de
+     * inventario (combos, recetas y toppings). Corre dentro de la transacción de execute() y escribe SOLO
+     * con `connection`; los detalles de factura recién insertados solo son visibles desde esta conexión.
+     */
+    static async _registrarEfectosEnTransaccion(connection, { tenantId, facturaId, lineasFactura, totalConPropina }) {
+        const FinanzasService = require('../FinanzasService');
+        const ProductRepository = require('../../../repositories/Tenant/ProductRepository');
+
+        // Solo lecturas (no bloquean ni dependen de filas sin confirmar)
+        const esCeramica = await FacturarPedidoService._verificarSiTieneCeramica(
+            tenantId,
+            lineasFactura,
+            ProductRepository
+        );
+
+        await FinanzasService.registrarIngresoVenta(tenantId, {
+            monto: totalConPropina,
+            factura_id: facturaId,
+            esCeramica,
+            usuario_id: null,
+            conn: connection
+        });
+
         if (lineasFactura.some(l => l.combo_id)) {
-            await InventarioService.descontarPorCombosFactura(tenantId, facturaId);
+            await InventarioService.descontarPorCombosFactura(tenantId, facturaId, connection);
         }
-        try {
-            await InventarioService.descontarProductosLote(
-                tenantId,
-                lineasFactura
-                    .filter(l => !l.es_servicio && l.producto_id)
-                    .map(l => ({ producto_id: l.producto_id, cantidad: l.cantidad })),
-                'factura_' + facturaId
-            );
-        } catch (invErr) {
-            console.error('Error al descontar inventario por receta:', invErr);
-        }
+        await InventarioService.descontarProductosLote(
+            tenantId,
+            lineasFactura
+                .filter(l => !l.es_servicio && l.producto_id)
+                .map(l => ({ producto_id: l.producto_id, cantidad: l.cantidad })),
+            'factura_' + facturaId,
+            connection
+        );
+        await InventarioService.descontarPorModificadoresFactura(tenantId, facturaId, connection);
     }
 
     static async _ejecutarEfectosSecundariosPostVenta({
@@ -594,32 +617,6 @@ class FacturarPedidoService {
             action: 'billed'
         });
         RealtimeEvents.emitVentaRegistrada(tenantId);
-
-        try {
-            const FinanzasService = require('../FinanzasService');
-            const ProductRepository = require('../../../repositories/Tenant/ProductRepository');
-
-            const esCeramica = await FacturarPedidoService._verificarSiTieneCeramica(
-                tenantId,
-                lineasFactura,
-                ProductRepository
-            );
-
-            await FinanzasService.registrarIngresoVenta(tenantId, {
-                monto: totalConPropina,
-                factura_id: facturaId,
-                esCeramica,
-                usuario_id: null
-            });
-        } catch (finErr) {
-            console.error('CRÍTICO: Error al registrar ingreso en finanzas (pedido):', finErr);
-        }
-
-        try {
-            await InventarioService.descontarPorModificadoresFactura(tenantId, facturaId);
-        } catch (invErr) {
-            console.error('Error al descontar inventario por modificadores (pedido):', invErr);
-        }
 
         try {
             const cacheService = require('../../Shared/CacheService');
