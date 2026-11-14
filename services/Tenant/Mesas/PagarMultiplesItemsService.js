@@ -20,27 +20,39 @@ class PagarMultiplesItemsService {
 
         const resultados = [];
 
-        for (const item of items) {
-            const { itemId, cantidad } = item;
-            if (!itemId) {
-                continue;
-            }
+        // Todo el lote en UNA transacción: si el ítem 3 falla, los ítems 1 y 2 no quedan cobrados a medias.
+        const db = require('../../../config/database');
+        const conn = await db.getConnection();
+        try {
+            await conn.beginTransaction();
+            for (const item of items) {
+                const { itemId, cantidad } = item;
+                if (!itemId) {
+                    continue;
+                }
 
-            const result = await PagarItemIndividualService.execute({
-                tenantId,
-                itemId,
-                forma_pago,
-                cantidad: Number(cantidad),
-                skipEvent: true,
-                usuarioId
-            });
-            resultados.push({ itemId, result });
+                const result = await PagarItemIndividualService.execute({
+                    tenantId,
+                    itemId,
+                    forma_pago,
+                    cantidad: Number(cantidad),
+                    skipEvent: true,
+                    usuarioId,
+                    conn
+                });
+                resultados.push({ itemId, result });
+            }
+            await conn.commit();
+        } catch (error) {
+            await conn.rollback();
+            throw error;
+        } finally {
+            conn.release();
         }
 
         // Emitir un solo evento SSE para todos los ítems procesados
         if (items.length > 0 && items[0].itemId) {
             try {
-                const db = require('../../../config/database');
                 const [rows] = await db.query(
                     'SELECT pi.pedido_id, p.mesa_id FROM pedido_items pi INNER JOIN pedidos p ON pi.pedido_id = p.id WHERE pi.id = ? AND p.tenant_id = ?',
                     [items[0].itemId, tenantId]

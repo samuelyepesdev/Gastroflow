@@ -7,8 +7,8 @@
 const db = require('../../config/database');
 
 class PedidoItemPagoRepository {
-    static async create({ tenantId, pedidoId, productoId, cantidad, monto, formaPago, usuarioId }) {
-        const [result] = await db.query(
+    static async create({ tenantId, pedidoId, productoId, cantidad, monto, formaPago, usuarioId }, connection = null) {
+        const [result] = await (connection || db).query(
             `INSERT INTO pedido_item_pagos (tenant_id, pedido_id, producto_id, cantidad, monto, forma_pago, usuario_id)
              VALUES (?, ?, ?, ?, ?, ?, ?)`,
             [tenantId, pedidoId, productoId || null, cantidad, monto, formaPago, usuarioId || null]
