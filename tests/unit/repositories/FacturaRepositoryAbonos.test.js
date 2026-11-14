@@ -148,3 +148,36 @@ describe('FacturaRepository.createWithDetails con abonos del POS', () => {
         expect(insertFactura()[1][4]).toBe('efectivo');
     });
 });
+
+describe('FacturaRepository.createWithDetails: efectos dentro de la transacción (enTransaccion)', () => {
+    beforeEach(() => PedidoAbonoRepository.sumByPedido.mockResolvedValue({ efectivo: 0, transferencia: 0 }));
+
+    it('ejecuta el gancho con LA conexión de la venta, con el id de la factura, ANTES del commit', async () => {
+        const orden = [];
+        conn.commit.mockImplementation(async () => orden.push('commit'));
+        const gancho = jest.fn(async () => orden.push('gancho'));
+
+        const r = await FacturaRepository.createWithDetails(1, venta({ pedido_abono_id: null, enTransaccion: gancho }));
+
+        expect(gancho).toHaveBeenCalledWith(conn, { facturaId: 99, numero: 7 });
+        expect(orden).toEqual(['gancho', 'commit']);
+        expect(r).toEqual({ insertId: 99, numero: 7 });
+    });
+
+    it('si el gancho falla se revierte la venta completa: rollback, sin commit y se propaga el error', async () => {
+        const gancho = jest.fn().mockRejectedValue(new Error('finanzas caída'));
+
+        await expect(
+            FacturaRepository.createWithDetails(1, venta({ pedido_abono_id: null, enTransaccion: gancho }))
+        ).rejects.toThrow('finanzas caída');
+
+        expect(conn.rollback).toHaveBeenCalled();
+        expect(conn.commit).not.toHaveBeenCalled();
+        expect(conn.release).toHaveBeenCalled();
+    });
+
+    it('sin gancho funciona igual que antes (compatibilidad)', async () => {
+        await FacturaRepository.createWithDetails(1, venta({ pedido_abono_id: null }));
+        expect(conn.commit).toHaveBeenCalled();
+    });
+});

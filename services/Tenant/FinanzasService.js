@@ -74,7 +74,7 @@ class FinanzasService {
      */
     static async registrarIngresoVenta(
         tenantId,
-        { monto, factura_id, detalle, esCeramica = false, usuario_id, fecha }
+        { monto, factura_id, detalle, esCeramica = false, usuario_id, fecha, conn }
     ) {
         // Sesión de caja abierta: una venta de otro día ('YYYY-MM-DD', ya validada) no entra al turno de hoy.
         const sesion = fecha ? null : await CajaRepository.getSesionAbierta(tenantId);
@@ -83,6 +83,7 @@ class FinanzasService {
         const finalUsuarioId = usuario_id || (await FinanzasService._usuarioPorDefecto(tenantId, sesion));
 
         return await FinanzasRepository.createMovimiento(tenantId, {
+            conn,
             sesion_id: sesion ? sesion.id : null,
             usuario_id: finalUsuarioId,
             tipo: 'entrada',

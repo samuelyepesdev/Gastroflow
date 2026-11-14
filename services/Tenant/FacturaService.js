@@ -183,7 +183,17 @@ class FacturaService {
             usuario_id: facturaData.usuario_id || null,
             pedido_abono_id: facturaData.pedido_abono_id || null,
             efectivo_recibido: facturaData.efectivo_recibido || null,
-            codigo_bono: facturaData.codigo_bono || null
+            codigo_bono: facturaData.codigo_bono || null,
+            // Ingreso en finanzas e inventario dentro de la MISMA transacción de la factura: todo o nada.
+            enTransaccion: (connection, { facturaId }) =>
+                FacturaService._registrarEfectosEnTransaccion(connection, {
+                    tenantId,
+                    facturaId,
+                    productos,
+                    total,
+                    usuarioId: facturaData.usuario_id || null,
+                    diaVenta
+                })
         });
 
         const facturaId = result.insertId;
@@ -196,98 +206,6 @@ class FacturaService {
             console.error('Error opcional al encolar factura electrónica:', feErr);
         }
         // --------------------------------
-
-        // --- INTEGRACIÓN CON FINANZAS (Garantizada) ---
-        const FinanzasService = require('./FinanzasService');
-        const InsumoRepository = require('../../repositories/Tenant/InsumoRepository');
-        const ProductRepository = require('../../repositories/Tenant/ProductRepository');
-
-        try {
-            let tieneCeramicas = false;
-            const usuario_id = facturaData.usuario_id || null;
-
-            // Intento de detección de cerámicas: batch fetch (2 queries) en vez de
-            // 1 query por producto (findById secuencial en el loop original).
-            try {
-                const insumoIds = productos
-                    .filter(p => p.producto_id && p.producto_id > 1000000)
-                    .map(p => p.producto_id - 1000000);
-                const productoIds = productos
-                    .filter(p => p.producto_id && p.producto_id <= 1000000)
-                    .map(p => p.producto_id);
-
-                const [insumosPorId, productosPorId] = await Promise.all([
-                    InsumoRepository.findByIds(insumoIds, tenantId),
-                    ProductRepository.findByIds(productoIds, tenantId)
-                ]);
-
-                tieneCeramicas = productos.some(p => {
-                    // 1. Por nombre directo
-                    if (p.nombre && p.nombre.toLowerCase().includes('cerámica')) {
-                        return true;
-                    }
-                    // 2. Por ID virtual de Insumo (> 1M)
-                    if (p.producto_id && p.producto_id > 1000000) {
-                        const insumoDb = insumosPorId.get(p.producto_id - 1000000);
-                        return !!(
-                            insumoDb &&
-                            (insumoDb.nombre.toLowerCase().includes('cerámica') ||
-                                insumoDb.categoria_nombre === 'Cerámicas')
-                        );
-                    }
-                    // 3. Por Producto existente (si ya se creó)
-                    if (p.producto_id) {
-                        const prodDb = productosPorId.get(p.producto_id);
-                        return !!(
-                            prodDb &&
-                            (prodDb.nombre.toLowerCase().includes('cerámica') ||
-                                prodDb.categoria_nombre === 'Cerámicas')
-                        );
-                    }
-                    return false;
-                });
-            } catch (e) {
-                console.error('Error opcional en detección de cerámicas:', e);
-            }
-
-            // REGISTRO FINAL (Siempre se ejecuta)
-            await FinanzasService.registrarIngresoVenta(tenantId, {
-                monto: total,
-                factura_id: facturaId,
-                esCeramica: tieneCeramicas,
-                usuario_id: usuario_id,
-                fecha: diaVenta
-            });
-        } catch (finErr) {
-            console.error('CRÍTICO: Error al registrar ingreso en finanzas:', finErr);
-        }
-        // --------------------------------
-
-        // Descuento de inventario en lote: se suman los ingredientes de todas las líneas y se descuentan
-        // en UNA transacción (antes: una conexión y transacción por ingrediente de cada plato).
-        try {
-            await InventarioService.descontarProductosLote(
-                tenantId,
-                productos
-                    .filter(p => !p.es_servicio && p.producto_id)
-                    .map(p => ({ producto_id: p.producto_id, cantidad: parseFloat(p.cantidad) || 1 })),
-                'factura_' + facturaId
-            );
-        } catch (err) {
-            console.error('Error al descontar inventario por receta:', err);
-        }
-
-        // Combos armados: receta de cada producto elegido (best-effort, no lanza).
-        if (productos.some(p => p.combo_id)) {
-            await InventarioService.descontarPorCombosFactura(tenantId, facturaId);
-        }
-
-        // Descuento por toppings/modificadores ligados a inventario (opt-in por grupo).
-        try {
-            await InventarioService.descontarPorModificadoresFactura(tenantId, facturaId);
-        } catch (err) {
-            console.error('Error al descontar inventario por modificadores:', err);
-        }
 
         // Sello de fidelización (igual que al cobrar una mesa): ya con la venta guardada y sin lanzar nunca;
         // es idempotente por factura y solo aplica si el cliente tiene tarjeta.
@@ -309,6 +227,86 @@ class FacturaService {
         }
 
         return { id: facturaId, numero: result.numero };
+    }
+
+    /**
+     * Efectos de la venta que deben quedar atómicos con la factura: ingreso en finanzas y descuento de
+     * inventario (recetas, combos y toppings). Corre DENTRO de la transacción de createWithDetails y usa
+     * SOLO `connection` para escribir (ver el gancho `enTransaccion` del repositorio). Un error aquí revierte
+     * la venta completa: antes se registraba en consola y la factura quedaba sin ingreso o sin descuento.
+     */
+    static async _registrarEfectosEnTransaccion(
+        connection,
+        { tenantId, facturaId, productos, total, usuarioId, diaVenta }
+    ) {
+        const FinanzasService = require('./FinanzasService');
+        const InsumoRepository = require('../../repositories/Tenant/InsumoRepository');
+        const ProductRepository = require('../../repositories/Tenant/ProductRepository');
+
+        // Detección de cerámicas (solo lecturas; batch de 2 consultas). Si falla, se asume que no hay.
+        let tieneCeramicas = false;
+        try {
+            const insumoIds = productos
+                .filter(p => p.producto_id && p.producto_id > 1000000)
+                .map(p => p.producto_id - 1000000);
+            const productoIds = productos
+                .filter(p => p.producto_id && p.producto_id <= 1000000)
+                .map(p => p.producto_id);
+
+            const [insumosPorId, productosPorId] = await Promise.all([
+                InsumoRepository.findByIds(insumoIds, tenantId),
+                ProductRepository.findByIds(productoIds, tenantId)
+            ]);
+
+            tieneCeramicas = productos.some(p => {
+                if (p.nombre && p.nombre.toLowerCase().includes('cerámica')) {
+                    return true;
+                }
+                if (p.producto_id && p.producto_id > 1000000) {
+                    const insumoDb = insumosPorId.get(p.producto_id - 1000000);
+                    return !!(
+                        insumoDb &&
+                        (insumoDb.nombre.toLowerCase().includes('cerámica') ||
+                            insumoDb.categoria_nombre === 'Cerámicas')
+                    );
+                }
+                if (p.producto_id) {
+                    const prodDb = productosPorId.get(p.producto_id);
+                    return !!(
+                        prodDb &&
+                        (prodDb.nombre.toLowerCase().includes('cerámica') || prodDb.categoria_nombre === 'Cerámicas')
+                    );
+                }
+                return false;
+            });
+        } catch (e) {
+            console.error('Error opcional en detección de cerámicas:', e);
+        }
+
+        await FinanzasService.registrarIngresoVenta(tenantId, {
+            monto: total,
+            factura_id: facturaId,
+            esCeramica: tieneCeramicas,
+            usuario_id: usuarioId,
+            fecha: diaVenta,
+            conn: connection
+        });
+
+        // Recetas de todas las líneas, sumadas por insumo, en la conexión de la venta.
+        await InventarioService.descontarProductosLote(
+            tenantId,
+            productos
+                .filter(p => !p.es_servicio && p.producto_id)
+                .map(p => ({ producto_id: p.producto_id, cantidad: parseFloat(p.cantidad) || 1 })),
+            'factura_' + facturaId,
+            connection
+        );
+
+        // Combos armados y toppings se leen de las filas de detalle recién insertadas (solo visibles aquí).
+        if (productos.some(p => p.combo_id)) {
+            await InventarioService.descontarPorCombosFactura(tenantId, facturaId, connection);
+        }
+        await InventarioService.descontarPorModificadoresFactura(tenantId, facturaId, connection);
     }
 
     /**

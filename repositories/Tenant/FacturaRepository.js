@@ -76,6 +76,7 @@ class FacturaRepository {
      * @param {number} facturaData.total - Total amount
      * @param {string} facturaData.forma_pago - Payment method
      * @param {Array<Object>} facturaData.productos - Array of products
+     * @param {Function} [facturaData.enTransaccion] - async (connection, {facturaId, numero}) ejecutada antes del commit
      * @returns {Promise<Object>} Created invoice with insertId
      */
     static async createWithDetails(tenantId, facturaData) {
@@ -349,6 +350,14 @@ class FacturaRepository {
                         connection
                     );
                 }
+            }
+
+            // Efectos que deben confirmarse o revertirse JUNTO con la factura (ingreso en finanzas, descuento de
+            // inventario). Reciben ESTA conexión: otra conexión del pool no vería las filas sin confirmar y
+            // esperaría la fila del tenant que esta transacción tiene bloqueada (lock wait). Si lanzan, la
+            // venta completa se revierte (rollback del catch).
+            if (typeof facturaData.enTransaccion === 'function') {
+                await facturaData.enTransaccion(connection, { facturaId: factura_id, numero });
             }
 
             await connection.commit();
