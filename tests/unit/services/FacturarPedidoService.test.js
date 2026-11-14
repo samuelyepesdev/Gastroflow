@@ -31,7 +31,10 @@ jest.mock('../../../repositories/Tenant/FacturaRepository', () => ({
 }));
 
 jest.mock('../../../services/Tenant/InventarioService', () => ({
-    descontarStockReceta: jest.fn().mockResolvedValue(undefined)
+    descontarStockReceta: jest.fn().mockResolvedValue(undefined),
+    descontarProductosLote: jest.fn().mockResolvedValue(undefined),
+    descontarPorCombosFactura: jest.fn().mockResolvedValue(undefined),
+    descontarPorModificadoresFactura: jest.fn().mockResolvedValue(undefined)
 }));
 
 jest.mock('../../../services/Tenant/FinanzasService', () => ({
@@ -453,6 +456,85 @@ describe('FacturarPedidoService', () => {
                 action: 'billed'
             })
         );
+    });
+
+    describe('finanzas e inventario dentro de la transacción de la factura', () => {
+        const InventarioService = require('../../../services/Tenant/InventarioService');
+        const FinanzasService = require('../../../services/Tenant/FinanzasService');
+
+        const prepararMesa = () => {
+            mockConn.query
+                .mockResolvedValueOnce([[{ id: 10, estado: 'abierto', mesa_id: 2, total: 5000 }]]) // SELECT pedidos
+                .mockResolvedValueOnce([
+                    [{ id: 1, producto_id: 7, cantidad: 2, precio_unitario: 2500, pagado: 0, es_servicio: 0 }]
+                ]); // SELECT items
+            mockConn.query.mockImplementation(sql => {
+                if (typeof sql === 'string' && sql.includes('pedido_item_modificadores')) {
+                    return Promise.resolve([[]]);
+                }
+                if (typeof sql === 'string' && sql.includes('pedido_abonos')) {
+                    return Promise.resolve([[]]);
+                }
+                if (typeof sql === 'string' && /FROM (productos|tenants)/.test(sql)) {
+                    return Promise.resolve([[]]); // tasas de impuesto: sin filas
+                }
+                return Promise.resolve([{ insertId: 100 }]);
+            });
+        };
+        const facturar = () =>
+            FacturarPedidoService.execute({
+                tenantId: 1,
+                pedidoId: 10,
+                cliente_id: 1,
+                forma_pago: 'efectivo',
+                descuentosMap: {},
+                propinaBody: 0
+            });
+
+        it('el ingreso y el descuento se hacen con la conexión de la venta y ANTES del commit', async () => {
+            prepararMesa();
+            const orden = [];
+            mockConn.commit.mockImplementation(async () => orden.push('commit'));
+            FinanzasService.registrarIngresoVenta.mockImplementation(async () => orden.push('finanzas'));
+            InventarioService.descontarProductosLote.mockImplementation(async () => orden.push('inventario'));
+
+            await facturar();
+
+            expect(FinanzasService.registrarIngresoVenta).toHaveBeenCalledWith(
+                1,
+                expect.objectContaining({ factura_id: 100, conn: mockConn })
+            );
+            expect(InventarioService.descontarProductosLote).toHaveBeenCalledWith(
+                1,
+                [expect.objectContaining({ producto_id: 7, cantidad: 2 })],
+                'factura_100',
+                mockConn
+            );
+            expect(InventarioService.descontarPorModificadoresFactura).toHaveBeenCalledWith(1, 100, mockConn);
+            expect(orden).toEqual(['finanzas', 'inventario', 'commit']);
+        });
+
+        it('si falla el ingreso en finanzas se revierte la venta: rollback, sin commit y sin evento billed', async () => {
+            prepararMesa();
+            FinanzasService.registrarIngresoVenta.mockRejectedValueOnce(new Error('finanzas caída'));
+
+            await expect(facturar()).rejects.toThrow('finanzas caída');
+
+            expect(mockConn.rollback).toHaveBeenCalled();
+            expect(mockConn.commit).not.toHaveBeenCalled();
+            expect(mockConn.release).toHaveBeenCalled();
+            expect(RealtimeEvents.emitPedido).not.toHaveBeenCalledWith(expect.objectContaining({ action: 'billed' }));
+        });
+
+        it('si falla el descuento de inventario también se revierte la venta', async () => {
+            prepararMesa();
+            InventarioService.descontarProductosLote.mockRejectedValueOnce(new Error('insumos caída'));
+
+            await expect(facturar()).rejects.toThrow('insumos caída');
+
+            expect(mockConn.rollback).toHaveBeenCalled();
+            expect(mockConn.commit).not.toHaveBeenCalled();
+        });
     });
 
     describe('redención de bono al facturar', () => {

@@ -140,6 +140,8 @@ routes/ (thin)  →  middleware (auth, tenant, planFeature)  →  app/Http/Contr
   the tenant row before the `MAX()` read — a bare `SELECT MAX(...) FOR UPDATE` deadlocks under
   concurrent inserts (gap locks).
 
+- **Efectos de una venta = misma transacción**: el ingreso en finanzas (`FinanzasService.registrarIngresoVenta`) y el descuento de inventario (`InventarioService.descontarProductosLote` / `descontarPorCombosFactura` / `descontarPorModificadoresFactura`) corren DENTRO de la transacción de la factura (gancho `enTransaccion` de `FacturaRepository.createWithDetails`; en Mesas, justo antes del `commit` de `FacturarPedidoService`) y reciben su `connection`; si fallan, la venta se revierte. **Nunca** uses otra conexión del pool dentro de esa transacción: `NumeracionRepository` tiene bloqueada la fila del tenant y la otra conexión espera (lock wait de ~50 s) y no ve filas sin confirmar. Lo que NO es dato contable (facturación electrónica, sello de fidelización, caché, SSE) sigue después del commit y es best-effort.
+
 - **Idempotency**: `middleware/idempotency.js` runs globally and short-circuits duplicate mutating
   requests (POST/PUT/PATCH/DELETE) that carry an `Idempotency-Key` header, caching the response for 30 min
   and returning 409 on a concurrent in-flight duplicate. Only applies when the header is present.
