@@ -2,6 +2,7 @@ const TenantService = require('../../../../services/Admin/TenantService');
 const StatsService = require('../../../../services/Tenant/StatsService');
 const ReporteMensualService = require('../../../../services/Tenant/ReporteMensualService');
 const CrecimientoStatsService = require('../../../../services/Tenant/CrecimientoStatsService');
+const { sanitizarColores } = require('../../../../utils/colorAcento');
 
 const PERIODOS_VALIDOS = [7, 30, 90, 180, 365];
 
@@ -34,7 +35,7 @@ class PerfilController {
             }
 
             if (colores) {
-                newConfig.colores = JSON.parse(colores);
+                newConfig.colores = sanitizarColores(JSON.parse(colores));
             }
 
             if (horario) {
@@ -49,8 +50,10 @@ class PerfilController {
                 config: newConfig
             };
 
+            let logoAnterior = null;
             if (req.file) {
                 const R2StorageService = require('../../../../services/Tenant/R2StorageService');
+                logoAnterior = (await TenantService.getTenantById(tenantId))?.logo_url || null;
                 updateData.logo_url = await R2StorageService.uploadFile(
                     req.file.buffer,
                     req.file.originalname,
@@ -67,6 +70,10 @@ class PerfilController {
             }
 
             await TenantService.updateTenant(tenantId, updateData);
+
+            if (logoAnterior && logoAnterior !== updateData.logo_url) {
+                await require('../../../../services/Tenant/R2StorageService').eliminarSiHuerfano(logoAnterior);
+            }
 
             res.json({
                 success: true,

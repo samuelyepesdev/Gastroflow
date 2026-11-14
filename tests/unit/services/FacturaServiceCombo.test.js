@@ -3,6 +3,9 @@
  * validación de stock de lo elegido y descuento de inventario. Dependencias mockeadas.
  */
 
+jest.mock('../../../services/Tenant/PrecioCatalogoService', () => ({
+    exigirSinDescuentoNoAutorizado: jest.fn().mockResolvedValue()
+}));
 jest.mock('../../../services/Tenant/TenantOwnership', () => ({
     clientes: jest.fn().mockResolvedValue(),
     productos: jest.fn().mockResolvedValue(),
@@ -14,6 +17,7 @@ jest.mock('../../../services/Tenant/InventarioService', () => ({
     checkStockParaProducto: jest.fn().mockResolvedValue({ ok: true }),
     checkStockParaSelecciones: jest.fn().mockResolvedValue({ ok: true, faltantes: [] }),
     descontarPorReceta: jest.fn().mockResolvedValue(),
+    descontarProductosLote: jest.fn().mockResolvedValue(),
     descontarPorCombosFactura: jest.fn().mockResolvedValue(),
     descontarPorModificadoresFactura: jest.fn().mockResolvedValue()
 }));
@@ -39,6 +43,16 @@ const InventarioService = require('../../../services/Tenant/InventarioService');
 const ComboArmableService = require('../../../services/Tenant/ComboArmableService');
 const FacturaService = require('../../../services/Tenant/FacturaService');
 
+// Simula la transacción del repositorio: ejecuta el gancho `enTransaccion` con una conexión falsa, como
+// hace FacturaRepository.createWithDetails justo antes del commit. Un error del gancho rechaza la venta.
+const CONEXION = { id: 'conexion-de-la-venta' };
+const simularRepo = resultado => async (_tenantId, datos) => {
+    if (typeof datos.enTransaccion === 'function') {
+        await datos.enTransaccion(CONEXION, { facturaId: resultado.insertId, numero: resultado.numero });
+    }
+    return resultado;
+};
+
 const TENANT = 7;
 const resuelto = {
     combo_id: 50,
@@ -57,7 +71,7 @@ const resuelto = {
 describe('FacturaService.create con combo armado', () => {
     beforeEach(() => {
         jest.clearAllMocks();
-        FacturaRepository.createWithDetails.mockResolvedValue({ insertId: 900, numero: 12 });
+        FacturaRepository.createWithDetails.mockImplementation(simularRepo({ insertId: 900, numero: 12 }));
         ComboArmableService.resolverLineaVenta.mockResolvedValue(resuelto);
         InventarioService.checkStockParaSelecciones.mockResolvedValue({ ok: true, faltantes: [] });
     });
@@ -82,7 +96,7 @@ describe('FacturaService.create con combo armado', () => {
     it('descuenta el inventario de lo elegido solo cuando hay combos', async () => {
         await FacturaService.create(TENANT, datos([{ combo_id: 50, selecciones: [], cantidad: 2 }]));
 
-        expect(InventarioService.descontarPorCombosFactura).toHaveBeenCalledWith(TENANT, 900);
+        expect(InventarioService.descontarPorCombosFactura).toHaveBeenCalledWith(TENANT, 900, CONEXION);
     });
 
     it('una venta sin combos no toca la lógica de combos', async () => {

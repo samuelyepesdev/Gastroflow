@@ -26,3 +26,21 @@ describe('colorAcento', () => {
         expect(colorAcento({ config: { colores: {} } }, null)).toBe('#ff5a36');
     });
 });
+
+describe('colorAcento: valores no hex (inyección CSS)', () => {
+    const { sanitizarColores } = require('../../../utils/colorAcento');
+
+    test('un primary con CSS inyectado cae al color por defecto', () => {
+        const tenant = { config: { colores: { primary: 'red;background:url(//x)' } } };
+        expect(colorAcento(tenant, null, '#0000ff')).toBe('#0000ff');
+        expect(colorAcento(tenant, '</style><script>', '#0000ff')).toBe('#0000ff');
+    });
+
+    test('sanitizarColores conserva solo hex válidos', () => {
+        expect(
+            sanitizarColores({ primary: '#FF5A36', navbar: '#fff', x: 'red;color:blue', y: 5, z: '#12345' })
+        ).toEqual({ primary: '#FF5A36', navbar: '#fff' });
+        expect(sanitizarColores(null)).toEqual({});
+        expect(sanitizarColores([])).toEqual({});
+    });
+});

@@ -78,14 +78,15 @@ describe('middleware/auth', () => {
             expect(authService.verifyToken).toHaveBeenCalledWith('cookie-token');
             expect(next).toHaveBeenCalled();
         });
-        it('toma token de query.token si no hay header ni cookie', () => {
+        it('NO acepta el token por query string (queda en logs y Referer)', () => {
             authService.verifyToken.mockReturnValue({ id: 3 });
-            const req = createReq({ query: { token: 'query-token' } });
+            const req = createReq({ query: { token: 'query-token' }, headers: { accept: 'application/json' } });
             const res = createRes();
             const next = jest.fn();
             requireAuth(req, res, next);
-            expect(authService.verifyToken).toHaveBeenCalledWith('query-token');
-            expect(next).toHaveBeenCalled();
+            expect(authService.verifyToken).not.toHaveBeenCalled();
+            expect(next).not.toHaveBeenCalled();
+            expect(res.status).toHaveBeenCalledWith(401);
         });
         it('devuelve 401 JSON si token inválido (Accept json)', () => {
             authService.verifyToken.mockReturnValue(null);

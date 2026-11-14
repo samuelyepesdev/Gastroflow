@@ -1,15 +1,11 @@
 const db = require('../../../config/database');
-const NumeracionRepository = require('../../../repositories/Tenant/NumeracionRepository');
 const FacturaRepository = require('../../../repositories/Tenant/FacturaRepository');
-const CajaRepository = require('../../../repositories/Tenant/CajaRepository');
 const PedidoAbonoRepository = require('../../../repositories/Tenant/PedidoAbonoRepository');
 const PedidoItemPagoRepository = require('../../../repositories/Tenant/PedidoItemPagoRepository');
-const BonoRepository = require('../../../repositories/Tenant/BonoRepository');
 const BonoService = require('../BonoService');
-const FidelizacionService = require('../FidelizacionService');
-const InventarioService = require('../InventarioService');
+const PostVentaService = require('../Facturacion/PostVentaService');
 const ComboVentaRepository = require('../../../repositories/Tenant/ComboVentaRepository');
-const TaxService = require('../../Shared/TaxService');
+const NucleoFacturaRepository = require('../../../repositories/Tenant/NucleoFacturaRepository');
 const RealtimeEvents = require('../../Shared/RealtimeEvents');
 const TenantOwnership = require('../TenantOwnership');
 
@@ -26,8 +22,23 @@ class FacturarPedidoService {
         propinaBody,
         usuarioId = null,
         efectivoRecibido = null,
-        codigoBono = null
+        codigoBono = null,
+        puedeAplicarDescuento = false
     }) {
+        // El descuento manual por línea llega del cliente: solo con permiso. Los precios ya vienen de
+        // pedido_items (con la promoción sincronizada), así que lo único manipulable aquí es descuentosMap.
+        if (!puedeAplicarDescuento) {
+            const hayDescuento = Object.values(descuentosMap || {}).some(
+                d => FacturarPedidoService._normalizarDescuento(d).valor > 0
+            );
+            if (hayDescuento) {
+                throw Object.assign(new Error('No tienes permiso para aplicar descuentos'), {
+                    status: 403,
+                    codigo: 'DESCUENTO_NO_AUTORIZADO'
+                });
+            }
+        }
+
         await TenantOwnership.clientes(tenantId, cliente_id);
 
         const connection = await db.getConnection();
@@ -42,13 +53,10 @@ class FacturarPedidoService {
                 tenantId
             );
 
-            const productoIds = items.filter(i => !i.es_servicio && i.producto_id).map(i => i.producto_id);
-            const { tasas, defaultTasa } = await TaxService.getTasasPorProducto(tenantId, productoIds, connection);
-
-            const infoCombos = await ComboVentaRepository.getInfoCombos(
+            const { tasas, defaultTasa, infoCombos } = await NucleoFacturaRepository.cargarTasas(
+                connection,
                 tenantId,
-                [...new Set(items.filter(i => i.combo_id).map(i => i.combo_id))],
-                connection
+                items
             );
 
             const serviciosExternosIds = await FacturarPedidoService._obtenerServiciosExternos(
@@ -102,8 +110,11 @@ class FacturarPedidoService {
                     bono ? Number(bono.saldo_actual) : 0
                 );
 
-            const { numeroFactura, cajaSesionId, cajaSesionUsuarioId } =
-                await FacturarPedidoService._obtenerNumeroYCajaSesion(connection, tenantId);
+            const {
+                numero: numeroFactura,
+                cajaSesionId,
+                cajaSesionUsuarioId
+            } = await NucleoFacturaRepository.obtenerNumeroYTurno(connection, tenantId);
             const fechaEmisionUtc = new Date().toISOString().slice(0, 19).replace('T', ' ');
 
             // Efectivo recibido: solo informativo (Recibido/Cambio). Se guarda si
@@ -141,19 +152,13 @@ class FacturarPedidoService {
                 await PedidoItemPagoRepository.marcarFacturados(pedidoId, facturaId, connection);
             }
 
-            if (bono && montoBono > 0) {
-                await BonoRepository.redimir(
-                    {
-                        bonoId: bono.id,
-                        tenantId,
-                        saldoAnterior: bono.saldo_actual,
-                        monto: montoBono,
-                        facturaId,
-                        usuarioId
-                    },
-                    connection
-                );
-            }
+            await NucleoFacturaRepository.redimirBono(connection, {
+                bono,
+                montoBono,
+                tenantId,
+                facturaId,
+                usuarioId
+            });
 
             const detallesValuesFinal = lineasFactura.map(l => [
                 facturaId,
@@ -163,6 +168,7 @@ class FacturarPedidoService {
                 l.combo_id,
                 l.cantidad,
                 l.precio_unitario,
+                l.precio_original,
                 l.unidad_medida,
                 l.subtotal,
                 l.descuento_porcentaje,
@@ -173,7 +179,7 @@ class FacturarPedidoService {
             ]);
 
             const [detalleResult] = await connection.query(
-                `INSERT INTO detalle_factura (factura_id, producto_id, servicio_id, es_servicio, combo_id, cantidad, precio_unitario, unidad_medida, subtotal, descuento_porcentaje, descuento_valor, base_gravable, tasa_impuesto, valor_impuesto) VALUES ?`,
+                `INSERT INTO detalle_factura (factura_id, producto_id, servicio_id, es_servicio, combo_id, cantidad, precio_unitario, precio_original, unidad_medida, subtotal, descuento_porcentaje, descuento_valor, base_gravable, tasa_impuesto, valor_impuesto) VALUES ?`,
                 [detallesValuesFinal]
             );
 
@@ -183,19 +189,15 @@ class FacturarPedidoService {
             // El cobro de servicios externos (ej. domicilio de un tercero) entra con
             // la factura pero se le entrega al proveedor en efectivo: se compensa
             // con una salida de caja, sin importar cómo pagó el cliente la factura.
-            if (cajaSesionId && montoServiciosExternos > 0) {
-                await CajaRepository.registrarSalidaServicioExterno(
-                    {
-                        tenantId,
-                        sesionId: cajaSesionId,
-                        usuarioId: usuarioId || cajaSesionUsuarioId,
-                        facturaId,
-                        numeroFactura,
-                        monto: montoServiciosExternos
-                    },
-                    connection
-                );
-            }
+            await NucleoFacturaRepository.compensarServiciosExternos(connection, {
+                tenantId,
+                cajaSesionId,
+                usuarioId,
+                cajaSesionUsuarioId,
+                facturaId,
+                numeroFactura,
+                monto: montoServiciosExternos
+            });
 
             await connection.query(`UPDATE pedidos SET estado = 'cerrado', total = ? WHERE id = ?`, [
                 totalConPropina,
@@ -233,21 +235,23 @@ class FacturarPedidoService {
                 );
             }
 
+            // Ingreso en finanzas e inventario ATÓMICOS con la factura: se escriben con ESTA conexión (la que
+            // tiene bloqueada la fila del tenant por NumeracionRepository). Antes iban después del commit por
+            // otra conexión del pool porque, dentro de la transacción, esa otra conexión esperaba el lock del
+            // tenant (cada insumo tardaba 50 s de lock wait y fallaba); con la misma conexión no hay espera.
+            // Si algo falla aquí se revierte la venta completa (antes quedaba cobrada sin ingreso o sin descuento).
+            await PostVentaService.registrarEfectosEnTransaccion(connection, {
+                tenantId,
+                facturaId,
+                lineas: lineasFactura,
+                total: totalConPropina,
+                usuarioId: null
+            });
+
             await connection.commit();
 
-            // El inventario se descuenta DESPUÉS del commit: usa otra conexión del
-            // pool y sus INSERT en movimientos_inventario (FK a tenants) necesitan
-            // un lock compartido sobre la fila del tenant, que esta transacción tiene
-            // bloqueada (NumeracionRepository) hasta el commit. Dentro de la
-            // transacción se esperaban mutuamente: cada insumo tardaba 50 s (lock
-            // wait timeout) y el descuento fallaba. Ya era best-effort (no bloquea
-            // la venta si falla), así que hacerlo tras el commit no cambia la
-            // semántica.
-            await FacturarPedidoService._descontarInventario(tenantId, lineasFactura, facturaId);
-
-            // Sello de fidelización: después del commit y sin lanzar nunca; si algo falla,
-            // la venta ya está cobrada y el sello es idempotente por factura.
-            await FidelizacionService.sellarPorFactura({
+            // Factura electrónica, sello de fidelización y caché: tras el commit, sin lanzar nunca.
+            await PostVentaService.ejecutarEfectosPostCommit({
                 tenantId,
                 facturaId,
                 clienteId: cliente_id,
@@ -255,14 +259,8 @@ class FacturarPedidoService {
                 usuarioId
             });
 
-            await FacturarPedidoService._ejecutarEfectosSecundariosPostVenta({
-                tenantId,
-                pedidoId,
-                mesaId: pedido.mesa_id,
-                facturaId,
-                totalConPropina,
-                lineasFactura
-            });
+            // Lo propio de Mesas: avisar a las pantallas en vivo
+            FacturarPedidoService._emitirEventosVenta({ tenantId, pedidoId, mesaId: pedido.mesa_id });
 
             return { factura_id: facturaId, numero: numeroFactura };
         } catch (error) {
@@ -378,13 +376,11 @@ class FacturarPedidoService {
                 montoServiciosExternos += subtotal;
             }
 
-            // Servicio y combo no tienen producto: el combo trae su propio tributo (NULL = el del restaurante).
-            const tasa = i.es_servicio
-                ? defaultTasa
-                : i.combo_id
-                  ? (infoCombos.get(i.combo_id)?.tasa_impuesto ?? defaultTasa)
-                  : (tasas.get(i.producto_id) ?? defaultTasa);
-            const { base_gravable, valor_impuesto } = TaxService.desglosarLinea(subtotal, tasa);
+            const { tasa, base_gravable, valor_impuesto } = NucleoFacturaRepository.desglosarLinea(i, subtotal, {
+                tasas,
+                defaultTasa,
+                infoCombos
+            });
             subtotalFactura += base_gravable;
             impuestosFactura += valor_impuesto;
 
@@ -395,6 +391,9 @@ class FacturarPedidoService {
                 combo_id: i.combo_id || null,
                 cantidad: cant,
                 precio_unitario: precioUnitFactura,
+                // Precio de la línea ANTES del descuento manual del cobro (igual que en el POS: lo guardado en
+                // precio_unitario es el efectivo y precio_original el de partida, para auditar descuentos).
+                precio_original: precioUnit,
                 unidad_medida: i.unidad_medida || 'UND',
                 subtotal,
                 descuento_porcentaje: descuentoPorcentaje,
@@ -493,19 +492,6 @@ class FacturarPedidoService {
         return { totalConPropina, montoEfectivo, montoTransferencia, montoBono: montoBonoRedondeado, formaPagoFinal };
     }
 
-    static async _obtenerNumeroYCajaSesion(connection, tenantId) {
-        const numeroFactura = await NumeracionRepository.siguienteNumeroFactura(connection, tenantId);
-
-        const [sesiones] = await connection.query(
-            'SELECT id, usuario_id FROM caja_sesiones WHERE tenant_id = ? AND estado = "abierta" LIMIT 1',
-            [tenantId]
-        );
-        const cajaSesionId = sesiones.length > 0 ? sesiones[0].id : null;
-        const cajaSesionUsuarioId = sesiones.length > 0 ? sesiones[0].usuario_id : null;
-
-        return { numeroFactura, cajaSesionId, cajaSesionUsuarioId };
-    }
-
     static async _copiarModificadores(connection, items, primerDetalleId) {
         const itemIds = items.map(i => i.id);
         const [modificadoresPedido] = await connection.query(
@@ -540,101 +526,9 @@ class FacturarPedidoService {
         );
     }
 
-    static async _descontarInventario(tenantId, lineasFactura, facturaId) {
-        if (lineasFactura.some(l => l.combo_id)) {
-            await InventarioService.descontarPorCombosFactura(tenantId, facturaId);
-        }
-        for (const l of lineasFactura) {
-            try {
-                if (!l.es_servicio && l.producto_id) {
-                    await InventarioService.descontarPorReceta(
-                        tenantId,
-                        l.producto_id,
-                        l.cantidad,
-                        'factura_' + facturaId
-                    );
-                }
-            } catch (invErr) {
-                console.error('Error al descontar inventario por receta:', invErr);
-            }
-        }
-    }
-
-    static async _ejecutarEfectosSecundariosPostVenta({
-        tenantId,
-        pedidoId,
-        mesaId,
-        facturaId,
-        totalConPropina,
-        lineasFactura
-    }) {
-        try {
-            const FacturacionElectronicaConfigService = require('../FacturacionElectronicaConfigService');
-            await FacturacionElectronicaConfigService.encolarSiActivo(facturaId, tenantId);
-        } catch (feErr) {
-            console.error('Error opcional al encolar factura electrónica:', feErr);
-        }
-
-        RealtimeEvents.emitPedido({
-            tenantId,
-            pedidoId,
-            mesaId,
-            action: 'billed'
-        });
+    static _emitirEventosVenta({ tenantId, pedidoId, mesaId }) {
+        RealtimeEvents.emitPedido({ tenantId, pedidoId, mesaId, action: 'billed' });
         RealtimeEvents.emitVentaRegistrada(tenantId);
-
-        try {
-            const FinanzasService = require('../FinanzasService');
-            const ProductRepository = require('../../../repositories/Tenant/ProductRepository');
-
-            const esCeramica = await FacturarPedidoService._verificarSiTieneCeramica(
-                tenantId,
-                lineasFactura,
-                ProductRepository
-            );
-
-            await FinanzasService.registrarIngresoVenta(tenantId, {
-                monto: totalConPropina,
-                factura_id: facturaId,
-                esCeramica,
-                usuario_id: null
-            });
-        } catch (finErr) {
-            console.error('CRÍTICO: Error al registrar ingreso en finanzas (pedido):', finErr);
-        }
-
-        try {
-            await InventarioService.descontarPorModificadoresFactura(tenantId, facturaId);
-        } catch (invErr) {
-            console.error('Error al descontar inventario por modificadores (pedido):', invErr);
-        }
-
-        try {
-            const cacheService = require('../../Shared/CacheService');
-            cacheService.deleteByPrefix(`tenant_dashboard_stats_${tenantId}`);
-            cacheService.delete('superadmin_dashboard_stats');
-        } catch (cacheErr) {
-            console.error('Error opcional al invalidar caché de estadísticas:', cacheErr);
-        }
-    }
-
-    static async _verificarSiTieneCeramica(tenantId, lineasFactura, ProductRepository) {
-        for (const l of lineasFactura) {
-            if (!l.es_servicio && l.producto_id) {
-                try {
-                    const prod = await ProductRepository.findById(l.producto_id, tenantId);
-                    if (
-                        prod &&
-                        (prod.nombre?.toLowerCase().includes('cerámica') || prod.categoria_nombre === 'Cerámicas')
-                    ) {
-                        return true;
-                    }
-                } catch (lookupErr) {
-                    console.error('Error al consultar producto para verificación de cerámica:', lookupErr);
-                }
-            }
-        }
-        return false;
     }
 }
 

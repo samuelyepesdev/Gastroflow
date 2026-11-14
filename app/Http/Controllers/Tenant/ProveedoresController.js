@@ -1,4 +1,5 @@
 const ProveedorService = require('../../../../services/Tenant/ProveedorService');
+const { exigirMimeReal, detectarMimeReal, nombreSeguro } = require('../../../../utils/validadorArchivos');
 const ProveedorFacturaService = require('../../../../services/Tenant/ProveedorFacturaService');
 const ProveedorReporteRepository = require('../../../../repositories/Tenant/ProveedorReporteRepository');
 
@@ -97,6 +98,8 @@ class ProveedoresController {
                 throw new Error('No se subió ningún archivo');
             }
 
+            const tipoReal = exigirMimeReal(req.file.buffer);
+
             const data = {
                 proveedor_id: proveedorId,
                 numero_factura: req.body.numero_factura,
@@ -105,7 +108,7 @@ class ProveedoresController {
                 monto_total: req.body.monto_total,
                 archivo_nombre: req.file.originalname,
                 archivo_contenido: req.file.buffer,
-                archivo_tipo: req.file.mimetype,
+                archivo_tipo: tipoReal.mime,
                 archivo_size: req.file.size,
                 notas: req.body.notas
             };
@@ -123,8 +126,18 @@ class ProveedoresController {
             const tenantId = req.tenant?.id;
             const factura = await ProveedorFacturaService.getById(Number.parseInt(req.params.facturaId, 10), tenantId);
 
-            res.setHeader('Content-Type', factura.archivo_tipo);
-            res.setHeader('Content-Disposition', `inline; filename="${factura.archivo_nombre}"`);
+            // Facturas guardadas antes de validar por contenido: se vuelve a detectar al servir.
+            const tipoReal = detectarMimeReal(factura.archivo_contenido);
+            if (!tipoReal) {
+                return res.status(415).json({ error: 'El archivo almacenado no es un PDF o imagen válido' });
+            }
+            res.setHeader('Content-Type', tipoReal.mime);
+            res.setHeader('X-Content-Type-Options', 'nosniff');
+            res.setHeader('Content-Security-Policy', "default-src 'none'; style-src 'unsafe-inline'; sandbox");
+            res.setHeader(
+                'Content-Disposition',
+                `inline; filename="${nombreSeguro(factura.archivo_nombre, 'factura')}"`
+            );
             res.send(factura.archivo_contenido);
         } catch (error) {
             res.status(404).json({ error: error.message });

@@ -19,10 +19,7 @@ function requireAuth(req, res, next) {
         token = req.cookies.auth_token;
     }
 
-    // Try to get token from query parameter (for API calls)
-    if (!token && req.query.token) {
-        token = req.query.token;
-    }
+    // El token NO se acepta por query string: queda en logs de acceso, historial y cabecera Referer.
 
     if (!token) {
         if (req.xhr || req.headers.accept?.indexOf('json') > -1) {

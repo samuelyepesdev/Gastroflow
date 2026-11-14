@@ -5,6 +5,7 @@
  */
 
 const ConfiguracionRepository = require('../../repositories/Tenant/ConfiguracionRepository');
+const { exigirMimeReal } = require('../../utils/validadorArchivos');
 
 class ConfiguracionService {
     /**
@@ -156,7 +157,8 @@ class ConfiguracionService {
         }
         if (files?.qr) {
             configToSave.qr_data = files.qr[0].buffer;
-            configToSave.qr_tipo = files.qr[0].mimetype.split('/')[1];
+            // Tipo real por contenido (antes salía del mimetype del cliente: 'svg+xml' llegaba a un data: URI)
+            configToSave.qr_tipo = exigirMimeReal(files.qr[0].buffer, { soloImagenes: true }).mime.split('/')[1];
         }
 
         if (!existingConfig) {
@@ -164,6 +166,11 @@ class ConfiguracionService {
         } else {
             configToSave.id = existingConfig.id;
             await ConfiguracionRepository.update(existingConfig.id, tenantId, configToSave);
+        }
+
+        // Logo reemplazado: el archivo anterior se borra de R2 si nadie más lo referencia.
+        if (files?.logo && existingConfig?.logo_url && existingConfig.logo_url !== configToSave.logo_url) {
+            await require('./R2StorageService').eliminarSiHuerfano(existingConfig.logo_url);
         }
     }
 

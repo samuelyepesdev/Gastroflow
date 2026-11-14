@@ -1,4 +1,5 @@
 const express = require('express');
+const { keyPorIp } = require('../utils/rateLimitKey');
 const rateLimit = require('express-rate-limit');
 const hubToken = require('../middleware/hubToken');
 const HubResumenService = require('../services/Admin/HubResumenService');
@@ -7,6 +8,7 @@ const router = express.Router();
 
 // Safe Hub consulta cada ~5 minutos; este tope solo frena abusos si el token se filtra.
 const hubLimiter = rateLimit({
+    keyGenerator: keyPorIp,
     windowMs: 60 * 1000,
     max: 30,
     standardHeaders: true,

@@ -40,7 +40,7 @@ function calcularNuevoCostoPromedio(cant, costo, stockActual, costoActual, nuevo
     return costo;
 }
 
-async function registrarGastoFinanzasSiAplica(tenantId, insumo, insumoId, cant, costo) {
+async function registrarGastoFinanzasSiAplica(tenantId, insumo, insumoId, cant, costo, { usuario_id, conn } = {}) {
     if (!costo || costo <= 0 || cant <= 0) {
         return;
     }
@@ -51,7 +51,9 @@ async function registrarGastoFinanzasSiAplica(tenantId, insumo, insumoId, cant, 
             monto: costo * cant,
             insumo_nombre: insumo.nombre,
             mov_id: insumoId,
-            categoria_nombre: insumo.categoria_nombre
+            categoria_nombre: insumo.categoria_nombre,
+            usuario_id,
+            conn
         });
     } catch (finErr) {
         console.error('Error al registrar gasto en finanzas:', finErr);
@@ -82,7 +84,7 @@ class InventarioService {
      */
     static async registrarEntrada(
         tenantId,
-        { insumo_id, cantidad, costo_unitario, referencia, proveedor_id, documento_referencia }
+        { insumo_id, cantidad, costo_unitario, referencia, proveedor_id, documento_referencia, usuario_id }
     ) {
         const insumo = await InsumoRepository.findById(insumo_id, tenantId);
         if (!insumo) {
@@ -127,7 +129,9 @@ class InventarioService {
             );
 
             // --- INTEGRACIÓN CON FINANZAS ---
-            await registrarGastoFinanzasSiAplica(tenantId, insumo, insumo_id, cant, costo);
+            // Misma conexión: el egreso se confirma o revierte junto con la entrada (antes iba por otra
+            // conexión del pool y sobrevivía a un rollback).
+            await registrarGastoFinanzasSiAplica(tenantId, insumo, insumo_id, cant, costo, { usuario_id, conn });
             // --------------------------------
 
             await conn.commit();
@@ -180,6 +184,76 @@ class InventarioService {
             throw e;
         } finally {
             conn.release();
+        }
+    }
+
+    /**
+     * Varias salidas de inventario en UNA transacción y UNA conexión (antes: una conexión, una transacción y
+     * 4 consultas por ingrediente, lo que saturaba el pool de 10 conexiones al cobrar). Misma semántica que
+     * registrarSalida: un movimiento por insumo, resta atómica en la BD y stock negativo permitido (con aviso).
+     * Las cantidades del mismo insumo se suman; los insumos se procesan en orden de id para que dos ventas
+     * simultáneas bloqueen las filas en el mismo orden y no se cruce un deadlock.
+     * @param {number} tenantId
+     * @param {Array<{insumo_id:number, cantidad:number}>} salidas - cantidades YA en unidad base
+     * @param {string} referencia
+     * @param {Object|null} [externa] - conexión de una transacción ajena (la de la factura): las salidas se
+     *   escriben en ELLA y quien la abrió hace el commit/rollback. Es obligatorio dentro de la transacción de
+     *   una venta: otra conexión del pool quedaría esperando (lock wait) la fila del tenant que la venta tiene
+     *   bloqueada hasta el commit, y no vería las filas todavía sin confirmar.
+     * @returns {Promise<{insumos:number}>}
+     */
+    static async registrarSalidasLote(tenantId, salidas, referencia, externa = null) {
+        const porInsumo = new Map();
+        for (const s of salidas || []) {
+            const cant = Number.parseFloat(s.cantidad);
+            if (s.insumo_id && cant > 0) {
+                porInsumo.set(s.insumo_id, (porInsumo.get(s.insumo_id) || 0) + cant);
+            }
+        }
+        if (porInsumo.size === 0) {
+            return { insumos: 0 };
+        }
+
+        const insumos = await InsumoRepository.findByIds([...porInsumo.keys()], tenantId);
+        const ordenados = [...porInsumo.entries()].filter(([id]) => insumos.has(id)).sort((a, b) => a[0] - b[0]);
+        if (ordenados.length === 0) {
+            return { insumos: 0 };
+        }
+
+        const conn = externa || (await db.getConnection());
+        try {
+            if (!externa) {
+                await conn.beginTransaction();
+            }
+            for (const [insumoId, cant] of ordenados) {
+                const insumo = insumos.get(insumoId);
+                if ((Number.parseFloat(insumo.stock_actual) || 0) < cant) {
+                    console.warn(
+                        `[Inventario] Stock insuficiente para ${insumo.nombre}. Disponible: ${insumo.stock_actual}, Requerido: ${cant}. Se permitirá stock negativo.`
+                    );
+                }
+                await conn.query(
+                    `INSERT INTO movimientos_inventario (tenant_id, insumo_id, tipo, cantidad, costo_unitario, referencia) VALUES (?, ?, 'salida', ?, ?, ?)`,
+                    [tenantId, insumoId, cant, insumo.costo_promedio, referencia || null]
+                );
+                await conn.query(
+                    'UPDATE insumos SET stock_actual = COALESCE(stock_actual, 0) - ?, stock_valorizado = COALESCE(stock_valorizado, 0) - ? WHERE id = ? AND tenant_id = ?',
+                    [cant, cant, insumoId, tenantId]
+                );
+            }
+            if (!externa) {
+                await conn.commit();
+            }
+            return { insumos: ordenados.length };
+        } catch (e) {
+            if (!externa) {
+                await conn.rollback();
+            }
+            throw e;
+        } finally {
+            if (!externa) {
+                conn.release();
+            }
         }
     }
 
@@ -308,20 +382,25 @@ class InventarioService {
 
     /**
      * Combos armados de una factura: descuenta la receta de cada producto elegido x su cantidad
-     * x combos vendidos. Best-effort (nunca lanza): la venta ya está registrada.
+     * x combos vendidos. Sin `conn` es best-effort (nunca lanza); con `conn` (dentro de la venta) propaga el error.
      */
-    static async descontarPorCombosFactura(tenantId, facturaId) {
+    static async descontarPorCombosFactura(tenantId, facturaId, conn = null) {
         try {
-            const selecciones = await ComboVentaRepository.getSeleccionesPorFactura(facturaId);
+            const selecciones = await ComboVentaRepository.getSeleccionesPorFactura(facturaId, conn || undefined);
             for (const s of selecciones) {
                 await this.descontarPorReceta(
                     tenantId,
                     s.producto_id,
                     Number(s.cantidad_por_combo) * Number(s.cantidad_combo),
-                    'factura_' + facturaId
+                    'factura_' + facturaId,
+                    ...(conn ? [conn] : [])
                 );
             }
         } catch (error) {
+            // Dentro de la transacción de la venta el error se propaga (se revierte todo); fuera es best-effort.
+            if (conn) {
+                throw error;
+            }
             console.error('Error al descontar inventario de combos:', error);
         }
     }
@@ -331,7 +410,7 @@ class InventarioService {
      * Convierte cantidad de cada ingrediente a unidad_base del insumo.
      * Procesado de forma concurrente y paralela para optimizar transacciones.
      */
-    static async descontarPorReceta(tenantId, productoId, cantidad, referencia) {
+    static async descontarPorReceta(tenantId, productoId, cantidad, referencia, conn = null) {
         // Combo: se descuenta la receta de cada componente (cantidad del combo x cantidad del componente).
         const componentes = await ComboRepository.getComponentes(productoId, tenantId);
         if (componentes.length > 0) {
@@ -340,48 +419,80 @@ class InventarioService {
                     tenantId,
                     c.producto_id,
                     (Number.parseFloat(cantidad) || 1) * Number(c.cantidad),
-                    referencia
+                    referencia,
+                    ...(conn ? [conn] : [])
                 );
             }
             return;
         }
-        await this._descontarRecetaProducto(tenantId, productoId, cantidad, referencia);
+        await this._descontarRecetaProducto(tenantId, productoId, cantidad, referencia, ...(conn ? [conn] : []));
     }
 
-    static async _descontarRecetaProducto(tenantId, productoId, cantidad, referencia) {
+    /**
+     * Ingredientes de la receta de un producto ya convertidos a unidad base del insumo (para N porciones).
+     * Solo lee: no escribe nada. Devuelve [] si el producto no tiene receta.
+     */
+    static async _ingredientesEnBase(tenantId, productoId, cantidad) {
         const receta = await RecetaRepository.findByProductoId(productoId, tenantId);
         if (!receta) {
-            return;
+            return [];
         }
         const ingredientes = await RecetaRepository.getIngredientes(receta.id);
         const porciones = Number.parseFloat(receta.porciones) || 1;
         const factor = (Number.parseFloat(cantidad) || 1) / porciones;
 
         // Un solo batch fetch para resolver unidad_base de todos los ingredientes.
-        // registrarSalida sigue leyendo su propio insumo internamente: necesita el
-        // stock_actual fresco al momento de escribir, no el de este batch de lectura.
         const insumosPorId = await InsumoRepository.findByIds(
             (ingredientes || []).map(ing => ing.insumo_id),
             tenantId
         );
 
-        await Promise.all(
-            (ingredientes || []).map(async ing => {
-                const insumo = insumosPorId.get(ing.insumo_id);
-                if (!insumo) {
-                    return;
+        const salidas = [];
+        for (const ing of ingredientes || []) {
+            const insumo = insumosPorId.get(ing.insumo_id);
+            if (!insumo) {
+                continue;
+            }
+            const cantidadRequerida = (Number.parseFloat(ing.cantidad) || 0) * factor;
+            const cantidadEnBase = cantidadABase(cantidadRequerida, ing.unidad || insumo.unidad_base || 'g');
+            if (cantidadEnBase > 0) {
+                salidas.push({ insumo_id: ing.insumo_id, cantidad: cantidadEnBase });
+            }
+        }
+        return salidas;
+    }
+
+    static async _descontarRecetaProducto(tenantId, productoId, cantidad, referencia, conn = null) {
+        const salidas = await this._ingredientesEnBase(tenantId, productoId, cantidad);
+        await this.registrarSalidasLote(tenantId, salidas, referencia || `Receta producto ${productoId}`, conn);
+    }
+
+    /**
+     * Descuenta TODA la receta de una factura de una vez: recorre las líneas (resolviendo combos a sus
+     * componentes), suma los ingredientes por insumo y hace una sola transacción. Un producto con la
+     * receta rota no impide descontar los demás (se registra y se sigue), como antes.
+     * @param {Array<{producto_id:number, cantidad:number}>} lineas
+     */
+    static async descontarProductosLote(tenantId, lineas, referencia, conn = null) {
+        const acumulado = [];
+        for (const l of lineas || []) {
+            try {
+                const cant = Number.parseFloat(l.cantidad) || 1;
+                const componentes = await ComboRepository.getComponentes(l.producto_id, tenantId);
+                if (componentes.length > 0) {
+                    for (const c of componentes) {
+                        acumulado.push(
+                            ...(await this._ingredientesEnBase(tenantId, c.producto_id, cant * Number(c.cantidad)))
+                        );
+                    }
+                } else {
+                    acumulado.push(...(await this._ingredientesEnBase(tenantId, l.producto_id, cant)));
                 }
-                const cantidadRequerida = (Number.parseFloat(ing.cantidad) || 0) * factor;
-                const cantidadEnBase = cantidadABase(cantidadRequerida, ing.unidad || insumo.unidad_base || 'g');
-                if (cantidadEnBase > 0) {
-                    await this.registrarSalida(tenantId, {
-                        insumo_id: ing.insumo_id,
-                        cantidad: cantidadEnBase,
-                        referencia: referencia || `Receta producto ${productoId}`
-                    });
-                }
-            })
-        );
+            } catch (err) {
+                console.error('Error al calcular el descuento de inventario por receta:', err);
+            }
+        }
+        await this.registrarSalidasLote(tenantId, acumulado, referencia, conn);
     }
 
     /**
@@ -393,8 +504,8 @@ class InventarioService {
      * @param {number} tenantId
      * @param {number} facturaId
      */
-    static async descontarPorModificadoresFactura(tenantId, facturaId) {
-        const [filas] = await db.query(
+    static async descontarPorModificadoresFactura(tenantId, facturaId, conn = null) {
+        const [filas] = await (conn || db).query(
             `SELECT dfm.insumo_id, dfm.cantidad_insumo, dfm.unidad_insumo, df.cantidad AS cantidad_linea
              FROM detalle_factura_modificadores dfm
              JOIN detalle_factura df ON df.id = dfm.detalle_factura_id
@@ -417,17 +528,21 @@ class InventarioService {
             }
         }
 
-        await Promise.all(
-            [...porInsumo.entries()].map(([insumoId, cantidad]) =>
-                this.registrarSalida(tenantId, {
-                    insumo_id: insumoId,
-                    cantidad,
-                    referencia: `factura_${facturaId} (toppings)`
-                }).catch(err => {
-                    console.error('Error al descontar insumo de topping:', err);
-                })
-            )
-        );
+        try {
+            await this.registrarSalidasLote(
+                tenantId,
+                [...porInsumo.entries()].map(([insumo_id, cantidad]) => ({ insumo_id, cantidad })),
+                `factura_${facturaId} (toppings)`,
+                conn
+            );
+        } catch (err) {
+            // Dentro de la transacción de la venta el error debe propagarse (la venta se revierte entera);
+            // fuera de ella (reprocesos) sigue siendo best-effort.
+            if (conn) {
+                throw err;
+            }
+            console.error('Error al descontar insumo de topping:', err);
+        }
     }
 
     static async getResumenValorizacion(tenantId) {

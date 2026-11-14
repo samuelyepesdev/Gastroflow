@@ -282,7 +282,8 @@ class POSRepository {
 
     static async findOrCreateCliente(tenantId, nombre) {
         const [existing] = await db.query(
-            'SELECT id FROM clientes WHERE tenant_id = ? AND LOWER(nombre) = LOWER(?) LIMIT 1',
+            // Colación insensible a mayúsculas: sin LOWER() puede usar el índice (tenant_id, nombre).
+            'SELECT id FROM clientes WHERE tenant_id = ? AND nombre = ? LIMIT 1',
             [tenantId, nombre.trim()]
         );
         if (existing.length) {
@@ -439,9 +440,25 @@ class POSRepository {
             return null;
         }
 
-        await db.query('DELETE FROM pedido_items WHERE pedido_id = ?', [pedidoId]);
-        const total = await POSRepository._insertarItemsPedido(db, tenantId, pedidoId, itemsValidos);
-        await db.query('UPDATE pedidos SET total = ? WHERE id = ?', [Math.round(total * 100) / 100, pedidoId]);
+        // DELETE + reinserción + total en UNA transacción: si falla la reinserción (FK, desconexión), el
+        // pedido de cocina conserva sus ítems originales en vez de quedar vacío o a medias.
+        const connection = await db.getConnection();
+        try {
+            await connection.beginTransaction();
+            await connection.query('DELETE FROM pedido_items WHERE pedido_id = ?', [pedidoId]);
+            const total = await POSRepository._insertarItemsPedido(connection, tenantId, pedidoId, itemsValidos);
+            await connection.query('UPDATE pedidos SET total = ? WHERE id = ? AND tenant_id = ?', [
+                Math.round(total * 100) / 100,
+                pedidoId,
+                tenantId
+            ]);
+            await connection.commit();
+        } catch (error) {
+            await connection.rollback();
+            throw error;
+        } finally {
+            connection.release();
+        }
 
         return { pedidoId };
     }

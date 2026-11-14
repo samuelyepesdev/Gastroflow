@@ -469,8 +469,17 @@ $(function () {
     GF.tiempoReal.on('ventaRegistrada', () => scheduleStatsRefresh(1500));
 
     setInterval(() => {
-      if (document.visibilityState === 'visible') window.applyFilters();
+      if (document.visibilityState === 'visible' && !GF.tiempoReal.saludable()) window.applyFilters();
     }, 120000);
+    // Tras una reconexión pudieron perderse ventas: refresca (la primera conexión no hace falta).
+    let primeraConexion = true;
+    GF.tiempoReal.on('connected', () => {
+      if (primeraConexion) {
+        primeraConexion = false;
+        return;
+      }
+      scheduleStatsRefresh(300);
+    });
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible') scheduleStatsRefresh(300);
     });

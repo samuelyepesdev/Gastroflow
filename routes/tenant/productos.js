@@ -17,13 +17,13 @@ const StoreProductoRequest = require('../../app/Http/Requests/Tenant/StoreProduc
 router.get('/', requirePermission('productos.ver'), ProductosController.index);
 
 // GET /productos/categorias - Get all categories (del tenant)
-router.get('/categorias', ProductosController.getCategorias);
+router.get('/categorias', requirePermission('productos.ver'), ProductosController.getCategorias);
 
 // GET /productos/buscar - Search products (del tenant)
-router.get('/buscar', ProductosController.search);
+router.get('/buscar', requirePermission('productos.ver'), ProductosController.search);
 
 // GET /productos/:id - Get product by ID (del tenant)
-router.get('/:id(\\d+)', ProductosController.show);
+router.get('/:id(\\d+)', requirePermission('productos.ver'), ProductosController.show);
 
 // POST /productos - Create new product (del tenant)
 router.post(

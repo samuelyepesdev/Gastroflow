@@ -1,4 +1,5 @@
 const db = require('../../../../../config/database');
+const { obtenerBaseUrl } = require('../../../../../utils/baseUrl');
 const GenerarTokensQRService = require('../../../../../services/Tenant/Mesas/GenerarTokensQRService');
 
 class MesaQRController {
@@ -17,17 +18,19 @@ class MesaQRController {
     static async imprimir(req, res) {
         try {
             const tenantId = req.tenant?.id;
-            const [mesas] = await db.query(`
+            const [mesas] = await db.query(
+                `
                 SELECT id, numero, descripcion, qr_token 
                 FROM mesas 
                 WHERE tenant_id = ? AND tipo = 'fisica' 
                 ORDER BY CAST(numero AS UNSIGNED), numero
-            `, [tenantId]);
+            `,
+                [tenantId]
+            );
 
-            const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'https';
-            const host = req.headers['x-forwarded-host'] || req.get('host');
-            // Aseguramos que la URL siempre tenga http:// o https:// para que el celular lo reconozca como un enlace
-            const baseUrl = `${protocol}://${host}`;
+            // APP_URL (canónica) o, solo fuera de producción, el Host validado de la petición. Siempre con
+            // http(s):// para que el celular lo reconozca como enlace. No se confía en X-Forwarded-Host.
+            const baseUrl = obtenerBaseUrl(req);
             res.render('mesas/qrs', {
                 mesas,
                 baseUrl,

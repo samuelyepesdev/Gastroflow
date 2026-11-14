@@ -1,4 +1,5 @@
 const db = require('../../../config/database');
+const { exigirCantidad, exigirMonto } = require('../../../utils/validacionLineas');
 const RealtimeEvents = require('../../Shared/RealtimeEvents');
 const TenantOwnership = require('../TenantOwnership');
 
@@ -7,6 +8,8 @@ class AgregarServicioService {
         if (!servicio_id || !cantidad || !precio) {
             throw new Error('servicio_id, cantidad y precio son requeridos');
         }
+        exigirCantidad(cantidad);
+        exigirMonto(precio, 'El precio');
         await TenantOwnership.servicios(tenantId, servicio_id);
 
         const [pedidoRow] = await db.query('SELECT mesa_id FROM pedidos WHERE id = ? AND tenant_id = ?', [

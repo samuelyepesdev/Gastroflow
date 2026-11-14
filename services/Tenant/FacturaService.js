@@ -5,11 +5,14 @@
  */
 
 const FacturaRepository = require('../../repositories/Tenant/FacturaRepository');
+const { esIdInsumoVirtual, insumoIdDeVirtual } = require('../../utils/insumoVirtual');
+const { validarLineas, exigirMonto } = require('../../utils/validacionLineas');
 const InventarioService = require('./InventarioService');
 const ModificadorService = require('./ModificadorService');
 const ComboArmableService = require('./ComboArmableService');
+const PrecioCatalogoService = require('./PrecioCatalogoService');
+const PostVentaService = require('./Facturacion/PostVentaService');
 const TenantOwnership = require('./TenantOwnership');
-const FidelizacionService = require('./FidelizacionService');
 const EventoRepository = require('../../repositories/Tenant/EventoRepository');
 const { hoyColombia, resolverDiaPasado, toFechaDia } = require('../../utils/dateHelpers');
 
@@ -70,19 +73,31 @@ class FacturaService {
      * @returns {Promise<Object>} Created invoice result
      */
     static async create(tenantId, facturaData) {
-        const { cliente_id, total, forma_pago, productos, evento_id, puedeUsarModificadores = true } = facturaData;
+        const {
+            cliente_id,
+            total,
+            forma_pago,
+            productos,
+            evento_id,
+            puedeUsarModificadores = true,
+            puedeAplicarDescuento = false
+        } = facturaData;
 
         if (!cliente_id || !productos || productos.length === 0) {
             throw new Error('Datos incompletos');
         }
+
+        // Forma numérica de lo que manda el cliente (cantidad > 0, precios/subtotales/total >= 0 y finitos).
+        validarLineas(productos);
+        exigirMonto(total, 'El total');
 
         const AgregarItemService = require('./Mesas/AgregarItemService');
 
         // Resolver IDs virtuales de insumos (>= 1.000.000) a productos reales
         // Esto garantiza que siempre exista el producto espejo antes de facturar
         for (const p of productos) {
-            if (!p.es_servicio && p.producto_id >= 1000000) {
-                const insumoId = p.producto_id - 1000000;
+            if (!p.es_servicio && esIdInsumoVirtual(p.producto_id)) {
+                const insumoId = insumoIdDeVirtual(p.producto_id);
                 p.producto_id = await AgregarItemService._getOrCreateMirrorProduct(tenantId, insumoId, p.precio);
             }
         }
@@ -127,8 +142,12 @@ class FacturaService {
                         p.subtotal = p.precio * (parseFloat(p.cantidad) || 1);
                     }
                     p._modificadoresSnapshot = lineasSnapshot;
+                    p._precioAdicional = precioAdicionalTotal;
                 })
         );
+
+        // Sin permiso de descuento, solo vale catálogo - promoción vigente (calculada aquí, no por el cliente).
+        await PrecioCatalogoService.exigirSinDescuentoNoAutorizado(tenantId, productos, total, puedeAplicarDescuento);
 
         // Chequeo de stock en paralelo (cada producto es independiente) en vez de
         // secuencial: para una venta de N productos evita N round-trips en serie.
@@ -165,135 +184,29 @@ class FacturaService {
             usuario_id: facturaData.usuario_id || null,
             pedido_abono_id: facturaData.pedido_abono_id || null,
             efectivo_recibido: facturaData.efectivo_recibido || null,
-            codigo_bono: facturaData.codigo_bono || null
+            codigo_bono: facturaData.codigo_bono || null,
+            // Ingreso en finanzas e inventario dentro de la MISMA transacción de la factura: todo o nada.
+            enTransaccion: (connection, { facturaId }) =>
+                PostVentaService.registrarEfectosEnTransaccion(connection, {
+                    tenantId,
+                    facturaId,
+                    lineas: productos,
+                    total,
+                    usuarioId: facturaData.usuario_id || null,
+                    fecha: diaVenta
+                })
         });
 
         const facturaId = result.insertId;
 
-        // --- FACTURACIÓN ELECTRÓNICA (opcional, no bloquea la venta) ---
-        try {
-            const FacturacionElectronicaConfigService = require('./FacturacionElectronicaConfigService');
-            await FacturacionElectronicaConfigService.encolarSiActivo(facturaId, tenantId);
-        } catch (feErr) {
-            console.error('Error opcional al encolar factura electrónica:', feErr);
-        }
-        // --------------------------------
-
-        // --- INTEGRACIÓN CON FINANZAS (Garantizada) ---
-        const FinanzasService = require('./FinanzasService');
-        const InsumoRepository = require('../../repositories/Tenant/InsumoRepository');
-        const ProductRepository = require('../../repositories/Tenant/ProductRepository');
-
-        try {
-            let tieneCeramicas = false;
-            const usuario_id = facturaData.usuario_id || null;
-
-            // Intento de detección de cerámicas: batch fetch (2 queries) en vez de
-            // 1 query por producto (findById secuencial en el loop original).
-            try {
-                const insumoIds = productos
-                    .filter(p => p.producto_id && p.producto_id > 1000000)
-                    .map(p => p.producto_id - 1000000);
-                const productoIds = productos
-                    .filter(p => p.producto_id && p.producto_id <= 1000000)
-                    .map(p => p.producto_id);
-
-                const [insumosPorId, productosPorId] = await Promise.all([
-                    InsumoRepository.findByIds(insumoIds, tenantId),
-                    ProductRepository.findByIds(productoIds, tenantId)
-                ]);
-
-                tieneCeramicas = productos.some(p => {
-                    // 1. Por nombre directo
-                    if (p.nombre && p.nombre.toLowerCase().includes('cerámica')) {
-                        return true;
-                    }
-                    // 2. Por ID virtual de Insumo (> 1M)
-                    if (p.producto_id && p.producto_id > 1000000) {
-                        const insumoDb = insumosPorId.get(p.producto_id - 1000000);
-                        return !!(
-                            insumoDb &&
-                            (insumoDb.nombre.toLowerCase().includes('cerámica') ||
-                                insumoDb.categoria_nombre === 'Cerámicas')
-                        );
-                    }
-                    // 3. Por Producto existente (si ya se creó)
-                    if (p.producto_id) {
-                        const prodDb = productosPorId.get(p.producto_id);
-                        return !!(
-                            prodDb &&
-                            (prodDb.nombre.toLowerCase().includes('cerámica') ||
-                                prodDb.categoria_nombre === 'Cerámicas')
-                        );
-                    }
-                    return false;
-                });
-            } catch (e) {
-                console.error('Error opcional en detección de cerámicas:', e);
-            }
-
-            // REGISTRO FINAL (Siempre se ejecuta)
-            await FinanzasService.registrarIngresoVenta(tenantId, {
-                monto: total,
-                factura_id: facturaId,
-                esCeramica: tieneCeramicas,
-                usuario_id: usuario_id,
-                fecha: diaVenta
-            });
-        } catch (finErr) {
-            console.error('CRÍTICO: Error al registrar ingreso en finanzas:', finErr);
-        }
-        // --------------------------------
-
-        // Descuento de inventario en paralelo: cada producto es independiente y cada
-        // fallo se captura por-item (igual que antes), así que no hay razón para serializar.
-        await Promise.all(
-            productos
-                .filter(p => !p.es_servicio && p.producto_id)
-                .map(async p => {
-                    try {
-                        await InventarioService.descontarPorReceta(
-                            tenantId,
-                            p.producto_id,
-                            parseFloat(p.cantidad) || 1,
-                            'factura_' + facturaId
-                        );
-                    } catch (err) {
-                        console.error('Error al descontar inventario por receta:', err);
-                    }
-                })
-        );
-
-        // Combos armados: receta de cada producto elegido (best-effort, no lanza).
-        if (productos.some(p => p.combo_id)) {
-            await InventarioService.descontarPorCombosFactura(tenantId, facturaId);
-        }
-
-        // Descuento por toppings/modificadores ligados a inventario (opt-in por grupo).
-        try {
-            await InventarioService.descontarPorModificadoresFactura(tenantId, facturaId);
-        } catch (err) {
-            console.error('Error al descontar inventario por modificadores:', err);
-        }
-
-        // Sello de fidelización (igual que al cobrar una mesa): ya con la venta guardada y sin lanzar nunca;
-        // es idempotente por factura y solo aplica si el cliente tiene tarjeta.
-        await FidelizacionService.sellarPorFactura({
+        // Factura electrónica, sello de fidelización y caché: tras el commit y sin tumbar nunca la venta.
+        await PostVentaService.ejecutarEfectosPostCommit({
             tenantId,
             facturaId,
             clienteId: cliente_id,
             total,
             usuarioId: facturaData.usuario_id || null
         });
-
-        // --- INVALIDAR CACHÉ DE ESTADÍSTICAS (Actualización instantánea del Dashboard) ---
-        try {
-            const cacheService = require('../Shared/CacheService');
-            cacheService.deleteByPrefix(`tenant_dashboard_stats_${tenantId}`);
-            cacheService.delete('superadmin_dashboard_stats');
-        } catch (cacheErr) {
-            console.error('Error opcional al invalidar caché de estadísticas:', cacheErr);
-        }
 
         return { id: facturaId, numero: result.numero };
     }

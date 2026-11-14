@@ -13,6 +13,14 @@ class StatsRepository {
         return SalesStatsRepository.getTotalSales(tenantId, filters);
     }
 
+    static async getVentasPorTenantYMes(tenantIds, desde, hasta) {
+        return SalesStatsRepository.getVentasPorTenantYMes(tenantIds, desde, hasta);
+    }
+
+    static async getTotalesAllTime(tenantId) {
+        return SalesStatsRepository.getTotalesAllTime(tenantId);
+    }
+
     static async getTotalSalesAllTime(tenantId) {
         return SalesStatsRepository.getTotalSalesAllTime(tenantId);
     }

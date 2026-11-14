@@ -71,9 +71,11 @@ class NotificationController {
         RealtimeEvents.on('mesasChanged', onMesasChanged);
         RealtimeEvents.on('ventaRegistrada', onVentaRegistrada);
 
-        // Mantener la conexión enviando keep-alive cada 30 segundos
+        // Latido cada 30 s: mantiene viva la conexión Y llega al cliente como evento 'ping' (un comentario
+        // SSE ': keepalive' no es visible para EventSource), así GF.tiempoReal.saludable() puede distinguir
+        // una conexión viva de una abierta pero muerta (proxy/Cloudflare) y solo entonces hacer polling.
         const keepAlive = setInterval(() => {
-            res.write(': keepalive\n\n');
+            res.write(`data: ${JSON.stringify({ event: 'ping' })}\n\n`);
             if (typeof res.flush === 'function') {
                 res.flush();
             }

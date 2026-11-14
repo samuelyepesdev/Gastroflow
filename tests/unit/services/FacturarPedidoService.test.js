@@ -31,7 +31,10 @@ jest.mock('../../../repositories/Tenant/FacturaRepository', () => ({
 }));
 
 jest.mock('../../../services/Tenant/InventarioService', () => ({
-    descontarStockReceta: jest.fn().mockResolvedValue(undefined)
+    descontarStockReceta: jest.fn().mockResolvedValue(undefined),
+    descontarProductosLote: jest.fn().mockResolvedValue(undefined),
+    descontarPorCombosFactura: jest.fn().mockResolvedValue(undefined),
+    descontarPorModificadoresFactura: jest.fn().mockResolvedValue(undefined)
 }));
 
 jest.mock('../../../services/Tenant/FinanzasService', () => ({
@@ -66,6 +69,35 @@ describe('FacturarPedidoService', () => {
             query: jest.fn()
         };
         db.getConnection.mockResolvedValue(mockConn);
+    });
+
+    describe('permiso de descuento manual', () => {
+        const base = { tenantId: 1, pedidoId: 10, cliente_id: 1, forma_pago: 'efectivo', propinaBody: 0 };
+
+        it.each([[{ 5: 10 }], [{ 5: { tipo: 'porcentaje', valor: 15 } }], [{ 5: { tipo: 'valor', valor: 2000 } }]])(
+            'sin permiso rechaza con 403 el descuento %j y no abre transacción',
+            async descuentosMap => {
+                await expect(FacturarPedidoService.execute({ ...base, descuentosMap })).rejects.toMatchObject({
+                    status: 403,
+                    codigo: 'DESCUENTO_NO_AUTORIZADO'
+                });
+                expect(db.getConnection).not.toHaveBeenCalled();
+            }
+        );
+
+        it('sin permiso, descuentos en 0 o vacíos no bloquean', async () => {
+            mockConn.query.mockResolvedValueOnce([[]]); // pedido no existe: llegó a la transacción
+            await expect(
+                FacturarPedidoService.execute({ ...base, descuentosMap: { 5: 0, 6: { tipo: 'valor', valor: 0 } } })
+            ).rejects.toThrow('Pedido no encontrado');
+        });
+
+        it('con permiso el descuento sigue su curso normal', async () => {
+            mockConn.query.mockResolvedValueOnce([[]]);
+            await expect(
+                FacturarPedidoService.execute({ ...base, descuentosMap: { 5: 10 }, puedeAplicarDescuento: true })
+            ).rejects.toThrow('Pedido no encontrado');
+        });
     });
 
     it('lanza "Pedido no encontrado" si el pedido no existe', async () => {
@@ -424,6 +456,138 @@ describe('FacturarPedidoService', () => {
                 action: 'billed'
             })
         );
+    });
+
+    describe('finanzas e inventario dentro de la transacción de la factura', () => {
+        const InventarioService = require('../../../services/Tenant/InventarioService');
+        const FinanzasService = require('../../../services/Tenant/FinanzasService');
+
+        const prepararMesa = () => {
+            mockConn.query
+                .mockResolvedValueOnce([[{ id: 10, estado: 'abierto', mesa_id: 2, total: 5000 }]]) // SELECT pedidos
+                .mockResolvedValueOnce([
+                    [{ id: 1, producto_id: 7, cantidad: 2, precio_unitario: 2500, pagado: 0, es_servicio: 0 }]
+                ]); // SELECT items
+            mockConn.query.mockImplementation(sql => {
+                if (typeof sql === 'string' && sql.includes('pedido_item_modificadores')) {
+                    return Promise.resolve([[]]);
+                }
+                if (typeof sql === 'string' && sql.includes('pedido_abonos')) {
+                    return Promise.resolve([[]]);
+                }
+                if (typeof sql === 'string' && /FROM (productos|tenants)/.test(sql)) {
+                    return Promise.resolve([[]]); // tasas de impuesto: sin filas
+                }
+                return Promise.resolve([{ insertId: 100 }]);
+            });
+        };
+        const facturar = () =>
+            FacturarPedidoService.execute({
+                tenantId: 1,
+                pedidoId: 10,
+                cliente_id: 1,
+                forma_pago: 'efectivo',
+                descuentosMap: {},
+                propinaBody: 0
+            });
+
+        it('el ingreso y el descuento se hacen con la conexión de la venta y ANTES del commit', async () => {
+            prepararMesa();
+            const orden = [];
+            mockConn.commit.mockImplementation(async () => orden.push('commit'));
+            FinanzasService.registrarIngresoVenta.mockImplementation(async () => orden.push('finanzas'));
+            InventarioService.descontarProductosLote.mockImplementation(async () => orden.push('inventario'));
+
+            await facturar();
+
+            expect(FinanzasService.registrarIngresoVenta).toHaveBeenCalledWith(
+                1,
+                expect.objectContaining({ factura_id: 100, conn: mockConn })
+            );
+            expect(InventarioService.descontarProductosLote).toHaveBeenCalledWith(
+                1,
+                [expect.objectContaining({ producto_id: 7, cantidad: 2 })],
+                'factura_100',
+                mockConn
+            );
+            expect(InventarioService.descontarPorModificadoresFactura).toHaveBeenCalledWith(1, 100, mockConn);
+            expect(orden).toEqual(['finanzas', 'inventario', 'commit']);
+        });
+
+        it('si falla el ingreso en finanzas se revierte la venta: rollback, sin commit y sin evento billed', async () => {
+            prepararMesa();
+            FinanzasService.registrarIngresoVenta.mockRejectedValueOnce(new Error('finanzas caída'));
+
+            await expect(facturar()).rejects.toThrow('finanzas caída');
+
+            expect(mockConn.rollback).toHaveBeenCalled();
+            expect(mockConn.commit).not.toHaveBeenCalled();
+            expect(mockConn.release).toHaveBeenCalled();
+            expect(RealtimeEvents.emitPedido).not.toHaveBeenCalledWith(expect.objectContaining({ action: 'billed' }));
+        });
+
+        it('si falla el descuento de inventario también se revierte la venta', async () => {
+            prepararMesa();
+            InventarioService.descontarProductosLote.mockRejectedValueOnce(new Error('insumos caída'));
+
+            await expect(facturar()).rejects.toThrow('insumos caída');
+
+            expect(mockConn.rollback).toHaveBeenCalled();
+            expect(mockConn.commit).not.toHaveBeenCalled();
+        });
+
+        it('lee el turno de caja con LOCK IN SHARE MODE (se serializa con el cierre de caja, como el POS)', async () => {
+            prepararMesa();
+            await facturar();
+            const consultaTurno = mockConn.query.mock.calls.find(([sql]) => /FROM caja_sesiones/.test(sql));
+            expect(consultaTurno[0]).toMatch(/LOCK IN SHARE MODE/);
+        });
+    });
+
+    describe('precio_original en el detalle de la factura de mesa', () => {
+        it('guarda el precio antes del descuento manual, alineado con su columna, junto al efectivo', async () => {
+            mockConn.query
+                .mockResolvedValueOnce([[{ id: 10, estado: 'abierto', mesa_id: 2, total: 10000 }]])
+                .mockResolvedValueOnce([
+                    [{ id: 1, cantidad: 2, precio_unitario: 5000, pagado: 0, unidad_medida: 'UND' }]
+                ]);
+            mockConn.query.mockImplementation(sql => {
+                if (
+                    typeof sql === 'string' &&
+                    /pedido_item_modificadores|pedido_abonos|FROM (productos|tenants)/.test(sql)
+                ) {
+                    return Promise.resolve([[]]);
+                }
+                return Promise.resolve([{ insertId: 100 }]);
+            });
+
+            await FacturarPedidoService.execute({
+                tenantId: 1,
+                pedidoId: 10,
+                cliente_id: 1,
+                forma_pago: 'efectivo',
+                descuentosMap: { 1: { tipo: 'valor', valor: 2000 } }, // 2000 de descuento sobre 10000
+                propinaBody: 0,
+                puedeAplicarDescuento: true
+            });
+
+            const insert = mockConn.query.mock.calls.find(
+                ([sql]) => typeof sql === 'string' && /INSERT INTO detalle_factura \(/.test(sql)
+            );
+            const columnas = insert[0]
+                .match(/\(([^)]+)\) VALUES/)[1]
+                .split(',')
+                .map(c => c.trim());
+            const fila = insert[1][0][0];
+            expect(fila).toHaveLength(columnas.length);
+            const por = nombre => fila[columnas.indexOf(nombre)];
+            expect(por('precio_original')).toBe(5000); // el de partida
+            expect(por('precio_unitario')).toBe(4000); // efectivo tras el descuento (8000 / 2)
+            expect(por('subtotal')).toBe(8000);
+            expect(por('descuento_valor')).toBe(2000);
+            expect(por('cantidad')).toBe(2);
+            expect(por('unidad_medida')).toBe('UND');
+        });
     });
 
     describe('redención de bono al facturar', () => {

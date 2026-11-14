@@ -1,3 +1,4 @@
+const crypto = require('node:crypto');
 const db = require('../../config/database');
 
 class MenuQRRepository {
@@ -21,7 +22,10 @@ class MenuQRRepository {
             logo_src = `data:image/${row.logo_tipo};base64,${Buffer.from(row.logo_data).toString('base64')}`;
         }
 
-        // Extraer paleta de colores completa de la configuración
+        // Extraer paleta de colores completa de la configuración (solo hex válidos: van a <style>)
+        if (config.colores) {
+            config.colores = require('../../utils/colorAcento').sanitizarColores(config.colores);
+        }
         const themeColors = {
             primary: (config.colores && config.colores.primary) ? config.colores.primary : '#e63946',
             navbar: (config.colores && config.colores.navbar) ? config.colores.navbar : '#ffffff',
@@ -53,9 +57,10 @@ class MenuQRRepository {
         
         const mesa = rows[0];
         
-        // Si la mesa está libre y no tiene sesión, o si queremos forzar una nueva sesión al primer escaneo
-        if (mesa.estado === 'libre' && !mesa.qr_session_id) {
-            const newSessionId = Date.now().toString(); // Simple ID basado en tiempo
+        // Primer escaneo (mesa sin sesión, libre u ocupada por el mesero): se abre la sesión QR. El pedido
+        // público exige esta sesión, y el id no debe ser adivinable (antes era Date.now()).
+        if (!mesa.qr_session_id) {
+            const newSessionId = crypto.randomUUID();
             await db.query(
                 'UPDATE mesas SET qr_session_id = ?, last_qr_activity = NOW() WHERE id = ?',
                 [newSessionId, mesa.id]

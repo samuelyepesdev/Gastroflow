@@ -31,8 +31,7 @@ class ProductosController {
             console.error('Error al obtener productos:', error);
             res.status(500).render('errors/internal', {
                 error: {
-                    message: 'Error al obtener productos',
-                    stack: error.stack
+                    message: 'Error al obtener productos'
                 }
             });
         }
@@ -379,7 +378,7 @@ class ProductosController {
             res.json({ url });
         } catch (error) {
             console.error('Error al subir imagen:', error);
-            res.status(500).json({ error: error.message || 'Error al subir imagen' });
+            res.status(error.status || 500).json({ error: error.message || 'Error al subir imagen' });
         }
     }
 }

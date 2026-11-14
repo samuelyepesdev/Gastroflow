@@ -54,27 +54,54 @@ class CajaRepository {
      * Cierra una sesión de caja calculando totales
      */
     static async cerrarSesion(sesionId, tenantId, montoFinalReal, notas) {
+        const conn = await db.getConnection();
+        try {
+            await conn.beginTransaction();
+            await CajaRepository._cerrarSesionTx(conn, sesionId, tenantId, montoFinalReal, notas);
+            await conn.commit();
+        } catch (error) {
+            await conn.rollback();
+            throw error;
+        } finally {
+            conn.release();
+        }
+    }
+
+    /**
+     * Cuerpo del cierre dentro de la transacción. Bloquea la fila del turno (FOR UPDATE) y exige que siga
+     * abierto: dos clics concurrentes ya no cierran dos veces, y una venta que se está registrando (que
+     * toma el turno con LOCK IN SHARE MODE) termina antes de calcular el teórico.
+     */
+    static async _cerrarSesionTx(conn, sesionId, tenantId, montoFinalReal, notas) {
+        const [bloqueada] = await conn.query(
+            `SELECT id FROM caja_sesiones WHERE id = ? AND tenant_id = ? AND estado = 'abierta' FOR UPDATE`,
+            [sesionId, tenantId]
+        );
+        if (bloqueada.length === 0) {
+            throw Object.assign(new Error('El turno de caja no existe o ya está cerrado'), { status: 409 });
+        }
+
         // Calcular el teórico justo antes de cerrar (Efectivo)
-        const [ventasEf] = await db.query(
+        const [ventasEf] = await conn.query(
             `SELECT SUM(monto_efectivo) as total FROM facturas WHERE caja_sesion_id = ?`,
             [sesionId]
         );
-        const [entradas] = await db.query(
+        const [entradas] = await conn.query(
             `SELECT SUM(monto) as total FROM caja_movimientos WHERE sesion_id = ? AND tipo = 'entrada' AND metodo_pago = 'efectivo' AND ${EXCLUIR_ENTRADAS_VENTA}`,
             [sesionId]
         );
-        const [salidas] = await db.query(
+        const [salidas] = await conn.query(
             `SELECT SUM(monto) as total FROM caja_movimientos WHERE sesion_id = ? AND tipo = 'salida' AND metodo_pago = 'efectivo'`,
             [sesionId]
         );
         // Movimientos por transferencia: no tocan el efectivo físico pero sí el total del turno.
-        const [movTransf] = await db.query(
+        const [movTransf] = await conn.query(
             `SELECT COALESCE(SUM(CASE WHEN tipo = 'entrada' THEN monto ELSE -monto END), 0) AS neto
              FROM caja_movimientos
              WHERE sesion_id = ? AND metodo_pago = 'transferencia' AND (tipo = 'salida' OR ${EXCLUIR_ENTRADAS_VENTA})`,
             [sesionId]
         );
-        const [sesion] = await db.query(
+        const [sesion] = await conn.query(
             `SELECT monto_inicial_efectivo, monto_inicial_transferencia, monto_inicial FROM caja_sesiones WHERE id = ?`,
             [sesionId]
         );
@@ -89,7 +116,7 @@ class CajaRepository {
         const diferencia = montoFinalReal - teoricoEf;
 
         // También guardar el total final de todo (efectivo + transf)
-        const [ventasTotales] = await db.query(`SELECT SUM(total) as total FROM facturas WHERE caja_sesion_id = ?`, [
+        const [ventasTotales] = await conn.query(`SELECT SUM(total) as total FROM facturas WHERE caja_sesion_id = ?`, [
             sesionId
         ]);
         const vTot = parseFloat(ventasTotales[0]?.total || 0);
@@ -104,9 +131,9 @@ class CajaRepository {
                 notas = CONCAT(IFNULL(notas, ''), '\n', ?),
                 estado = 'cerrada',
                 fecha_cierre = CURRENT_TIMESTAMP
-            WHERE id = ? AND tenant_id = ?
+            WHERE id = ? AND tenant_id = ? AND estado = 'abierta'
         `;
-        await db.query(sql, [
+        await conn.query(sql, [
             teoricoTotal,
             montoFinalReal + (teoricoTotal - teoricoEf),
             diferencia,
@@ -204,18 +231,20 @@ class CajaRepository {
      * Obtiene estadísticas rápidas de la sesión actual
      */
     static async getEstadisticasSesion(sesionId) {
-        // Sumar ventas
-        const [ventasEfectivo] = await db.query(
-            `SELECT SUM(monto_efectivo) as total FROM facturas WHERE caja_sesion_id = ?`,
+        // Ventas del turno: UNA consulta (antes 3 escaneos de facturas: efectivo, transferencia y total) y
+        // el efectivo recibido / cambio entregado (solo informativo, no afecta el arqueo). El cambio =
+        // efectivo_recibido - total de cada factura con efectivo recibido.
+        const [[v]] = await db.query(
+            `SELECT
+                 COALESCE(SUM(monto_efectivo), 0) AS ventas_efectivo,
+                 COALESCE(SUM(monto_transferencia), 0) AS ventas_transferencia,
+                 COALESCE(SUM(total), 0) AS ventas,
+                 COALESCE(SUM(CASE WHEN efectivo_recibido IS NOT NULL THEN efectivo_recibido END), 0) AS recibido,
+                 COALESCE(SUM(CASE WHEN efectivo_recibido IS NOT NULL THEN GREATEST(efectivo_recibido - total, 0) END), 0) AS cambio
+             FROM facturas
+             WHERE caja_sesion_id = ?`,
             [sesionId]
         );
-        const [ventasTransferencia] = await db.query(
-            `SELECT SUM(monto_transferencia) as total FROM facturas WHERE caja_sesion_id = ?`,
-            [sesionId]
-        );
-        const [ventas] = await db.query(`SELECT SUM(total) as total FROM facturas WHERE caja_sesion_id = ?`, [
-            sesionId
-        ]);
 
         // Sumar movimientos manuales (excluye las entradas 'venta' de FinanzasService,
         // que duplicarían las ventas ya contadas desde la tabla facturas).
@@ -233,27 +262,16 @@ class CajaRepository {
                 .filter(m => m.tipo === tipo && m.metodo_pago === metodo)
                 .reduce((acc, m) => acc + parseFloat(m.total || 0), 0);
 
-        // Efectivo recibido / cambio entregado (solo informativo, no afecta el
-        // arqueo). El cambio = efectivo_recibido - total de cada factura en efectivo.
-        const [efectivoFlujo] = await db.query(
-            `SELECT
-                 COALESCE(SUM(efectivo_recibido), 0) AS recibido,
-                 COALESCE(SUM(GREATEST(efectivo_recibido - total, 0)), 0) AS cambio
-             FROM facturas
-             WHERE caja_sesion_id = ? AND efectivo_recibido IS NOT NULL`,
-            [sesionId]
-        );
-
         return {
-            ventas_efectivo: parseFloat(ventasEfectivo[0]?.total || 0),
-            ventas_transferencia: parseFloat(ventasTransferencia[0]?.total || 0),
-            ventas: parseFloat(ventas[0]?.total || 0),
+            ventas_efectivo: parseFloat(v?.ventas_efectivo || 0),
+            ventas_transferencia: parseFloat(v?.ventas_transferencia || 0),
+            ventas: parseFloat(v?.ventas || 0),
             entradas: sumMov('entrada', 'efectivo'),
             salidas: sumMov('salida', 'efectivo'),
             entradas_transferencia: sumMov('entrada', 'transferencia'),
             salidas_transferencia: sumMov('salida', 'transferencia'),
-            efectivo_recibido_total: parseFloat(efectivoFlujo[0]?.recibido || 0),
-            cambio_entregado_total: parseFloat(efectivoFlujo[0]?.cambio || 0)
+            efectivo_recibido_total: parseFloat(v?.recibido || 0),
+            cambio_entregado_total: parseFloat(v?.cambio || 0)
         };
     }
 }

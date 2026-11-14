@@ -127,6 +127,34 @@ class RecetaRepository {
         return rows;
     }
 
+    /**
+     * Ingredientes de VARIAS recetas en una sola consulta (antes: 1 por receta). Mismas columnas que
+     * getIngredientes; el filtro por tenant evita leer recetas ajenas aunque llegue un id equivocado.
+     * @returns {Promise<Map<number, Array>>} recetaId -> ingredientes (en el orden de ri.id)
+     */
+    static async getIngredientesPorRecetas(recetaIds, tenantId) {
+        const porReceta = new Map();
+        const ids = [...new Set((recetaIds || []).map(Number).filter(Number.isFinite))];
+        if (ids.length === 0) {
+            return porReceta;
+        }
+        const [rows] = await db.query(
+            `
+            SELECT ri.*, i.nombre AS insumo_nombre, i.codigo AS insumo_codigo, i.unidad_compra, i.unidad_base,
+                   i.cantidad_compra, i.precio_compra, i.costo_promedio, i.rendimiento_pct, i.stock_actual
+            FROM receta_ingredientes ri
+            INNER JOIN recetas r ON r.id = ri.receta_id
+            INNER JOIN insumos i ON i.id = ri.insumo_id AND i.tenant_id = r.tenant_id
+            WHERE r.tenant_id = ? AND ri.receta_id IN (?)
+            ORDER BY ri.id
+        `,
+            [tenantId, ids]
+        );
+        ids.forEach(id => porReceta.set(id, []));
+        rows.forEach(row => porReceta.get(Number(row.receta_id)).push(row));
+        return porReceta;
+    }
+
     static async setIngredientes(recetaId, items) {
         const conn = await db.getConnection();
         try {

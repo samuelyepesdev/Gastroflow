@@ -1,8 +1,20 @@
 const express = require('express');
+const rateLimit = require('express-rate-limit');
 const router = express.Router();
 const multer = require('multer');
 const PerfilController = require('../../app/Http/Controllers/Tenant/PerfilController');
 const { requirePermission } = require('../../middleware/auth');
+
+// Genera varios PDFs y envía correo de forma síncrona: tope por usuario (no por IP) para que no se use
+// para saturar el servidor ni para spam de correos.
+const testReportLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000,
+    limit: 5,
+    standardHeaders: true,
+    legacyHeaders: false,
+    keyGenerator: req => `perfil-test-report:${req.tenant?.id}:${req.user?.id}`,
+    message: { success: false, message: 'Demasiados reportes de prueba. Intenta de nuevo en una hora.' }
+});
 
 // Configuración de Multer para el logo
 const upload = multer({
@@ -27,6 +39,6 @@ router.get('/api/crecimiento', requirePermission('perfil.ver'), PerfilController
 router.post('/actualizar', requirePermission('perfil.editar'), upload.single('logo'), PerfilController.update);
 
 // POST /perfil/test-report - Enviar reporte de prueba
-router.post('/test-report', requirePermission('perfil.editar'), PerfilController.testReport);
+router.post('/test-report', requirePermission('perfil.editar'), testReportLimiter, PerfilController.testReport);
 
 module.exports = router;

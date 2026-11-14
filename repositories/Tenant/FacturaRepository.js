@@ -5,11 +5,9 @@
  */
 
 const db = require('../../config/database');
-const NumeracionRepository = require('./NumeracionRepository');
+const NucleoFacturaRepository = require('./NucleoFacturaRepository');
 const { SQL_COLOMBIA, toFechaISOUtc, mediodiaUtcDeDia } = require('../../utils/dateHelpers');
 const { desglosarPago } = require('../../utils/desglosePago');
-const TaxService = require('../../services/Shared/TaxService');
-const CajaRepository = require('./CajaRepository');
 const PedidoAbonoRepository = require('./PedidoAbonoRepository');
 const BonoRepository = require('./BonoRepository');
 const BonoService = require('../../services/Tenant/BonoService');
@@ -76,6 +74,7 @@ class FacturaRepository {
      * @param {number} facturaData.total - Total amount
      * @param {string} facturaData.forma_pago - Payment method
      * @param {Array<Object>} facturaData.productos - Array of products
+     * @param {Function} [facturaData.enTransaccion] - async (connection, {facturaId, numero}) ejecutada antes del commit
      * @returns {Promise<Object>} Created invoice with insertId
      */
     static async createWithDetails(tenantId, facturaData) {
@@ -86,7 +85,6 @@ class FacturaRepository {
             await FacturaRepository.acomodarNumeracionSiFalta(connection, tenantId);
 
             const evento_id = facturaData.evento_id || null;
-            const numero = await NumeracionRepository.siguienteNumeroFactura(connection, tenantId);
             // Venta de un evento registrada en otro día (facturaData.fecha_venta, ya validada): lleva ese día
             // y no entra al turno de caja abierto, que es de hoy y se descuadraría.
             const diaVenta = facturaData.fecha_venta || null;
@@ -94,15 +92,12 @@ class FacturaRepository {
                 ? mediodiaUtcDeDia(diaVenta)
                 : new Date().toISOString().slice(0, 19).replace('T', ' ');
 
-            // Buscar sesión de caja abierta para vincular la venta
-            const [sesiones] = diaVenta
-                ? [[]]
-                : await connection.query(
-                      'SELECT id, usuario_id FROM caja_sesiones WHERE tenant_id = ? AND estado = "abierta" LIMIT 1',
-                      [tenantId]
-                  );
-            const cajaSesionId = sesiones.length > 0 ? sesiones[0].id : null;
-            const cajaSesionUsuarioId = sesiones.length > 0 ? sesiones[0].usuario_id : null;
+            // Número de factura + turno de caja abierto donde se vincula la venta
+            const { numero, cajaSesionId, cajaSesionUsuarioId } = await NucleoFacturaRepository.obtenerNumeroYTurno(
+                connection,
+                tenantId,
+                { sinTurno: Boolean(diaVenta) }
+            );
 
             // Bono redimible (opcional): se valida y bloquea (FOR UPDATE) dentro de esta
             // misma transacción, así un rollback no deja el saldo descontado. Se aplica
@@ -197,30 +192,20 @@ class FacturaRepository {
                 await PedidoAbonoRepository.marcarFacturados(pedidoAbonoId, factura_id, connection);
             }
 
-            if (bono && montoBono > 0) {
-                await BonoRepository.redimir(
-                    {
-                        bonoId: bono.id,
-                        tenantId,
-                        saldoAnterior: bono.saldo_actual,
-                        monto: montoBono,
-                        facturaId: factura_id,
-                        usuarioId: facturaData.usuario_id || null
-                    },
-                    connection
-                );
-            }
+            await NucleoFacturaRepository.redimirBono(connection, {
+                bono,
+                montoBono,
+                tenantId,
+                facturaId: factura_id,
+                usuarioId: facturaData.usuario_id
+            });
 
             // Desglose de impuestos por línea (Fase 1 - Factus): precios de catálogo
             // se tratan como "impuesto incluido", el desglose se calcula hacia atrás.
-            const productoIds = facturaData.productos
-                .filter(p => !p.es_servicio && p.producto_id)
-                .map(p => p.producto_id);
-            const { tasas, defaultTasa } = await TaxService.getTasasPorProducto(tenantId, productoIds, connection);
-            const infoCombos = await ComboVentaRepository.getInfoCombos(
+            const contextoTasas = await NucleoFacturaRepository.cargarTasas(
+                connection,
                 tenantId,
-                [...new Set(facturaData.productos.filter(p => p.combo_id).map(p => p.combo_id))],
-                connection
+                facturaData.productos
             );
 
             let subtotalFactura = 0;
@@ -229,13 +214,11 @@ class FacturaRepository {
 
             // Insert invoice details (incl. descuento_porcentaje y precio_original para mostrar en factura impresa)
             const detallesValues = facturaData.productos.map(p => {
-                // Servicio y combo no tienen producto: el combo trae su propio tributo (NULL = el del restaurante).
-                const tasa = p.es_servicio
-                    ? defaultTasa
-                    : p.combo_id
-                      ? (infoCombos.get(p.combo_id)?.tasa_impuesto ?? defaultTasa)
-                      : (tasas.get(p.producto_id) ?? defaultTasa);
-                const { base_gravable, valor_impuesto } = TaxService.desglosarLinea(p.subtotal, tasa);
+                const { tasa, base_gravable, valor_impuesto } = NucleoFacturaRepository.desglosarLinea(
+                    p,
+                    p.subtotal,
+                    contextoTasas
+                );
                 subtotalFactura += base_gravable;
                 impuestosFactura += valor_impuesto;
                 const precioOriginal = p.precio_original || p.precio;
@@ -331,24 +314,27 @@ class FacturaRepository {
             // la factura pero se le entrega al proveedor en efectivo, así que se
             // compensa con una salida de caja, sin importar cómo pagó el cliente.
             if (cajaSesionId) {
-                const montoExternos = await FacturaRepository._calcularServiciosExternos(
-                    connection,
+                await NucleoFacturaRepository.compensarServiciosExternos(connection, {
                     tenantId,
-                    facturaData.productos
-                );
-                if (montoExternos > 0) {
-                    await CajaRepository.registrarSalidaServicioExterno(
-                        {
-                            tenantId,
-                            sesionId: cajaSesionId,
-                            usuarioId: facturaData.usuario_id || cajaSesionUsuarioId,
-                            facturaId: factura_id,
-                            numeroFactura: numero,
-                            monto: montoExternos
-                        },
-                        connection
-                    );
-                }
+                    cajaSesionId,
+                    usuarioId: facturaData.usuario_id,
+                    cajaSesionUsuarioId,
+                    facturaId: factura_id,
+                    numeroFactura: numero,
+                    monto: await FacturaRepository._calcularServiciosExternos(
+                        connection,
+                        tenantId,
+                        facturaData.productos
+                    )
+                });
+            }
+
+            // Efectos que deben confirmarse o revertirse JUNTO con la factura (ingreso en finanzas, descuento de
+            // inventario). Reciben ESTA conexión: otra conexión del pool no vería las filas sin confirmar y
+            // esperaría la fila del tenant que esta transacción tiene bloqueada (lock wait). Si lanzan, la
+            // venta completa se revierte (rollback del catch).
+            if (typeof facturaData.enTransaccion === 'function') {
+                await facturaData.enTransaccion(connection, { facturaId: factura_id, numero });
             }
 
             await connection.commit();
@@ -636,7 +622,9 @@ class FacturaRepository {
         const nombreCliente = (data.cliente_nombre || '').trim();
         if (nombreCliente) {
             const [existing] = await db.query(
-                'SELECT id FROM clientes WHERE tenant_id = ? AND LOWER(nombre) = LOWER(?) LIMIT 1',
+                // La colación de `nombre` ya es insensible a mayúsculas (no hay colaciones _bin en el esquema):
+                // LOWER() era redundante y anulaba el índice (tenant_id, nombre).
+                'SELECT id FROM clientes WHERE tenant_id = ? AND nombre = ? LIMIT 1',
                 [tenantId, nombreCliente]
             );
             clienteId =

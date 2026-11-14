@@ -16,9 +16,16 @@ jest.mock('../../../repositories/Tenant/FacturaRepository', () => ({
     getDetailsForAPI: jest.fn()
 }));
 
+jest.mock('../../../services/Tenant/PrecioCatalogoService', () => ({
+    exigirSinDescuentoNoAutorizado: jest.fn().mockResolvedValue()
+}));
+
 jest.mock('../../../services/Tenant/InventarioService', () => ({
     checkStockParaProducto: jest.fn().mockResolvedValue({ ok: true }),
-    descontarStockPorFactura: jest.fn().mockResolvedValue(undefined)
+    descontarStockPorFactura: jest.fn().mockResolvedValue(undefined),
+    descontarProductosLote: jest.fn().mockResolvedValue(undefined),
+    descontarPorCombosFactura: jest.fn().mockResolvedValue(undefined),
+    descontarPorModificadoresFactura: jest.fn().mockResolvedValue(undefined)
 }));
 
 jest.mock('../../../services/Tenant/Mesas/AgregarItemService', () => ({
@@ -55,6 +62,16 @@ const EventoRepository = require('../../../repositories/Tenant/EventoRepository'
 const FinanzasService = require('../../../services/Tenant/FinanzasService');
 const { hoyColombia, sumarDias } = require('../../../utils/dateHelpers');
 
+// Simula la transacción del repositorio: ejecuta el gancho `enTransaccion` con una conexión falsa, como
+// hace FacturaRepository.createWithDetails justo antes del commit. Un error del gancho rechaza la venta.
+const CONEXION = { id: 'conexion-de-la-venta' };
+const simularRepo = resultado => async (_tenantId, datos) => {
+    if (typeof datos.enTransaccion === 'function') {
+        await datos.enTransaccion(CONEXION, { facturaId: resultado.insertId, numero: resultado.numero });
+    }
+    return resultado;
+};
+
 describe('FacturaService', () => {
     beforeEach(() => {
         jest.clearAllMocks();
@@ -71,7 +88,7 @@ describe('FacturaService', () => {
 
         it('valida que cliente, evento, productos y servicios sean del tenant', async () => {
             const TenantOwnership = require('../../../services/Tenant/TenantOwnership');
-            FacturaRepository.createWithDetails.mockResolvedValue({ insertId: 1 });
+            FacturaRepository.createWithDetails.mockImplementation(simularRepo({ insertId: 1 }));
             await FacturaService.create(tenantId, {
                 ...facturaValida,
                 evento_id: 7,
@@ -92,7 +109,7 @@ describe('FacturaService', () => {
             const evento = { id: 7, activo: 1, fecha_inicio: sumarDias(hoy, -5), fecha_fin: sumarDias(hoy, 5) };
 
             beforeEach(() => {
-                FacturaRepository.createWithDetails.mockResolvedValue({ insertId: 5 });
+                FacturaRepository.createWithDetails.mockImplementation(simularRepo({ insertId: 5 }));
                 EventoRepository.findById.mockResolvedValue(evento);
             });
 
@@ -334,5 +351,47 @@ describe('FacturaService', () => {
             const result = await FacturaService.getDetails(facturaId, tenantId);
             expect(result).toEqual(details);
         });
+    });
+});
+
+describe('FacturaService.create: finanzas e inventario dentro de la transacción de la venta', () => {
+    const InventarioService = require('../../../services/Tenant/InventarioService');
+    const valida = {
+        cliente_id: 10,
+        total: 20000,
+        forma_pago: 'efectivo',
+        productos: [{ producto_id: 1, cantidad: 2, precio: 10000, unidad: 'UND', subtotal: 20000 }]
+    };
+
+    beforeEach(() => {
+        jest.clearAllMocks();
+        FacturaRepository.createWithDetails.mockImplementation(simularRepo({ insertId: 33, numero: 5 }));
+    });
+
+    it('el ingreso y el descuento de inventario usan la conexión de la venta (no el pool)', async () => {
+        await FacturaService.create(1, { ...valida, usuario_id: 8 });
+
+        expect(FinanzasService.registrarIngresoVenta).toHaveBeenCalledWith(
+            1,
+            expect.objectContaining({ monto: 20000, factura_id: 33, usuario_id: 8, conn: CONEXION })
+        );
+        expect(InventarioService.descontarProductosLote).toHaveBeenCalledWith(
+            1,
+            [{ producto_id: 1, cantidad: 2 }],
+            'factura_33',
+            CONEXION
+        );
+        expect(InventarioService.descontarPorModificadoresFactura).toHaveBeenCalledWith(1, 33, CONEXION);
+    });
+
+    it('si falla el ingreso en finanzas la venta falla (antes quedaba facturada sin ingreso)', async () => {
+        FinanzasService.registrarIngresoVenta.mockRejectedValueOnce(new Error('caja_movimientos caída'));
+        await expect(FacturaService.create(1, valida)).rejects.toThrow('caja_movimientos caída');
+        expect(InventarioService.descontarProductosLote).not.toHaveBeenCalled();
+    });
+
+    it('si falla el descuento de inventario la venta falla', async () => {
+        InventarioService.descontarProductosLote.mockRejectedValueOnce(new Error('insumos caída'));
+        await expect(FacturaService.create(1, valida)).rejects.toThrow('insumos caída');
     });
 });
