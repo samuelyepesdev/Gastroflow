@@ -1,4 +1,5 @@
 require('./utils/patchExcelJS');
+const { obtenerBaseUrl } = require('./utils/baseUrl');
 const express = require('express');
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
@@ -52,9 +53,8 @@ app.use(idempotency);
 
 // Route specifically for sitemap.xml
 app.get('/sitemap.xml', (req, res) => {
-    const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'https';
-    const host = req.headers['x-forwarded-host'] || req.headers.host || 'gastroflow.digital';
-    const domain = `${protocol}://${host}`;
+    // Dominio canónico (APP_URL): el Host de la petición es controlable por el cliente.
+    const domain = obtenerBaseUrl(req, { permitirHostDePeticion: false });
     const today = new Date().toISOString().slice(0, 10);
 
     // Solo páginas públicas indexables. Todo lo demás vive detrás de /auth

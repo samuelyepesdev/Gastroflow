@@ -175,7 +175,13 @@ class WompiService {
             .join('');
         const toHash = `${concatenated}${timestamp}${eventsSecret}`;
         const computed = crypto.createHash('sha256').update(toHash).digest('hex');
-        return computed === signature.checksum;
+        // Comparación de tiempo constante (sobre digests de igual longitud). No se exige una ventana de
+        // antigüedad del timestamp: Wompi reintenta los webhooks fallidos horas después conservando el
+        // timestamp original, y una ventana corta rechazaría reintentos legítimos. La repetición ya es
+        // inocua: finalizarPago ignora pagos que no estén 'pendiente'.
+        const recibido = crypto.createHash('sha256').update(String(signature.checksum)).digest();
+        const esperado = crypto.createHash('sha256').update(computed).digest();
+        return crypto.timingSafeEqual(recibido, esperado);
     }
 }
 
