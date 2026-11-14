@@ -17,3 +17,11 @@ stress-tests/reports/
 jest.config.js
 tests/
 docs/
+SECRETS/
+.local-desktop/
+dist-electron/
+resources/mysql-portable/
+.atl/
+.codegraph/
+_*.tmp.js
+_undef.config.mjs
