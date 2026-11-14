@@ -144,7 +144,8 @@ class InventarioController {
                     cantidad: stock_inicial,
                     costo_unitario: costo_unitario,
                     referencia: 'Stock inicial',
-                    proveedor_id: req.body.proveedor_id || null
+                    proveedor_id: req.body.proveedor_id || null,
+                    usuario_id: req.user?.id || null
                 });
             }
 
@@ -211,7 +212,8 @@ class InventarioController {
                 insumo_id,
                 cantidad,
                 costo_unitario,
-                referencia
+                referencia,
+                usuario_id: req.user?.id || null
             });
             res.status(201).json(result);
         } catch (e) {
