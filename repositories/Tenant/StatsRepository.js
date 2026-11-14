@@ -13,6 +13,10 @@ class StatsRepository {
         return SalesStatsRepository.getTotalSales(tenantId, filters);
     }
 
+    static async getTotalesAllTime(tenantId) {
+        return SalesStatsRepository.getTotalesAllTime(tenantId);
+    }
+
     static async getTotalSalesAllTime(tenantId) {
         return SalesStatsRepository.getTotalSalesAllTime(tenantId);
     }
