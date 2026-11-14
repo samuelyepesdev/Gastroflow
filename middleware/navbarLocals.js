@@ -98,6 +98,7 @@ module.exports = function navbarLocals(req, res, next) {
             if (tenant && tenant.config) {
                 const cfg = typeof tenant.config === 'string' ? JSON.parse(tenant.config) : tenant.config;
                 if (cfg.colores) {
+                    cfg.colores = require('../utils/colorAcento').sanitizarColores(cfg.colores);
                     if (cfg.colores.primary) {
                         primaryColor = cfg.colores.primary;
                     }
