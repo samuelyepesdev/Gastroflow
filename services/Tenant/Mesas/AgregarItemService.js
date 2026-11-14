@@ -1,4 +1,5 @@
 const db = require('../../../config/database');
+const { esIdInsumoVirtual, insumoIdDeVirtual } = require('../../../utils/insumoVirtual');
 const { exigirCantidad, exigirMonto } = require('../../../utils/validacionLineas');
 const InventarioService = require('../InventarioService');
 const ModificadorService = require('../ModificadorService');
@@ -28,8 +29,8 @@ class AgregarItemService {
 
         // 🏺 Lógica para Insumos de Cerámica (Insumos Virtuales)
         // Si el ID es >= 1.000.000, es un insumo que queremos vender directamente
-        if (producto_id >= 1000000) {
-            const insumoId = producto_id - 1000000;
+        if (esIdInsumoVirtual(producto_id)) {
+            const insumoId = insumoIdDeVirtual(producto_id);
             realProductId = await this._getOrCreateMirrorProduct(tenantId, insumoId, precio);
         } else {
             await TenantOwnership.productos(tenantId, realProductId);
