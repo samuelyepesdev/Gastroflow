@@ -206,6 +206,10 @@ class BonoService {
             throw new Error('No se pudo generar el comprobante. Intenta de nuevo.');
         }
         await BonoRepository.actualizarDiseno(id, tenantId, { ...diseno, imagenUrl });
+        // El PDF anterior queda sin uso: se borra de R2 (si nadie más lo referencia).
+        if (bono.imagen_url && bono.imagen_url !== imagenUrl) {
+            await require('./R2StorageService').eliminarSiHuerfano(bono.imagen_url);
+        }
         return { imagen_url: imagenUrl };
     }
 
