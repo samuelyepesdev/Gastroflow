@@ -54,13 +54,13 @@ class InsumoRepository {
      * @param {number} tenantId
      * @returns {Promise<Map<number, Object>>} insumo_id -> insumo
      */
-    static async findByIds(ids, tenantId) {
+    static async findByIds(ids, tenantId, conn = null) {
         const uniqueIds = [...new Set((ids || []).filter(id => id !== null && id !== undefined))];
         if (uniqueIds.length === 0) {
             return new Map();
         }
         const placeholders = uniqueIds.map(() => '?').join(',');
-        const [rows] = await db.query(
+        const [rows] = await (conn || db).query(
             `SELECT i.id, i.nombre, i.unidad_base, i.stock_actual, i.costo_promedio, pc.name AS categoria_nombre
              FROM insumos i
              LEFT JOIN parametros pc ON i.categoria_id = pc.id

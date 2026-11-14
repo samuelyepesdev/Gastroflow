@@ -128,6 +128,34 @@ describe('InventarioService.descontarProductosLote', () => {
         expect(upd[1][0]).toBe(600); // 3 combos x 2 componentes x 100 g
     });
 
+    it('con la conexión de la venta, NINGUNA lectura (combos, receta, ingredientes, insumos) usa el pool', async () => {
+        const venta = crearConn();
+        ComboRepository.getComponentes.mockResolvedValueOnce([{ producto_id: 20, cantidad: '1' }]);
+        await InventarioService.descontarProductosLote(
+            T,
+            [
+                { producto_id: 99, cantidad: 1 },
+                { producto_id: 10, cantidad: 1 }
+            ],
+            'factura_1',
+            venta
+        );
+        for (const mock of [ComboRepository.getComponentes, RecetaRepository.findByProductoId]) {
+            expect(mock.mock.calls.length).toBeGreaterThan(0);
+            for (const llamada of mock.mock.calls) {
+                expect(llamada[2]).toBe(venta);
+            }
+        }
+        for (const llamada of RecetaRepository.getIngredientes.mock.calls) {
+            expect(llamada[1]).toBe(venta);
+        }
+        for (const llamada of InsumoRepository.findByIds.mock.calls) {
+            expect(llamada[2]).toBe(venta);
+        }
+        expect(db.getConnection).not.toHaveBeenCalled(); // escribe en la transacción de la venta
+        expect(venta.beginTransaction).not.toHaveBeenCalled();
+    });
+
     it('una receta rota no impide descontar los demás productos', async () => {
         const err = jest.spyOn(console, 'error').mockImplementation(() => {});
         RecetaRepository.findByProductoId.mockRejectedValueOnce(new Error('receta rota'));
