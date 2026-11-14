@@ -98,7 +98,7 @@ class FacturaRepository {
             const [sesiones] = diaVenta
                 ? [[]]
                 : await connection.query(
-                      'SELECT id, usuario_id FROM caja_sesiones WHERE tenant_id = ? AND estado = "abierta" LIMIT 1',
+                      'SELECT id, usuario_id FROM caja_sesiones WHERE tenant_id = ? AND estado = "abierta" LIMIT 1 LOCK IN SHARE MODE',
                       [tenantId]
                   );
             const cajaSesionId = sesiones.length > 0 ? sesiones[0].id : null;

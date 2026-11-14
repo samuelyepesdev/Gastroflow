@@ -32,7 +32,9 @@ class FinanzasRepository {
             fecha_movimiento
         } = data;
 
-        const [result] = await db.query(
+        // `conn` opcional: dentro de una transacción ajena (p. ej. entrada de inventario) el egreso se
+        // confirma o se revierte junto con ella.
+        const [result] = await (data.conn || db).query(
             `INSERT INTO caja_movimientos
             (tenant_id, sesion_id, usuario_id, tipo, monto, motivo, categoria_gasto, referencia_tipo, referencia_id, metodo_pago, fecha_movimiento)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -51,6 +53,18 @@ class FinanzasRepository {
             ]
         );
         return result.insertId;
+    }
+
+    /**
+     * Usuario al que atribuir un movimiento automático cuando no hay turno ni usuario explícito: el
+     * primer admin DEL MISMO restaurante (nunca un id fijo, que pertenece a otro tenant).
+     */
+    static async getUsuarioPorDefecto(tenantId) {
+        const [rows] = await db.query(
+            "SELECT id FROM usuarios WHERE tenant_id = ? AND activo = 1 AND rol_id = (SELECT id FROM roles WHERE nombre = 'admin') ORDER BY id LIMIT 1",
+            [tenantId]
+        );
+        return rows[0]?.id || null;
     }
 
     /**

@@ -40,7 +40,7 @@ function calcularNuevoCostoPromedio(cant, costo, stockActual, costoActual, nuevo
     return costo;
 }
 
-async function registrarGastoFinanzasSiAplica(tenantId, insumo, insumoId, cant, costo) {
+async function registrarGastoFinanzasSiAplica(tenantId, insumo, insumoId, cant, costo, { usuario_id, conn } = {}) {
     if (!costo || costo <= 0 || cant <= 0) {
         return;
     }
@@ -51,7 +51,9 @@ async function registrarGastoFinanzasSiAplica(tenantId, insumo, insumoId, cant, 
             monto: costo * cant,
             insumo_nombre: insumo.nombre,
             mov_id: insumoId,
-            categoria_nombre: insumo.categoria_nombre
+            categoria_nombre: insumo.categoria_nombre,
+            usuario_id,
+            conn
         });
     } catch (finErr) {
         console.error('Error al registrar gasto en finanzas:', finErr);
@@ -82,7 +84,7 @@ class InventarioService {
      */
     static async registrarEntrada(
         tenantId,
-        { insumo_id, cantidad, costo_unitario, referencia, proveedor_id, documento_referencia }
+        { insumo_id, cantidad, costo_unitario, referencia, proveedor_id, documento_referencia, usuario_id }
     ) {
         const insumo = await InsumoRepository.findById(insumo_id, tenantId);
         if (!insumo) {
@@ -127,7 +129,9 @@ class InventarioService {
             );
 
             // --- INTEGRACIÓN CON FINANZAS ---
-            await registrarGastoFinanzasSiAplica(tenantId, insumo, insumo_id, cant, costo);
+            // Misma conexión: el egreso se confirma o revierte junto con la entrada (antes iba por otra
+            // conexión del pool y sobrevivía a un rollback).
+            await registrarGastoFinanzasSiAplica(tenantId, insumo, insumo_id, cant, costo, { usuario_id, conn });
             // --------------------------------
 
             await conn.commit();
