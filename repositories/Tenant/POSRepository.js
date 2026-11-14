@@ -282,7 +282,8 @@ class POSRepository {
 
     static async findOrCreateCliente(tenantId, nombre) {
         const [existing] = await db.query(
-            'SELECT id FROM clientes WHERE tenant_id = ? AND LOWER(nombre) = LOWER(?) LIMIT 1',
+            // Colación insensible a mayúsculas: sin LOWER() puede usar el índice (tenant_id, nombre).
+            'SELECT id FROM clientes WHERE tenant_id = ? AND nombre = ? LIMIT 1',
             [tenantId, nombre.trim()]
         );
         if (existing.length) {

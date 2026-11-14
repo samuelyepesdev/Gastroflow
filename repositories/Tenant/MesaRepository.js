@@ -22,9 +22,9 @@ class MesaRepository {
              JOIN mesas m ON m.id = p.mesa_id
              WHERE p.tenant_id = ?
                AND p.estado NOT IN ('cerrado', 'cancelado')
-               AND TIMESTAMPDIFF(HOUR, p.created_at, NOW()) > ?
+               AND p.created_at <= DATE_SUB(NOW(), INTERVAL ? HOUR)
              ORDER BY p.created_at ASC`,
-            [tenantId, horas]
+            [tenantId, Math.floor(Number(horas) || 0) + 1]
         );
         return rows;
     }

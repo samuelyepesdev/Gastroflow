@@ -645,7 +645,9 @@ class FacturaRepository {
         const nombreCliente = (data.cliente_nombre || '').trim();
         if (nombreCliente) {
             const [existing] = await db.query(
-                'SELECT id FROM clientes WHERE tenant_id = ? AND LOWER(nombre) = LOWER(?) LIMIT 1',
+                // La colación de `nombre` ya es insensible a mayúsculas (no hay colaciones _bin en el esquema):
+                // LOWER() era redundante y anulaba el índice (tenant_id, nombre).
+                'SELECT id FROM clientes WHERE tenant_id = ? AND nombre = ? LIMIT 1',
                 [tenantId, nombreCliente]
             );
             clienteId =
