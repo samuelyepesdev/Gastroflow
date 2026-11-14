@@ -140,7 +140,9 @@ async function obtenerDependenciasCosteo(recetaId, tenantId, precargado = {}) {
     const necesitaConfig = precargado.config === undefined;
     const necesitaCostosFijos = precargado.totalCostosFijos === undefined;
     const [ingredientes, config, totalCostosFijos] = await Promise.all([
-        RecetaRepository.getIngredientes(recetaId),
+        precargado.ingredientes !== undefined
+            ? Promise.resolve(precargado.ingredientes)
+            : RecetaRepository.getIngredientes(recetaId),
         necesitaConfig ? ConfiguracionCosteoRepository.findOne(tenantId) : Promise.resolve(precargado.config),
         necesitaCostosFijos
             ? CostosFijosRepository.getTotalActivo(tenantId)
@@ -211,7 +213,10 @@ class CosteoService {
      *   getResumenFinanciero).
      */
     static async getCosteoReceta(recetaId, tenantId, precargado = {}) {
-        const receta = await RecetaRepository.findById(recetaId, tenantId);
+        // `receta` e `ingredientes` también pueden venir precargados (getAlertas/getResumenFinanciero ya
+        // tienen la receta de findAll y todos los ingredientes en una consulta): evita 2 consultas por receta.
+        const receta =
+            precargado.receta !== undefined ? precargado.receta : await RecetaRepository.findById(recetaId, tenantId);
         if (!receta) {
             return null;
         }
@@ -264,6 +269,27 @@ class CosteoService {
     }
 
     /**
+     * Costeo de un listado de recetas con 1 sola consulta de ingredientes (antes N+N: findById y
+     * getIngredientes por receta). config/totalCostosFijos ya vienen resueltos por el caller.
+     */
+    static async _costearRecetas(tenantId, recetas, config, totalCostosFijos) {
+        const ingredientesPorReceta = await RecetaRepository.getIngredientesPorRecetas(
+            recetas.map(r => r.id),
+            tenantId
+        );
+        return Promise.all(
+            recetas.map(receta =>
+                this.getCosteoReceta(receta.id, tenantId, {
+                    receta,
+                    ingredientes: ingredientesPorReceta.get(Number(receta.id)) || [],
+                    config,
+                    totalCostosFijos
+                })
+            )
+        );
+    }
+
+    /**
      * Get costing alerts concurrent and functional.
      */
     static async getAlertas(tenantId) {
@@ -286,9 +312,10 @@ class CosteoService {
         // Transformar recetas de manera funcional y concurrente (Promise.all + .map).
         // config/totalCostosFijos se resuelven una sola vez arriba (son constantes por
         // tenant) en vez de re-pedirse dentro de getCosteoReceta en cada iteración.
+        const costeos = await this._costearRecetas(tenantId, recetas || [], config, totalCostosFijos);
         const itemsWithNulls = await Promise.all(
-            (recetas || []).map(async receta => {
-                const costeo = await this.getCosteoReceta(receta.id, tenantId, { config, totalCostosFijos });
+            (recetas || []).map(async (receta, idx) => {
+                const costeo = costeos[idx];
                 if (!costeo) {
                     return null;
                 }
@@ -337,9 +364,10 @@ class CosteoService {
 
         // Carga en paralelo asíncrona de los costeos de todas las recetas; config y
         // totalCostosFijos ya están resueltos arriba, se reusan en vez de re-pedirse.
+        const costeos = await this._costearRecetas(tenantId, recetas || [], config, totalCostosFijos);
         const productsWithNulls = await Promise.all(
-            (recetas || []).map(async receta => {
-                const costeo = await this.getCosteoReceta(receta.id, tenantId, { config, totalCostosFijos });
+            (recetas || []).map(async (receta, idx) => {
+                const costeo = costeos[idx];
                 if (!costeo) {
                     return null;
                 }

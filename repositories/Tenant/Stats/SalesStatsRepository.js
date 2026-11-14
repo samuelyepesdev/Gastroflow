@@ -22,6 +22,18 @@ class SalesStatsRepository {
         return parseFloat(result[0]?.total || 0);
     }
 
+    /** Total y cantidad histórica de ventas normales en UNA consulta (antes eran dos escaneos iguales). */
+    static async getTotalesAllTime(tenantId) {
+        const [result] = await db.query(
+            'SELECT COALESCE(SUM(total), 0) AS total, COUNT(*) AS cantidad FROM facturas WHERE tenant_id = ? AND evento_aparte = 0',
+            [tenantId]
+        );
+        return {
+            total: parseFloat(result[0]?.total || 0),
+            cantidad: parseInt(result[0]?.cantidad || 0)
+        };
+    }
+
     /** Primer día (Colombia, 'YYYY-MM-DD') con ventas del tenant, o null si nunca ha vendido. */
     static async getPrimeraFechaVenta(tenantId) {
         const [rows] = await db.query(
@@ -121,19 +133,26 @@ class SalesStatsRepository {
             LEFT JOIN (
                 SELECT df.factura_id, SUM(df.subtotal) AS ext_sum
                 FROM detalle_factura df
-                JOIN servicios s ON s.id = df.servicio_id
+                JOIN servicios s ON s.id = df.servicio_id AND s.tenant_id = ?
+                JOIN facturas fx ON fx.id = df.factura_id AND fx.tenant_id = ? AND fx.evento_aparte = 0__RANGO_FX__
                 WHERE df.es_servicio = 1 AND s.es_externo = 1
                 GROUP BY df.factura_id
             ) t_ext ON t_ext.factura_id = f.id
             WHERE f.tenant_id = ? AND f.evento_aparte = 0
         `;
-        const params = [tenantId];
+        // La subconsulta se acota al tenant y al mismo rango que la consulta externa: antes agrupaba los
+        // servicios externos de TODOS los tenants y de TODA la historia en cada llamada (4 por dashboard).
+        const params = [tenantId, tenantId, tenantId];
+        let rangoFx = '';
 
         if (filters.desde && filters.hasta) {
             const { utcDesde, utcHasta } = rangoUtcColombia(filters.desde, filters.hasta);
+            rangoFx = ' AND fx.fecha BETWEEN ? AND ?';
+            params.splice(2, 0, utcDesde, utcHasta); // los del rango de la subconsulta van antes del tenant externo
             query += ' AND f.fecha BETWEEN ? AND ?';
             params.push(utcDesde, utcHasta);
         }
+        query = query.replace('__RANGO_FX__', rangoFx);
 
         query += ' GROUP BY f.forma_pago';
 
