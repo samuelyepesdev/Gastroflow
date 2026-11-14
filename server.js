@@ -21,6 +21,8 @@ const { runBackgroundJobs } = require('./config/bootstrap');
 const logger = require('./utils/logger');
 
 const PORT = process.env.PORT || 3000;
+// En modo escritorio (Electron) el servidor solo debe ser visible desde este equipo, no desde la LAN.
+const HOST = process.env.HOST || '0.0.0.0';
 
 async function startServer() {
     try {
@@ -31,7 +33,7 @@ async function startServer() {
         connection.release();
         logger.info('Conexión exitosa a la base de datos');
 
-        const server = app.listen(PORT, '0.0.0.0', async () => {
+        const server = app.listen(PORT, HOST, async () => {
             logger.info(`Servidor iniciado`, { port: PORT, env: process.env.NODE_ENV || 'development' });
             await runBackgroundJobs();
         });

@@ -22,7 +22,7 @@ router.get('/productos/:id/modificadores', Dashboard.getModificadoresProducto);
 router.post('/crear', requirePermission('mesas.gestionar'), BaseRequest.validate(StoreMesaRequest), Management.store);
 router.put('/:mesaId', requirePermission('mesas.editar'), BaseRequest.validate(StoreMesaRequest), Management.update);
 router.delete('/:mesaId', requirePermission('mesas.eliminar'), Management.destroy);
-router.post('/crear-masivas', Management.storeMasivas);
+router.post('/crear-masivas', requirePermission('mesas.gestionar'), Management.storeMasivas);
 
 // --- CÓDIGOS QR ---
 router.post('/qrs/generar', requirePermission('mesas.qr'), QR.generar);

@@ -93,6 +93,7 @@ async function startBackend() {
     const env = {
         NODE_ENV: 'production',
         PORT: String(APP_PORT),
+        HOST: '127.0.0.1',
         DB_HOST: '127.0.0.1',
         DB_PORT: String(DB_PORT),
         DB_USER: 'root',

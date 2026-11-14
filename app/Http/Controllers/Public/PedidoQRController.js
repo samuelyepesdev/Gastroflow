@@ -1,4 +1,5 @@
 const PedidoQRService = require('../../../../services/Public/PedidoQRService');
+const { getClientIp } = require('../../../../utils/clientIp');
 
 class PedidoQRController {
     static async crearPedido(req, res) {
@@ -6,7 +7,7 @@ class PedidoQRController {
             const { qr_token, items, notas } = req.body;
 
             // Extraer la IP del cliente de forma segura (manejando proxies si los hay)
-            const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+            const clientIp = getClientIp(req);
 
             const resultado = await PedidoQRService.procesarPedido(qr_token, items, notas, clientIp, req.cookies);
 

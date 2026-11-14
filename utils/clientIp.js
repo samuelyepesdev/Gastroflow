@@ -13,9 +13,18 @@ const net = require('net');
  * todo lo que reenvía). Sin la variable se mantiene el comportamiento anterior, para poder
  * desplegar el código antes de configurar Cloudflare.
  */
+let avisoSinSecreto = false;
 function viniendoDeCloudflare(req) {
     const secreto = process.env.CF_ORIGIN_SECRET;
     if (!secreto) {
+        if (process.env.NODE_ENV === 'production' && !avisoSinSecreto) {
+            avisoSinSecreto = true;
+            // eslint-disable-next-line no-console
+            console.warn(
+                '[seguridad] CF_ORIGIN_SECRET no está definida: se confía en CF-Connecting-IP de cualquier cliente. ' +
+                    'Defínela y crea la regla de Cloudflare (ver docs/INFORME_RENDIMIENTO_Y_SEGURIDAD_2026-11.md).'
+            );
+        }
         return true;
     }
     const recibido = req.headers['x-origin-secret'];
