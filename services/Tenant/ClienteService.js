@@ -5,6 +5,7 @@
  */
 
 const ClienteRepository = require('../../repositories/Tenant/ClienteRepository');
+const { ValidationError, NotFoundError, ConflictError, AppError } = require('../../utils/errors');
 
 class ClienteService {
     /**
@@ -25,7 +26,7 @@ class ClienteService {
     static async getById(id, tenantId) {
         const cliente = await ClienteRepository.findById(id, tenantId);
         if (!cliente) {
-            throw new Error('Cliente no encontrado');
+            throw new NotFoundError('Cliente no encontrado', 'CLIENTE_NO_ENCONTRADO');
         }
         return cliente;
     }
@@ -54,12 +55,12 @@ class ClienteService {
         const { nombre, direccion, telefono, tipo_documento, numero_documento, email } = clientData;
 
         if (!nombre || nombre.trim().length === 0) {
-            throw new Error('El nombre es requerido');
+            throw new ValidationError('El nombre es requerido', 'CLIENTE_NOMBRE_REQUERIDO');
         }
 
         const telefonoStr = telefono?.trim() || null;
         if (telefonoStr && !/^\d+$/.test(telefonoStr)) {
-            throw new Error('El teléfono solo puede contener números');
+            throw new ValidationError('El teléfono solo puede contener números', 'CLIENTE_TELEFONO_INVALIDO');
         }
 
         const result = await ClienteRepository.create(tenantId, {
@@ -89,17 +90,17 @@ class ClienteService {
         const { nombre, direccion, telefono, tipo_documento, numero_documento, email } = clientData;
 
         if (!nombre || nombre.trim().length === 0) {
-            throw new Error('El nombre es requerido');
+            throw new ValidationError('El nombre es requerido', 'CLIENTE_NOMBRE_REQUERIDO');
         }
 
         const telefonoStr = telefono?.trim() || null;
         if (telefonoStr && !/^\d+$/.test(telefonoStr)) {
-            throw new Error('El teléfono solo puede contener números');
+            throw new ValidationError('El teléfono solo puede contener números', 'CLIENTE_TELEFONO_INVALIDO');
         }
 
         const existingClient = await ClienteRepository.findById(id, tenantId);
         if (!existingClient) {
-            throw new Error('Cliente no encontrado');
+            throw new NotFoundError('Cliente no encontrado', 'CLIENTE_NO_ENCONTRADO');
         }
 
         const result = await ClienteRepository.update(id, tenantId, {
@@ -112,7 +113,7 @@ class ClienteService {
         });
 
         if (result.affectedRows === 0) {
-            throw new Error('No se pudo actualizar el cliente');
+            throw new AppError('No se pudo actualizar el cliente', 500, 'CLIENTE_NO_ACTUALIZADO');
         }
 
         return { message: 'Cliente actualizado exitosamente' };
@@ -128,18 +129,24 @@ class ClienteService {
     static async delete(id, tenantId) {
         const cliente = await ClienteRepository.findById(id, tenantId);
         if (!cliente) {
-            throw new Error('Cliente no encontrado');
+            throw new NotFoundError('Cliente no encontrado', 'CLIENTE_NO_ENCONTRADO');
         }
 
         try {
             const result = await ClienteRepository.delete(id, tenantId);
             if (result.affectedRows === 0) {
-                throw new Error('No se pudo eliminar el cliente');
+                throw new AppError('No se pudo eliminar el cliente', 500, 'CLIENTE_NO_ELIMINADO');
             }
             return { message: 'Cliente eliminado exitosamente' };
         } catch (error) {
             if (error.code === 'ER_ROW_IS_REFERENCED_2') {
-                throw new Error('No se puede eliminar el cliente porque tiene facturas asociadas', { cause: error });
+                throw new ConflictError(
+                    'No se puede eliminar el cliente porque tiene facturas asociadas',
+                    'CLIENTE_CON_FACTURAS',
+                    {
+                        cause: error
+                    }
+                );
             }
             throw error;
         }
