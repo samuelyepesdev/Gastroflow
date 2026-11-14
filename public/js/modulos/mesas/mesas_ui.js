@@ -389,8 +389,10 @@ $(function () {
     refreshTimer = setTimeout(window.refreshMesas, 300);
   };
 
+  // Respaldo solo si el SSE no está sano (cae, se corta o aún no conecta): con eventos en vivo
+  // funcionando, consultar cada 30 s por pestaña era tráfico redundante.
   setInterval(() => {
-    if (document.visibilityState === 'visible') window.refreshMesas();
+    if (document.visibilityState === 'visible' && !GF.tiempoReal.saludable()) window.refreshMesas();
   }, 30000);
 
   // Al volver a la pestaña (tablet desbloqueada, cambio de app) pudo haberse

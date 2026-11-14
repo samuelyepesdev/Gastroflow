@@ -634,9 +634,19 @@ $(function () {
     cargarCola();
     // Respaldo del SSE: sin consultar con la pestaña oculta, y al volver a ella
     // refresca de inmediato por si se perdió algún pedido mientras tanto.
+    // Solo si el SSE no está sano (ver GF.tiempoReal.saludable): con eventos en vivo no hace falta.
     setInterval(() => {
-        if (document.visibilityState === 'visible') cargarCola();
+        if (document.visibilityState === 'visible' && !GF.tiempoReal.saludable()) cargarCola();
     }, 30000);
+    // Tras una RECONEXIÓN pudieron perderse pedidos: se refresca (la primera conexión ya cargó arriba).
+    let primeraConexion = true;
+    GF.tiempoReal.on('connected', () => {
+        if (primeraConexion) {
+            primeraConexion = false;
+            return;
+        }
+        cargarCola();
+    });
     document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'visible') cargarCola();
     });

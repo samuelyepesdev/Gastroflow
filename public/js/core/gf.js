@@ -14,6 +14,7 @@
  *   GF.confirmar(mensaje, opciones)      true/false
  *   GF.cargando(boton, true|false)       spinner y deshabilitar un botón
  *   GF.tiempoReal.on(evento, handler)    eventos SSE del tenant (una sola conexión por página)
+ *   GF.tiempoReal.saludable()            true si el SSE está vivo (para omitir el polling de respaldo)
  *
  * SweetAlert2 lo carga cada vista al final del body: aquí solo se usa al
  * momento de llamar, nunca al cargar, así que el orden de scripts no importa.
@@ -285,11 +286,16 @@
     const tiempoReal = (function () {
         const handlers = {};
         let source = null;
+        let ultimoMensaje = 0;
+        // El servidor manda un 'ping' cada 30 s: sin ningún mensaje en 75 s (2.5 latidos) la conexión
+        // se considera caída aunque el navegador la muestre abierta.
+        const VENTANA_SALUD_MS = 75000;
 
         function conectar() {
             if (source || !window.EventSource) return;
             source = new EventSource('/api/notifications/subscribe');
             source.addEventListener('message', e => {
+                ultimoMensaje = Date.now();
                 let data;
                 try {
                     data = JSON.parse(e.data);
@@ -311,6 +317,18 @@
             on(evento, handler) {
                 (handlers[evento] = handlers[evento] || []).push(handler);
                 conectar();
+            },
+            /**
+             * true si el SSE está conectado Y llegando mensajes (latido incluido). Las pantallas lo usan
+             * para saltarse su consulta de respaldo mientras los eventos en vivo funcionan.
+             */
+            saludable() {
+                return Boolean(
+                    source &&
+                        window.EventSource &&
+                        source.readyState === window.EventSource.OPEN &&
+                        Date.now() - ultimoMensaje < VENTANA_SALUD_MS
+                );
             }
         };
     })();
