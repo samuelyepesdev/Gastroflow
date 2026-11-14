@@ -5,6 +5,7 @@
  */
 
 const FacturaRepository = require('../../repositories/Tenant/FacturaRepository');
+const { validarLineas, exigirMonto } = require('../../utils/validacionLineas');
 const InventarioService = require('./InventarioService');
 const ModificadorService = require('./ModificadorService');
 const ComboArmableService = require('./ComboArmableService');
@@ -75,6 +76,10 @@ class FacturaService {
         if (!cliente_id || !productos || productos.length === 0) {
             throw new Error('Datos incompletos');
         }
+
+        // Forma numérica de lo que manda el cliente (cantidad > 0, precios/subtotales/total >= 0 y finitos).
+        validarLineas(productos);
+        exigirMonto(total, 'El total');
 
         const AgregarItemService = require('./Mesas/AgregarItemService');
 
