@@ -559,19 +559,16 @@ class FacturarPedidoService {
         if (lineasFactura.some(l => l.combo_id)) {
             await InventarioService.descontarPorCombosFactura(tenantId, facturaId);
         }
-        for (const l of lineasFactura) {
-            try {
-                if (!l.es_servicio && l.producto_id) {
-                    await InventarioService.descontarPorReceta(
-                        tenantId,
-                        l.producto_id,
-                        l.cantidad,
-                        'factura_' + facturaId
-                    );
-                }
-            } catch (invErr) {
-                console.error('Error al descontar inventario por receta:', invErr);
-            }
+        try {
+            await InventarioService.descontarProductosLote(
+                tenantId,
+                lineasFactura
+                    .filter(l => !l.es_servicio && l.producto_id)
+                    .map(l => ({ producto_id: l.producto_id, cantidad: l.cantidad })),
+                'factura_' + facturaId
+            );
+        } catch (invErr) {
+            console.error('Error al descontar inventario por receta:', invErr);
         }
     }
 

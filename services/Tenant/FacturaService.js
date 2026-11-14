@@ -263,24 +263,19 @@ class FacturaService {
         }
         // --------------------------------
 
-        // Descuento de inventario en paralelo: cada producto es independiente y cada
-        // fallo se captura por-item (igual que antes), así que no hay razón para serializar.
-        await Promise.all(
-            productos
-                .filter(p => !p.es_servicio && p.producto_id)
-                .map(async p => {
-                    try {
-                        await InventarioService.descontarPorReceta(
-                            tenantId,
-                            p.producto_id,
-                            parseFloat(p.cantidad) || 1,
-                            'factura_' + facturaId
-                        );
-                    } catch (err) {
-                        console.error('Error al descontar inventario por receta:', err);
-                    }
-                })
-        );
+        // Descuento de inventario en lote: se suman los ingredientes de todas las líneas y se descuentan
+        // en UNA transacción (antes: una conexión y transacción por ingrediente de cada plato).
+        try {
+            await InventarioService.descontarProductosLote(
+                tenantId,
+                productos
+                    .filter(p => !p.es_servicio && p.producto_id)
+                    .map(p => ({ producto_id: p.producto_id, cantidad: parseFloat(p.cantidad) || 1 })),
+                'factura_' + facturaId
+            );
+        } catch (err) {
+            console.error('Error al descontar inventario por receta:', err);
+        }
 
         // Combos armados: receta de cada producto elegido (best-effort, no lanza).
         if (productos.some(p => p.combo_id)) {
