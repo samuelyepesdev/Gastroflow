@@ -1,4 +1,5 @@
 const express = require('express');
+const { keyPorIp } = require('../utils/rateLimitKey');
 const router = express.Router();
 const AuthController = require('../app/Http/Controllers/AuthController');
 const RegistroController = require('../app/Http/Controllers/RegistroController');
@@ -12,6 +13,7 @@ const rateLimit = require('express-rate-limit');
 
 // Bloquear ataques de fuerza bruta al login (máx 5 intentos / 15 min)
 const loginLimiter = rateLimit({
+    keyGenerator: keyPorIp,
     windowMs: 1 * 60 * 1000,
     max: 5,
     message: { error: 'Demasiados intentos de inicio de sesión fallidos, por favor intente de nuevo en 3 minutos.' },
@@ -21,6 +23,7 @@ const loginLimiter = rateLimit({
 
 // Limitar registros y reenvíos de verificación (evitar spam de correos)
 const registroLimiter = rateLimit({
+    keyGenerator: keyPorIp,
     windowMs: 60 * 60 * 1000,
     max: 5,
     message: { error: 'Demasiados intentos de registro, por favor intenta de nuevo en una hora.' },

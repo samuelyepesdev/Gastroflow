@@ -1,10 +1,12 @@
 const express = require('express');
+const { keyPorIp } = require('../utils/rateLimitKey');
 const router = express.Router();
 const rateLimit = require('express-rate-limit');
 const PedidoQRController = require('../app/Http/Controllers/Public/PedidoQRController');
 
 // Rate limiter para evitar SPAM: Máximo 3 pedidos cada 10 minutos por IP
 const qrOrderLimiter = rateLimit({
+    keyGenerator: keyPorIp,
     windowMs: 10 * 60 * 1000, // 10 minutos
     max: 3, // Límite de 3 peticiones por IP
     message: {
@@ -16,6 +18,7 @@ const qrOrderLimiter = rateLimit({
 
 // Lectura del estado de la mesa: es polling desde el menú, se permite más holgura.
 const qrReadLimiter = rateLimit({
+    keyGenerator: keyPorIp,
     windowMs: 10 * 60 * 1000,
     max: 240,
     standardHeaders: true,
@@ -24,6 +27,7 @@ const qrReadLimiter = rateLimit({
 
 // Solicitudes al personal (llamar mesero / pedir cuenta): pocas por IP.
 const qrSolicitudLimiter = rateLimit({
+    keyGenerator: keyPorIp,
     windowMs: 10 * 60 * 1000,
     max: 10,
     message: { error: 'Ya enviaste varias solicitudes. Espera un momento o acércate al personal.' },
