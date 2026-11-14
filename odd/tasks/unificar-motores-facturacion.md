@@ -40,8 +40,11 @@ Test runner: `npx jest`.
   colarse una factura entre el cálculo del teórico y el cierre de caja).
 - T3 Redención de bono y salida de caja por servicio externo comunes (`redimirBono`, `compensarServiciosExternos`). HECHA.
 - T4 Carga de tasas y desglose de impuesto por línea comunes (`cargarTasas`, `desglosarLinea`). HECHA.
-- T5 Decidir con el usuario si `detalle_factura.precio_original` debe guardarse también en facturas de mesa. Pendiente
-  (decisión de producto: hoy las facturas de mesa no lo guardan).
+- T5 `detalle_factura.precio_original` también en facturas de mesa. HECHA (decisión del usuario, 2026-11-14: "Sí, guardarlo").
+  Guarda el precio de la línea antes del descuento manual del cobro; solo afecta facturas nuevas. Nota: ningún ticket ni
+  vista lee hoy ese campo (la impresión usa descuento_valor/descuento_porcentaje, que Mesas ya guardaba), así que es un
+  dato de auditoría/reportes, no cambia lo impreso. Tampoco se guarda `facturas.descuento` en Mesas (el POS sí): pendiente
+  de decidir si hace falta.
 
 ## Log
 

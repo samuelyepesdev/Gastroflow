@@ -544,6 +544,52 @@ describe('FacturarPedidoService', () => {
         });
     });
 
+    describe('precio_original en el detalle de la factura de mesa', () => {
+        it('guarda el precio antes del descuento manual, alineado con su columna, junto al efectivo', async () => {
+            mockConn.query
+                .mockResolvedValueOnce([[{ id: 10, estado: 'abierto', mesa_id: 2, total: 10000 }]])
+                .mockResolvedValueOnce([
+                    [{ id: 1, cantidad: 2, precio_unitario: 5000, pagado: 0, unidad_medida: 'UND' }]
+                ]);
+            mockConn.query.mockImplementation(sql => {
+                if (
+                    typeof sql === 'string' &&
+                    /pedido_item_modificadores|pedido_abonos|FROM (productos|tenants)/.test(sql)
+                ) {
+                    return Promise.resolve([[]]);
+                }
+                return Promise.resolve([{ insertId: 100 }]);
+            });
+
+            await FacturarPedidoService.execute({
+                tenantId: 1,
+                pedidoId: 10,
+                cliente_id: 1,
+                forma_pago: 'efectivo',
+                descuentosMap: { 1: { tipo: 'valor', valor: 2000 } }, // 2000 de descuento sobre 10000
+                propinaBody: 0,
+                puedeAplicarDescuento: true
+            });
+
+            const insert = mockConn.query.mock.calls.find(
+                ([sql]) => typeof sql === 'string' && /INSERT INTO detalle_factura \(/.test(sql)
+            );
+            const columnas = insert[0]
+                .match(/\(([^)]+)\) VALUES/)[1]
+                .split(',')
+                .map(c => c.trim());
+            const fila = insert[1][0][0];
+            expect(fila).toHaveLength(columnas.length);
+            const por = nombre => fila[columnas.indexOf(nombre)];
+            expect(por('precio_original')).toBe(5000); // el de partida
+            expect(por('precio_unitario')).toBe(4000); // efectivo tras el descuento (8000 / 2)
+            expect(por('subtotal')).toBe(8000);
+            expect(por('descuento_valor')).toBe(2000);
+            expect(por('cantidad')).toBe(2);
+            expect(por('unidad_medida')).toBe('UND');
+        });
+    });
+
     describe('redención de bono al facturar', () => {
         it('redime el bono, lo descuenta de lo pendiente y registra el movimiento', async () => {
             const bonoRow = {
