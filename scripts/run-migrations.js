@@ -6,6 +6,7 @@ require('dotenv').config();
 const fs = require('fs');
 const path = require('path');
 const db = require('../config/database');
+const { conBloqueoDeMigraciones } = require('./lib/migrationLock');
 
 const MIGRATIONS_TABLE = 'schema_migrations';
 
@@ -48,10 +49,7 @@ async function ensureMigrationsTable() {
  * Indica si una migración ya fue aplicada
  */
 async function isApplied(migrationName) {
-    const [rows] = await db.query(
-        `SELECT 1 FROM ${MIGRATIONS_TABLE} WHERE migration_name = ?`,
-        [migrationName]
-    );
+    const [rows] = await db.query(`SELECT 1 FROM ${MIGRATIONS_TABLE} WHERE migration_name = ?`, [migrationName]);
     return rows.length > 0;
 }
 
@@ -59,10 +57,7 @@ async function isApplied(migrationName) {
  * Marca una migración como aplicada
  */
 async function markApplied(migrationName) {
-    await db.query(
-        `INSERT INTO ${MIGRATIONS_TABLE} (migration_name) VALUES (?)`,
-        [migrationName]
-    );
+    await db.query(`INSERT INTO ${MIGRATIONS_TABLE} (migration_name) VALUES (?)`, [migrationName]);
 }
 
 /**
@@ -94,7 +89,9 @@ async function executeSQLFile(filePath) {
             console.log(`   ✓ Sentencia ${i + 1}/${statements.length} ejecutada`);
         } catch (error) {
             if (isIgnorableError(error)) {
-                console.log(`   ⏭️  Sentencia ${i + 1}: ya aplicada o duplicada (${(error.message || '').split('\n')[0].substring(0, 50)}...)`);
+                console.log(
+                    `   ⏭️  Sentencia ${i + 1}: ya aplicada o duplicada (${(error.message || '').split('\n')[0].substring(0, 50)}...)`
+                );
             } else {
                 console.error(`   ❌ Error en sentencia ${i + 1}:`, error.message);
                 throw error;
@@ -119,7 +116,8 @@ function getMigrationsList() {
     }
 
     if (fs.existsSync(migrationsDir)) {
-        const files = fs.readdirSync(migrationsDir)
+        const files = fs
+            .readdirSync(migrationsDir)
             .filter(f => f.endsWith('.sql'))
             .sort();
         files.forEach(f => list.push(path.join(migrationsDir, f)));
@@ -136,28 +134,35 @@ async function runMigrations() {
         connection.release();
         console.log('✓ Conexión a base de datos exitosa');
 
-        await ensureMigrationsTable();
-        console.log(`✓ Tabla de control ${MIGRATIONS_TABLE} lista\n`);
+        // Un solo proceso/instancia migra a la vez: la otra espera el bloqueo y luego salta lo ya aplicado.
+        await conBloqueoDeMigraciones(
+            db,
+            async () => {
+                await ensureMigrationsTable();
+                console.log(`✓ Tabla de control ${MIGRATIONS_TABLE} lista\n`);
 
-        const migrations = getMigrationsList();
+                const migrations = getMigrationsList();
 
-        for (const filePath of migrations) {
-            if (!fs.existsSync(filePath)) {
-                console.error(`❌ Archivo no encontrado: ${filePath}`);
-                process.exit(1);
-            }
+                for (const filePath of migrations) {
+                    if (!fs.existsSync(filePath)) {
+                        console.error(`❌ Archivo no encontrado: ${filePath}`);
+                        process.exit(1);
+                    }
 
-            const migrationName = path.basename(filePath);
+                    const migrationName = path.basename(filePath);
 
-            if (await isApplied(migrationName)) {
-                console.log(`⏭️  Ya aplicada: ${migrationName}`);
-                continue;
-            }
+                    if (await isApplied(migrationName)) {
+                        console.log(`⏭️  Ya aplicada: ${migrationName}`);
+                        continue;
+                    }
 
-            console.log(`\n📄 Ejecutando: ${migrationName}`);
-            await executeSQLFile(filePath);
-            await markApplied(migrationName);
-        }
+                    console.log(`\n📄 Ejecutando: ${migrationName}`);
+                    await executeSQLFile(filePath);
+                    await markApplied(migrationName);
+                }
+            },
+            { log: m => console.log(`🔒 ${m}`) }
+        );
 
         console.log('\n✅ Migraciones revisadas. Las pendientes se ejecutaron correctamente.');
         console.log('\n📝 Próximo paso (si aplica): node scripts/create-admin.js\n');
