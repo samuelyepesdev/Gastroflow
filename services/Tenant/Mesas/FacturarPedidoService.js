@@ -168,6 +168,7 @@ class FacturarPedidoService {
                 l.combo_id,
                 l.cantidad,
                 l.precio_unitario,
+                l.precio_original,
                 l.unidad_medida,
                 l.subtotal,
                 l.descuento_porcentaje,
@@ -178,7 +179,7 @@ class FacturarPedidoService {
             ]);
 
             const [detalleResult] = await connection.query(
-                `INSERT INTO detalle_factura (factura_id, producto_id, servicio_id, es_servicio, combo_id, cantidad, precio_unitario, unidad_medida, subtotal, descuento_porcentaje, descuento_valor, base_gravable, tasa_impuesto, valor_impuesto) VALUES ?`,
+                `INSERT INTO detalle_factura (factura_id, producto_id, servicio_id, es_servicio, combo_id, cantidad, precio_unitario, precio_original, unidad_medida, subtotal, descuento_porcentaje, descuento_valor, base_gravable, tasa_impuesto, valor_impuesto) VALUES ?`,
                 [detallesValuesFinal]
             );
 
@@ -390,6 +391,9 @@ class FacturarPedidoService {
                 combo_id: i.combo_id || null,
                 cantidad: cant,
                 precio_unitario: precioUnitFactura,
+                // Precio de la línea ANTES del descuento manual del cobro (igual que en el POS: lo guardado en
+                // precio_unitario es el efectivo y precio_original el de partida, para auditar descuentos).
+                precio_original: precioUnit,
                 unidad_medida: i.unidad_medida || 'UND',
                 subtotal,
                 descuento_porcentaje: descuentoPorcentaje,
