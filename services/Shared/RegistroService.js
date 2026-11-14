@@ -6,6 +6,7 @@
  */
 
 const crypto = require('crypto');
+const { escapeHtml } = require('../../utils/escapeHtml');
 const bcrypt = require('bcrypt');
 const db = require('../../config/database');
 const MailerService = require('./MailerService');
@@ -72,7 +73,7 @@ class RegistroService {
                 subject: 'Confirma tu correo - GastroFlow',
                 html: `
                     <div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;">
-                        <h2>¡Hola${nombre_completo ? ', ' + nombre_completo : ''}!</h2>
+                        <h2>¡Hola${nombre_completo ? ', ' + escapeHtml(nombre_completo) : ''}!</h2>
                         <p>Gracias por registrarte en GastroFlow. Confirma tu correo para activar tu cuenta y crear tu local:</p>
                         <p style="text-align:center;margin:28px 0;">
                             <a href="${link}" style="background:#ff5a36;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;">Verificar mi correo</a>

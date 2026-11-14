@@ -1,4 +1,5 @@
 const express = require('express');
+const bloquearLogoutCrossSite = require('../middleware/bloquearLogoutCrossSite');
 const { keyPorIp } = require('../utils/rateLimitKey');
 const router = express.Router();
 const AuthController = require('../app/Http/Controllers/AuthController');
@@ -50,7 +51,7 @@ router.get('/verificar-email/:token', RegistroController.verificarEmail);
 router.post('/reenviar-verificacion', registroLimiter, RegistroController.reenviarVerificacion);
 
 // GET /auth/logout - Redirect
-router.get('/logout', AuthController.logout);
+router.get('/logout', bloquearLogoutCrossSite, AuthController.logout);
 
 // POST /auth/logout - API
 router.post('/logout', AuthController.logoutPost);
