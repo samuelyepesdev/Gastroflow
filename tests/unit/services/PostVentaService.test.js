@@ -50,8 +50,14 @@ describe('PostVentaService.detectarCeramica', () => {
             new Map([[25, { nombre: 'Jarrón', categoria_nombre: 'Cerámicas' }]])
         );
         expect(await PostVentaService.detectarCeramica(1, [{ producto_id: 1000025 }])).toBe(true);
-        expect(InsumoRepository.findByIds).toHaveBeenCalledWith([25], 1);
-        expect(ProductRepository.findByIds).toHaveBeenCalledWith([], 1);
+        expect(InsumoRepository.findByIds).toHaveBeenCalledWith([25], 1, null);
+        expect(ProductRepository.findByIds).toHaveBeenCalledWith([], 1, null);
+    });
+
+    test('con la conexión de la venta, las dos lecturas van por ELLA y no por el pool', async () => {
+        await PostVentaService.detectarCeramica(1, [{ producto_id: 1000025 }, { producto_id: 7 }], CONN);
+        expect(InsumoRepository.findByIds).toHaveBeenCalledWith([25], 1, CONN);
+        expect(ProductRepository.findByIds).toHaveBeenCalledWith([7], 1, CONN);
     });
 
     test('productos normales y servicios: no es cerámica', async () => {

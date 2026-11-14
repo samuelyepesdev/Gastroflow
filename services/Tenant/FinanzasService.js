@@ -58,11 +58,11 @@ function diasDelRango(desde, hasta) {
 
 class FinanzasService {
     /** Turno abierto > admin del mismo restaurante. Nunca un id fijo (era 1: otro tenant). */
-    static async _usuarioPorDefecto(tenantId, sesion) {
+    static async _usuarioPorDefecto(tenantId, sesion, conn = null) {
         if (sesion?.usuario_id) {
             return sesion.usuario_id;
         }
-        const id = await FinanzasRepository.getUsuarioPorDefecto(tenantId);
+        const id = await FinanzasRepository.getUsuarioPorDefecto(tenantId, conn);
         if (!id) {
             throw new Error('No hay un usuario del restaurante al que atribuir el movimiento');
         }
@@ -77,10 +77,12 @@ class FinanzasService {
         { monto, factura_id, detalle, esCeramica = false, usuario_id, fecha, conn }
     ) {
         // Sesión de caja abierta: una venta de otro día ('YYYY-MM-DD', ya validada) no entra al turno de hoy.
-        const sesion = fecha ? null : await CajaRepository.getSesionAbierta(tenantId);
+        // Con `conn` (dentro de la transacción de la venta) TODA lectura va por ella: pedir otra conexión del pool
+        // mientras la venta tiene la suya tomada agota el pool bajo carga (10 ventas a la vez = servidor congelado).
+        const sesion = fecha ? null : await CajaRepository.getSesionAbierta(tenantId, conn);
 
         // Prioridad de usuario: 1. El que viene en la req, 2. El de la sesión de caja, 3. Admin del restaurante
-        const finalUsuarioId = usuario_id || (await FinanzasService._usuarioPorDefecto(tenantId, sesion));
+        const finalUsuarioId = usuario_id || (await FinanzasService._usuarioPorDefecto(tenantId, sesion, conn));
 
         return await FinanzasRepository.createMovimiento(tenantId, {
             conn,
@@ -103,12 +105,12 @@ class FinanzasService {
         tenantId,
         { monto, insumo_nombre, mov_id, categoria_nombre, usuario_id, conn }
     ) {
-        const sesion = await CajaRepository.getSesionAbierta(tenantId);
+        const sesion = await CajaRepository.getSesionAbierta(tenantId, conn);
 
         return await FinanzasRepository.createMovimiento(tenantId, {
             conn,
             sesion_id: sesion ? sesion.id : null,
-            usuario_id: usuario_id || (await FinanzasService._usuarioPorDefecto(tenantId, sesion)),
+            usuario_id: usuario_id || (await FinanzasService._usuarioPorDefecto(tenantId, sesion, conn)),
             tipo: 'salida',
             monto: monto,
             motivo: `Compra de insumo: ${insumo_nombre}`,

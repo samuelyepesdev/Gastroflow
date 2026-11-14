@@ -17,8 +17,22 @@ describe('FinanzasService: nunca atribuye movimientos al usuario 1', () => {
         CajaRepository.getSesionAbierta.mockResolvedValue(null);
         FinanzasRepository.getUsuarioPorDefecto.mockResolvedValue(77);
         await FinanzasService.registrarGastoInventario(5, { monto: 100, insumo_nombre: 'x', mov_id: 1 });
-        expect(FinanzasRepository.getUsuarioPorDefecto).toHaveBeenCalledWith(5);
+        expect(FinanzasRepository.getUsuarioPorDefecto).toHaveBeenCalledWith(5, null);
         expect(FinanzasRepository.createMovimiento.mock.calls[0][1].usuario_id).toBe(77);
+    });
+
+    test('dentro de la transacción de una venta o compra, TODAS las lecturas van por su conexión (no por el pool)', async () => {
+        const conn = { query: jest.fn() };
+        CajaRepository.getSesionAbierta.mockResolvedValue(null);
+        FinanzasRepository.getUsuarioPorDefecto.mockResolvedValue(77);
+
+        await FinanzasService.registrarIngresoVenta(5, { monto: 100, factura_id: 9, conn });
+        expect(CajaRepository.getSesionAbierta).toHaveBeenLastCalledWith(5, conn);
+        expect(FinanzasRepository.getUsuarioPorDefecto).toHaveBeenLastCalledWith(5, conn);
+
+        await FinanzasService.registrarGastoInventario(5, { monto: 100, insumo_nombre: 'x', mov_id: 1, conn });
+        expect(CajaRepository.getSesionAbierta).toHaveBeenLastCalledWith(5, conn);
+        expect(FinanzasRepository.getUsuarioPorDefecto).toHaveBeenLastCalledWith(5, conn);
     });
 
     test('prioridad: usuario explícito > usuario del turno; y pasa la conexión de la transacción', async () => {

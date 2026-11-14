@@ -53,8 +53,8 @@ class ComboRepository {
     }
 
     /** Componentes de un combo ([] si el producto no es combo). */
-    static async getComponentes(comboId, tenantId) {
-        const [rows] = await db.query(
+    static async getComponentes(comboId, tenantId, conn = null) {
+        const [rows] = await (conn || db).query(
             `SELECT cc.producto_id, cc.cantidad, p.nombre, p.precio_unidad
              FROM combo_componentes cc
              JOIN productos p ON p.id = cc.producto_id AND p.tenant_id = ?

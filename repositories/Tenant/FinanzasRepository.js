@@ -59,8 +59,8 @@ class FinanzasRepository {
      * Usuario al que atribuir un movimiento automático cuando no hay turno ni usuario explícito: el
      * primer admin DEL MISMO restaurante (nunca un id fijo, que pertenece a otro tenant).
      */
-    static async getUsuarioPorDefecto(tenantId) {
-        const [rows] = await db.query(
+    static async getUsuarioPorDefecto(tenantId, conn = null) {
+        const [rows] = await (conn || db).query(
             "SELECT id FROM usuarios WHERE tenant_id = ? AND activo = 1 AND rol_id = (SELECT id FROM roles WHERE nombre = 'admin') ORDER BY id LIMIT 1",
             [tenantId]
         );
