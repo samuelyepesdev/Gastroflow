@@ -27,8 +27,22 @@ class OrdenCompraRepository {
         return rows;
     }
 
-    static async findById(id, tenantId) {
-        const [ordenes] = await db.query(
+    /**
+     * Bloquea la fila de la orden (FOR UPDATE) dentro de la transacción `conn` y devuelve su estado actual.
+     * Serializa dos "recibir" simultáneos: el segundo espera y luego ve la orden ya recibida.
+     * @returns {Promise<{id:number, estado:string, proveedor_id:number}|null>}
+     */
+    static async bloquear(id, tenantId, conn) {
+        const [rows] = await conn.query(
+            'SELECT id, estado, proveedor_id FROM ordenes_compra WHERE id = ? AND tenant_id = ? FOR UPDATE',
+            [id, tenantId]
+        );
+        return rows[0] || null;
+    }
+
+    static async findById(id, tenantId, conn = null) {
+        const ejecutor = conn || db;
+        const [ordenes] = await ejecutor.query(
             `SELECT oc.*, p.nombre AS proveedor_nombre
              FROM ordenes_compra oc
              JOIN proveedores p ON p.id = oc.proveedor_id
@@ -40,7 +54,7 @@ class OrdenCompraRepository {
             return null;
         }
 
-        const [items] = await db.query(
+        const [items] = await ejecutor.query(
             `SELECT oci.*, i.nombre AS insumo_nombre, i.codigo AS insumo_codigo, i.unidad_base
              FROM orden_compra_items oci
              JOIN insumos i ON i.id = oci.insumo_id
@@ -90,10 +104,13 @@ class OrdenCompraRepository {
      * No toca inventario -- eso lo hace OrdenCompraService (llama a InventarioService).
      * @param {Array<{id:number, cantidad_recibida:number}>} itemsRecibidos
      */
-    static async marcarRecibida(id, tenantId, itemsRecibidos) {
-        const conn = await db.getConnection();
+    static async marcarRecibida(id, tenantId, itemsRecibidos, externa = null) {
+        // Con `externa` se escribe en la transacción de quien la abrió (recibir la orden junto con el inventario).
+        const conn = externa || (await db.getConnection());
         try {
-            await conn.beginTransaction();
+            if (!externa) {
+                await conn.beginTransaction();
+            }
 
             const [ordenes] = await conn.query(
                 'SELECT id, estado FROM ordenes_compra WHERE id = ? AND tenant_id = ? FOR UPDATE',
@@ -118,12 +135,18 @@ class OrdenCompraRepository {
                 id
             ]);
 
-            await conn.commit();
+            if (!externa) {
+                await conn.commit();
+            }
         } catch (error) {
-            await conn.rollback();
+            if (!externa) {
+                await conn.rollback();
+            }
             throw error;
         } finally {
-            conn.release();
+            if (!externa) {
+                conn.release();
+            }
         }
     }
 

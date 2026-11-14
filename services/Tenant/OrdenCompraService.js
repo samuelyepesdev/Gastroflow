@@ -6,6 +6,7 @@
  * quedan igual que si se hubiera registrado la entrada a mano.
  */
 
+const db = require('../../config/database');
 const OrdenCompraRepository = require('../../repositories/Tenant/OrdenCompraRepository');
 const ProveedorRepository = require('../../repositories/Tenant/ProveedorRepository');
 const InsumoRepository = require('../../repositories/Tenant/InsumoRepository');
@@ -69,52 +70,70 @@ class OrdenCompraService {
      * @param {Array<{id:number, cantidad_recibida:number}>} itemsRecibidos Cantidad real por línea (puede diferir de lo pedido).
      */
     static async recibir(id, tenantId, itemsRecibidos) {
-        const orden = await OrdenCompraRepository.findById(id, tenantId);
-        if (!orden) {
-            throw new Error('Orden de compra no encontrada');
-        }
-        if (orden.estado !== 'pendiente') {
-            throw new Error(`La orden ya está ${orden.estado}, no se puede recibir`);
-        }
         if (!Array.isArray(itemsRecibidos) || itemsRecibidos.length === 0) {
             throw new Error('Debes indicar la cantidad recibida de al menos una línea');
         }
 
-        const itemsPorId = new Map(orden.items.map(i => [i.id, i]));
-        const normalizados = itemsRecibidos.map(r => {
-            const item = itemsPorId.get(Number(r.id));
-            if (!item) {
-                throw new Error(`La línea ${r.id} no pertenece a esta orden`);
-            }
-            const cantidad = Number.parseFloat(r.cantidad_recibida);
-            if (Number.isNaN(cantidad) || cantidad < 0) {
-                throw new Error(`Cantidad recibida inválida para ${item.insumo_nombre}`);
-            }
-            return { item, cantidad };
-        });
+        // UNA transacción para toda la recepción: la orden se bloquea primero (un doble clic espera y luego la ve
+        // ya recibida), cada entrada de inventario y su egreso de caja se escriben en ella, y la orden pasa a
+        // 'recibida' antes del commit. Si una línea falla, no queda ninguna entrada ni egreso a medias.
+        const conn = await db.getConnection();
+        try {
+            await conn.beginTransaction();
 
-        // Primero se actualiza el inventario (cada llamada es transaccional por su
-        // cuenta en InventarioService); solo si todas las entradas se aplicaron sin
-        // error se marca la orden como recibida -- así "recibida" siempre implica
-        // que el stock ya quedó al día.
-        for (const { item, cantidad } of normalizados) {
-            if (cantidad <= 0) {
-                continue;
+            const bloqueada = await OrdenCompraRepository.bloquear(id, tenantId, conn);
+            if (!bloqueada) {
+                throw new Error('Orden de compra no encontrada');
             }
-            await InventarioService.registrarEntrada(tenantId, {
-                insumo_id: item.insumo_id,
-                cantidad,
-                costo_unitario: item.costo_unitario_estimado,
-                proveedor_id: orden.proveedor_id,
-                documento_referencia: `OC-${id}`
+            if (bloqueada.estado !== 'pendiente') {
+                throw new Error(`La orden ya está ${bloqueada.estado}, no se puede recibir`);
+            }
+            const orden = await OrdenCompraRepository.findById(id, tenantId, conn);
+
+            const itemsPorId = new Map(orden.items.map(i => [i.id, i]));
+            const normalizados = itemsRecibidos.map(r => {
+                const item = itemsPorId.get(Number(r.id));
+                if (!item) {
+                    throw new Error(`La línea ${r.id} no pertenece a esta orden`);
+                }
+                const cantidad = Number.parseFloat(r.cantidad_recibida);
+                if (Number.isNaN(cantidad) || cantidad < 0) {
+                    throw new Error(`Cantidad recibida inválida para ${item.insumo_nombre}`);
+                }
+                return { item, cantidad };
             });
-        }
 
-        await OrdenCompraRepository.marcarRecibida(
-            id,
-            tenantId,
-            normalizados.map(({ item, cantidad }) => ({ id: item.id, cantidad_recibida: cantidad }))
-        );
+            for (const { item, cantidad } of normalizados) {
+                if (cantidad <= 0) {
+                    continue;
+                }
+                await InventarioService.registrarEntrada(
+                    tenantId,
+                    {
+                        insumo_id: item.insumo_id,
+                        cantidad,
+                        costo_unitario: item.costo_unitario_estimado,
+                        proveedor_id: orden.proveedor_id,
+                        documento_referencia: `OC-${id}`
+                    },
+                    conn
+                );
+            }
+
+            await OrdenCompraRepository.marcarRecibida(
+                id,
+                tenantId,
+                normalizados.map(({ item, cantidad }) => ({ id: item.id, cantidad_recibida: cantidad })),
+                conn
+            );
+
+            await conn.commit();
+        } catch (error) {
+            await conn.rollback();
+            throw error;
+        } finally {
+            conn.release();
+        }
 
         return { message: 'Orden recibida: el inventario ya quedó actualizado' };
     }
