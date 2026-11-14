@@ -11,8 +11,8 @@ const InventarioService = require('./InventarioService');
 const ModificadorService = require('./ModificadorService');
 const ComboArmableService = require('./ComboArmableService');
 const PrecioCatalogoService = require('./PrecioCatalogoService');
+const PostVentaService = require('./Facturacion/PostVentaService');
 const TenantOwnership = require('./TenantOwnership');
-const FidelizacionService = require('./FidelizacionService');
 const EventoRepository = require('../../repositories/Tenant/EventoRepository');
 const { hoyColombia, resolverDiaPasado, toFechaDia } = require('../../utils/dateHelpers');
 
@@ -187,30 +187,20 @@ class FacturaService {
             codigo_bono: facturaData.codigo_bono || null,
             // Ingreso en finanzas e inventario dentro de la MISMA transacción de la factura: todo o nada.
             enTransaccion: (connection, { facturaId }) =>
-                FacturaService._registrarEfectosEnTransaccion(connection, {
+                PostVentaService.registrarEfectosEnTransaccion(connection, {
                     tenantId,
                     facturaId,
-                    productos,
+                    lineas: productos,
                     total,
                     usuarioId: facturaData.usuario_id || null,
-                    diaVenta
+                    fecha: diaVenta
                 })
         });
 
         const facturaId = result.insertId;
 
-        // --- FACTURACIÓN ELECTRÓNICA (opcional, no bloquea la venta) ---
-        try {
-            const FacturacionElectronicaConfigService = require('./FacturacionElectronicaConfigService');
-            await FacturacionElectronicaConfigService.encolarSiActivo(facturaId, tenantId);
-        } catch (feErr) {
-            console.error('Error opcional al encolar factura electrónica:', feErr);
-        }
-        // --------------------------------
-
-        // Sello de fidelización (igual que al cobrar una mesa): ya con la venta guardada y sin lanzar nunca;
-        // es idempotente por factura y solo aplica si el cliente tiene tarjeta.
-        await FidelizacionService.sellarPorFactura({
+        // Factura electrónica, sello de fidelización y caché: tras el commit y sin tumbar nunca la venta.
+        await PostVentaService.ejecutarEfectosPostCommit({
             tenantId,
             facturaId,
             clienteId: cliente_id,
@@ -218,96 +208,7 @@ class FacturaService {
             usuarioId: facturaData.usuario_id || null
         });
 
-        // --- INVALIDAR CACHÉ DE ESTADÍSTICAS (Actualización instantánea del Dashboard) ---
-        try {
-            const cacheService = require('../Shared/CacheService');
-            cacheService.deleteByPrefix(`tenant_dashboard_stats_${tenantId}`);
-            cacheService.delete('superadmin_dashboard_stats');
-        } catch (cacheErr) {
-            console.error('Error opcional al invalidar caché de estadísticas:', cacheErr);
-        }
-
         return { id: facturaId, numero: result.numero };
-    }
-
-    /**
-     * Efectos de la venta que deben quedar atómicos con la factura: ingreso en finanzas y descuento de
-     * inventario (recetas, combos y toppings). Corre DENTRO de la transacción de createWithDetails y usa
-     * SOLO `connection` para escribir (ver el gancho `enTransaccion` del repositorio). Un error aquí revierte
-     * la venta completa: antes se registraba en consola y la factura quedaba sin ingreso o sin descuento.
-     */
-    static async _registrarEfectosEnTransaccion(
-        connection,
-        { tenantId, facturaId, productos, total, usuarioId, diaVenta }
-    ) {
-        const FinanzasService = require('./FinanzasService');
-        const InsumoRepository = require('../../repositories/Tenant/InsumoRepository');
-        const ProductRepository = require('../../repositories/Tenant/ProductRepository');
-
-        // Detección de cerámicas (solo lecturas; batch de 2 consultas). Si falla, se asume que no hay.
-        let tieneCeramicas = false;
-        try {
-            const insumoIds = productos
-                .filter(p => p.producto_id && esIdInsumoVirtual(p.producto_id))
-                .map(p => insumoIdDeVirtual(p.producto_id));
-            const productoIds = productos
-                .filter(p => p.producto_id && !esIdInsumoVirtual(p.producto_id))
-                .map(p => p.producto_id);
-
-            const [insumosPorId, productosPorId] = await Promise.all([
-                InsumoRepository.findByIds(insumoIds, tenantId),
-                ProductRepository.findByIds(productoIds, tenantId)
-            ]);
-
-            tieneCeramicas = productos.some(p => {
-                if (p.nombre && p.nombre.toLowerCase().includes('cerámica')) {
-                    return true;
-                }
-                if (p.producto_id && esIdInsumoVirtual(p.producto_id)) {
-                    const insumoDb = insumosPorId.get(insumoIdDeVirtual(p.producto_id));
-                    return !!(
-                        insumoDb &&
-                        (insumoDb.nombre.toLowerCase().includes('cerámica') ||
-                            insumoDb.categoria_nombre === 'Cerámicas')
-                    );
-                }
-                if (p.producto_id) {
-                    const prodDb = productosPorId.get(p.producto_id);
-                    return !!(
-                        prodDb &&
-                        (prodDb.nombre.toLowerCase().includes('cerámica') || prodDb.categoria_nombre === 'Cerámicas')
-                    );
-                }
-                return false;
-            });
-        } catch (e) {
-            console.error('Error opcional en detección de cerámicas:', e);
-        }
-
-        await FinanzasService.registrarIngresoVenta(tenantId, {
-            monto: total,
-            factura_id: facturaId,
-            esCeramica: tieneCeramicas,
-            usuario_id: usuarioId,
-            fecha: diaVenta,
-            conn: connection
-        });
-
-        // Recetas de todas las líneas, sumadas por insumo, en la conexión de la venta.
-        await InventarioService.descontarProductosLote(
-            tenantId,
-            productos
-                .filter(p => !p.es_servicio && p.producto_id)
-                .map(p => ({ producto_id: p.producto_id, cantidad: parseFloat(p.cantidad) || 1 })),
-            'factura_' + facturaId,
-            connection
-        );
-
-        // Combos armados y toppings se leen de las filas de detalle recién insertadas (solo visibles aquí).
-        if (productos.some(p => p.combo_id)) {
-            await InventarioService.descontarPorCombosFactura(tenantId, facturaId, connection);
-        }
-        await InventarioService.descontarPorModificadoresFactura(tenantId, facturaId, connection);
     }
 
     /**
