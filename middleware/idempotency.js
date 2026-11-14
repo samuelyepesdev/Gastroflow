@@ -1,4 +1,25 @@
+const crypto = require('crypto');
 const cacheService = require('../services/Shared/CacheService');
+const { getClientIp } = require('../utils/clientIp');
+
+// Rutas donde nunca se interceptan ni cachean respuestas (login devuelve el token; los webhooks
+// los firma un tercero y se deduplican por su propio id de evento).
+const RUTAS_EXCLUIDAS = [/^\/auth(\/|$)/, /^\/webhooks?(\/|$)/];
+
+/**
+ * Identidad con la que se aísla la clave: este middleware corre antes de requireAuth, así que no hay
+ * req.user; se usa un hash del token de sesión (cookie o Bearer). Sin sesión, la IP del cliente.
+ * Así la misma llave enviada por otro usuario/tenant o sin autenticar nunca recibe la respuesta ajena.
+ */
+function alcanceDeIdentidad(req) {
+    const auth = req.headers.authorization;
+    const bearer = typeof auth === 'string' && auth.startsWith('Bearer ') ? auth.slice(7) : null;
+    const token = (req.cookies && req.cookies.auth_token) || bearer;
+    if (token) {
+        return `u:${crypto.createHash('sha256').update(String(token)).digest('hex').slice(0, 32)}`;
+    }
+    return `anon:${getClientIp(req)}`;
+}
 
 /**
  * Middleware de Idempotencia para Express
@@ -18,8 +39,14 @@ module.exports = function (req, res, next) {
         return next(); // Si no hay llave, continuar de manera estándar (no-idempotente)
     }
 
-    const cacheKey = `idemp:${key}`;
-    const processingKey = `idemp_processing:${key}`;
+    const ruta = String(req.originalUrl || req.url || '').split('?')[0];
+    if (RUTAS_EXCLUIDAS.some(re => re.test(ruta))) {
+        return next();
+    }
+
+    const huella = `${alcanceDeIdentidad(req)}:${req.method}:${ruta}:${key}`;
+    const cacheKey = `idemp:${huella}`;
+    const processingKey = `idemp_processing:${huella}`;
 
     // 1. Verificar si la respuesta ya está cacheada
     const cachedResponse = cacheService.get(cacheKey);
