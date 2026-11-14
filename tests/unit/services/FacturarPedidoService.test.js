@@ -535,6 +535,13 @@ describe('FacturarPedidoService', () => {
             expect(mockConn.rollback).toHaveBeenCalled();
             expect(mockConn.commit).not.toHaveBeenCalled();
         });
+
+        it('lee el turno de caja con LOCK IN SHARE MODE (se serializa con el cierre de caja, como el POS)', async () => {
+            prepararMesa();
+            await facturar();
+            const consultaTurno = mockConn.query.mock.calls.find(([sql]) => /FROM caja_sesiones/.test(sql));
+            expect(consultaTurno[0]).toMatch(/LOCK IN SHARE MODE/);
+        });
     });
 
     describe('redención de bono al facturar', () => {

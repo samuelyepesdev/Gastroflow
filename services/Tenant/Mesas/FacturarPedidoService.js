@@ -1,14 +1,11 @@
 const db = require('../../../config/database');
-const NumeracionRepository = require('../../../repositories/Tenant/NumeracionRepository');
 const FacturaRepository = require('../../../repositories/Tenant/FacturaRepository');
-const CajaRepository = require('../../../repositories/Tenant/CajaRepository');
 const PedidoAbonoRepository = require('../../../repositories/Tenant/PedidoAbonoRepository');
 const PedidoItemPagoRepository = require('../../../repositories/Tenant/PedidoItemPagoRepository');
-const BonoRepository = require('../../../repositories/Tenant/BonoRepository');
 const BonoService = require('../BonoService');
 const PostVentaService = require('../Facturacion/PostVentaService');
 const ComboVentaRepository = require('../../../repositories/Tenant/ComboVentaRepository');
-const TaxService = require('../../Shared/TaxService');
+const NucleoFacturaRepository = require('../../../repositories/Tenant/NucleoFacturaRepository');
 const RealtimeEvents = require('../../Shared/RealtimeEvents');
 const TenantOwnership = require('../TenantOwnership');
 
@@ -56,13 +53,10 @@ class FacturarPedidoService {
                 tenantId
             );
 
-            const productoIds = items.filter(i => !i.es_servicio && i.producto_id).map(i => i.producto_id);
-            const { tasas, defaultTasa } = await TaxService.getTasasPorProducto(tenantId, productoIds, connection);
-
-            const infoCombos = await ComboVentaRepository.getInfoCombos(
+            const { tasas, defaultTasa, infoCombos } = await NucleoFacturaRepository.cargarTasas(
+                connection,
                 tenantId,
-                [...new Set(items.filter(i => i.combo_id).map(i => i.combo_id))],
-                connection
+                items
             );
 
             const serviciosExternosIds = await FacturarPedidoService._obtenerServiciosExternos(
@@ -116,8 +110,11 @@ class FacturarPedidoService {
                     bono ? Number(bono.saldo_actual) : 0
                 );
 
-            const { numeroFactura, cajaSesionId, cajaSesionUsuarioId } =
-                await FacturarPedidoService._obtenerNumeroYCajaSesion(connection, tenantId);
+            const {
+                numero: numeroFactura,
+                cajaSesionId,
+                cajaSesionUsuarioId
+            } = await NucleoFacturaRepository.obtenerNumeroYTurno(connection, tenantId);
             const fechaEmisionUtc = new Date().toISOString().slice(0, 19).replace('T', ' ');
 
             // Efectivo recibido: solo informativo (Recibido/Cambio). Se guarda si
@@ -155,19 +152,13 @@ class FacturarPedidoService {
                 await PedidoItemPagoRepository.marcarFacturados(pedidoId, facturaId, connection);
             }
 
-            if (bono && montoBono > 0) {
-                await BonoRepository.redimir(
-                    {
-                        bonoId: bono.id,
-                        tenantId,
-                        saldoAnterior: bono.saldo_actual,
-                        monto: montoBono,
-                        facturaId,
-                        usuarioId
-                    },
-                    connection
-                );
-            }
+            await NucleoFacturaRepository.redimirBono(connection, {
+                bono,
+                montoBono,
+                tenantId,
+                facturaId,
+                usuarioId
+            });
 
             const detallesValuesFinal = lineasFactura.map(l => [
                 facturaId,
@@ -197,19 +188,15 @@ class FacturarPedidoService {
             // El cobro de servicios externos (ej. domicilio de un tercero) entra con
             // la factura pero se le entrega al proveedor en efectivo: se compensa
             // con una salida de caja, sin importar cómo pagó el cliente la factura.
-            if (cajaSesionId && montoServiciosExternos > 0) {
-                await CajaRepository.registrarSalidaServicioExterno(
-                    {
-                        tenantId,
-                        sesionId: cajaSesionId,
-                        usuarioId: usuarioId || cajaSesionUsuarioId,
-                        facturaId,
-                        numeroFactura,
-                        monto: montoServiciosExternos
-                    },
-                    connection
-                );
-            }
+            await NucleoFacturaRepository.compensarServiciosExternos(connection, {
+                tenantId,
+                cajaSesionId,
+                usuarioId,
+                cajaSesionUsuarioId,
+                facturaId,
+                numeroFactura,
+                monto: montoServiciosExternos
+            });
 
             await connection.query(`UPDATE pedidos SET estado = 'cerrado', total = ? WHERE id = ?`, [
                 totalConPropina,
@@ -388,13 +375,11 @@ class FacturarPedidoService {
                 montoServiciosExternos += subtotal;
             }
 
-            // Servicio y combo no tienen producto: el combo trae su propio tributo (NULL = el del restaurante).
-            const tasa = i.es_servicio
-                ? defaultTasa
-                : i.combo_id
-                  ? (infoCombos.get(i.combo_id)?.tasa_impuesto ?? defaultTasa)
-                  : (tasas.get(i.producto_id) ?? defaultTasa);
-            const { base_gravable, valor_impuesto } = TaxService.desglosarLinea(subtotal, tasa);
+            const { tasa, base_gravable, valor_impuesto } = NucleoFacturaRepository.desglosarLinea(i, subtotal, {
+                tasas,
+                defaultTasa,
+                infoCombos
+            });
             subtotalFactura += base_gravable;
             impuestosFactura += valor_impuesto;
 
@@ -501,19 +486,6 @@ class FacturarPedidoService {
         }
 
         return { totalConPropina, montoEfectivo, montoTransferencia, montoBono: montoBonoRedondeado, formaPagoFinal };
-    }
-
-    static async _obtenerNumeroYCajaSesion(connection, tenantId) {
-        const numeroFactura = await NumeracionRepository.siguienteNumeroFactura(connection, tenantId);
-
-        const [sesiones] = await connection.query(
-            'SELECT id, usuario_id FROM caja_sesiones WHERE tenant_id = ? AND estado = "abierta" LIMIT 1',
-            [tenantId]
-        );
-        const cajaSesionId = sesiones.length > 0 ? sesiones[0].id : null;
-        const cajaSesionUsuarioId = sesiones.length > 0 ? sesiones[0].usuario_id : null;
-
-        return { numeroFactura, cajaSesionId, cajaSesionUsuarioId };
     }
 
     static async _copiarModificadores(connection, items, primerDetalleId) {
