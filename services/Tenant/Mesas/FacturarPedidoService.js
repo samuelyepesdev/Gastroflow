@@ -6,8 +6,7 @@ const PedidoAbonoRepository = require('../../../repositories/Tenant/PedidoAbonoR
 const PedidoItemPagoRepository = require('../../../repositories/Tenant/PedidoItemPagoRepository');
 const BonoRepository = require('../../../repositories/Tenant/BonoRepository');
 const BonoService = require('../BonoService');
-const FidelizacionService = require('../FidelizacionService');
-const InventarioService = require('../InventarioService');
+const PostVentaService = require('../Facturacion/PostVentaService');
 const ComboVentaRepository = require('../../../repositories/Tenant/ComboVentaRepository');
 const TaxService = require('../../Shared/TaxService');
 const RealtimeEvents = require('../../Shared/RealtimeEvents');
@@ -253,18 +252,18 @@ class FacturarPedidoService {
             // otra conexión del pool porque, dentro de la transacción, esa otra conexión esperaba el lock del
             // tenant (cada insumo tardaba 50 s de lock wait y fallaba); con la misma conexión no hay espera.
             // Si algo falla aquí se revierte la venta completa (antes quedaba cobrada sin ingreso o sin descuento).
-            await FacturarPedidoService._registrarEfectosEnTransaccion(connection, {
+            await PostVentaService.registrarEfectosEnTransaccion(connection, {
                 tenantId,
                 facturaId,
-                lineasFactura,
-                totalConPropina
+                lineas: lineasFactura,
+                total: totalConPropina,
+                usuarioId: null
             });
 
             await connection.commit();
 
-            // Sello de fidelización: después del commit y sin lanzar nunca; si algo falla,
-            // la venta ya está cobrada y el sello es idempotente por factura.
-            await FidelizacionService.sellarPorFactura({
+            // Factura electrónica, sello de fidelización y caché: tras el commit, sin lanzar nunca.
+            await PostVentaService.ejecutarEfectosPostCommit({
                 tenantId,
                 facturaId,
                 clienteId: cliente_id,
@@ -272,14 +271,8 @@ class FacturarPedidoService {
                 usuarioId
             });
 
-            await FacturarPedidoService._ejecutarEfectosSecundariosPostVenta({
-                tenantId,
-                pedidoId,
-                mesaId: pedido.mesa_id,
-                facturaId,
-                totalConPropina,
-                lineasFactura
-            });
+            // Lo propio de Mesas: avisar a las pantallas en vivo
+            FacturarPedidoService._emitirEventosVenta({ tenantId, pedidoId, mesaId: pedido.mesa_id });
 
             return { factura_id: facturaId, numero: numeroFactura };
         } catch (error) {
@@ -557,93 +550,9 @@ class FacturarPedidoService {
         );
     }
 
-    /**
-     * Efectos que deben quedar atómicos con la factura de la mesa: ingreso en finanzas y descuento de
-     * inventario (combos, recetas y toppings). Corre dentro de la transacción de execute() y escribe SOLO
-     * con `connection`; los detalles de factura recién insertados solo son visibles desde esta conexión.
-     */
-    static async _registrarEfectosEnTransaccion(connection, { tenantId, facturaId, lineasFactura, totalConPropina }) {
-        const FinanzasService = require('../FinanzasService');
-        const ProductRepository = require('../../../repositories/Tenant/ProductRepository');
-
-        // Solo lecturas (no bloquean ni dependen de filas sin confirmar)
-        const esCeramica = await FacturarPedidoService._verificarSiTieneCeramica(
-            tenantId,
-            lineasFactura,
-            ProductRepository
-        );
-
-        await FinanzasService.registrarIngresoVenta(tenantId, {
-            monto: totalConPropina,
-            factura_id: facturaId,
-            esCeramica,
-            usuario_id: null,
-            conn: connection
-        });
-
-        if (lineasFactura.some(l => l.combo_id)) {
-            await InventarioService.descontarPorCombosFactura(tenantId, facturaId, connection);
-        }
-        await InventarioService.descontarProductosLote(
-            tenantId,
-            lineasFactura
-                .filter(l => !l.es_servicio && l.producto_id)
-                .map(l => ({ producto_id: l.producto_id, cantidad: l.cantidad })),
-            'factura_' + facturaId,
-            connection
-        );
-        await InventarioService.descontarPorModificadoresFactura(tenantId, facturaId, connection);
-    }
-
-    static async _ejecutarEfectosSecundariosPostVenta({
-        tenantId,
-        pedidoId,
-        mesaId,
-        facturaId,
-        totalConPropina,
-        lineasFactura
-    }) {
-        try {
-            const FacturacionElectronicaConfigService = require('../FacturacionElectronicaConfigService');
-            await FacturacionElectronicaConfigService.encolarSiActivo(facturaId, tenantId);
-        } catch (feErr) {
-            console.error('Error opcional al encolar factura electrónica:', feErr);
-        }
-
-        RealtimeEvents.emitPedido({
-            tenantId,
-            pedidoId,
-            mesaId,
-            action: 'billed'
-        });
+    static _emitirEventosVenta({ tenantId, pedidoId, mesaId }) {
+        RealtimeEvents.emitPedido({ tenantId, pedidoId, mesaId, action: 'billed' });
         RealtimeEvents.emitVentaRegistrada(tenantId);
-
-        try {
-            const cacheService = require('../../Shared/CacheService');
-            cacheService.deleteByPrefix(`tenant_dashboard_stats_${tenantId}`);
-            cacheService.delete('superadmin_dashboard_stats');
-        } catch (cacheErr) {
-            console.error('Error opcional al invalidar caché de estadísticas:', cacheErr);
-        }
-    }
-
-    static async _verificarSiTieneCeramica(tenantId, lineasFactura, ProductRepository) {
-        for (const l of lineasFactura) {
-            if (!l.es_servicio && l.producto_id) {
-                try {
-                    const prod = await ProductRepository.findById(l.producto_id, tenantId);
-                    if (
-                        prod &&
-                        (prod.nombre?.toLowerCase().includes('cerámica') || prod.categoria_nombre === 'Cerámicas')
-                    ) {
-                        return true;
-                    }
-                } catch (lookupErr) {
-                    console.error('Error al consultar producto para verificación de cerámica:', lookupErr);
-                }
-            }
-        }
-        return false;
     }
 }
 
