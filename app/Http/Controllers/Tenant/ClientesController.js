@@ -1,4 +1,5 @@
 const ClienteService = require('../../../../services/Tenant/ClienteService');
+const { responderError } = require('../../../../utils/errors');
 const ParametroService = require('../../../../services/Shared/ParametroService');
 
 class ClientesController {
@@ -79,10 +80,7 @@ class ClientesController {
             res.status(201).json(result);
         } catch (error) {
             console.error('Error al crear cliente:', error);
-            if (error.message.includes('requerido')) {
-                return res.status(400).json({ error: error.message });
-            }
-            res.status(500).json({ error: 'Error al crear cliente' });
+            responderError(res, error, 'Error al crear cliente');
         }
     }
 
@@ -97,11 +95,7 @@ class ClientesController {
             res.json(result);
         } catch (error) {
             console.error('Error al actualizar cliente:', error);
-            if (error.message === 'Cliente no encontrado' || error.message.includes('requerido')) {
-                const statusCode = error.message === 'Cliente no encontrado' ? 404 : 400;
-                return res.status(statusCode).json({ error: error.message });
-            }
-            res.status(500).json({ error: 'Error al actualizar cliente' });
+            responderError(res, error, 'Error al actualizar cliente');
         }
     }
 
@@ -116,11 +110,7 @@ class ClientesController {
             res.json(result);
         } catch (error) {
             console.error('Error al eliminar cliente:', error);
-            if (error.message === 'Cliente no encontrado' || error.message.includes('facturas asociadas')) {
-                const statusCode = error.message === 'Cliente no encontrado' ? 404 : 400;
-                return res.status(statusCode).json({ error: error.message });
-            }
-            res.status(500).json({ error: 'Error al eliminar cliente' });
+            responderError(res, error, 'Error al eliminar cliente');
         }
     }
 }
