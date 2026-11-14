@@ -215,6 +215,19 @@ function buildTenantSectionContent(d, mes, mostrarTopProductos) {
     return content;
 }
 
+// Restaurantes procesados a la vez: cada uno lanza ~5 consultas en paralelo; con 10 conexiones en el pool,
+// 2 a la vez deja holgura para las ventas en vivo.
+const TENANTS_EN_PARALELO = 2;
+
+/** Mapea `items` con `fn` de a `tamano` a la vez, conservando el orden. */
+async function enTandas(items, tamano, fn) {
+    const resultados = [];
+    for (let i = 0; i < items.length; i += tamano) {
+        resultados.push(...(await Promise.all(items.slice(i, i + tamano).map(fn))));
+    }
+    return resultados;
+}
+
 class ReporteConsolidadoService {
     /**
      * Generates a consolidated PDF report, either for a single tenant or for all
@@ -307,53 +320,71 @@ class ReporteConsolidadoService {
         const incluirDesglosePorMes =
             esEspecifico && incluirTopProductos ? toBool(options.incluirDesglosePorMes, false) : false;
 
-        // Un tenant es independiente de otro: se resuelven en paralelo en vez de
-        // secuencial (antes eran 4 awaits × N tenants en serie).
-        const activeTenantsData = await Promise.all(
-            activeTenants.map(async tenant => {
-                try {
-                    const filtro = { desde: firstDay, hasta: lastDayStr };
-                    const [totalMes, facturasMes, topProductos, porCategoria, pagos, porMedio, ventasDiarias] =
-                        await Promise.all([
-                            StatsRepository.getTotalSales(tenant.id, filtro),
-                            StatsRepository.getTotalInvoices(tenant.id, filtro),
-                            incluirTopProductos ? StatsRepository.getTopProducts(tenant.id, 5, filtro) : [],
-                            StatsRepository.getSalesByCategory(tenant.id, filtro),
-                            StatsRepository.getTotalsByPaymentMethod(tenant.id, filtro),
-                            StatsRepository.getSalesByPaymentMethod(tenant.id, filtro),
-                            conGraficaDiaria ? StatsRepository.getDailySalesRange(tenant.id, firstDay, lastDayStr) : []
-                        ]);
-
-                    return {
-                        tenant,
-                        totalMes,
-                        facturasMes,
-                        topProductos,
-                        porCategoria,
-                        pagos,
-                        porMedio,
-                        ventasDiarias
-                    };
-                } catch (err) {
-                    console.error(
-                        `[CONSOLIDADO_ERROR] Error obteniendo estadísticas para tenant ${tenant.nombre}:`,
-                        err.message
-                    );
-                    // Si falla un tenant individual, lo agregamos con datos vacíos para no romper todo el reporte consolidado
-                    return {
-                        tenant,
-                        totalMes: 0,
-                        facturasMes: 0,
-                        topProductos: [],
-                        porCategoria: [],
-                        pagos: null,
-                        porMedio: [],
-                        ventasDiarias: [],
-                        error: err.message
-                    };
-                }
-            })
+        // Ventas y facturas de TODOS los restaurantes por mes en UNA consulta agrupada (antes: 2 consultas
+        // por restaurante para el total del rango + 2 por restaurante y por mes para el resumen mensual).
+        // Si falla, el reporte falla: unos totales en 0 en un PDF financiero serían peor que un error.
+        const ventasAgrupadas = await StatsRepository.getVentasPorTenantYMes(
+            activeTenants.map(t => t.id),
+            firstDay,
+            lastDayStr
         );
+        const totalesPorTenant = new Map();
+        const totalesPorMes = new Map();
+        for (const fila of ventasAgrupadas) {
+            const t = totalesPorTenant.get(fila.tenant_id) || { total: 0, cantidad: 0 };
+            t.total += fila.total;
+            t.cantidad += fila.cantidad;
+            totalesPorTenant.set(fila.tenant_id, t);
+            const m = totalesPorMes.get(fila.mes) || { total: 0, cantidad: 0 };
+            m.total += fila.total;
+            m.cantidad += fila.cantidad;
+            totalesPorMes.set(fila.mes, m);
+        }
+
+        // Los restaurantes se procesan en tandas pequeñas: cada uno lanza varias consultas en paralelo y
+        // todos a la vez (N x 5) acaparaban las 10 conexiones del pool, dejando sin servicio a la caja.
+        const activeTenantsData = await enTandas(activeTenants, TENANTS_EN_PARALELO, async tenant => {
+            try {
+                const filtro = { desde: firstDay, hasta: lastDayStr };
+                const { total: totalMes = 0, cantidad: facturasMes = 0 } =
+                    totalesPorTenant.get(Number(tenant.id)) || {};
+                const [topProductos, porCategoria, pagos, porMedio, ventasDiarias] = await Promise.all([
+                    incluirTopProductos ? StatsRepository.getTopProducts(tenant.id, 5, filtro) : [],
+                    StatsRepository.getSalesByCategory(tenant.id, filtro),
+                    StatsRepository.getTotalsByPaymentMethod(tenant.id, filtro),
+                    StatsRepository.getSalesByPaymentMethod(tenant.id, filtro),
+                    conGraficaDiaria ? StatsRepository.getDailySalesRange(tenant.id, firstDay, lastDayStr) : []
+                ]);
+
+                return {
+                    tenant,
+                    totalMes,
+                    facturasMes,
+                    topProductos,
+                    porCategoria,
+                    pagos,
+                    porMedio,
+                    ventasDiarias
+                };
+            } catch (err) {
+                console.error(
+                    `[CONSOLIDADO_ERROR] Error obteniendo estadísticas para tenant ${tenant.nombre}:`,
+                    err.message
+                );
+                // Si falla un tenant individual, lo agregamos con datos vacíos para no romper todo el reporte consolidado
+                return {
+                    tenant,
+                    totalMes: 0,
+                    facturasMes: 0,
+                    topProductos: [],
+                    porCategoria: [],
+                    pagos: null,
+                    porMedio: [],
+                    ventasDiarias: [],
+                    error: err.message
+                };
+            }
+        });
 
         let globalTotalSales = 0;
         let globalTotalInvoices = 0;
@@ -380,27 +411,15 @@ class ReporteConsolidadoService {
 
         const ventasPorMes =
             incluirResumenMensual && mesesEnRango.length > 1
-                ? await Promise.all(
-                      mesesEnRango.map(async ({ anio, mes }) => {
-                          const desde = `${anio}-${mes.toString().padStart(2, '0')}-01`;
-                          const hasta = `${anio}-${mes.toString().padStart(2, '0')}-${new Date(anio, mes, 0).getDate()}`;
-                          const porTenant = await Promise.all(
-                              activeTenants.map(t =>
-                                  Promise.all([
-                                      StatsRepository.getTotalSales(t.id, { desde, hasta }),
-                                      StatsRepository.getTotalInvoices(t.id, { desde, hasta })
-                                  ]).catch(() => [0, 0])
-                              )
-                          );
-                          const total = porTenant.reduce((sum, [ventas]) => sum + ventas, 0);
-                          const facturas = porTenant.reduce((sum, [, fact]) => sum + fact, 0);
-                          const nombreMes = new Date(anio, mes - 1, 1).toLocaleString('es-CO', {
-                              month: 'long',
-                              year: 'numeric'
-                          });
-                          return { nombreMes, total, facturas };
-                      })
-                  )
+                ? mesesEnRango.map(({ anio, mes }) => {
+                      const { total = 0, cantidad: facturas = 0 } =
+                          totalesPorMes.get(`${anio}-${mes.toString().padStart(2, '0')}`) || {};
+                      const nombreMes = new Date(anio, mes - 1, 1).toLocaleString('es-CO', {
+                          month: 'long',
+                          year: 'numeric'
+                      });
+                      return { nombreMes, total, facturas };
+                  })
                 : [];
 
         // Desglose de productos más vendidos mes a mes (solo tenant específico): repite

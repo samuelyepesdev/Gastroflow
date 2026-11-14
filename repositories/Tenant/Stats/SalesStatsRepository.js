@@ -92,6 +92,39 @@ class SalesStatsRepository {
         return parseInt(result[0]?.total || 0);
     }
 
+    /**
+     * Ventas normales (evento_aparte = 0) de VARIOS restaurantes agrupadas por tenant y mes calendario
+     * (Colombia) en UNA consulta. Mismo filtro de rango que getTotalSales/getTotalInvoices (rango UTC de
+     * rangoUtcColombia), así los totales coinciden con los de esas funciones.
+     * @param {number[]} tenantIds
+     * @param {string} desde - 'YYYY-MM-DD' (Colombia)
+     * @param {string} hasta - 'YYYY-MM-DD' (Colombia)
+     * @returns {Promise<Array<{tenant_id:number, mes:string, total:number, cantidad:number}>>} mes = 'YYYY-MM'
+     */
+    static async getVentasPorTenantYMes(tenantIds, desde, hasta) {
+        const ids = [...new Set((tenantIds || []).map(Number).filter(Number.isFinite))];
+        if (ids.length === 0) {
+            return [];
+        }
+        const { utcDesde, utcHasta } = rangoUtcColombia(desde, hasta);
+        const [rows] = await db.query(
+            `SELECT tenant_id,
+                    DATE_FORMAT(${SQL_COLOMBIA.aColombia('fecha')}, '%Y-%m') AS mes,
+                    COALESCE(SUM(total), 0) AS total,
+                    COUNT(*) AS cantidad
+             FROM facturas
+             WHERE tenant_id IN (?) AND evento_aparte = 0 AND fecha BETWEEN ? AND ?
+             GROUP BY tenant_id, mes`,
+            [ids, utcDesde, utcHasta]
+        );
+        return rows.map(r => ({
+            tenant_id: Number(r.tenant_id),
+            mes: r.mes,
+            total: parseFloat(r.total || 0),
+            cantidad: parseInt(r.cantidad || 0)
+        }));
+    }
+
     static async getTotalInvoicesAllTime(tenantId) {
         const query = 'SELECT COUNT(*) AS total FROM facturas WHERE tenant_id = ? AND evento_aparte = 0';
         const [result] = await db.query(query, [tenantId]);

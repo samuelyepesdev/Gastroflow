@@ -14,6 +14,7 @@ jest.mock('../../../repositories/Admin/PlanRepository', () => ({
 jest.mock('../../../repositories/Tenant/StatsRepository', () => ({
     getTotalSales: jest.fn(),
     getTotalInvoices: jest.fn(),
+    getVentasPorTenantYMes: jest.fn(),
     getTopProducts: jest.fn(),
     getSalesByCategory: jest.fn(),
     getTotalsByPaymentMethod: jest.fn(),
@@ -106,15 +107,21 @@ describe('ReporteMensualService.generarPdfReporte', () => {
 });
 
 describe('ReporteConsolidadoService.generarReporteConsolidado', () => {
-    beforeEach(() => jest.clearAllMocks());
+    beforeEach(() => {
+        jest.clearAllMocks();
+        StatsRepository.getVentasPorTenantYMes.mockResolvedValue([]);
+    });
 
     it('genera un PDF válido para varios tenants en un rango de varios meses', async () => {
         TenantService.getAllTenants.mockResolvedValue([
             { id: 1, nombre: 'Restaurante A', slug: 'restaurante-a', plan_nombre: 'Pro', activo: true },
             { id: 2, nombre: 'Restaurante B', slug: 'restaurante-b', plan_nombre: null, activo: true }
         ]);
-        StatsRepository.getTotalSales.mockResolvedValue(1000000);
-        StatsRepository.getTotalInvoices.mockResolvedValue(10);
+        StatsRepository.getVentasPorTenantYMes.mockResolvedValue([
+            { tenant_id: 1, mes: '2026-01', total: 400000, cantidad: 4 },
+            { tenant_id: 1, mes: '2026-02', total: 600000, cantidad: 6 },
+            { tenant_id: 2, mes: '2026-03', total: 1000000, cantidad: 10 }
+        ]);
         StatsRepository.getTopProducts.mockResolvedValue([
             { nombre: 'Producto X', categoria_nombre: 'Bebidas', total_cantidad: 5, total_ventas: 50000 }
         ]);
@@ -140,6 +147,11 @@ describe('ReporteConsolidadoService.generarReporteConsolidado', () => {
         });
         expectValidPdf(buffer);
         expect(StatsRepository.getSalesByPaymentMethod).toHaveBeenCalled();
+        // Totales y resumen mensual salen de UNA consulta agrupada, no de 2 por restaurante y por mes
+        expect(StatsRepository.getVentasPorTenantYMes).toHaveBeenCalledTimes(1);
+        expect(StatsRepository.getVentasPorTenantYMes).toHaveBeenCalledWith([1, 2], '2026-01-01', '2026-03-31');
+        expect(StatsRepository.getTotalSales).not.toHaveBeenCalled();
+        expect(StatsRepository.getTotalInvoices).not.toHaveBeenCalled();
     });
 
     it('genera el reporte histórico desde la primera venta', async () => {
@@ -147,8 +159,6 @@ describe('ReporteConsolidadoService.generarReporteConsolidado', () => {
             { id: 1, nombre: 'Restaurante A', slug: 'restaurante-a', plan_nombre: 'Pro', activo: true }
         ]);
         StatsRepository.getPrimeraFechaVenta.mockResolvedValue('2026-01-15');
-        StatsRepository.getTotalSales.mockResolvedValue(1000000);
-        StatsRepository.getTotalInvoices.mockResolvedValue(10);
         StatsRepository.getTopProducts.mockResolvedValue([]);
         StatsRepository.getSalesByCategory.mockResolvedValue([]);
         StatsRepository.getTotalsByPaymentMethod.mockResolvedValue({
@@ -161,7 +171,7 @@ describe('ReporteConsolidadoService.generarReporteConsolidado', () => {
 
         const buffer = await ReporteConsolidadoService.generarReporteConsolidado({ historico: true, tenantId: 1 });
         expectValidPdf(buffer);
-        expect(StatsRepository.getTotalSales).toHaveBeenCalledWith(1, expect.objectContaining({ desde: '2026-01-01' }));
+        expect(StatsRepository.getVentasPorTenantYMes).toHaveBeenCalledWith([1], '2026-01-01', expect.any(String));
     });
 
     it('no revienta cuando no hay tenants activos', async () => {
@@ -175,12 +185,43 @@ describe('ReporteConsolidadoService.generarReporteConsolidado', () => {
         TenantService.getAllTenants.mockResolvedValue([
             { id: 1, nombre: 'Restaurante Roto', slug: 'restaurante-roto', activo: true }
         ]);
-        StatsRepository.getTotalSales.mockRejectedValue(new Error('DB caída'));
-        StatsRepository.getTotalInvoices.mockResolvedValue(0);
-        StatsRepository.getTopProducts.mockResolvedValue([]);
+        StatsRepository.getTopProducts.mockRejectedValue(new Error('DB caída'));
         StatsRepository.getSalesByCategory.mockResolvedValue([]);
 
         const buffer = await ReporteConsolidadoService.generarReporteConsolidado({ mesDesde: 1, anioDesde: 2026 });
         expectValidPdf(buffer);
+    });
+
+    it('si falla la consulta agrupada el reporte falla (no entrega totales en 0 en silencio)', async () => {
+        TenantService.getAllTenants.mockResolvedValue([{ id: 1, nombre: 'A', slug: 'a', activo: true }]);
+        StatsRepository.getVentasPorTenantYMes.mockRejectedValue(new Error('DB caída'));
+        await expect(
+            ReporteConsolidadoService.generarReporteConsolidado({ mesDesde: 1, anioDesde: 2026 })
+        ).rejects.toThrow('DB caída');
+    });
+
+    it('procesa los restaurantes en tandas de 2: nunca más de 2 a la vez', async () => {
+        TenantService.getAllTenants.mockResolvedValue(
+            [1, 2, 3, 4, 5].map(id => ({ id, nombre: 'R' + id, slug: 'r' + id, activo: true }))
+        );
+        let activos = 0;
+        let maximo = 0;
+        StatsRepository.getTopProducts.mockImplementation(async () => {
+            activos += 1;
+            maximo = Math.max(maximo, activos);
+            await new Promise(r => setTimeout(r, 5));
+            activos -= 1;
+            return [];
+        });
+        StatsRepository.getSalesByCategory.mockResolvedValue([]);
+        StatsRepository.getTotalsByPaymentMethod.mockResolvedValue({
+            efectivo: 0,
+            transferencia: 0,
+            serviciosExternos: 0
+        });
+        StatsRepository.getSalesByPaymentMethod.mockResolvedValue([]);
+        StatsRepository.getDailySalesRange.mockResolvedValue([]);
+        await ReporteConsolidadoService.generarReporteConsolidado({ mesDesde: 1, anioDesde: 2026 });
+        expect(maximo).toBe(2);
     });
 });
