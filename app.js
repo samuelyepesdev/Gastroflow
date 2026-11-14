@@ -1,4 +1,3 @@
-require('./utils/patchExcelJS');
 const { obtenerBaseUrl } = require('./utils/baseUrl');
 const express = require('express');
 const bodyParser = require('body-parser');
