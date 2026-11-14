@@ -5,6 +5,7 @@
  */
 
 const ProductRepository = require('../../repositories/Tenant/ProductRepository');
+const R2StorageService = require('./R2StorageService');
 const CategoryRepository = require('../../repositories/Admin/CategoryRepository');
 const ProductoAuditoriaRepository = require('../../repositories/Tenant/ProductoAuditoriaRepository');
 const PromocionService = require('./PromocionService');
@@ -176,6 +177,11 @@ class ProductService {
             const cambios = calcularDiff(existingProduct, datosNuevos);
             if (Object.keys(cambios).length > 0) {
                 await ProductoAuditoriaRepository.registrar(tenantId, id, 'actualizado', usuarioId, cambios);
+            }
+
+            // La imagen anterior ya no la usa este producto: se borra de R2 si nadie más la referencia.
+            if (existingProduct.imagen_url && existingProduct.imagen_url !== datosNuevos.imagen_url) {
+                await R2StorageService.eliminarSiHuerfano(existingProduct.imagen_url);
             }
 
             return { message: 'Producto actualizado exitosamente' };

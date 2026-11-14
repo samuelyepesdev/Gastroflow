@@ -167,6 +167,11 @@ class ConfiguracionService {
             configToSave.id = existingConfig.id;
             await ConfiguracionRepository.update(existingConfig.id, tenantId, configToSave);
         }
+
+        // Logo reemplazado: el archivo anterior se borra de R2 si nadie más lo referencia.
+        if (files?.logo && existingConfig?.logo_url && existingConfig.logo_url !== configToSave.logo_url) {
+            await require('./R2StorageService').eliminarSiHuerfano(existingConfig.logo_url);
+        }
     }
 
     /**
