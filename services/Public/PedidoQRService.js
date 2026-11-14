@@ -7,11 +7,27 @@ const ModificadorService = require('../Tenant/ModificadorService'); // Toppings/
 const PromocionService = require('../Tenant/PromocionService');
 const ComboArmableService = require('../Tenant/ComboArmableService'); // Combos armables
 const ComboVentaRepository = require('../../repositories/Tenant/ComboVentaRepository');
+const MAX_ITEMS_PEDIDO_QR = 50;
+const MAX_CANTIDAD_ITEM_QR = 99;
 
 class PedidoQRService {
     static async procesarPedido(qrToken, itemsInput, notasGlobales, clientIp, cookies = {}) {
         if (!itemsInput || !Array.isArray(itemsInput) || itemsInput.length === 0) {
             throw Object.assign(new Error('El pedido no contiene productos.'), { status: 400 });
+        }
+        if (itemsInput.length > MAX_ITEMS_PEDIDO_QR) {
+            throw Object.assign(new Error(`Un pedido no puede tener más de ${MAX_ITEMS_PEDIDO_QR} productos.`), {
+                status: 400
+            });
+        }
+        for (const item of itemsInput) {
+            const cant = Number(item?.cantidad);
+            if (!Number.isInteger(cant) || cant < 1 || cant > MAX_CANTIDAD_ITEM_QR) {
+                throw Object.assign(
+                    new Error(`La cantidad de cada producto debe ser un número entero entre 1 y ${MAX_CANTIDAD_ITEM_QR}.`),
+                    { status: 400 }
+                );
+            }
         }
 
         const connection = await db.getConnection();
@@ -36,8 +52,9 @@ class PedidoQRService {
             // VALIDACIÓN DE SEGURIDAD Y TIEMPO (Solución para expiración)
             const clientSession = cookies ? cookies[`qr_session_${mesa.id}`] : null;
             
-            // Si la mesa tiene una sesión activa en DB, el cliente DEBE tener la misma en su cookie
-            if (mesa.qr_session_id && clientSession !== mesa.qr_session_id) {
+            // La sesión nace al escanear el QR (MenuQRRepository.getMesaByQRToken). Sin sesión en la mesa o
+            // con una cookie distinta no se acepta el pedido: conocer el qr_token (impreso en la mesa) no basta.
+            if (!mesa.qr_session_id || clientSession !== mesa.qr_session_id) {
                 throw Object.assign(new Error('Tu sesión ha expirado o el código QR ya no es válido para esta mesa. Por favor, escanea el código nuevamente.'), { status: 403 });
             }
 
@@ -311,7 +328,7 @@ class PedidoQRService {
             throw Object.assign(new Error('El restaurante se encuentra inactivo actualmente.'), { status: 403 });
         }
         const clientSession = cookies ? cookies[`qr_session_${mesa.id}`] : null;
-        const sesionValida = !mesa.qr_session_id || clientSession === mesa.qr_session_id;
+        const sesionValida = Boolean(mesa.qr_session_id) && clientSession === mesa.qr_session_id;
         return { mesa, sesionValida };
     }
 
