@@ -31,9 +31,9 @@ class InsumoRepository {
         return rows;
     }
 
-    static async findById(id, tenantId) {
-        const [rows] = await db.query(
-            `SELECT i.*, 
+    static async findById(id, tenantId, conn = null) {
+        const [rows] = await (conn || db).query(
+            `SELECT i.*,
                     pc.name AS categoria_nombre, 
                     pu.name AS unidad_medida_nombre,
                     prov.nombre AS proveedor_nombre 

@@ -84,9 +84,10 @@ class InventarioService {
      */
     static async registrarEntrada(
         tenantId,
-        { insumo_id, cantidad, costo_unitario, referencia, proveedor_id, documento_referencia, usuario_id }
+        { insumo_id, cantidad, costo_unitario, referencia, proveedor_id, documento_referencia, usuario_id },
+        externa = null
     ) {
-        const insumo = await InsumoRepository.findById(insumo_id, tenantId);
+        const insumo = await InsumoRepository.findById(insumo_id, tenantId, externa);
         if (!insumo) {
             throw new Error('Insumo no encontrado');
         }
@@ -96,9 +97,13 @@ class InventarioService {
         }
 
         const costo = calcularCostoEntrada(costo_unitario, insumo);
-        const conn = await db.getConnection();
+        // Con `externa` (p. ej. recibir una orden de compra) la entrada se escribe en la transacción de quien la
+        // abrió, que hace el commit/rollback: así varias entradas son todo-o-nada.
+        const conn = externa || (await db.getConnection());
         try {
-            await conn.beginTransaction();
+            if (!externa) {
+                await conn.beginTransaction();
+            }
             await conn.query(
                 `INSERT INTO movimientos_inventario (tenant_id, insumo_id, proveedor_id, tipo, cantidad, costo_unitario, referencia, documento_referencia) VALUES (?, ?, ?, 'entrada', ?, ?, ?, ?)`,
                 [
@@ -134,13 +139,19 @@ class InventarioService {
             await registrarGastoFinanzasSiAplica(tenantId, insumo, insumo_id, cant, costo, { usuario_id, conn });
             // --------------------------------
 
-            await conn.commit();
+            if (!externa) {
+                await conn.commit();
+            }
             return { nuevoStock, nuevoCosto };
         } catch (e) {
-            await conn.rollback();
+            if (!externa) {
+                await conn.rollback();
+            }
             throw e;
         } finally {
-            conn.release();
+            if (!externa) {
+                conn.release();
+            }
         }
     }
 
