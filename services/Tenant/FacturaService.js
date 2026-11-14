@@ -5,6 +5,7 @@
  */
 
 const FacturaRepository = require('../../repositories/Tenant/FacturaRepository');
+const { esIdInsumoVirtual, insumoIdDeVirtual } = require('../../utils/insumoVirtual');
 const { validarLineas, exigirMonto } = require('../../utils/validacionLineas');
 const InventarioService = require('./InventarioService');
 const ModificadorService = require('./ModificadorService');
@@ -95,8 +96,8 @@ class FacturaService {
         // Resolver IDs virtuales de insumos (>= 1.000.000) a productos reales
         // Esto garantiza que siempre exista el producto espejo antes de facturar
         for (const p of productos) {
-            if (!p.es_servicio && p.producto_id >= 1000000) {
-                const insumoId = p.producto_id - 1000000;
+            if (!p.es_servicio && esIdInsumoVirtual(p.producto_id)) {
+                const insumoId = insumoIdDeVirtual(p.producto_id);
                 p.producto_id = await AgregarItemService._getOrCreateMirrorProduct(tenantId, insumoId, p.precio);
             }
         }
@@ -247,10 +248,10 @@ class FacturaService {
         let tieneCeramicas = false;
         try {
             const insumoIds = productos
-                .filter(p => p.producto_id && p.producto_id > 1000000)
-                .map(p => p.producto_id - 1000000);
+                .filter(p => p.producto_id && esIdInsumoVirtual(p.producto_id))
+                .map(p => insumoIdDeVirtual(p.producto_id));
             const productoIds = productos
-                .filter(p => p.producto_id && p.producto_id <= 1000000)
+                .filter(p => p.producto_id && !esIdInsumoVirtual(p.producto_id))
                 .map(p => p.producto_id);
 
             const [insumosPorId, productosPorId] = await Promise.all([
@@ -262,8 +263,8 @@ class FacturaService {
                 if (p.nombre && p.nombre.toLowerCase().includes('cerámica')) {
                     return true;
                 }
-                if (p.producto_id && p.producto_id > 1000000) {
-                    const insumoDb = insumosPorId.get(p.producto_id - 1000000);
+                if (p.producto_id && esIdInsumoVirtual(p.producto_id)) {
+                    const insumoDb = insumosPorId.get(insumoIdDeVirtual(p.producto_id));
                     return !!(
                         insumoDb &&
                         (insumoDb.nombre.toLowerCase().includes('cerámica') ||

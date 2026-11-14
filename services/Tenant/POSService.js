@@ -1,4 +1,5 @@
 const POSRepository = require('../../repositories/Tenant/POSRepository');
+const { esIdInsumoVirtual } = require('../../utils/insumoVirtual');
 const { validarLineas } = require('../../utils/validacionLineas');
 const PromocionService = require('./PromocionService');
 const RealtimeEvents = require('../Shared/RealtimeEvents');
@@ -179,7 +180,7 @@ class POSService {
         // AgregarItemService._getOrCreateMirrorProduct, no son filas de productos.
         await TenantOwnership.productos(
             tenantId,
-            (productos || []).filter(p => !p.es_servicio && p.producto_id < 1000000).map(p => p.producto_id)
+            (productos || []).filter(p => !p.es_servicio && !esIdInsumoVirtual(p.producto_id)).map(p => p.producto_id)
         );
         return Promise.all(
             (productos || [])
