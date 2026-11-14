@@ -22,9 +22,12 @@ const TenantService = require('./TenantService');
 const TenantAuditService = require('./TenantAuditService');
 const MailerService = require('../Shared/MailerService');
 const CacheService = require('../Shared/CacheService');
+const { ConflictError } = require('../../utils/errors');
 
 const MAX_INTENTOS = 3;
 const RECONCILIAR_DESPUES_DE_MINUTOS = 60;
+// Mientras haya un cobro 'pendiente' más reciente que esto no se lanza otro (evita el doble cobro).
+const COBRO_EN_CURSO_MINUTOS = 24 * 60;
 
 /**
  * Siguiente fecha de cobro. Recibe lo que venga de la BD: en producción la
@@ -174,6 +177,18 @@ class SuscripcionService {
             return; // Sin plan/monto asignado: nada que cobrar.
         }
 
+        // Un cobro todavía en proceso (PSE, banco lento) no se duplica: otro POST /transactions cobraría dos veces.
+        // Pasado el plazo, reconciliarPendientes ya lo habrá resuelto con el id de la transacción.
+        const [enCurso] = await db.query(
+            `SELECT id FROM suscripcion_pagos
+             WHERE tenant_id = ? AND estado = 'pendiente' AND created_at > DATE_SUB(NOW(), INTERVAL ? MINUTE)
+             LIMIT 1`,
+            [tenant.id, COBRO_EN_CURSO_MINUTOS]
+        );
+        if (enCurso && enCurso.length > 0) {
+            throw new ConflictError('Ya hay un cobro en proceso para este restaurante', 'COBRO_EN_CURSO');
+        }
+
         const intentoNumero = (tenant.intentos_fallidos_pago || 0) + 1;
         const reference = `sub-${tenant.id}-${todayStr().replace(/-/g, '')}-${intentoNumero}-${Date.now()}`;
         const periodoDesde = todayStr();
@@ -188,7 +203,7 @@ class SuscripcionService {
         await db.query('UPDATE tenants SET ultimo_intento_cobro_at = NOW() WHERE id = ?', [tenant.id]);
 
         try {
-            const { status } = await WompiService.cobrar({
+            const { id: transactionId, status } = await WompiService.cobrar({
                 paymentSourceId: tenant.wompi_payment_source_id,
                 amountInCents: Math.round(total * 100),
                 customerEmail: tenant.email,
@@ -196,9 +211,22 @@ class SuscripcionService {
                 sessionId: fingerprint?.sessionId || null,
                 deviceId: fingerprint?.deviceId || null
             });
+            // Sin guardar el id, reconciliarPendientes nunca encontraba el cobro si el webhook se perdía.
+            if (transactionId) {
+                await db.query('UPDATE suscripcion_pagos SET wompi_transaction_id = ? WHERE wompi_reference = ?', [
+                    transactionId,
+                    reference
+                ]);
+            }
             // Algunos métodos (tarjeta) pueden resolver sincrónicamente.
             if (status && status !== 'PENDING') {
-                await SuscripcionService.finalizarPago({ reference, status, rawPayload: { status }, userId });
+                await SuscripcionService.finalizarPago({
+                    reference,
+                    transactionId,
+                    status,
+                    rawPayload: { status },
+                    userId
+                });
             }
         } catch (err) {
             // Fallo de red/API al crear la transacción: se trata igual que un rechazo.
@@ -264,11 +292,16 @@ class SuscripcionService {
         const aprobado = status === 'APPROVED';
         const nuevoEstado = aprobado ? 'exitoso' : 'fallido';
 
-        await db.query(
+        // Transición atómica: el webhook y la respuesta síncrona de Wompi pueden llegar a la vez y ambos leyeron
+        // 'pendiente'. Solo quien logra el UPDATE sigue (suma el mes, envía el recibo); el otro sale.
+        const [resultado] = await db.query(
             `UPDATE suscripcion_pagos SET estado = ?, wompi_transaction_id = COALESCE(?, wompi_transaction_id), respuesta_raw = ?
-             WHERE id = ?`,
+             WHERE id = ? AND estado = 'pendiente'`,
             [nuevoEstado, transactionId || null, JSON.stringify(rawPayload || {}), pago.id]
         );
+        if (resultado?.affectedRows !== 1) {
+            return;
+        }
 
         const [tenantRows] = await db.query(
             'SELECT id, nombre, email, suspendido_por_pago, intentos_fallidos_pago, proximo_cobro FROM tenants WHERE id = ?',
