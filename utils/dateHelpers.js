@@ -30,6 +30,11 @@ function sumarDias(dia, n) {
     return d.toISOString().slice(0, 10);
 }
 
+/** ¿El día 'YYYY-MM-DD' es el último de su mes? (por defecto, hoy en Colombia). */
+function esUltimoDiaDelMes(dia = hoyColombia()) {
+    return sumarDias(dia, 1).endsWith('-01');
+}
+
 /**
  * Suma n meses a un día 'YYYY-MM-DD' ajustando al último día del mes cuando no
  * existe (31-ene + 1 mes = 28/29-feb, no 3-mar como hace Date.setMonth).
@@ -192,6 +197,7 @@ module.exports = {
     fechaColombia,
     hoyColombia,
     sumarDias,
+    esUltimoDiaDelMes,
     sumarMeses,
     rangoUtcColombia,
     SQL_COLOMBIA,
