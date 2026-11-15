@@ -24,6 +24,8 @@ const { hoyColombia } = require('../../utils/dateHelpers');
 const COLOR_REPORTE = MARCA.coral;
 // Por encima de este rango la línea diaria ya no se lee bien: se omite.
 const MAX_DIAS_GRAFICA_DIARIA = 62;
+// Reportes que se generan a la vez en el cierre mensual (consultas + PDF en memoria cada uno).
+const CONCURRENCIA_CIERRE = 2;
 
 function diasEntre(desde, hasta) {
     const [y1, m1, d1] = desde.split('-').map(Number);
@@ -40,33 +42,40 @@ class ReporteMensualService {
     /**
      * Calcula las fechas de inicio, fin y el nombre del mes para el reporte.
      */
-    static calcularRangoFechas(options = {}) {
-        const date = new Date();
-        let targetYear = date.getFullYear();
-        let targetMonth = date.getMonth();
+    /**
+     * "Hoy" es el día de Colombia, no el del servidor: en producción (UTC) a las 23:50 de Bogotá ya es el día 1
+     * del mes siguiente para `new Date()`, y el cierre de fin de mes reportaría el mes equivocado.
+     * @param {Object} [options] - { mes, anio } explícitos | finDeMes | testMesActual (por defecto: el mes anterior)
+     * @param {string} [hoy] - 'YYYY-MM-DD' (solo para pruebas); por defecto hoy en Colombia
+     */
+    static calcularRangoFechas(options = {}, hoy = hoyColombia()) {
+        const [anioHoy, mesHoy] = hoy.split('-').map(Number);
+        let targetYear = anioHoy;
+        let targetMonth = mesHoy; // 1-12
 
         if (options.mes !== null && options.mes !== undefined && options.anio !== null && options.anio !== undefined) {
-            targetMonth = Number.parseInt(options.mes, 10) - 1;
+            targetMonth = Number.parseInt(options.mes, 10);
             targetYear = Number.parseInt(options.anio, 10);
 
-            const requestDate = new Date(targetYear, targetMonth, 1);
-            if (requestDate > date) {
+            if (targetYear * 12 + targetMonth > anioHoy * 12 + mesHoy) {
                 throw new Error('No se puede generar un reporte de un mes futuro.');
             }
-        } else if (options.finDeMes) {
-            targetMonth = date.getMonth();
-            targetYear = date.getFullYear();
-        } else if (!options.testMesActual) {
-            date.setMonth(date.getMonth() - 1);
-            targetMonth = date.getMonth();
-            targetYear = date.getFullYear();
+        } else if (!options.finDeMes && !options.testMesActual) {
+            // Por defecto, el mes anterior.
+            targetMonth -= 1;
+            if (targetMonth === 0) {
+                targetMonth = 12;
+                targetYear -= 1;
+            }
         }
 
-        const m = targetMonth + 1;
-        const firstDay = `${targetYear}-${m.toString().padStart(2, '0')}-01`;
-        const lastDayStr = `${targetYear}-${m.toString().padStart(2, '0')}-${new Date(targetYear, m, 0).getDate()}`;
-        const tempDate = new Date(targetYear, targetMonth, 1);
-        const mesNombre = tempDate.toLocaleString('es-CO', { month: 'long', year: 'numeric' });
+        const mm = targetMonth.toString().padStart(2, '0');
+        const firstDay = `${targetYear}-${mm}-01`;
+        const lastDayStr = `${targetYear}-${mm}-${new Date(Date.UTC(targetYear, targetMonth, 0)).getUTCDate()}`;
+        const mesNombre = new Date(targetYear, targetMonth - 1, 1).toLocaleString('es-CO', {
+            month: 'long',
+            year: 'numeric'
+        });
 
         return { firstDay, lastDayStr, mesNombre };
     }
@@ -358,18 +367,21 @@ class ReporteMensualService {
         // 1. Filtrar declarativamente los inquilinos activos (Programación Funcional)
         const tenantsActivos = (tenants || []).filter(t => t?.activo);
 
-        // 2. Procesar concurrentemente en paralelo todos los reportes usando .map() y Promise.all()
-        await Promise.all(
-            tenantsActivos.map(async t => {
-                try {
-                    // Si se llama desde el cron de fin de mes, options tendrá { finDeMes: true }
-                    // Si no, por defecto será para enviar el mes anterior.
-                    await this.generarYEnviar(t, { testMesActual: false, ...options });
-                } catch (err) {
-                    console.error(`Error enviando reporte mensual a tenant ${t.nombre}:`, err.message);
-                }
-            })
-        );
+        // 2. Concurrencia acotada: cada reporte lanza ~15 consultas y renderiza un PDF en memoria; todos a la vez
+        //    (Promise.all sobre cientos de restaurantes) saturaba el pool de MySQL y la RAM.
+        for (let i = 0; i < tenantsActivos.length; i += CONCURRENCIA_CIERRE) {
+            await Promise.all(
+                tenantsActivos.slice(i, i + CONCURRENCIA_CIERRE).map(async t => {
+                    try {
+                        // Si se llama desde el cron de fin de mes, options tendrá { finDeMes: true }
+                        // Si no, por defecto será para enviar el mes anterior.
+                        await this.generarYEnviar(t, { testMesActual: false, ...options });
+                    } catch (err) {
+                        console.error(`Error enviando reporte mensual a tenant ${t.nombre}:`, err.message);
+                    }
+                })
+            );
+        }
 
         console.log('--- Fin de CRON de cierre mensual ---');
     }

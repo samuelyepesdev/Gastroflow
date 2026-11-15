@@ -5,18 +5,26 @@ const JobWorkerService = require('../services/Shared/JobWorkerService');
 const DesktopSyncService = require('../services/Shared/DesktopSyncService');
 const SuscripcionService = require('../services/Admin/SuscripcionService');
 const AlertasService = require('../services/Tenant/AlertasService');
+const { esUltimoDiaDelMes, ZONA_COLOMBIA } = require('../utils/dateHelpers');
 
 const runBackgroundJobs = async () => {
     try {
-        // Se evalúa todos los días a las 23:50 para ver si es el último día del mes
-        cron.schedule('50 23 * * *', async () => {
-            const tomorrow = new Date();
-            tomorrow.setDate(tomorrow.getDate() + 1);
-            if (tomorrow.getDate() === 1) {
-                console.log('--- CRON: Último día del mes detectado. Iniciando envío de reportes mensuales ---');
-                await ReporteMensualService.procesarCierreMensual({ finDeMes: true });
-            }
-        });
+        // Se evalúa todos los días a las 23:50 HORA DE COLOMBIA para ver si es el último día del mes. Sin la zona
+        // explícita corría a las 23:50 UTC (6:50 p. m. en Bogotá) y las ventas de la noche quedaban fuera del reporte.
+        cron.schedule(
+            '50 23 * * *',
+            async () => {
+                if (esUltimoDiaDelMes()) {
+                    console.log('--- CRON: Último día del mes detectado. Iniciando envío de reportes mensuales ---');
+                    try {
+                        await ReporteMensualService.procesarCierreMensual({ finDeMes: true });
+                    } catch (err) {
+                        console.error('Error en cron de cierre mensual:', err.message);
+                    }
+                }
+            },
+            { timezone: ZONA_COLOMBIA }
+        );
 
         // Worker de emisión de facturación electrónica (Factus): procesa la cola cada minuto.
         cron.schedule('* * * * *', () => {
