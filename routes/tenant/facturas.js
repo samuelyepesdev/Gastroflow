@@ -33,6 +33,9 @@ router.get('/:id/imprimir-json', puedeVer, FacturasController.imprimirJson);
 // GET /facturas/:id/detalles - API: Detalles de factura
 router.get('/:id/detalles', puedeVer, FacturasController.getDetalles);
 
+// PUT /facturas/:id/cliente - Corregir el cliente de una factura normal (no electrónica)
+router.put('/:id/cliente', requirePermission('facturas.editar'), FacturasController.editarCliente);
+
 // POST /facturas/:id/facturacion-electronica/reintentar - Reintentar emisión electrónica fallida
 router.post('/:id/facturacion-electronica/reintentar', puedeCrear, FacturasController.reintentarFacturacionElectronica);
 

@@ -2,6 +2,7 @@ const FacturaService = require('../../../../services/Tenant/FacturaService');
 const AuthService = require('../../../../services/Shared/AuthService');
 const EventoService = require('../../../../services/Tenant/EventoService');
 const ConfiguracionService = require('../../../../services/Tenant/ConfiguracionService');
+const { AppError, responderError } = require('../../../../utils/errors');
 const { toFechaISOUtc, toFechaDia, hoyColombia } = require('../../../../utils/dateHelpers');
 
 class FacturasController {
@@ -171,6 +172,23 @@ class FacturasController {
         } catch (error) {
             console.error('Error al reintentar facturación electrónica:', error);
             res.status(500).json({ error: 'Error al reintentar facturación electrónica' });
+        }
+    }
+
+    // PUT /facturas/:id/cliente - Corregir el cliente de una factura normal (facturas.editar)
+    static async editarCliente(req, res) {
+        try {
+            const tenantId = req.tenant?.id;
+            if (!tenantId) {
+                return res.status(403).json({ error: 'Contexto de tenant no disponible' });
+            }
+            const resultado = await FacturaService.editarCliente(tenantId, req.params.id, req.body?.cliente_id);
+            res.json({ success: true, ...resultado });
+        } catch (error) {
+            if (!(error instanceof AppError)) {
+                console.error('Error al editar el cliente de la factura:', error);
+            }
+            responderError(res, error, 'Error al editar la factura');
         }
     }
 }
