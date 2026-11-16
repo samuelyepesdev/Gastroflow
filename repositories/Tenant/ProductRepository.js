@@ -50,13 +50,13 @@ class ProductRepository {
      * @param {number} tenantId
      * @returns {Promise<Map<number, Object>>} producto_id -> producto
      */
-    static async findByIds(ids, tenantId) {
+    static async findByIds(ids, tenantId, conn = null) {
         const uniqueIds = [...new Set((ids || []).filter(id => id !== null && id !== undefined))];
         if (uniqueIds.length === 0) {
             return new Map();
         }
         const placeholders = uniqueIds.map(() => '?').join(',');
-        const [productos] = await db.query(
+        const [productos] = await (conn || db).query(
             `SELECT p.*, c.nombre as categoria_nombre
              FROM productos p
              LEFT JOIN categorias c ON p.categoria_id = c.id

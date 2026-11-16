@@ -29,20 +29,26 @@ jest.mock('../../../services/Shared/CacheService', () => ({
     delete: jest.fn()
 }));
 
+jest.mock('../../../services/Shared/WompiService', () => ({
+    cobrar: jest.fn(),
+    consultarTransaccion: jest.fn()
+}));
+
 const db = require('../../../config/database');
+const WompiService = require('../../../services/Shared/WompiService');
 const TenantService = require('../../../services/Admin/TenantService');
 const TenantAuditService = require('../../../services/Admin/TenantAuditService');
 const MailerService = require('../../../services/Shared/MailerService');
 const SuscripcionService = require('../../../services/Admin/SuscripcionService');
 
 /** Configura db.query para responder según el texto de la consulta, sin depender del orden exacto de llamadas. */
-function mockDbByQuery({ pago, tenant }) {
+function mockDbByQuery({ pago, tenant, updateAfecta = 1 }) {
     db.query.mockImplementation(sql => {
         if (sql.includes('FROM suscripcion_pagos WHERE wompi_reference')) {
             return Promise.resolve([[pago]]);
         }
         if (sql.includes('UPDATE suscripcion_pagos SET estado')) {
-            return Promise.resolve([{}]);
+            return Promise.resolve([{ affectedRows: updateAfecta }]);
         }
         if (sql.includes('SELECT id, nombre, email, suspendido_por_pago')) {
             return Promise.resolve([[tenant]]);
@@ -184,5 +190,118 @@ describe('SuscripcionService.finalizarPago', () => {
         expect(TenantService.changeTenantStatus).not.toHaveBeenCalled();
         expect(TenantAuditService.log).not.toHaveBeenCalled();
         expect(MailerService.sendMail).not.toHaveBeenCalled();
+    });
+});
+
+describe('SuscripcionService.finalizarPago: carrera webhook vs respuesta síncrona', () => {
+    beforeEach(() => jest.clearAllMocks());
+
+    it('si otro proceso ya finalizó el pago (UPDATE no afecta filas) NO suma el mes ni envía recibo', async () => {
+        const pago = { id: 8, tenant_id: 14, estado: 'pendiente', monto: 79900 };
+        const tenant = {
+            id: 14,
+            nombre: 'Carrera',
+            email: 'a@b.co',
+            suspendido_por_pago: 0,
+            intentos_fallidos_pago: 0,
+            proximo_cobro: '2026-09-01'
+        };
+        mockDbByQuery({ pago, tenant, updateAfecta: 0 });
+
+        await SuscripcionService.finalizarPago({ reference: 'sub-14-1', status: 'APPROVED', rawPayload: {} });
+
+        const update = db.query.mock.calls.find(([sql]) => sql.includes('UPDATE suscripcion_pagos SET estado'));
+        expect(update[0]).toMatch(/AND estado = 'pendiente'/);
+        expect(db.query.mock.calls.some(([sql]) => sql.includes('UPDATE tenants SET proximo_cobro'))).toBe(false);
+        expect(MailerService.sendMail).not.toHaveBeenCalled();
+        expect(TenantAuditService.log).not.toHaveBeenCalled();
+    });
+});
+
+describe('SuscripcionService._intentarCobro', () => {
+    const tenant = {
+        id: 21,
+        nombre: 'Cobro',
+        email: 'c@d.co',
+        plan_id: 1,
+        tamano: 'pequeno',
+        wompi_payment_source_id: 99,
+        intentos_fallidos_pago: 0
+    };
+
+    /** db.query por texto: `enCurso` simula un cobro pendiente reciente. */
+    function mockDb({ enCurso = false } = {}) {
+        db.query.mockImplementation(sql => {
+            if (sql.includes("estado = 'pendiente' AND created_at >")) {
+                return Promise.resolve([enCurso ? [{ id: 1 }] : []]);
+            }
+            if (sql.includes('FROM suscripcion_pagos WHERE wompi_reference')) {
+                return Promise.resolve([[{ id: 7, tenant_id: 21, estado: 'pendiente', monto: 79900 }]]);
+            }
+            if (sql.includes('SELECT id, nombre, email, suspendido_por_pago')) {
+                return Promise.resolve([[{ id: 21, nombre: 'Cobro', email: 'c@d.co', proximo_cobro: '2026-09-01' }]]);
+            }
+            return Promise.resolve([{ affectedRows: 1 }]);
+        });
+    }
+
+    beforeEach(() => jest.clearAllMocks());
+
+    it('guarda wompi_transaction_id apenas Wompi responde, aunque siga PENDING (base de la reconciliación)', async () => {
+        mockDb();
+        WompiService.cobrar.mockResolvedValue({ id: 'tx-abc', status: 'PENDING' });
+
+        await SuscripcionService._intentarCobro(tenant);
+
+        const guardado = db.query.mock.calls.find(([sql]) => sql.includes('SET wompi_transaction_id = ?'));
+        expect(guardado).toBeDefined();
+        expect(guardado[1][0]).toBe('tx-abc');
+        expect(guardado[1][1]).toMatch(/^sub-21-/); // misma referencia del INSERT
+        expect(db.query.mock.calls.some(([sql]) => sql.includes('UPDATE suscripcion_pagos SET estado'))).toBe(false);
+    });
+
+    it('si Wompi resuelve en el acto, finaliza pasando también el id de la transacción', async () => {
+        mockDb();
+        WompiService.cobrar.mockResolvedValue({ id: 'tx-ok', status: 'APPROVED' });
+
+        await SuscripcionService._intentarCobro(tenant);
+
+        const finalizacion = db.query.mock.calls.find(([sql]) => sql.includes('UPDATE suscripcion_pagos SET estado'));
+        expect(finalizacion[1][1]).toBe('tx-ok'); // transactionId
+    });
+
+    it('con un cobro pendiente reciente NO crea otro (ni llama a Wompi): evita cobrar dos veces', async () => {
+        mockDb({ enCurso: true });
+
+        await expect(SuscripcionService._intentarCobro(tenant)).rejects.toMatchObject({ code: 'COBRO_EN_CURSO' });
+
+        expect(WompiService.cobrar).not.toHaveBeenCalled();
+        expect(db.query.mock.calls.some(([sql]) => sql.includes('INSERT INTO suscripcion_pagos'))).toBe(false);
+    });
+});
+
+describe('SuscripcionService.reconciliarPendientes', () => {
+    beforeEach(() => jest.clearAllMocks());
+
+    it('consulta a Wompi por el id guardado y finaliza el cobro con ese id', async () => {
+        db.query.mockImplementation(sql => {
+            if (sql.includes('AND wompi_transaction_id IS NOT NULL')) {
+                return Promise.resolve([[{ id: 7, wompi_transaction_id: 'tx-9', wompi_reference: 'sub-21-1' }]]);
+            }
+            if (sql.includes('FROM suscripcion_pagos WHERE wompi_reference')) {
+                return Promise.resolve([[{ id: 7, tenant_id: 21, estado: 'pendiente', monto: 79900 }]]);
+            }
+            if (sql.includes('SELECT id, nombre, email, suspendido_por_pago')) {
+                return Promise.resolve([[{ id: 21, nombre: 'X', email: 'x@y.co', proximo_cobro: '2026-09-01' }]]);
+            }
+            return Promise.resolve([{ affectedRows: 1 }]);
+        });
+        WompiService.consultarTransaccion.mockResolvedValue({ id: 'tx-9', status: 'APPROVED' });
+
+        await SuscripcionService.reconciliarPendientes();
+
+        expect(WompiService.consultarTransaccion).toHaveBeenCalledWith('tx-9');
+        const update = db.query.mock.calls.find(([sql]) => sql.includes('UPDATE suscripcion_pagos SET estado'));
+        expect(update[1][0]).toBe('exitoso');
     });
 });

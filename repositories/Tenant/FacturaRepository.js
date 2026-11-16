@@ -654,6 +654,38 @@ class FacturaRepository {
         );
         return { updated: result.affectedRows > 0 };
     }
+
+    /**
+     * Datos mínimos para decidir si una factura del tenant admite corregir su cliente.
+     * `tiene_fe` > 0 si ya existe cualquier registro de facturación electrónica (en cualquier estado).
+     * @returns {Promise<{id:number, numero:number|null, cliente_id:number|null, tiene_fe:number}|null>}
+     */
+    static async findParaEditarCliente(facturaId, tenantId) {
+        const [rows] = await db.query(
+            `SELECT f.id, f.numero, f.cliente_id,
+                    (SELECT COUNT(*) FROM facturas_electronicas fe WHERE fe.factura_id = f.id) AS tiene_fe
+             FROM facturas f
+             WHERE f.id = ? AND f.tenant_id = ?`,
+            [facturaId, tenantId]
+        );
+        return rows[0] || null;
+    }
+
+    /**
+     * Cambia SOLO el cliente de una factura del tenant. El NOT EXISTS repite la regla de "no electrónica"
+     * dentro del propio UPDATE, para que una emisión encolada entre la lectura y la escritura no se pise.
+     * No toca total, forma de pago, fecha, líneas, caja, finanzas ni inventario.
+     * @returns {Promise<boolean>} true si se actualizó la fila
+     */
+    static async updateCliente(facturaId, tenantId, clienteId) {
+        const [result] = await db.query(
+            `UPDATE facturas SET cliente_id = ?
+             WHERE id = ? AND tenant_id = ?
+               AND NOT EXISTS (SELECT 1 FROM facturas_electronicas fe WHERE fe.factura_id = facturas.id)`,
+            [clienteId, facturaId, tenantId]
+        );
+        return result.affectedRows > 0;
+    }
 }
 
 module.exports = FacturaRepository;

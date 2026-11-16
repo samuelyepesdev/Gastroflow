@@ -2,6 +2,7 @@ const {
     fechaColombia,
     hoyColombia,
     sumarDias,
+    esUltimoDiaDelMes,
     sumarMeses,
     rangoUtcColombia,
     SQL_COLOMBIA,
@@ -60,6 +61,24 @@ describe('sumarMeses', () => {
         ['2026-10-31', 12, '2027-10-31']
     ])('%s %+d mes(es) -> %s', (dia, n, esperado) => {
         expect(sumarMeses(dia, n)).toBe(esperado);
+    });
+});
+
+describe('esUltimoDiaDelMes', () => {
+    test.each([
+        ['2026-11-30', true],
+        ['2026-11-29', false],
+        ['2026-12-31', true], // fin de año
+        ['2027-02-28', true],
+        ['2028-02-28', false], // bisiesto: el 29 es el último
+        ['2028-02-29', true],
+        ['2026-01-01', false]
+    ])('%s -> %s', (dia, esperado) => {
+        expect(esUltimoDiaDelMes(dia)).toBe(esperado);
+    });
+
+    test('sin argumento usa hoy en Colombia', () => {
+        expect(esUltimoDiaDelMes()).toBe(esUltimoDiaDelMes(hoyColombia()));
     });
 });
 

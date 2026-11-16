@@ -84,9 +84,10 @@ class InventarioService {
      */
     static async registrarEntrada(
         tenantId,
-        { insumo_id, cantidad, costo_unitario, referencia, proveedor_id, documento_referencia, usuario_id }
+        { insumo_id, cantidad, costo_unitario, referencia, proveedor_id, documento_referencia, usuario_id },
+        externa = null
     ) {
-        const insumo = await InsumoRepository.findById(insumo_id, tenantId);
+        const insumo = await InsumoRepository.findById(insumo_id, tenantId, externa);
         if (!insumo) {
             throw new Error('Insumo no encontrado');
         }
@@ -96,9 +97,13 @@ class InventarioService {
         }
 
         const costo = calcularCostoEntrada(costo_unitario, insumo);
-        const conn = await db.getConnection();
+        // Con `externa` (p. ej. recibir una orden de compra) la entrada se escribe en la transacción de quien la
+        // abrió, que hace el commit/rollback: así varias entradas son todo-o-nada.
+        const conn = externa || (await db.getConnection());
         try {
-            await conn.beginTransaction();
+            if (!externa) {
+                await conn.beginTransaction();
+            }
             await conn.query(
                 `INSERT INTO movimientos_inventario (tenant_id, insumo_id, proveedor_id, tipo, cantidad, costo_unitario, referencia, documento_referencia) VALUES (?, ?, ?, 'entrada', ?, ?, ?, ?)`,
                 [
@@ -134,13 +139,19 @@ class InventarioService {
             await registrarGastoFinanzasSiAplica(tenantId, insumo, insumo_id, cant, costo, { usuario_id, conn });
             // --------------------------------
 
-            await conn.commit();
+            if (!externa) {
+                await conn.commit();
+            }
             return { nuevoStock, nuevoCosto };
         } catch (e) {
-            await conn.rollback();
+            if (!externa) {
+                await conn.rollback();
+            }
             throw e;
         } finally {
-            conn.release();
+            if (!externa) {
+                conn.release();
+            }
         }
     }
 
@@ -214,7 +225,7 @@ class InventarioService {
             return { insumos: 0 };
         }
 
-        const insumos = await InsumoRepository.findByIds([...porInsumo.keys()], tenantId);
+        const insumos = await InsumoRepository.findByIds([...porInsumo.keys()], tenantId, externa);
         const ordenados = [...porInsumo.entries()].filter(([id]) => insumos.has(id)).sort((a, b) => a[0] - b[0]);
         if (ordenados.length === 0) {
             return { insumos: 0 };
@@ -412,7 +423,7 @@ class InventarioService {
      */
     static async descontarPorReceta(tenantId, productoId, cantidad, referencia, conn = null) {
         // Combo: se descuenta la receta de cada componente (cantidad del combo x cantidad del componente).
-        const componentes = await ComboRepository.getComponentes(productoId, tenantId);
+        const componentes = await ComboRepository.getComponentes(productoId, tenantId, conn);
         if (componentes.length > 0) {
             for (const c of componentes) {
                 await this._descontarRecetaProducto(
@@ -432,19 +443,20 @@ class InventarioService {
      * Ingredientes de la receta de un producto ya convertidos a unidad base del insumo (para N porciones).
      * Solo lee: no escribe nada. Devuelve [] si el producto no tiene receta.
      */
-    static async _ingredientesEnBase(tenantId, productoId, cantidad) {
-        const receta = await RecetaRepository.findByProductoId(productoId, tenantId);
+    static async _ingredientesEnBase(tenantId, productoId, cantidad, conn = null) {
+        const receta = await RecetaRepository.findByProductoId(productoId, tenantId, conn);
         if (!receta) {
             return [];
         }
-        const ingredientes = await RecetaRepository.getIngredientes(receta.id);
+        const ingredientes = await RecetaRepository.getIngredientes(receta.id, conn);
         const porciones = Number.parseFloat(receta.porciones) || 1;
         const factor = (Number.parseFloat(cantidad) || 1) / porciones;
 
         // Un solo batch fetch para resolver unidad_base de todos los ingredientes.
         const insumosPorId = await InsumoRepository.findByIds(
             (ingredientes || []).map(ing => ing.insumo_id),
-            tenantId
+            tenantId,
+            conn
         );
 
         const salidas = [];
@@ -463,7 +475,7 @@ class InventarioService {
     }
 
     static async _descontarRecetaProducto(tenantId, productoId, cantidad, referencia, conn = null) {
-        const salidas = await this._ingredientesEnBase(tenantId, productoId, cantidad);
+        const salidas = await this._ingredientesEnBase(tenantId, productoId, cantidad, conn);
         await this.registrarSalidasLote(tenantId, salidas, referencia || `Receta producto ${productoId}`, conn);
     }
 
@@ -478,15 +490,20 @@ class InventarioService {
         for (const l of lineas || []) {
             try {
                 const cant = Number.parseFloat(l.cantidad) || 1;
-                const componentes = await ComboRepository.getComponentes(l.producto_id, tenantId);
+                const componentes = await ComboRepository.getComponentes(l.producto_id, tenantId, conn);
                 if (componentes.length > 0) {
                     for (const c of componentes) {
                         acumulado.push(
-                            ...(await this._ingredientesEnBase(tenantId, c.producto_id, cant * Number(c.cantidad)))
+                            ...(await this._ingredientesEnBase(
+                                tenantId,
+                                c.producto_id,
+                                cant * Number(c.cantidad),
+                                conn
+                            ))
                         );
                     }
                 } else {
-                    acumulado.push(...(await this._ingredientesEnBase(tenantId, l.producto_id, cant)));
+                    acumulado.push(...(await this._ingredientesEnBase(tenantId, l.producto_id, cant, conn)));
                 }
             } catch (err) {
                 console.error('Error al calcular el descuento de inventario por receta:', err);

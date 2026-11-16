@@ -2,9 +2,11 @@
  * Tests unitarios para OrdenCompraService (repositorios e InventarioService mockeados).
  */
 
+jest.mock('../../../config/database', () => ({ getConnection: jest.fn() }));
 jest.mock('../../../repositories/Tenant/OrdenCompraRepository', () => ({
     findAll: jest.fn(),
     findById: jest.fn(),
+    bloquear: jest.fn(),
     create: jest.fn(),
     marcarRecibida: jest.fn(),
     cancelar: jest.fn()
@@ -19,6 +21,7 @@ jest.mock('../../../services/Tenant/InventarioService', () => ({
     registrarEntrada: jest.fn()
 }));
 
+const db = require('../../../config/database');
 const OrdenCompraService = require('../../../services/Tenant/OrdenCompraService');
 const OrdenCompraRepository = require('../../../repositories/Tenant/OrdenCompraRepository');
 const ProveedorRepository = require('../../../repositories/Tenant/ProveedorRepository');
@@ -81,7 +84,15 @@ describe('OrdenCompraService.crear', () => {
 });
 
 describe('OrdenCompraService.recibir', () => {
-    beforeEach(() => jest.clearAllMocks());
+    let conn;
+
+    beforeEach(() => {
+        jest.resetAllMocks();
+        conn = { beginTransaction: jest.fn(), commit: jest.fn(), rollback: jest.fn(), release: jest.fn() };
+        db.getConnection.mockResolvedValue(conn);
+        OrdenCompraRepository.bloquear.mockResolvedValue({ id: 1, estado: 'pendiente', proveedor_id: 9 });
+        OrdenCompraRepository.findById.mockResolvedValue(ordenPendiente());
+    });
 
     function ordenPendiente() {
         return {
@@ -96,57 +107,81 @@ describe('OrdenCompraService.recibir', () => {
     }
 
     it('rechaza si la orden no existe', async () => {
-        OrdenCompraRepository.findById.mockResolvedValue(null);
+        OrdenCompraRepository.bloquear.mockResolvedValue(null);
         await expect(OrdenCompraService.recibir(1, 1, [{ id: 100, cantidad_recibida: 10 }])).rejects.toThrow(
             'no encontrada'
         );
+        expect(conn.rollback).toHaveBeenCalled();
     });
 
-    it('rechaza si la orden ya no está pendiente', async () => {
-        OrdenCompraRepository.findById.mockResolvedValue({ ...ordenPendiente(), estado: 'recibida' });
+    it('rechaza si la orden ya no está pendiente (leído con la orden bloqueada: un doble clic no duplica)', async () => {
+        OrdenCompraRepository.bloquear.mockResolvedValue({ id: 1, estado: 'recibida' });
         await expect(OrdenCompraService.recibir(1, 1, [{ id: 100, cantidad_recibida: 10 }])).rejects.toThrow(
             'ya está recibida'
         );
+        expect(InventarioService.registrarEntrada).not.toHaveBeenCalled();
+        expect(conn.rollback).toHaveBeenCalled();
+        expect(conn.commit).not.toHaveBeenCalled();
     });
 
     it('rechaza una línea que no pertenece a la orden', async () => {
-        OrdenCompraRepository.findById.mockResolvedValue(ordenPendiente());
         await expect(OrdenCompraService.recibir(1, 1, [{ id: 999, cantidad_recibida: 10 }])).rejects.toThrow(
             'no pertenece a esta orden'
         );
+        expect(conn.rollback).toHaveBeenCalled();
     });
 
-    it('registra una entrada de inventario por línea con cantidad > 0 y marca la orden recibida', async () => {
-        OrdenCompraRepository.findById.mockResolvedValue(ordenPendiente());
+    it('sin líneas no abre transacción', async () => {
+        await expect(OrdenCompraService.recibir(1, 1, [])).rejects.toThrow('al menos una línea');
+        expect(db.getConnection).not.toHaveBeenCalled();
+    });
 
+    it('todo en UNA transacción: bloquea la orden y usa la MISMA conexión en entradas y marcarRecibida, un solo commit', async () => {
         const result = await OrdenCompraService.recibir(1, 1, [
             { id: 100, cantidad_recibida: 8 }, // llegó menos de lo pedido
             { id: 101, cantidad_recibida: 0 } // no llegó nada de esta línea
         ]);
 
+        expect(OrdenCompraRepository.bloquear).toHaveBeenCalledWith(1, 1, conn);
+        expect(OrdenCompraRepository.findById).toHaveBeenCalledWith(1, 1, conn);
         expect(InventarioService.registrarEntrada).toHaveBeenCalledTimes(1);
-        expect(InventarioService.registrarEntrada).toHaveBeenCalledWith(1, {
-            insumo_id: 5,
-            cantidad: 8,
-            costo_unitario: 2500,
-            proveedor_id: 9,
-            documento_referencia: 'OC-1'
-        });
-        expect(OrdenCompraRepository.marcarRecibida).toHaveBeenCalledWith(1, 1, [
-            { id: 100, cantidad_recibida: 8 },
-            { id: 101, cantidad_recibida: 0 }
-        ]);
+        expect(InventarioService.registrarEntrada).toHaveBeenCalledWith(
+            1,
+            { insumo_id: 5, cantidad: 8, costo_unitario: 2500, proveedor_id: 9, documento_referencia: 'OC-1' },
+            conn
+        );
+        expect(OrdenCompraRepository.marcarRecibida).toHaveBeenCalledWith(
+            1,
+            1,
+            [
+                { id: 100, cantidad_recibida: 8 },
+                { id: 101, cantidad_recibida: 0 }
+            ],
+            conn
+        );
+        expect(conn.beginTransaction).toHaveBeenCalledTimes(1);
+        expect(conn.commit).toHaveBeenCalledTimes(1);
+        expect(conn.rollback).not.toHaveBeenCalled();
+        expect(conn.release).toHaveBeenCalledTimes(1);
         expect(result.message).toMatch(/inventario/i);
     });
 
-    it('no marca la orden como recibida si una entrada de inventario falla', async () => {
-        OrdenCompraRepository.findById.mockResolvedValue(ordenPendiente());
-        InventarioService.registrarEntrada.mockRejectedValue(new Error('Insumo no encontrado'));
+    it('si falla una línea a mitad, se revierte TODO: no se marca recibida y no hay commit', async () => {
+        InventarioService.registrarEntrada
+            .mockResolvedValueOnce({ nuevoStock: 1 })
+            .mockRejectedValueOnce(new Error('Insumo no encontrado'));
 
-        await expect(OrdenCompraService.recibir(1, 1, [{ id: 100, cantidad_recibida: 8 }])).rejects.toThrow(
-            'Insumo no encontrado'
-        );
+        await expect(
+            OrdenCompraService.recibir(1, 1, [
+                { id: 100, cantidad_recibida: 8 },
+                { id: 101, cantidad_recibida: 3 }
+            ])
+        ).rejects.toThrow('Insumo no encontrado');
+
         expect(OrdenCompraRepository.marcarRecibida).not.toHaveBeenCalled();
+        expect(conn.commit).not.toHaveBeenCalled();
+        expect(conn.rollback).toHaveBeenCalledTimes(1);
+        expect(conn.release).toHaveBeenCalledTimes(1);
     });
 });
 

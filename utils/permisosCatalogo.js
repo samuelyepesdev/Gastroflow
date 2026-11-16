@@ -121,7 +121,14 @@ const SECCIONES = [
         seccion: 'Facturas',
         permisos: [
             { nombre: 'facturas.crear', descripcion: 'Crear facturas', modulo: 'ventas', roles: [...CAJA, 'mesero'] },
-            { nombre: 'facturas.ver', descripcion: 'Ver facturas', modulo: 'ventas', roles: CAJA }
+            { nombre: 'facturas.ver', descripcion: 'Ver facturas', modulo: 'ventas', roles: CAJA },
+            {
+                nombre: 'facturas.editar',
+                descripcion:
+                    'Corregir el cliente de una factura normal desde el historial de ventas (no aplica a facturas electrónicas)',
+                modulo: 'ventas',
+                roles: ADMIN
+            }
         ]
     },
     {

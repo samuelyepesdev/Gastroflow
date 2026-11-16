@@ -153,6 +153,10 @@ if (tableBody) {
     tableBody.addEventListener('click', function (e) {
         const btnDet = e.target.closest('.btn-detalles');
         const btnReim = e.target.closest('.btn-reimprimir');
+        const btnEditar = e.target.closest('.btn-editar-cliente');
+        if (btnEditar) {
+            abrirEditarCliente(btnEditar);
+        }
         if (btnDet) {
             const id = btnDet.dataset.facturaId;
             if (id) mostrarDetalles(id);
@@ -161,6 +165,78 @@ if (tableBody) {
             const id = btnReim.dataset.facturaId;
             const numero = btnReim.dataset.facturaNumero;
             if (id) mostrarFactura(id, numero != null && numero !== '' ? numero : undefined);
+        }
+    });
+}
+
+// ── Corregir cliente de una factura normal (permiso facturas.editar) ──
+const editarCliente = { facturaId: null, clienteId: null, timer: null };
+
+function elEditar(id) {
+    return document.getElementById(id);
+}
+
+function limpiarSeleccionCliente() {
+    editarCliente.clienteId = null;
+    elEditar('editarClienteGuardar').disabled = true;
+}
+
+function abrirEditarCliente(btn) {
+    const modalEl = elEditar('editarClienteModal');
+    if (!modalEl) return;
+    editarCliente.facturaId = btn.dataset.facturaId;
+    limpiarSeleccionCliente();
+    elEditar('editarClienteNumero').textContent = '#' + btn.dataset.facturaNumero;
+    elEditar('editarClienteActual').textContent = btn.dataset.clienteNombre || 'Consumidor final';
+    elEditar('editarClienteBuscar').value = '';
+    elEditar('editarClienteResultados').innerHTML = '';
+    bootstrap.Modal.getOrCreateInstance(modalEl).show();
+}
+
+async function buscarClientesParaEditar(q) {
+    const cont = elEditar('editarClienteResultados');
+    if (!q || q.trim().length < 2) {
+        cont.innerHTML = '';
+        return;
+    }
+    const clientes = await GF.api.getOr('/clientes/buscar?q=' + encodeURIComponent(q.trim()), []);
+    cont.innerHTML = (clientes || []).length === 0
+        ? '<div class="list-group-item text-muted small">Sin resultados</div>'
+        : clientes.map(function (c) {
+            return '<button type="button" class="list-group-item list-group-item-action" data-cliente-id="' + Number(c.id) + '">' +
+                GF.escapeHtml(c.nombre || '') +
+                (c.telefono ? ' <span class="text-muted small">· ' + GF.escapeHtml(c.telefono) + '</span>' : '') +
+                '</button>';
+        }).join('');
+}
+
+if (elEditar('editarClienteModal')) {
+    elEditar('editarClienteBuscar').addEventListener('input', function (e) {
+        limpiarSeleccionCliente();
+        clearTimeout(editarCliente.timer);
+        editarCliente.timer = setTimeout(function () { buscarClientesParaEditar(e.target.value); }, 300);
+    });
+
+    elEditar('editarClienteResultados').addEventListener('click', function (e) {
+        const item = e.target.closest('[data-cliente-id]');
+        if (!item) return;
+        editarCliente.clienteId = item.dataset.clienteId;
+        elEditar('editarClienteResultados').querySelectorAll('.active').forEach(function (n) { n.classList.remove('active'); });
+        item.classList.add('active');
+        elEditar('editarClienteGuardar').disabled = false;
+    });
+
+    elEditar('editarClienteGuardar').addEventListener('click', async function () {
+        if (!editarCliente.facturaId || !editarCliente.clienteId) return;
+        const btn = this;
+        GF.cargando(btn, true);
+        try {
+            await GF.api.put('/facturas/' + editarCliente.facturaId + '/cliente', { cliente_id: Number(editarCliente.clienteId) }, 'No se pudo corregir el cliente');
+            GF.toast('Cliente de la factura actualizado', 'success');
+            window.location.reload();
+        } catch (err) {
+            GF.toast(err.message, 'error');
+            GF.cargando(btn, false);
         }
     });
 }

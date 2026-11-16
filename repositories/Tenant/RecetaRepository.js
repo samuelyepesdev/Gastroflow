@@ -66,8 +66,8 @@ class RecetaRepository {
         return row;
     }
 
-    static async findByProductoId(productoId, tenantId) {
-        const [rows] = await db.query(
+    static async findByProductoId(productoId, tenantId, conn = null) {
+        const [rows] = await (conn || db).query(
             'SELECT id, tenant_id, producto_id, nombre_receta, porciones, costos_adicionales, created_at, updated_at ' +
                 'FROM recetas WHERE producto_id = ? AND tenant_id = ?',
             [productoId, tenantId]
@@ -111,8 +111,8 @@ class RecetaRepository {
         return result;
     }
 
-    static async getIngredientes(recetaId) {
-        const [rows] = await db.query(
+    static async getIngredientes(recetaId, conn = null) {
+        const [rows] = await (conn || db).query(
             `
             SELECT ri.*, i.nombre AS insumo_nombre, i.codigo AS insumo_codigo, i.unidad_compra, i.unidad_base,
                    i.cantidad_compra, i.precio_compra, i.costo_promedio, i.rendimiento_pct, i.stock_actual

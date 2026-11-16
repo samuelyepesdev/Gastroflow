@@ -13,9 +13,9 @@ class CajaRepository {
     /**
      * Obtiene la sesión abierta actual para un tenant
      */
-    static async getSesionAbierta(tenantId) {
+    static async getSesionAbierta(tenantId, conn = null) {
         const sql = `SELECT * FROM caja_sesiones WHERE tenant_id = ? AND estado = 'abierta' LIMIT 1`;
-        const [rows] = await db.query(sql, [tenantId]);
+        const [rows] = await (conn || db).query(sql, [tenantId]);
         return rows[0];
     }
 

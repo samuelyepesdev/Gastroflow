@@ -25,20 +25,21 @@ class PostVentaService {
      * Si la detección falla se asume que no (el ingreso se registra igual).
      * @param {Array<{producto_id?:number, nombre?:string, es_servicio?:boolean}>} lineas
      */
-    static async detectarCeramica(tenantId, lineas) {
+    static async detectarCeramica(tenantId, lineas, conn = null) {
         try {
             const reales = lineas.filter(l => l.producto_id && !esIdInsumoVirtual(l.producto_id));
             const virtuales = lineas.filter(l => l.producto_id && esIdInsumoVirtual(l.producto_id));
-            const [insumosPorId, productosPorId] = await Promise.all([
-                InsumoRepository.findByIds(
-                    virtuales.map(l => insumoIdDeVirtual(l.producto_id)),
-                    tenantId
-                ),
-                ProductRepository.findByIds(
-                    reales.filter(l => !l.es_servicio).map(l => l.producto_id),
-                    tenantId
-                )
-            ]);
+            // Una conexión de transacción ejecuta una consulta a la vez: en secuencia, no en paralelo.
+            const insumosPorId = await InsumoRepository.findByIds(
+                virtuales.map(l => insumoIdDeVirtual(l.producto_id)),
+                tenantId,
+                conn
+            );
+            const productosPorId = await ProductRepository.findByIds(
+                reales.filter(l => !l.es_servicio).map(l => l.producto_id),
+                tenantId,
+                conn
+            );
             return lineas.some(l => {
                 if (esCeramicaPorNombre(l.nombre)) {
                     return true;
@@ -66,7 +67,7 @@ class PostVentaService {
      *   `fecha` ('YYYY-MM-DD') solo para ventas de evento de otro día.
      */
     static async registrarEfectosEnTransaccion(connection, { tenantId, facturaId, lineas, total, usuarioId, fecha }) {
-        const esCeramica = await PostVentaService.detectarCeramica(tenantId, lineas);
+        const esCeramica = await PostVentaService.detectarCeramica(tenantId, lineas, connection);
 
         await FinanzasService.registrarIngresoVenta(tenantId, {
             monto: total,

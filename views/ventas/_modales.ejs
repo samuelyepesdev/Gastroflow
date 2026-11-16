@@ -19,6 +19,31 @@
     </div>
 </div>
 
+<!-- Modal para corregir el cliente de una factura normal (permiso facturas.editar) -->
+<div class="modal fade" id="editarClienteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-pencil-square me-2"></i>Corregir cliente <span id="editarClienteNumero"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <p class="small text-muted mb-3">
+                    Solo cambia el cliente de la factura. El total, la forma de pago, el inventario y la caja no se modifican.
+                </p>
+                <p class="mb-2">Cliente actual: <strong id="editarClienteActual"></strong></p>
+                <label for="editarClienteBuscar" class="form-label">Buscar nuevo cliente</label>
+                <input type="search" class="form-control" id="editarClienteBuscar" placeholder="Nombre o teléfono" autocomplete="off">
+                <div class="list-group mt-2" id="editarClienteResultados" style="max-height: 220px; overflow-y: auto;"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="editarClienteGuardar" disabled>Guardar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Modal para detalles de factura -->
 <div class="modal fade" id="detallesModal" tabindex="-1">
     <div class="modal-dialog modal-lg">

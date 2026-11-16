@@ -14,6 +14,8 @@ const PrecioCatalogoService = require('./PrecioCatalogoService');
 const PostVentaService = require('./Facturacion/PostVentaService');
 const TenantOwnership = require('./TenantOwnership');
 const EventoRepository = require('../../repositories/Tenant/EventoRepository');
+const ClienteRepository = require('../../repositories/Tenant/ClienteRepository');
+const { ValidationError, NotFoundError, ConflictError } = require('../../utils/errors');
 const { hoyColombia, resolverDiaPasado, toFechaDia } = require('../../utils/dateHelpers');
 
 /** Error de datos del usuario: el controlador lo devuelve como 400 con su mensaje. */
@@ -244,6 +246,42 @@ class FacturaService {
             throw new Error('Factura no encontrada');
         }
         return details;
+    }
+
+    /**
+     * Corrige el cliente de una factura normal. Es lo único editable: no mueve dinero ni stock.
+     * Las facturas con facturación electrónica (cualquier estado) no se pueden editar.
+     * @returns {Promise<{id:number, cliente_id:number}>}
+     */
+    static async editarCliente(tenantId, facturaId, clienteId) {
+        const id = Number(facturaId);
+        const nuevoClienteId = Number(clienteId);
+        if (!Number.isInteger(id) || id <= 0) {
+            throw new ValidationError('Factura inválida', 'FACTURA_INVALIDA');
+        }
+        if (!Number.isInteger(nuevoClienteId) || nuevoClienteId <= 0) {
+            throw new ValidationError('Selecciona un cliente válido', 'CLIENTE_INVALIDO');
+        }
+
+        const factura = await FacturaRepository.findParaEditarCliente(id, tenantId);
+        if (!factura) {
+            throw new NotFoundError('Factura no encontrada', 'FACTURA_NO_ENCONTRADA');
+        }
+        if (Number(factura.tiene_fe) > 0) {
+            throw new ConflictError('Las facturas electrónicas no se pueden editar', 'FACTURA_ELECTRONICA');
+        }
+
+        // El cliente llega del navegador: debe ser de este restaurante (si no, se leería el de otro).
+        const cliente = await ClienteRepository.findById(nuevoClienteId, tenantId);
+        if (!cliente) {
+            throw new NotFoundError('Cliente no encontrado', 'CLIENTE_NO_ENCONTRADO');
+        }
+
+        const actualizada = await FacturaRepository.updateCliente(id, tenantId, nuevoClienteId);
+        if (!actualizada) {
+            throw new ConflictError('Las facturas electrónicas no se pueden editar', 'FACTURA_ELECTRONICA');
+        }
+        return { id, cliente_id: nuevoClienteId, cliente_nombre: cliente.nombre };
     }
 }
 
