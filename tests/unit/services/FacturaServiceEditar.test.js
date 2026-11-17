@@ -3,7 +3,7 @@
  */
 
 jest.mock('../../../repositories/Tenant/FacturaRepository', () => ({
-    findParaEditarCliente: jest.fn(),
+    findParaEditar: jest.fn(),
     updateCliente: jest.fn()
 }));
 jest.mock('../../../repositories/Tenant/ClienteRepository', () => ({
@@ -24,7 +24,7 @@ const FacturaService = require('../../../services/Tenant/FacturaService');
 describe('FacturaService.editarCliente', () => {
     beforeEach(() => {
         jest.clearAllMocks();
-        FacturaRepository.findParaEditarCliente.mockResolvedValue({ id: 10, numero: 5, cliente_id: 1, tiene_fe: 0 });
+        FacturaRepository.findParaEditar.mockResolvedValue({ id: 10, numero: 5, cliente_id: 1, tiene_fe: 0 });
         ClienteRepository.findById.mockResolvedValue({ id: 7, nombre: 'Ana' });
         FacturaRepository.updateCliente.mockResolvedValue(true);
     });
@@ -37,7 +37,7 @@ describe('FacturaService.editarCliente', () => {
     });
 
     it('rechaza una factura con facturación electrónica (409) sin escribir', async () => {
-        FacturaRepository.findParaEditarCliente.mockResolvedValue({ id: 10, cliente_id: 1, tiene_fe: 1 });
+        FacturaRepository.findParaEditar.mockResolvedValue({ id: 10, cliente_id: 1, tiene_fe: 1 });
 
         await expect(FacturaService.editarCliente(3, 10, 7)).rejects.toMatchObject({
             statusCode: 409,
@@ -56,13 +56,13 @@ describe('FacturaService.editarCliente', () => {
     });
 
     it('404 si la factura no es de este restaurante', async () => {
-        FacturaRepository.findParaEditarCliente.mockResolvedValue(null);
+        FacturaRepository.findParaEditar.mockResolvedValue(null);
 
         await expect(FacturaService.editarCliente(3, 10, 7)).rejects.toMatchObject({
             statusCode: 404,
             code: 'FACTURA_NO_ENCONTRADA'
         });
-        expect(FacturaRepository.findParaEditarCliente).toHaveBeenCalledWith(10, 3);
+        expect(FacturaRepository.findParaEditar).toHaveBeenCalledWith(10, 3);
     });
 
     it('404 si el cliente es de otro restaurante', async () => {

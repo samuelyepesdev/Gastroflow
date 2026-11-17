@@ -125,7 +125,7 @@ const SECCIONES = [
             {
                 nombre: 'facturas.editar',
                 descripcion:
-                    'Corregir el cliente de una factura normal desde el historial de ventas (no aplica a facturas electrónicas)',
+                    'Corregir el cliente y la forma de pago de una factura normal desde el historial de ventas (la forma de pago solo con el turno de caja abierto; no aplica a facturas electrónicas)',
                 modulo: 'ventas',
                 roles: ADMIN
             }
