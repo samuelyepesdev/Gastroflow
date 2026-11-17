@@ -131,7 +131,7 @@ const formatMoney = (n) => '$ ' + Math.round(n).toLocaleString('es-CO');
                                     </button>
                                     <%# Solo facturas normales (sin registro de facturación electrónica) y con el permiso facturas.editar %>
                                     <% if (user && user.permisos && user.permisos.includes('facturas.editar') && !venta.estado_fe) { %>
-                                        <button class="btn-premium-print btn-editar-cliente" title="Corregir cliente"
+                                        <button class="btn-premium-print btn-editar-cliente" title="Corregir cliente o forma de pago"
                                             data-factura-id="<%= venta.id %>"
                                             data-factura-numero="<%= typeof venta.numero !== 'undefined' && venta.numero != null ? venta.numero : venta.id %>"
                                             data-cliente-nombre="<%= venta.cliente_nombre || '' %>">

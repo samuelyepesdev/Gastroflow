@@ -33,6 +33,12 @@ router.get('/:id/imprimir-json', puedeVer, FacturasController.imprimirJson);
 // GET /facturas/:id/detalles - API: Detalles de factura
 router.get('/:id/detalles', puedeVer, FacturasController.getDetalles);
 
+// GET /facturas/:id/editable - Qué admite corregir la factura (cliente / forma de pago)
+router.get('/:id/editable', requirePermission('facturas.editar'), FacturasController.getEditable);
+
+// PUT /facturas/:id/pago - Corregir la forma de pago (factura normal y turno de caja abierto)
+router.put('/:id/pago', requirePermission('facturas.editar'), FacturasController.editarPago);
+
 // PUT /facturas/:id/cliente - Corregir el cliente de una factura normal (no electrónica)
 router.put('/:id/cliente', requirePermission('facturas.editar'), FacturasController.editarCliente);
 

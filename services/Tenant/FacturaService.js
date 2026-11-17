@@ -16,6 +16,17 @@ const TenantOwnership = require('./TenantOwnership');
 const EventoRepository = require('../../repositories/Tenant/EventoRepository');
 const ClienteRepository = require('../../repositories/Tenant/ClienteRepository');
 const { ValidationError, NotFoundError, ConflictError } = require('../../utils/errors');
+const { desglosarPago } = require('../../utils/desglosePago');
+const cacheService = require('../Shared/CacheService');
+
+const MOTIVO_FACTURA_ELECTRONICA = {
+    codigo: 'FACTURA_ELECTRONICA',
+    mensaje: 'Las facturas electrónicas no se pueden editar'
+};
+const MOTIVO_TURNO_CERRADO = {
+    codigo: 'TURNO_CERRADO',
+    mensaje: 'El turno de caja de esta factura ya está cerrado: no se puede cambiar la forma de pago'
+};
 const { hoyColombia, resolverDiaPasado, toFechaDia } = require('../../utils/dateHelpers');
 
 /** Error de datos del usuario: el controlador lo devuelve como 400 con su mensaje. */
@@ -249,7 +260,133 @@ class FacturaService {
     }
 
     /**
-     * Corrige el cliente de una factura normal. Es lo único editable: no mueve dinero ni stock.
+     * Qué se puede corregir de una factura (para el modal de edición): cliente siempre que no sea
+     * electrónica, y forma de pago solo si además su turno de caja sigue abierto y hubo cobro en dinero.
+     */
+    static async getEditable(tenantId, facturaId) {
+        const factura = await FacturaService._cargarParaEditar(tenantId, facturaId);
+        const electronica = Number(factura.tiene_fe) > 0;
+        const pendiente = FacturaService._pendienteEnDinero(factura);
+        const motivoPago = FacturaService._motivoPagoNoEditable(factura, pendiente);
+        return {
+            id: factura.id,
+            numero: factura.numero ?? factura.id,
+            cliente_id: factura.cliente_id,
+            cliente_nombre: factura.cliente_nombre || null,
+            electronica,
+            total: Number(factura.total) || 0,
+            monto_bono: Number(factura.monto_bono) || 0,
+            pendiente_en_dinero: pendiente,
+            forma_pago: factura.forma_pago,
+            monto_efectivo: Number(factura.monto_efectivo) || 0,
+            monto_transferencia: Number(factura.monto_transferencia) || 0,
+            pago_editable: motivoPago === null,
+            pago_motivo: motivoPago ? motivoPago.mensaje : null
+        };
+    }
+
+    /**
+     * Corrige cómo se cobró una factura normal (efectivo, transferencia o mixto con su desglose), solo mientras
+     * el turno de caja donde se cobró siga abierto. No cambia el total, el bono, el inventario ni finanzas.
+     * @returns {Promise<{id:number, forma_pago:string, monto_efectivo:number, monto_transferencia:number}>}
+     */
+    static async editarPago(tenantId, facturaId, datos = {}) {
+        const formaPago = datos.forma_pago;
+        if (!['efectivo', 'transferencia', 'mixto'].includes(formaPago)) {
+            throw new ValidationError('Forma de pago inválida', 'FORMA_PAGO_INVALIDA');
+        }
+
+        const factura = await FacturaService._cargarParaEditar(tenantId, facturaId);
+        const pendiente = FacturaService._pendienteEnDinero(factura);
+        const motivo = FacturaService._motivoPagoNoEditable(factura, pendiente);
+        if (motivo) {
+            throw motivo.codigo === 'SIN_COBRO_EN_DINERO'
+                ? new ValidationError(motivo.mensaje, motivo.codigo)
+                : new ConflictError(motivo.mensaje, motivo.codigo);
+        }
+
+        // Mismo reparto que al cobrar (bono incluido): 'mixto' debe sumar exactamente lo que se cobró en dinero.
+        let cobro;
+        try {
+            cobro = desglosarPago({
+                formaPago,
+                pendiente,
+                montoBono: Number(factura.monto_bono) || 0,
+                efectivo: datos.monto_efectivo,
+                transferencia: datos.monto_transferencia
+            });
+        } catch (error) {
+            throw new ValidationError(error.message, 'PAGO_INVALIDO');
+        }
+
+        // Efectivo recibido (informativo): solo se conserva si sigue cubriendo el efectivo a cobrar.
+        const recibido = Number(factura.efectivo_recibido) || 0;
+        const efectivoRecibido = cobro.montoEfectivo > 0 && recibido >= cobro.montoEfectivo ? recibido : null;
+
+        const r = await FacturaRepository.updatePago(Number(factura.id), tenantId, {
+            formaPago: cobro.formaPago,
+            montoEfectivo: cobro.montoEfectivo,
+            montoTransferencia: cobro.montoTransferencia,
+            efectivoRecibido
+        });
+        if (!r.updated) {
+            const m = r.motivo === 'TURNO_CERRADO' ? MOTIVO_TURNO_CERRADO : MOTIVO_FACTURA_ELECTRONICA;
+            if (r.motivo === 'NO_ENCONTRADA') {
+                throw new NotFoundError('Factura no encontrada', 'FACTURA_NO_ENCONTRADA');
+            }
+            throw new ConflictError(m.mensaje, m.codigo);
+        }
+
+        // El dashboard muestra las ventas por forma de pago: se invalida su caché (best-effort).
+        try {
+            cacheService.deleteByPrefix(`tenant_dashboard_stats_${tenantId}`);
+            cacheService.delete('superadmin_dashboard_stats');
+        } catch (cacheErr) {
+            console.error('Error opcional al invalidar caché de estadísticas:', cacheErr);
+        }
+
+        return {
+            id: Number(factura.id),
+            forma_pago: cobro.formaPago,
+            monto_efectivo: cobro.montoEfectivo,
+            monto_transferencia: cobro.montoTransferencia
+        };
+    }
+
+    static async _cargarParaEditar(tenantId, facturaId) {
+        const id = Number(facturaId);
+        if (!Number.isInteger(id) || id <= 0) {
+            throw new ValidationError('Factura inválida', 'FACTURA_INVALIDA');
+        }
+        const factura = await FacturaRepository.findParaEditar(id, tenantId);
+        if (!factura) {
+            throw new NotFoundError('Factura no encontrada', 'FACTURA_NO_ENCONTRADA');
+        }
+        return factura;
+    }
+
+    /** Lo que se cobró en dinero (total menos bono). */
+    static _pendienteEnDinero(factura) {
+        const pendiente = (Number(factura.total) || 0) - (Number(factura.monto_bono) || 0);
+        return Math.round(pendiente * 100) / 100;
+    }
+
+    /** null si la forma de pago se puede corregir; si no, { codigo, mensaje } con la razón. */
+    static _motivoPagoNoEditable(factura, pendiente) {
+        if (Number(factura.tiene_fe) > 0) {
+            return MOTIVO_FACTURA_ELECTRONICA;
+        }
+        if (factura.caja_sesion_id && factura.estado_caja !== 'abierta') {
+            return MOTIVO_TURNO_CERRADO;
+        }
+        if (pendiente <= 0) {
+            return { codigo: 'SIN_COBRO_EN_DINERO', mensaje: 'Esta factura se pagó completa con bono' };
+        }
+        return null;
+    }
+
+    /**
+     * Corrige el cliente de una factura normal (no mueve dinero ni stock).
      * Las facturas con facturación electrónica (cualquier estado) no se pueden editar.
      * @returns {Promise<{id:number, cliente_id:number}>}
      */
@@ -263,7 +400,7 @@ class FacturaService {
             throw new ValidationError('Selecciona un cliente válido', 'CLIENTE_INVALIDO');
         }
 
-        const factura = await FacturaRepository.findParaEditarCliente(id, tenantId);
+        const factura = await FacturaRepository.findParaEditar(id, tenantId);
         if (!factura) {
             throw new NotFoundError('Factura no encontrada', 'FACTURA_NO_ENCONTRADA');
         }

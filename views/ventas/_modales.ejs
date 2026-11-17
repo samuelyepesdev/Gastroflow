@@ -24,21 +24,49 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title"><i class="bi bi-pencil-square me-2"></i>Corregir cliente <span id="editarClienteNumero"></span></h5>
+                <h5 class="modal-title"><i class="bi bi-pencil-square me-2"></i>Corregir factura <span id="editarClienteNumero"></span></h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
             </div>
             <div class="modal-body">
                 <p class="small text-muted mb-3">
-                    Solo cambia el cliente de la factura. El total, la forma de pago, el inventario y la caja no se modifican.
+                    Solo se corrige el cliente y cómo se cobró. El total, los productos, el inventario y finanzas no se modifican.
                 </p>
-                <p class="mb-2">Cliente actual: <strong id="editarClienteActual"></strong></p>
-                <label for="editarClienteBuscar" class="form-label">Buscar nuevo cliente</label>
-                <input type="search" class="form-control" id="editarClienteBuscar" placeholder="Nombre o teléfono" autocomplete="off">
-                <div class="list-group mt-2" id="editarClienteResultados" style="max-height: 220px; overflow-y: auto;"></div>
+
+                <h6 class="mb-2">Cliente</h6>
+                <p class="mb-2">Actual: <strong id="editarClienteActual"></strong></p>
+                <input type="search" class="form-control" id="editarClienteBuscar" placeholder="Buscar nuevo cliente (nombre o teléfono)" autocomplete="off" aria-label="Buscar nuevo cliente">
+                <div class="list-group mt-2" id="editarClienteResultados" style="max-height: 180px; overflow-y: auto;"></div>
+                <button type="button" class="btn btn-primary btn-sm mt-2" id="editarClienteGuardar" disabled>Guardar cliente</button>
+
+                <hr>
+
+                <h6 class="mb-2">Forma de pago</h6>
+                <div id="editarPagoAviso" class="alert alert-secondary py-2 small d-none"></div>
+                <div id="editarPagoCampos" class="d-none">
+                    <p class="small text-muted mb-2">
+                        Se cobró en dinero: <strong id="editarPagoPendiente"></strong>
+                        <span id="editarPagoBono"></span>
+                    </p>
+                    <select class="form-select" id="editarPagoForma" aria-label="Forma de pago">
+                        <option value="efectivo">Efectivo</option>
+                        <option value="transferencia">Transferencia</option>
+                        <option value="mixto">Mixto (efectivo + transferencia)</option>
+                    </select>
+                    <div class="row g-2 mt-1 d-none" id="editarPagoMixto">
+                        <div class="col-6">
+                            <label for="editarPagoEfectivo" class="form-label small mb-1">Efectivo</label>
+                            <input type="number" min="0" step="1" class="form-control" id="editarPagoEfectivo" inputmode="numeric">
+                        </div>
+                        <div class="col-6">
+                            <label for="editarPagoTransferencia" class="form-label small mb-1">Transferencia</label>
+                            <input type="number" min="0" step="1" class="form-control" id="editarPagoTransferencia" inputmode="numeric">
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-primary btn-sm mt-2" id="editarPagoGuardar">Guardar forma de pago</button>
+                </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-primary" id="editarClienteGuardar" disabled>Guardar</button>
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cerrar</button>
             </div>
         </div>
     </div>

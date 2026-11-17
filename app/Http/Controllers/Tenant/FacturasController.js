@@ -175,6 +175,39 @@ class FacturasController {
         }
     }
 
+    // GET /facturas/:id/editable - Qué se puede corregir de la factura (facturas.editar)
+    static async getEditable(req, res) {
+        try {
+            const tenantId = req.tenant?.id;
+            if (!tenantId) {
+                return res.status(403).json({ error: 'Contexto de tenant no disponible' });
+            }
+            res.json(await FacturaService.getEditable(tenantId, req.params.id));
+        } catch (error) {
+            if (!(error instanceof AppError)) {
+                console.error('Error al cargar la factura para editar:', error);
+            }
+            responderError(res, error, 'Error al cargar la factura');
+        }
+    }
+
+    // PUT /facturas/:id/pago - Corregir la forma de pago mientras el turno de caja esté abierto (facturas.editar)
+    static async editarPago(req, res) {
+        try {
+            const tenantId = req.tenant?.id;
+            if (!tenantId) {
+                return res.status(403).json({ error: 'Contexto de tenant no disponible' });
+            }
+            const resultado = await FacturaService.editarPago(tenantId, req.params.id, req.body);
+            res.json({ success: true, ...resultado });
+        } catch (error) {
+            if (!(error instanceof AppError)) {
+                console.error('Error al editar la forma de pago de la factura:', error);
+            }
+            responderError(res, error, 'Error al editar la factura');
+        }
+    }
+
     // PUT /facturas/:id/cliente - Corregir el cliente de una factura normal (facturas.editar)
     static async editarCliente(req, res) {
         try {

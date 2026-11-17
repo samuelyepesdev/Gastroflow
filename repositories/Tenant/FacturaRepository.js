@@ -656,19 +656,73 @@ class FacturaRepository {
     }
 
     /**
-     * Datos mínimos para decidir si una factura del tenant admite corregir su cliente.
+     * Datos para decidir qué admite corregir una factura del tenant (cliente y forma de pago).
      * `tiene_fe` > 0 si ya existe cualquier registro de facturación electrónica (en cualquier estado).
-     * @returns {Promise<{id:number, numero:number|null, cliente_id:number|null, tiene_fe:number}|null>}
+     * `caja_sesion_id` / `estado_caja`: turno de caja donde se cobró (NULL si no entró a ningún turno).
      */
-    static async findParaEditarCliente(facturaId, tenantId) {
+    static async findParaEditar(facturaId, tenantId) {
         const [rows] = await db.query(
-            `SELECT f.id, f.numero, f.cliente_id,
+            `SELECT f.id, f.numero, f.cliente_id, c.nombre AS cliente_nombre,
+                    f.total, f.forma_pago, f.monto_efectivo, f.monto_transferencia, f.monto_bono, f.efectivo_recibido,
+                    f.caja_sesion_id, cs.estado AS estado_caja,
                     (SELECT COUNT(*) FROM facturas_electronicas fe WHERE fe.factura_id = f.id) AS tiene_fe
              FROM facturas f
+             LEFT JOIN clientes c ON c.id = f.cliente_id AND c.tenant_id = f.tenant_id
+             LEFT JOIN caja_sesiones cs ON cs.id = f.caja_sesion_id AND cs.tenant_id = f.tenant_id
              WHERE f.id = ? AND f.tenant_id = ?`,
             [facturaId, tenantId]
         );
         return rows[0] || null;
+    }
+
+    /**
+     * Cambia SOLO cómo se cobró una factura (forma de pago y su desglose efectivo/transferencia). No toca el
+     * total, el bono, las líneas, el inventario ni finanzas (el ingreso solo guarda el total).
+     * Todo ocurre en una transacción: la factura se bloquea y, si cobró en un turno de caja, el turno se toma
+     * con LOCK IN SHARE MODE -- igual que una venta -- para que el cierre de caja (FOR UPDATE) no corra a la
+     * vez y deje un esperado distinto del arqueo real. El turno debe seguir abierto.
+     * @returns {Promise<{updated: boolean, motivo?: 'NO_ENCONTRADA'|'FACTURA_ELECTRONICA'|'TURNO_CERRADO'}>}
+     */
+    static async updatePago(facturaId, tenantId, { formaPago, montoEfectivo, montoTransferencia, efectivoRecibido }) {
+        const conn = await db.getConnection();
+        try {
+            await conn.beginTransaction();
+            const [rows] = await conn.query(
+                `SELECT f.caja_sesion_id FROM facturas f WHERE f.id = ? AND f.tenant_id = ? FOR UPDATE`,
+                [facturaId, tenantId]
+            );
+            if (rows.length === 0) {
+                await conn.rollback();
+                return { updated: false, motivo: 'NO_ENCONTRADA' };
+            }
+            if (rows[0].caja_sesion_id) {
+                const [turno] = await conn.query(
+                    `SELECT estado FROM caja_sesiones WHERE id = ? AND tenant_id = ? LOCK IN SHARE MODE`,
+                    [rows[0].caja_sesion_id, tenantId]
+                );
+                if (turno.length === 0 || turno[0].estado !== 'abierta') {
+                    await conn.rollback();
+                    return { updated: false, motivo: 'TURNO_CERRADO' };
+                }
+            }
+            const [result] = await conn.query(
+                `UPDATE facturas SET forma_pago = ?, monto_efectivo = ?, monto_transferencia = ?, efectivo_recibido = ?
+                 WHERE id = ? AND tenant_id = ?
+                   AND NOT EXISTS (SELECT 1 FROM facturas_electronicas fe WHERE fe.factura_id = facturas.id)`,
+                [formaPago, montoEfectivo, montoTransferencia, efectivoRecibido, facturaId, tenantId]
+            );
+            if (result.affectedRows === 0) {
+                await conn.rollback();
+                return { updated: false, motivo: 'FACTURA_ELECTRONICA' };
+            }
+            await conn.commit();
+            return { updated: true };
+        } catch (error) {
+            await conn.rollback();
+            throw error;
+        } finally {
+            conn.release();
+        }
     }
 
     /**

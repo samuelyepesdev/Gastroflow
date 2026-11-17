@@ -170,7 +170,7 @@ if (tableBody) {
 }
 
 // ── Corregir cliente de una factura normal (permiso facturas.editar) ──
-const editarCliente = { facturaId: null, clienteId: null, timer: null };
+const editarCliente = { facturaId: null, clienteId: null, timer: null, pendiente: 0 };
 
 function elEditar(id) {
     return document.getElementById(id);
@@ -190,7 +190,45 @@ function abrirEditarCliente(btn) {
     elEditar('editarClienteActual').textContent = btn.dataset.clienteNombre || 'Consumidor final';
     elEditar('editarClienteBuscar').value = '';
     elEditar('editarClienteResultados').innerHTML = '';
+    cargarPagoEditable(btn.dataset.facturaId);
     bootstrap.Modal.getOrCreateInstance(modalEl).show();
+}
+
+// Forma de pago: el servidor dice si se puede corregir (factura normal y turno de caja abierto).
+async function cargarPagoEditable(facturaId) {
+    const aviso = elEditar('editarPagoAviso');
+    const campos = elEditar('editarPagoCampos');
+    campos.classList.add('d-none');
+    aviso.classList.remove('d-none');
+    aviso.textContent = 'Cargando…';
+    try {
+        const d = await GF.api.get('/facturas/' + facturaId + '/editable', 'No se pudo cargar la factura');
+        editarCliente.pendiente = Number(d.pendiente_en_dinero) || 0;
+        if (!d.pago_editable) {
+            aviso.textContent = d.pago_motivo || 'La forma de pago no se puede corregir';
+            return;
+        }
+        aviso.classList.add('d-none');
+        campos.classList.remove('d-none');
+        elEditar('editarPagoPendiente').textContent = GF.dinero(editarCliente.pendiente);
+        elEditar('editarPagoBono').textContent = Number(d.monto_bono) > 0 ? '(más ' + GF.dinero(d.monto_bono) + ' con bono, que no cambia)' : '';
+        elEditar('editarPagoForma').value = ['efectivo', 'transferencia', 'mixto'].includes(d.forma_pago) ? d.forma_pago : 'mixto';
+        elEditar('editarPagoEfectivo').value = d.monto_efectivo || '';
+        elEditar('editarPagoTransferencia').value = d.monto_transferencia || '';
+        actualizarPagoMixto();
+    } catch (err) {
+        aviso.textContent = err.message;
+    }
+}
+
+function actualizarPagoMixto() {
+    elEditar('editarPagoMixto').classList.toggle('d-none', elEditar('editarPagoForma').value !== 'mixto');
+}
+
+// En mixto, al escribir un monto el otro se completa para sumar lo que se cobró en dinero.
+function completarMontoMixto(origen, destino) {
+    const valor = Math.min(Math.max(Number(elEditar(origen).value) || 0, 0), editarCliente.pendiente);
+    elEditar(destino).value = Math.round((editarCliente.pendiente - valor) * 100) / 100;
 }
 
 async function buscarClientesParaEditar(q) {
@@ -224,6 +262,30 @@ if (elEditar('editarClienteModal')) {
         elEditar('editarClienteResultados').querySelectorAll('.active').forEach(function (n) { n.classList.remove('active'); });
         item.classList.add('active');
         elEditar('editarClienteGuardar').disabled = false;
+    });
+
+    elEditar('editarPagoForma').addEventListener('change', actualizarPagoMixto);
+    elEditar('editarPagoEfectivo').addEventListener('input', function () { completarMontoMixto('editarPagoEfectivo', 'editarPagoTransferencia'); });
+    elEditar('editarPagoTransferencia').addEventListener('input', function () { completarMontoMixto('editarPagoTransferencia', 'editarPagoEfectivo'); });
+
+    elEditar('editarPagoGuardar').addEventListener('click', async function () {
+        if (!editarCliente.facturaId) return;
+        const btn = this;
+        const forma = elEditar('editarPagoForma').value;
+        const cuerpo = { forma_pago: forma };
+        if (forma === 'mixto') {
+            cuerpo.monto_efectivo = Number(elEditar('editarPagoEfectivo').value) || 0;
+            cuerpo.monto_transferencia = Number(elEditar('editarPagoTransferencia').value) || 0;
+        }
+        GF.cargando(btn, true);
+        try {
+            await GF.api.put('/facturas/' + editarCliente.facturaId + '/pago', cuerpo, 'No se pudo corregir la forma de pago');
+            GF.toast('Forma de pago actualizada', 'success');
+            window.location.reload();
+        } catch (err) {
+            GF.toast(err.message, 'error');
+            GF.cargando(btn, false);
+        }
     });
 
     elEditar('editarClienteGuardar').addEventListener('click', async function () {
