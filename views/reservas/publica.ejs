@@ -18,90 +18,114 @@
     </header>
 
     <main class="rp-wrap">
-        <section id="rpFormulario" class="rp-card" aria-labelledby="rpTitulo">
-            <h2 id="rpTitulo" class="rp-titulo">Cuéntanos cuándo vienes</h2>
+        <div id="rpFormulario">
             <% if (vista.mensaje) { %>
-                <p class="rp-mensaje"><i class="bi bi-stars"></i> <%= vista.mensaje %></p>
+                <p class="rp-mensaje"><i class="bi bi-stars" aria-hidden="true"></i> <%= vista.mensaje %></p>
             <% } %>
 
-            <div id="rpError" class="alert alert-danger d-none" role="alert"></div>
-
             <form id="rpForm" novalidate autocomplete="on">
-                <div class="row g-3">
-                    <div class="col-6">
-                        <label for="rpPersonas" class="form-label">Personas</label>
-                        <input type="number" class="form-control form-control-lg" id="rpPersonas" name="personas" min="1" max="<%= vista.max_personas %>" value="2" inputmode="numeric" required>
-                    </div>
-                    <div class="col-6">
-                        <label for="rpFecha" class="form-label">Fecha</label>
-                        <input type="date" class="form-control form-control-lg" id="rpFecha" name="fecha" min="<%= hoy %>" value="<%= hoy %>" required>
-                    </div>
+                <input type="hidden" id="rpPersonas" name="personas" value="2">
 
-                    <div class="col-12">
-                        <span class="form-label d-block" id="rpHoraLabel">Hora</span>
-                        <div id="rpHoras" class="rp-horas" role="radiogroup" aria-labelledby="rpHoraLabel"></div>
-                        <div id="rpHorasInfo" class="form-text" aria-live="polite"></div>
-                    </div>
+                <!-- Paso 1: cuántos y qué día -->
+                <section class="rp-paso" aria-labelledby="rpP1">
+                    <h2 class="rp-paso-titulo" id="rpP1"><span class="rp-num">1</span>¿Cuántos son y qué día vienen?</h2>
 
-                    <% if (vista.elegir_mesa) { %>
-                    <div class="col-12" id="rpMesaWrap">
-                        <span class="form-label d-block" id="rpMesaLabel">Mesa</span>
-                        <div id="rpMesas" class="rp-mesas" role="radiogroup" aria-labelledby="rpMesaLabel"></div>
-                        <div id="rpMesasInfo" class="form-text" aria-live="polite">Elige primero la hora.</div>
-                    </div>
-                    <% } %>
-
-                    <div class="col-12">
-                        <label for="rpNombre" class="form-label">Nombre</label>
-                        <input type="text" class="form-control form-control-lg" id="rpNombre" name="nombre" maxlength="80" autocomplete="name" required>
-                    </div>
-                    <div class="col-12 col-md-6">
-                        <label for="rpTelefono" class="form-label">Celular</label>
-                        <input type="tel" class="form-control form-control-lg" id="rpTelefono" name="telefono" inputmode="numeric" maxlength="16" autocomplete="tel" placeholder="3001234567" required>
-                    </div>
-                    <div class="col-12 col-md-6">
-                        <label for="rpEmail" class="form-label">Correo (opcional)</label>
-                        <input type="email" class="form-control form-control-lg" id="rpEmail" name="email" maxlength="120" autocomplete="email">
-                    </div>
-                    <div class="col-12 col-md-6">
-                        <label for="rpOcasion" class="form-label">Ocasión (opcional)</label>
-                        <select class="form-select form-select-lg" id="rpOcasion" name="ocasion">
-                            <option value="">—</option>
-                            <option value="cumpleanos">Cumpleaños</option>
-                            <option value="aniversario">Aniversario</option>
-                            <option value="empresarial">Empresarial</option>
-                            <option value="navidad">Navidad / Fin de año</option>
-                            <option value="otra">Otra</option>
-                        </select>
-                    </div>
-                    <div class="col-12 col-md-6">
-                        <label for="rpNotas" class="form-label">Notas (opcional)</label>
-                        <input type="text" class="form-control form-control-lg" id="rpNotas" name="notas" maxlength="300" placeholder="Alergias, silla para bebé...">
-                    </div>
-
-                    <input class="rp-hp" name="web" tabindex="-1" autocomplete="off" aria-hidden="true">
-
-                    <div class="col-12">
-                        <div class="form-check rp-consent">
-                            <input class="form-check-input" type="checkbox" id="rpConsent" name="consentimiento" value="1" required>
-                            <label class="form-check-label" for="rpConsent">
-                                Autorizo a <strong><%= vista.restaurante %></strong> a tratar mis datos (nombre, celular y correo) para gestionar esta reserva y contactarme sobre ella.
-                                Puedo pedir que consulten, corrijan o eliminen mis datos en el restaurante.
-                                <a href="/legal/privacidad" target="_blank" rel="noopener">Política de privacidad</a>.
-                            </label>
+                    <div class="rp-fila">
+                        <span class="rp-etiqueta" id="rpPersonasLabel">Personas</span>
+                        <div class="rp-stepper" role="group" aria-labelledby="rpPersonasLabel">
+                            <button type="button" class="rp-step-btn" id="rpMenos" aria-label="Una persona menos"><i class="bi bi-dash-lg" aria-hidden="true"></i></button>
+                            <output class="rp-step-valor" id="rpPersonasTxt" aria-live="polite">2</output>
+                            <button type="button" class="rp-step-btn" id="rpMas" aria-label="Una persona más"><i class="bi bi-plus-lg" aria-hidden="true"></i></button>
                         </div>
                     </div>
 
-                    <div class="col-12 d-grid">
-                        <button type="submit" class="btn btn-primary btn-lg" id="rpEnviar">Reservar</button>
+                    <div class="rp-fila">
+                        <label class="rp-etiqueta" for="rpFecha">Día</label>
+                        <div class="rp-dia">
+                            <div class="rp-chips" role="group" aria-label="Atajos de día">
+                                <button type="button" class="rp-chip" data-dia="0">Hoy</button>
+                                <button type="button" class="rp-chip" data-dia="1">Mañana</button>
+                            </div>
+                            <input type="date" class="form-control" id="rpFecha" name="fecha" min="<%= hoy %>" value="<%= hoy %>" required>
+                        </div>
                     </div>
-                </div>
+                </section>
+
+                <!-- Paso 2: hora (solo las que tienen lugar) -->
+                <section class="rp-paso" aria-labelledby="rpP2">
+                    <h2 class="rp-paso-titulo" id="rpP2"><span class="rp-num">2</span>¿A qué hora?</h2>
+                    <div id="rpHoras" class="rp-horas" role="radiogroup" aria-labelledby="rpP2"></div>
+                    <p id="rpHorasInfo" class="rp-ayuda" aria-live="polite"></p>
+                </section>
+
+                <% if (vista.elegir_mesa) { %>
+                <!-- Paso 3: mesa (solo las libres a esa hora) -->
+                <section class="rp-paso rp-bloqueado" id="rpPasoMesa" aria-labelledby="rpP3">
+                    <h2 class="rp-paso-titulo" id="rpP3"><span class="rp-num">3</span>Elige tu mesa</h2>
+                    <div id="rpMesas" class="rp-mesas" role="radiogroup" aria-labelledby="rpP3"></div>
+                    <p id="rpMesasInfo" class="rp-ayuda" aria-live="polite">Primero elige la hora.</p>
+                </section>
+                <% } %>
+
+                <!-- Paso final: datos -->
+                <section class="rp-paso rp-bloqueado" id="rpPasoDatos" aria-labelledby="rpP4">
+                    <h2 class="rp-paso-titulo" id="rpP4"><span class="rp-num"><%= vista.elegir_mesa ? 4 : 3 %></span>Tus datos</h2>
+                    <p id="rpDatosAyuda" class="rp-ayuda"><%= vista.elegir_mesa ? 'Primero elige la hora y la mesa.' : 'Primero elige la hora.' %></p>
+
+                    <fieldset id="rpDatos" disabled>
+                        <div class="mb-3">
+                            <label for="rpNombre" class="form-label">Nombre</label>
+                            <input type="text" class="form-control form-control-lg" id="rpNombre" name="nombre" maxlength="80" autocomplete="name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="rpTelefono" class="form-label">Celular (te escribiremos por WhatsApp)</label>
+                            <input type="tel" class="form-control form-control-lg" id="rpTelefono" name="telefono" inputmode="numeric" maxlength="16" autocomplete="tel" placeholder="3001234567" required>
+                        </div>
+
+                        <details class="rp-extra">
+                            <summary>Agregar detalles (opcional)</summary>
+                            <div class="mt-3">
+                                <label for="rpEmail" class="form-label">Correo</label>
+                                <input type="email" class="form-control mb-3" id="rpEmail" name="email" maxlength="120" autocomplete="email">
+                                <label for="rpOcasion" class="form-label">¿Es una celebración?</label>
+                                <select class="form-select mb-3" id="rpOcasion" name="ocasion">
+                                    <option value="">No</option>
+                                    <option value="cumpleanos">Cumpleaños</option>
+                                    <option value="aniversario">Aniversario</option>
+                                    <option value="empresarial">Empresarial</option>
+                                    <option value="navidad">Navidad / Fin de año</option>
+                                    <option value="otra">Otra</option>
+                                </select>
+                                <label for="rpNotas" class="form-label">Notas para el restaurante</label>
+                                <input type="text" class="form-control" id="rpNotas" name="notas" maxlength="300" placeholder="Alergias, silla para bebé, torta...">
+                            </div>
+                        </details>
+
+                        <input class="rp-hp" name="web" tabindex="-1" autocomplete="off" aria-hidden="true">
+
+                        <div class="form-check rp-consent mt-3">
+                            <input class="form-check-input" type="checkbox" id="rpConsent" name="consentimiento" value="1" required>
+                            <label class="form-check-label" for="rpConsent">
+                                Autorizo a <strong><%= vista.restaurante %></strong> a usar mis datos para gestionar esta reserva y contactarme.
+                                <a href="/legal/privacidad" target="_blank" rel="noopener">Política de privacidad</a>.
+                            </label>
+                        </div>
+
+                        <div id="rpResumen" class="rp-resumen" aria-live="polite"></div>
+                        <div id="rpError" class="alert alert-danger d-none" role="alert"></div>
+
+                        <div class="d-grid mt-3">
+                            <button type="submit" class="btn btn-primary btn-lg" id="rpEnviar">Confirmar reserva</button>
+                        </div>
+                    </fieldset>
+                </section>
             </form>
-        </section>
+        </div>
 
         <section id="rpListo" class="rp-card rp-listo d-none" aria-live="polite" tabindex="-1">
             <i class="bi bi-calendar2-check rp-listo-icono" aria-hidden="true"></i>
             <h2 class="rp-titulo" id="rpListoTitulo">¡Solicitud recibida!</h2>
+            <p class="rp-listo-resumen" id="rpListoResumen"></p>
             <p id="rpListoTexto"></p>
             <button type="button" class="btn btn-outline-secondary" id="rpOtra">Hacer otra reserva</button>
         </section>
