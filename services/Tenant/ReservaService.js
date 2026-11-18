@@ -8,6 +8,7 @@
 const crypto = require('crypto');
 const db = require('../../config/database');
 const ReservaRepository = require('../../repositories/Tenant/ReservaRepository');
+const TemaTemporadaService = require('./TemaTemporadaService');
 const { ValidationError, NotFoundError, ConflictError } = require('../../utils/errors');
 const { fechaColombia, hoyColombia, sumarDias, toFechaDia } = require('../../utils/dateHelpers');
 
@@ -553,7 +554,9 @@ class ReservaService {
             max_personas: c.max_personas_reserva,
             dias_max_adelanto: c.dias_max_adelanto,
             elegir_mesa: !!c.elegir_mesa,
-            ocasiones: OCASIONES
+            ocasiones: OCASIONES,
+            // Tema de temporada (Navidad) o null: nunca lanza, sin tema la página se ve normal.
+            tema: await TemaTemporadaService.getActivo(c.tenant_id)
         };
     }
 

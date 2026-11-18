@@ -22,3 +22,12 @@ Atajos a Reservas, Combos y Promociones. Permiso: `temporada.gestionar` (admin).
 * **Solo en transiciones.** `estado_aplicado` guarda lo último aplicado: el proceso modifica `disponible` únicamente cuando el estado calculado cambia. Un «agotado» manual dentro de la ventana no se deshace a la medianoche.
 * **Quitar las fechas** deja el producto con el estado que tenga en ese momento.
 * El proceso diario recorre todos los restaurantes con una sola sentencia `UPDATE ... JOIN`; guardar fechas desde la página lo aplica de inmediato solo para ese restaurante.
+
+### 5. Look navideño (páginas públicas del restaurante)
+* En `/temporada` → «Look navideño»: interruptor, fechas (por defecto 1 de diciembre a 6 de enero), mensaje opcional y opción de animaciones. Tabla `tema_temporada` (un registro por restaurante).
+* **Dónde se ve:** la página pública de reservas y el menú QR. Fuera de la ventana de fechas o con el interruptor apagado, las páginas son idénticas a las de siempre (no se carga CSS ni JS del tema).
+* **Qué incluye:** tira de luces que parpadean, nieve cayendo, banner «Felices fiestas» con el mensaje del restaurante y brillo, adornos colgantes (solo en reservas) y confeti al enviar una reserva.
+* **Marca y paleta:** reservas usa los tokens de `brand.css` (Tinta, Coral, Crema). El menú QR usa la paleta propia de cada restaurante (`--primary-color`) más dorados neutros; no impone colores de GastroFlow.
+* **Movimiento:** se apaga con `prefers-reduced-motion` y con la opción «Animaciones» desactivada (`body.tema-navidad-quieto`).
+* Archivos: `public/css/core/tema-navidad.css`, `public/js/core/tema-navidad.js`, `views/partials/_tema_navidad.ejs`, `services/Tenant/TemaTemporadaService.js`.
+* `TemaTemporadaService.getActivo` nunca lanza: si falla, la página se ve sin tema.

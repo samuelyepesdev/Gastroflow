@@ -16,6 +16,8 @@ body { background: var(--gf-crema); min-height: 100vh; display: flex; flex-direc
     margin: 0;
     overflow-wrap: anywhere;
 }
+.rp-cabecera { position: relative; overflow: hidden; }
+.rp-cabecera--tema { padding-top: 3.4rem; }
 .rp-sub { color: var(--gf-coral); font-weight: 600; margin: 0.35rem 0 0; }
 
 .rp-wrap { width: 100%; max-width: 40rem; margin: -2rem auto 0; padding: 0 1rem 2rem; flex: 1; }

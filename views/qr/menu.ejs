@@ -8,6 +8,9 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <link href="/css/modulos/menu-qr.css?v=<%= assetV %>" rel="stylesheet">
+    <% if (typeof tema !== 'undefined' && tema) { %>
+    <link href="/css/core/tema-navidad.css?v=<%= assetV %>" rel="stylesheet">
+    <% } %>
     <style>
         /* CSS Premium Mobile-First */
         :root {
@@ -19,7 +22,11 @@
         }
     </style>
 </head>
-<body>
+<body<% if (typeof tema !== 'undefined' && tema) { %> class="tema-navidad tema-navidad--qr<%= tema.animaciones ? '' : ' tema-navidad-quieto' %>"<% } %>>
+
+    <% if (typeof tema !== 'undefined' && tema) { %>
+        <%- include('../partials/_tema_navidad', { parte: 'luces', variante: 'qr', adornos: false }) %>
+    <% } %>
 
     <!-- Top Header -->
     <div class="header-top">
@@ -47,6 +54,10 @@
             </div>
         </div>
     </div>
+
+    <% if (typeof tema !== 'undefined' && tema) { %>
+        <%- include('../partials/_tema_navidad', { parte: 'banner', tema }) %>
+    <% } %>
 
     <!-- Categorías Horizontales -->
     <% const hayCombos = combos && combos.length > 0; %>
@@ -329,5 +340,8 @@
     <script src="/js/core/gf.js?v=<%= assetV %>"></script>
     <script src="/js/core/combo-picker.js?v=<%= assetV %>"></script>
     <script src="/js/modulos/menu-qr.js?v=<%= assetV %>"></script>
+    <% if (typeof tema !== 'undefined' && tema) { %>
+    <script src="/js/core/tema-navidad.js?v=<%= assetV %>"></script>
+    <% } %>
 </body>
 </html>

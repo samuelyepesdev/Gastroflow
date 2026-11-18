@@ -228,6 +228,7 @@
             listo.classList.remove('d-none');
             listo.focus();
             window.scrollTo({ top: 0, behavior: 'smooth' });
+            if (window.TemaNavidad) window.TemaNavidad.confeti();
         } catch (e) {
             mostrarError(e.message);
             cargarHoras(); // el cupo pudo cambiar: se refrescan horas y mesas

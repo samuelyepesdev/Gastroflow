@@ -10,14 +10,17 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <link rel="stylesheet" href="/css/core/brand.css?v=<%= assetV %>">
     <link rel="stylesheet" href="/css/modulos/reservas-publica.css?v=<%= assetV %>">
+    <% if (vista.tema) { %><link rel="stylesheet" href="/css/core/tema-navidad.css?v=<%= assetV %>"><% } %>
 </head>
-<body>
-    <header class="rp-cabecera">
+<body<% if (vista.tema) { %> class="tema-navidad<%= vista.tema.animaciones ? '' : ' tema-navidad-quieto' %>"<% } %>>
+    <header class="rp-cabecera<%= vista.tema ? ' rp-cabecera--tema' : '' %>">
+        <% if (vista.tema) { %><%- include('../partials/_tema_navidad', { parte: 'luces', variante: 'sobre', adornos: true }) %><% } %>
         <h1 class="rp-restaurante"><%= vista.restaurante %></h1>
         <p class="rp-sub">Reserva tu mesa</p>
     </header>
 
     <main class="rp-wrap">
+        <% if (vista.tema) { %><%- include('../partials/_tema_navidad', { parte: 'banner', tema: vista.tema }) %><% } %>
         <div id="rpFormulario">
             <% if (vista.mensaje) { %>
                 <p class="rp-mensaje"><i class="bi bi-stars" aria-hidden="true"></i> <%= vista.mensaje %></p>
@@ -139,6 +142,7 @@
     <script>
         window.RESERVA_PUBLICA = <%- jsonSeguro({ token, hoy, maxPersonas: vista.max_personas, elegirMesa: !!vista.elegir_mesa }) %>;
     </script>
+    <% if (vista.tema) { %><script src="/js/core/tema-navidad.js?v=<%= assetV %>"></script><% } %>
     <script src="/js/modulos/reservas-publica.js?v=<%= assetV %>"></script>
 </body>
 </html>
