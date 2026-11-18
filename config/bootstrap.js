@@ -5,6 +5,7 @@ const JobWorkerService = require('../services/Shared/JobWorkerService');
 const DesktopSyncService = require('../services/Shared/DesktopSyncService');
 const SuscripcionService = require('../services/Admin/SuscripcionService');
 const AlertasService = require('../services/Tenant/AlertasService');
+const TemporadaService = require('../services/Tenant/TemporadaService');
 const { esUltimoDiaDelMes, ZONA_COLOMBIA } = require('../utils/dateHelpers');
 
 const runBackgroundJobs = async () => {
@@ -67,6 +68,21 @@ const runBackgroundJobs = async () => {
                 console.error('Error en cron de alertas proactivas:', err.message);
             }
         });
+
+        // Vigencia de productos/combos de temporada: a las 00:05 hora Colombia pone disponible/no disponible a los
+        // que cambiaron de estado ese día. También al arrancar, por si el servidor estuvo apagado a medianoche.
+        const aplicarVigencias = async () => {
+            try {
+                const n = await TemporadaService.aplicarVigenciasTodos();
+                if (n > 0) {
+                    console.log(`--- CRON: vigencia de temporada aplicada a ${n} producto(s) ---`);
+                }
+            } catch (err) {
+                console.error('Error aplicando vigencia de temporada:', err.message);
+            }
+        };
+        cron.schedule('5 0 * * *', aplicarVigencias, { timezone: ZONA_COLOMBIA });
+        aplicarVigencias();
 
         console.log('--- Cron jobs iniciados exitosamente ---');
     } catch (cronErr) {

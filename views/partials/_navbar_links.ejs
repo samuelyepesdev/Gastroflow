@@ -37,7 +37,7 @@
                     <%
                     /* En móvil los enlaces se agrupan en secciones plegables (nav-grupo); en escritorio los
                        grupos no generan caja (display: contents) y la barra se ve igual. */
-                    const hayComercial = nav.can.finanzas || nav.can.bonos || nav.can.fidelizacion || nav.can.sucursales || nav.can.promociones || nav.can.combos;
+                    const hayComercial = nav.can.finanzas || nav.can.bonos || nav.can.fidelizacion || nav.can.sucursales || nav.can.promociones || nav.can.combos || nav.can.temporada;
                     const hayCatalogo = nav.can.productos || nav.can.clientes || (nav.can.inventario && !nav.can.proveedores && !nav.can.recetas);
                 %>
                     <li class="nav-grupo">
@@ -55,6 +55,11 @@
                                     <li class="nav-item"><a class="nav-link" href="/mesas"><i
                                                 class="bi bi-grid-3x3-gap"></i>Mesas</a></li>
                                     <% } %>
+
+                                    <% if (nav.can.reservas) { %>
+                                        <li class="nav-item"><a class="nav-link" href="/reservas"><i
+                                                    class="bi bi-calendar2-check"></i>Reservas</a></li>
+                                        <% } %>
 
                                         <% if (nav.can.pos) { %>
                                             <li class="nav-item"><a class="nav-link" href="/pos"><i
@@ -111,6 +116,11 @@
                                                 <% if (nav.can.combos) { %>
                                                     <li class="nav-item"><a class="nav-link" href="/combos"><i
                                                                 class="bi bi-box-seam"></i>Combos</a></li>
+                                                    <% } %>
+
+                                                <% if (nav.can.temporada) { %>
+                                                    <li class="nav-item"><a class="nav-link" href="/temporada"><i
+                                                                class="bi bi-snow2"></i>Temporada</a></li>
                                                     <% } %>
 
                                                 <% if (hayComercial) { %>

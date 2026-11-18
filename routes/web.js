@@ -97,6 +97,8 @@ router.use('/api/qr', require('./qr_api'));
 router.use('/bono', require('./bono_publico'));
 // Tarjeta de sellos del cliente (la abre desde el enlace/QR): sin login, acotada por token.
 router.use('/tarjeta', require('./tarjeta_publica'));
+// Página pública de reservas: sin login, acotada por token del restaurante.
+router.use('/reservar', require('./reservas_publica'));
 // Webhook público de Wompi (cobro de suscripciones) -- se autentica por firma, no por sesión.
 router.use('/webhooks', require('./webhooks'));
 // Resumen para Safe Hub (panel interno de Safe): se autentica con el token HUB_TOKEN, no por sesión.
@@ -265,6 +267,8 @@ router.get(
 // igual que cualquiera que pueda facturar ya puede registrar un abono.
 router.get('/api/bonos/validar/:codigo', requireAuthWithTenant, BonosController.validar);
 router.use('/promociones', requireAuthWithTenant, promocionesRoutes);
+router.use('/reservas', requireAuthWithTenant, require('./tenant/reservas'));
+router.use('/temporada', requireAuthWithTenant, require('./tenant/temporada'));
 router.use('/combos', requireAuthWithTenant, combosRoutes);
 router.use('/combos-armables', requireAuthWithTenant, combosArmablesRoutes);
 router.use('/api/combos-venta', requireAuthWithTenant, combosVentaRoutes);
