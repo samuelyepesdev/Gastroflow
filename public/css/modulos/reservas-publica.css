@@ -42,6 +42,25 @@ body { background: var(--gf-crema); min-height: 100vh; display: flex; flex-direc
 .rp-hora input:focus-visible + label { outline: 3px solid var(--gf-focus, rgba(255, 90, 54, 0.45)); outline-offset: 2px; }
 .rp-hora input:disabled + label { background: var(--gf-arena); color: var(--gf-gris); text-decoration: line-through; cursor: not-allowed; }
 
+.rp-mesas { display: grid; grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr)); gap: 0.5rem; }
+.rp-mesa { position: relative; }
+.rp-mesa input { position: absolute; opacity: 0; inset: 0; cursor: pointer; }
+.rp-mesa label {
+    display: block;
+    padding: 0.6rem 0.75rem;
+    border: 1px solid var(--gf-linea);
+    border-radius: 0.6rem;
+    background: #fff;
+    color: var(--gf-tinta);
+    cursor: pointer;
+    line-height: 1.25;
+}
+.rp-mesa-num { display: block; font-family: var(--gf-font-titulo); font-weight: 700; }
+.rp-mesa-cap { display: block; font-size: 0.78rem; color: var(--gf-gris); }
+.rp-mesa input:checked + label { background: var(--gf-coral); border-color: var(--gf-coral); color: #fff; }
+.rp-mesa input:checked + label .rp-mesa-cap { color: #fff; }
+.rp-mesa input:focus-visible + label { outline: 3px solid var(--gf-focus, rgba(255, 90, 54, 0.45)); outline-offset: 2px; }
+
 .rp-consent { font-size: 0.85rem; color: var(--gf-gris); }
 .rp-consent a { color: var(--gf-coral-fuerte); }
 .rp-hp { position: absolute; left: -9999px; }

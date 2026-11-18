@@ -59,6 +59,10 @@
         }
     }
 
+    /** '3001234567' -> '300 123 4567' (solo para mostrar; el enlace usa el número limpio). */
+    const formatearTelefono = t => String(t).replace(/^(\d{3})(\d{3})(\d{4})$/, '$1 $2 $3');
+    const etiquetaMesa = m => `Mesa ${m.numero}${m.capacidad ? ` (${m.capacidad} pers.)` : ''}`;
+
     function pintar(reservas) {
         const activas = reservas.filter(r => r.estado !== 'cancelada' && r.estado !== 'no_show');
         const personas = activas.reduce((s, r) => s + r.personas, 0);
@@ -88,7 +92,7 @@
             CFG.puedeGestionar && (r.estado === 'pendiente' || r.estado === 'confirmada')
                 ? `<select class="form-select form-select-sm rv-mesa-sel" data-accion="mesa" data-id="${r.id}" aria-label="Mesa de ${esc(r.nombre)}">
                         <option value="">Sin mesa</option>${mesas
-                            .map(m => `<option value="${m.id}" ${m.id === r.mesa_id ? 'selected' : ''}>Mesa ${esc(m.numero)}</option>`)
+                            .map(m => `<option value="${m.id}" ${m.id === r.mesa_id ? 'selected' : ''}>${esc(etiquetaMesa(m))}</option>`)
                             .join('')}</select>`
                 : `<span class="rv-dato">${mesa}</span>`;
         const wa = `https://wa.me/57${esc(r.telefono)}?text=${encodeURIComponent(
@@ -103,10 +107,18 @@
                     ${r.origen === 'publica' ? '<span class="rv-chip rv-chip--web"><i class="bi bi-globe2"></i> Web</span>' : ''}
                     ${r.ocasion ? `<span class="rv-chip rv-chip--ocasion">${esc(OCASION[r.ocasion] || r.ocasion)}</span>` : ''}
                 </div>
+                <div class="rv-contacto">
+                    <div class="rv-tel">
+                        <i class="bi bi-telephone-fill" aria-hidden="true"></i>
+                        <span class="rv-tel-num">${esc(formatearTelefono(r.telefono))}</span>
+                    </div>
+                    <div class="rv-contacto-btns">
+                        <a class="btn btn-sm rv-btn-wa" href="${wa}" target="_blank" rel="noopener"><i class="bi bi-whatsapp me-1"></i>WhatsApp</a>
+                        <a class="btn btn-sm rv-btn-llamar" href="tel:${esc(r.telefono)}"><i class="bi bi-telephone me-1"></i>Llamar</a>
+                    </div>
+                </div>
                 <div class="rv-linea rv-sec">
-                    <span class="rv-dato"><i class="bi bi-people"></i> ${esc(r.personas)}</span>
-                    <a class="rv-dato" href="tel:${esc(r.telefono)}"><i class="bi bi-telephone"></i> ${esc(r.telefono)}</a>
-                    <a class="rv-dato" href="${wa}" target="_blank" rel="noopener"><i class="bi bi-whatsapp"></i> WhatsApp</a>
+                    <span class="rv-dato"><i class="bi bi-people"></i> ${esc(r.personas)} ${r.personas === 1 ? 'persona' : 'personas'}</span>
                     ${selMesa}
                 </div>
                 ${r.notas ? `<div class="rv-notas"><i class="bi bi-chat-left-text"></i> ${esc(r.notas)}</div>` : ''}
@@ -169,6 +181,36 @@
         } catch (e) {
             sel.innerHTML = '';
             info.textContent = e.message;
+        }
+        cargarMesasLibres();
+    }
+
+    // Selector de mesa de la reserva nueva: solo las libres a esa hora y con capacidad suficiente.
+    async function cargarMesasLibres() {
+        const sel = $('rvMesa');
+        const hora = $('rvHora').value;
+        const fecha = $('rvFechaNueva').value;
+        const previa = sel.value;
+        const personas = Number.parseInt($('rvPersonas').value, 10) || 1;
+        if (!hora || !fecha) {
+            sel.innerHTML = '<option value="">Sin asignar</option>';
+            return;
+        }
+        try {
+            const { mesas: libres } = await GF.api.get(
+                `/reservas/mesas-disponibles?fecha=${encodeURIComponent(fecha)}&hora=${encodeURIComponent(hora)}&personas=${personas}`,
+                'No se pudieron consultar las mesas'
+            );
+            sel.innerHTML =
+                '<option value="">Sin asignar</option>' +
+                libres.map(m => `<option value="${m.id}">${esc(etiquetaMesa(m))}</option>`).join('');
+            if (previa && libres.some(m => String(m.id) === previa)) sel.value = previa;
+            $('rvMesasInfo').textContent = libres.length
+                ? `${libres.length} mesa(s) libre(s) a las ${hora}.`
+                : 'No hay mesas libres con capacidad para esa hora. Revisa la capacidad de tus mesas en Configurar.';
+        } catch (e) {
+            sel.innerHTML = '<option value="">Sin asignar</option>';
+            $('rvMesasInfo').textContent = e.message;
         }
     }
 
@@ -237,10 +279,22 @@
                     anticipacion_min_horas: $('cfgAnticipacion').value,
                     dias_max_adelanto: $('cfgDiasAdelanto').value,
                     mensaje_publico: $('cfgMensaje').value,
-                    auto_confirmar: $('cfgAutoConfirmar').checked
+                    auto_confirmar: $('cfgAutoConfirmar').checked,
+                    elegir_mesa: $('cfgElegirMesa').checked
                 },
                 'No se pudo guardar la configuración'
             );
+            const capacidades = [...document.querySelectorAll('.cfg-capacidad')].map(i => ({
+                id: Number(i.dataset.id),
+                capacidad: i.value === '' ? null : i.value
+            }));
+            if (capacidades.length) {
+                ({ mesas } = await GF.api.put(
+                    '/reservas/mesas/capacidades',
+                    { mesas: capacidades },
+                    'No se pudieron guardar las capacidades'
+                ));
+            }
             configEnlace = config.enlace;
             pintarEnlace();
             GF.toast('Configuración guardada', 'success');
@@ -250,6 +304,19 @@
         } finally {
             GF.cargando(btn, false);
         }
+    }
+
+    function pintarCapacidades() {
+        const cont = $('cfgMesas');
+        if (!cont) return;
+        cont.innerHTML = mesas.length
+            ? mesas
+                  .map(
+                      m => `<label class="cfg-mesa"><span>Mesa ${esc(m.numero)}</span>
+                        <input type="number" class="form-control form-control-sm cfg-capacidad" min="1" max="100" data-id="${m.id}" value="${m.capacidad || ''}" placeholder="—" aria-label="Capacidad de la mesa ${esc(m.numero)}"></label>`
+                  )
+                  .join('')
+            : '<p class="text-muted small mb-0">Aún no tienes mesas físicas.</p>';
     }
 
     async function regenerarEnlace() {
@@ -298,22 +365,23 @@
             if (s) asignarMesa(Number(s.dataset.id), s.value);
         });
 
-        if (CFG.puedeGestionar) {
+        if (CFG.puedeGestionar || CFG.puedeConfigurar) {
             try {
                 ({ mesas } = await GF.api.get('/reservas/mesas', 'No se pudieron cargar las mesas'));
-                $('rvMesa').innerHTML =
-                    '<option value="">Sin asignar</option>' +
-                    mesas.map(m => `<option value="${m.id}">Mesa ${esc(m.numero)}</option>`).join('');
             } catch {
                 mesas = [];
             }
+        }
+        if (CFG.puedeGestionar) {
             $('modalReserva').addEventListener('show.bs.modal', abrirNueva);
             $('rvFechaNueva').addEventListener('change', cargarHoras);
             $('rvPersonas').addEventListener('change', cargarHoras);
+            $('rvHora').addEventListener('change', cargarMesasLibres);
             $('btnGuardarReserva').addEventListener('click', guardarNueva);
         }
         if (CFG.puedeConfigurar) {
             pintarEnlace();
+            pintarCapacidades();
             $('btnGuardarConfig').addEventListener('click', guardarConfig);
             $('btnRegenerarEnlace').addEventListener('click', regenerarEnlace);
             $('btnCopiarEnlace').addEventListener('click', copiarEnlace);

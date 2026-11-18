@@ -244,3 +244,133 @@ describe('ReservaService.disponibilidadPublica', () => {
         ]);
     });
 });
+
+describe('ReservaService - elegir mesa', () => {
+    const { mesaOcupada, mesasLibres } = ReservaService;
+    const configMesa = { ...config, elegir_mesa: 1 };
+    const mesas = [
+        { id: 1, numero: '1', capacidad: 2 },
+        { id: 2, numero: '2', capacidad: 4 },
+        { id: 3, numero: '3', capacidad: null }
+    ];
+    let connection;
+
+    beforeEach(() => {
+        jest.clearAllMocks();
+        connection = {
+            beginTransaction: jest.fn(),
+            commit: jest.fn(),
+            rollback: jest.fn(),
+            release: jest.fn(),
+            query: jest.fn()
+        };
+        db.getConnection.mockResolvedValue(connection);
+        ReservaRepository.getConfigPorToken.mockResolvedValue(configMesa);
+        ReservaRepository.findOcupantesDelDia.mockResolvedValue([]);
+        ReservaRepository.findMesaFisica.mockResolvedValue(mesas[1]);
+        ReservaRepository.create.mockResolvedValue(11);
+    });
+
+    it('mesaOcupada solo cuenta reservas de esa mesa que se cruzan (y puede ignorar la propia)', () => {
+        const res = [{ id: 5, mesa_id: 2, hora_inicio: '19:00', duracion_min: 90, personas: 2 }];
+        expect(mesaOcupada(2, res, 19 * 60 + 30, 21 * 60)).toBe(true);
+        expect(mesaOcupada(2, res, 20 * 60 + 30, 22 * 60)).toBe(false); // empieza justo cuando termina
+        expect(mesaOcupada(1, res, 19 * 60, 20 * 60)).toBe(false); // otra mesa
+        expect(mesaOcupada(2, res, 19 * 60, 20 * 60, 5)).toBe(false); // ignorarId
+    });
+
+    it('mesasLibres oculta las ocupadas, las pequeñas y las sin capacidad definida', () => {
+        const res = [{ id: 5, mesa_id: 2, hora_inicio: '19:00', duracion_min: 90, personas: 2 }];
+        expect(mesasLibres(mesas, res, 19 * 60, 20 * 60 + 30, 2).map(m => m.id)).toEqual([1]);
+        expect(mesasLibres(mesas, [], 19 * 60, 20 * 60 + 30, 3).map(m => m.id)).toEqual([2]);
+    });
+
+    it('la página pública exige elegir una mesa', async () => {
+        await expect(ReservaService.crearPublica('tok', cuerpo, null, AHORA)).rejects.toMatchObject({
+            code: 'RESERVA_MESA_REQUERIDA'
+        });
+    });
+
+    it('reserva la mesa elegida y no aplica el aforo en modo mesa', async () => {
+        ReservaRepository.findOcupantesDelDia.mockResolvedValue([
+            { id: 9, mesa_id: 1, hora_inicio: '19:00', duracion_min: 90, personas: 10 }
+        ]);
+        const r = await ReservaService.crearPublica('tok', { ...cuerpo, mesa_id: 2 }, null, AHORA);
+        expect(r.id).toBe(11);
+        expect(ReservaRepository.create.mock.calls[0][2]).toMatchObject({ mesa_id: 2 });
+    });
+
+    it('rechaza una mesa ya reservada a esa hora (409) y revierte', async () => {
+        ReservaRepository.findOcupantesDelDia.mockResolvedValue([
+            { id: 9, mesa_id: 2, hora_inicio: '19:30', duracion_min: 90, personas: 2 }
+        ]);
+        await expect(ReservaService.crearPublica('tok', { ...cuerpo, mesa_id: 2 }, null, AHORA)).rejects.toMatchObject({
+            code: 'RESERVA_MESA_OCUPADA',
+            statusCode: 409
+        });
+        expect(ReservaRepository.create).not.toHaveBeenCalled();
+        expect(connection.rollback).toHaveBeenCalled();
+    });
+
+    it('rechaza una mesa sin capacidad suficiente aunque se fuerce desde la web', async () => {
+        ReservaRepository.findMesaFisica.mockResolvedValue(mesas[0]); // capacidad 2
+        await expect(
+            ReservaService.crearPublica('tok', { ...cuerpo, mesa_id: 1, personas: 4 }, null, AHORA)
+        ).rejects.toMatchObject({
+            code: 'RESERVA_MESA_CAPACIDAD'
+        });
+    });
+
+    it('la disponibilidad por horario depende de que quede una mesa libre', async () => {
+        ReservaRepository.findMesasFisicas.mockResolvedValue([mesas[1]]);
+        ReservaRepository.findOcupantesDelDia.mockResolvedValue([
+            { id: 9, mesa_id: 2, hora_inicio: '12:00', duracion_min: 90, personas: 2 }
+        ]);
+        const r = await ReservaService.disponibilidadPublica('tok', '2026-12-08', 2, AHORA);
+        expect(r.find(f => f.hora === '12:00').disponible).toBe(false);
+        expect(r.find(f => f.hora === '13:30').disponible).toBe(true);
+    });
+
+    it('mesasDisponiblesPublico devuelve solo las libres y sin datos internos', async () => {
+        ReservaRepository.findMesasFisicas.mockResolvedValue(mesas);
+        const r = await ReservaService.mesasDisponiblesPublico('tok', '2026-12-08', '19:00', 3, AHORA);
+        expect(r).toEqual([{ id: 2, numero: '2', descripcion: '', capacidad: 4 }]);
+    });
+
+    it('asignarMesa rechaza una mesa con otra reserva cruzada, salvo forzar', async () => {
+        ReservaRepository.findById.mockResolvedValue({
+            id: 20,
+            personas: 2,
+            fecha: '2026-12-08',
+            hora_inicio: '19:00',
+            duracion_min: 90
+        });
+        ReservaRepository.findOcupantesDelDia.mockResolvedValue([
+            { id: 9, mesa_id: 2, hora_inicio: '19:30', duracion_min: 90, personas: 2 }
+        ]);
+        await expect(ReservaService.asignarMesa(20, 1, 2)).rejects.toMatchObject({ code: 'RESERVA_MESA_OCUPADA' });
+        await expect(ReservaService.asignarMesa(20, 1, 2, true)).resolves.toEqual({ id: 20, mesa_id: 2 });
+    });
+
+    it('guardarCapacidades valida el rango y que la mesa sea del restaurante', async () => {
+        ReservaRepository.findMesasFisicas.mockResolvedValue(mesas);
+        await expect(ReservaService.guardarCapacidades(1, { mesas: [{ id: 99, capacidad: 2 }] })).rejects.toMatchObject(
+            {
+                code: 'RESERVA_MESA_INVALIDA'
+            }
+        );
+        await expect(ReservaService.guardarCapacidades(1, { mesas: [{ id: 1, capacidad: 0 }] })).rejects.toMatchObject({
+            code: 'RESERVA_CAPACIDAD_INVALIDA'
+        });
+        await ReservaService.guardarCapacidades(1, {
+            mesas: [
+                { id: 1, capacidad: '6' },
+                { id: 3, capacidad: '' }
+            ]
+        });
+        expect(ReservaRepository.setCapacidades).toHaveBeenCalledWith(1, [
+            { id: 1, capacidad: 6 },
+            { id: 3, capacidad: null }
+        ]);
+    });
+});

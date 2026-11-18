@@ -15,6 +15,7 @@ const CAMPOS_CONFIG = [
     'dias_max_adelanto',
     'max_personas_reserva',
     'auto_confirmar',
+    'elegir_mesa',
     'mensaje_publico'
 ];
 
@@ -62,7 +63,7 @@ class ReservaRepository {
     /** Reservas de un día que ocupan aforo (para calcular disponibilidad). */
     static async findOcupantesDelDia(tenantId, fecha, conn = null) {
         const [rows] = await (conn || db).query(
-            `SELECT id, personas, TIME_FORMAT(hora_inicio, '%H:%i') AS hora_inicio, duracion_min
+            `SELECT id, personas, mesa_id, TIME_FORMAT(hora_inicio, '%H:%i') AS hora_inicio, duracion_min
              FROM reservas
              WHERE tenant_id = ? AND fecha = ? AND estado IN (${ESTADOS_OCUPAN.map(() => '?').join(', ')})`,
             [tenantId, fecha, ...ESTADOS_OCUPAN]
@@ -143,15 +144,28 @@ class ReservaRepository {
 
     static async findMesasFisicas(tenantId) {
         const [rows] = await db.query(
-            "SELECT id, numero FROM mesas WHERE tenant_id = ? AND tipo = 'fisica' ORDER BY numero",
+            `SELECT id, numero, descripcion, capacidad FROM mesas
+             WHERE tenant_id = ? AND tipo = 'fisica'
+             ORDER BY CAST(numero AS UNSIGNED), numero`,
             [tenantId]
         );
         return rows;
     }
 
-    static async mesaExiste(tenantId, mesaId) {
-        const [rows] = await db.query('SELECT id FROM mesas WHERE id = ? AND tenant_id = ?', [mesaId, tenantId]);
-        return rows.length > 0;
+    /** Una mesa física del restaurante (o null). Acepta la conexión de la transacción. */
+    static async findMesaFisica(tenantId, mesaId, conn = null) {
+        const [rows] = await (conn || db).query(
+            "SELECT id, numero, capacidad FROM mesas WHERE id = ? AND tenant_id = ? AND tipo = 'fisica'",
+            [mesaId, tenantId]
+        );
+        return rows[0] || null;
+    }
+
+    /** Guarda la capacidad de varias mesas; solo toca mesas del restaurante. */
+    static async setCapacidades(tenantId, items) {
+        for (const { id, capacidad } of items) {
+            await db.query('UPDATE mesas SET capacidad = ? WHERE id = ? AND tenant_id = ?', [capacidad, id, tenantId]);
+        }
     }
 }
 

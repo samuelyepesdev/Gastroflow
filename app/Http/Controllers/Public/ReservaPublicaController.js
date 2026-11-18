@@ -32,6 +32,23 @@ class ReservaPublicaController {
         }
     }
 
+    // GET /reservar/:token/mesas?fecha=&hora=&personas=  -> mesas libres a esa hora
+    static async mesas(req, res) {
+        res.set(SIN_CACHE);
+        try {
+            const mesas = await ReservaService.mesasDisponiblesPublico(
+                req.params.token,
+                req.query.fecha,
+                req.query.hora,
+                req.query.personas
+            );
+            res.json({ mesas });
+        } catch (error) {
+            console.error('Error en ReservaPublicaController.mesas:', error.message);
+            responderError(res, error, 'No se pudieron consultar las mesas');
+        }
+    }
+
     // POST /reservar/:token
     static async crear(req, res) {
         res.set(SIN_CACHE);

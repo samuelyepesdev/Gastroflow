@@ -40,6 +40,34 @@ class ReservasController {
         }
     }
 
+    // GET /reservas/mesas-disponibles?fecha=&hora=&personas= -> mesas libres a esa hora (con capacidad suficiente)
+    static async mesasDisponibles(req, res) {
+        try {
+            const config = await ReservaService.getConfigCompleta(req.tenant.id);
+            const mesas = await ReservaService.mesasDisponibles(
+                req.tenant.id,
+                config,
+                req.query.fecha,
+                req.query.hora,
+                req.query.personas
+            );
+            res.json({ mesas });
+        } catch (error) {
+            console.error('Error al consultar mesas disponibles:', error);
+            responderError(res, error, 'No se pudieron consultar las mesas disponibles');
+        }
+    }
+
+    // PUT /reservas/mesas/capacidades { mesas: [{ id, capacidad }] }
+    static async capacidades(req, res) {
+        try {
+            res.json({ mesas: await ReservaService.guardarCapacidades(req.tenant.id, req.body) });
+        } catch (error) {
+            console.error('Error al guardar capacidades de mesas:', error);
+            responderError(res, error, 'No se pudieron guardar las capacidades');
+        }
+    }
+
     // GET /reservas/mesas -> mesas físicas para asignar
     static async mesas(req, res) {
         try {
@@ -94,7 +122,12 @@ class ReservasController {
     static async mesa(req, res) {
         try {
             res.json(
-                await ReservaService.asignarMesa(Number.parseInt(req.params.id, 10), req.tenant.id, req.body?.mesa_id)
+                await ReservaService.asignarMesa(
+                    Number.parseInt(req.params.id, 10),
+                    req.tenant.id,
+                    req.body?.mesa_id,
+                    req.body?.forzar === true || req.body?.forzar === '1'
+                )
             );
         } catch (error) {
             console.error('Error al asignar mesa a reserva:', error);
