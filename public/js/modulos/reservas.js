@@ -63,7 +63,7 @@
         const activas = reservas.filter(r => r.estado !== 'cancelada' && r.estado !== 'no_show');
         const personas = activas.reduce((s, r) => s + r.personas, 0);
         $('rvResumen').textContent = reservas.length
-            ? `${fechaLarga(fechaActual)} · ${activas.length} reserva(s) · ${personas} persona(s)`
+            ? `${fechaLarga(fechaActual)} · ${activas.length} ${activas.length === 1 ? 'reserva' : 'reservas'} · ${personas} ${personas === 1 ? 'persona' : 'personas'}`
             : fechaLarga(fechaActual);
 
         if (!reservas.length) {
