@@ -7,6 +7,7 @@ const { requirePermission } = require('../../middleware/auth');
 router.use(requirePermission('temporada.gestionar'));
 
 router.get('/', TemporadaController.index);
+router.put('/tema', TemporadaController.guardarTema);
 router.post('/promocion', TemporadaController.crearPromocion);
 router.get('/vigencias', TemporadaController.vigencias);
 router.put('/vigencias', TemporadaController.fijarVigencia);

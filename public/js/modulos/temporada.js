@@ -110,7 +110,31 @@
         }
     }
 
+    async function guardarTema() {
+        const boton = $('tmGuardar');
+        GF.cargando(boton, true);
+        try {
+            const { tema } = await GF.api.put(
+                '/temporada/tema',
+                {
+                    activo: $('tmActivo').checked,
+                    desde: $('tmDesde').value || null,
+                    hasta: $('tmHasta').value || null,
+                    mensaje: $('tmMensaje').value,
+                    animaciones: $('tmAnimaciones').checked
+                },
+                'No se pudo guardar el look navideño'
+            );
+            GF.toast(tema.activo ? 'Look navideño activado' : 'Look navideño guardado (desactivado)', 'success');
+        } catch (e) {
+            GF.error(e.message);
+        } finally {
+            GF.cargando(boton, false);
+        }
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
+        $('tmGuardar').addEventListener('click', guardarTema);
         pintarVigencias();
         contarSeleccion();
         document.querySelectorAll('.tp-crear').forEach(b => b.addEventListener('click', () => crearPromocion(b)));

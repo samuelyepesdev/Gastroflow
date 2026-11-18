@@ -27,6 +27,42 @@
             </div>
         </section>
 
+        <section class="card mb-4" aria-labelledby="tpTemaTitulo">
+            <div class="card-header"><span id="tpTemaTitulo"><i class="bi bi-magic me-2"></i>Look navideño</span></div>
+            <div class="card-body">
+                <p class="text-muted small mb-3">
+                    Decora tu <strong>página de reservas</strong> y tu <strong>menú QR</strong> con luces, nieve y un saludo de temporada.
+                    El menú QR conserva los colores de tu restaurante y la página de reservas usa los de GastroFlow.
+                </p>
+                <div class="form-check form-switch mb-3">
+                    <input type="checkbox" class="form-check-input" id="tmActivo" role="switch" <%= tema.activo ? 'checked' : '' %>>
+                    <label class="form-check-label fw-semibold" for="tmActivo">Activar el look navideño</label>
+                </div>
+                <div class="row g-3">
+                    <div class="col-6 col-md-3">
+                        <label class="form-label" for="tmDesde">Desde</label>
+                        <input type="date" class="form-control" id="tmDesde" value="<%= tema.desde || temaSugerido.desde %>">
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <label class="form-label" for="tmHasta">Hasta (inclusive)</label>
+                        <input type="date" class="form-control" id="tmHasta" value="<%= tema.hasta || temaSugerido.hasta %>">
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label class="form-label" for="tmMensaje">Mensaje para tus clientes (opcional)</label>
+                        <input type="text" class="form-control" id="tmMensaje" maxlength="160" value="<%= tema.mensaje %>" placeholder="Ej: Cenas de Navidad y Año Nuevo con menú especial">
+                    </div>
+                    <div class="col-12">
+                        <div class="form-check form-switch">
+                            <input type="checkbox" class="form-check-input" id="tmAnimaciones" role="switch" <%= tema.animaciones ? 'checked' : '' %>>
+                            <label class="form-check-label" for="tmAnimaciones">Animaciones (nieve, luces que parpadean y confeti)</label>
+                        </div>
+                        <div class="form-text">Se apagan solas en los dispositivos configurados para reducir el movimiento. Fuera de las fechas el tema desaparece solo.</div>
+                    </div>
+                </div>
+                <button type="button" class="btn btn-primary mt-3" id="tmGuardar"><i class="bi bi-check-lg me-1"></i>Guardar look navideño</button>
+            </div>
+        </section>
+
         <section class="card mb-4" aria-labelledby="tpPlantillasTitulo">
             <div class="card-header"><span id="tpPlantillasTitulo"><i class="bi bi-percent me-2"></i>Plantillas de promoción</span></div>
             <div class="card-body">

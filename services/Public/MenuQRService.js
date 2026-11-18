@@ -2,6 +2,7 @@ const MenuQRRepository = require('../../repositories/Public/MenuQRRepository');
 const PromocionService = require('../Tenant/PromocionService');
 const ComboArmableService = require('../Tenant/ComboArmableService');
 const BrochureRepository = require('../../repositories/Tenant/BrochureRepository');
+const TemaTemporadaService = require('../Tenant/TemaTemporadaService');
 
 class MenuQRService {
     /**
@@ -53,7 +54,10 @@ class MenuQRService {
             console.error('Error al cargar brochure del menú QR:', error);
         }
 
-        return { tenant, mesa, categorias, modificadores, combos, brochure };
+        // 7. Tema de temporada (Navidad), opcional: getActivo nunca lanza, sin tema el menú se ve normal
+        const tema = await TemaTemporadaService.getActivo(tenant.id);
+
+        return { tenant, mesa, categorias, modificadores, combos, brochure, tema };
     }
 
     static _agruparProductosPorCategoria(rawProducts) {

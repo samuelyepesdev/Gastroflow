@@ -1,0 +1,27 @@
+<%#
+  Piezas del tema de Navidad de las páginas públicas. Solo se incluye cuando hay un tema activo.
+  Uso:
+    include('../partials/_tema_navidad', { parte: 'luces', variante: 'sobre' | 'qr', adornos: true|false })
+    include('../partials/_tema_navidad', { parte: 'banner', tema })   // tema = { mensaje }
+%>
+<% if (parte === 'luces') { %>
+    <div class="tn-luces <%= variante === 'sobre' ? 'tn-luces--sobre' : 'tn-luces--qr' %>" aria-hidden="true">
+        <div class="tn-cable"></div>
+        <ul class="tn-bombillos">
+            <% for (let i = 0; i < 18; i++) { %><li style="--i: <%= i %>"></li><% } %>
+        </ul>
+    </div>
+    <% if (typeof adornos !== 'undefined' && adornos) { %>
+        <span class="tn-adorno tn-adorno--izq" aria-hidden="true"></span>
+        <span class="tn-adorno tn-adorno--der" aria-hidden="true"></span>
+    <% } %>
+<% } else if (parte === 'banner') { %>
+    <div class="tn-banner" role="note">
+        <i class="bi bi-snow2 tn-banner-icono" aria-hidden="true"></i>
+        <div class="tn-banner-texto">
+            <span class="tn-banner-titulo">Felices fiestas</span>
+            <% if (tema && tema.mensaje) { %><span class="tn-banner-msg"><%= tema.mensaje %></span><% } %>
+        </div>
+        <i class="bi bi-gift tn-banner-regalo" aria-hidden="true"></i>
+    </div>
+<% } %>
