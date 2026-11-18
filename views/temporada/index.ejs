@@ -34,6 +34,14 @@
                     Decora tu <strong>página de reservas</strong> y tu <strong>menú QR</strong> con luces, nieve y un saludo de temporada.
                     El menú QR conserva los colores de tu restaurante y la página de reservas usa los de GastroFlow.
                 </p>
+                <% if (tema.hereda) { %>
+                    <div class="alert alert-info small" role="status">
+                        <i class="bi bi-info-circle me-1"></i>
+                        <strong>GastroFlow activó el look navideño para todos los restaurantes</strong><%
+                            if (tema.global && (tema.global.desde || tema.global.hasta)) { %> (<%= tema.global.desde || 'ya' %> a <%= tema.global.hasta || 'sin fecha final' %>)<% } %>.
+                        Si no lo quieres, apaga el interruptor y guarda: tu decisión prevalece.
+                    </div>
+                <% } %>
                 <div class="form-check form-switch mb-3">
                     <input type="checkbox" class="form-check-input" id="tmActivo" role="switch" <%= tema.activo ? 'checked' : '' %>>
                     <label class="form-check-label fw-semibold" for="tmActivo">Activar el look navideño</label>

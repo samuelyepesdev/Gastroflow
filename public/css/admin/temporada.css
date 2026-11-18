@@ -1,0 +1,6 @@
+/* Superadmin — Look de temporada (marca "Cloche": solo tokens de brand.css). */
+.tg-titulo { font-family: var(--gf-font-titulo); font-weight: 700; font-size: 1.1rem; color: var(--gf-tinta); }
+.tg-buscar { max-width: 16rem; }
+.tg-col-estado { width: 14rem; }
+.tg-chip { display: inline-block; font-size: 0.75rem; font-weight: 600; padding: 0.15rem 0.65rem; border-radius: 999px; background: var(--gf-arena); color: var(--gf-gris); }
+.tg-chip--on { background: var(--gf-tinta); color: var(--gf-crema); }
