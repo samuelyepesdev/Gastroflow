@@ -13,11 +13,11 @@ Branch: feat/reservas-v1 · Delivery: ask-on-risk · Test runner: jest (`npx jes
 - S7: Permissions only via `utils/permisosCatalogo.js`; errors via `utils/errors.js`; dates via `utils/dateHelpers.js`; `GF.api`/`GF.escapeHtml` on the frontend.
 
 ## Tasks
-- T1 (S1,S3,S4,S7) Migration 129 + ReservaRepository + ReservaService + tests — route: inline — status: pending
-- T2 (S3,S6,S7) Panel routes/controller/view/js/css + permissions + navbar — route: inline — status: pending
-- T3 (S2,S6) Public page /reservar/:token — route: inline — status: pending
-- T4 (S5,S6) Product/combo validity dates + Christmas template — route: inline — status: pending
-- T5 docs/modulos/21_reservas.md + README index — route: inline — status: pending
+- T1 (S1,S3,S4,S7) Migration 129 + ReservaRepository + ReservaService + tests — route: inline — status: done (jest 19 tests) — commit ef3db15
+- T2 (S3,S6,S7) Panel routes/controller/view/js/css + permissions + navbar — route: inline — status: done — commit f6fffdd
+- T3 (S2,S6) Public page /reservar/:token — route: inline — status: done — commit e3ce7c9
+- T4 (S5,S6) Migration 130 producto_vigencia (daily cron flips `disponible`, catalog untouched) + /temporada page with 4 promo templates — route: inline — status: done in code, pending commit; migrations 129/130 NOT yet run (local MySQL was down)
+- T5 docs/modulos/21_reservas.md, 22_temporada.md + README index — route: inline — status: done
 
 ## Log
 - L1 (2026-11-18): "reservas v1, y pues trabajamos lo de diciembre de la mano, plantillas y demas, pero recuerda usando  el branding creado y demas respetando eso"

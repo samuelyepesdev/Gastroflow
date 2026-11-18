@@ -465,6 +465,18 @@ const SECCIONES = [
         ]
     },
     {
+        seccion: 'Temporada',
+        permisos: [
+            {
+                nombre: 'temporada.gestionar',
+                descripcion:
+                    'Usar plantillas de promoción de temporada y fijar fechas de vigencia de productos y combos',
+                modulo: null,
+                roles: ADMIN
+            }
+        ]
+    },
+    {
         seccion: 'Reservas',
         permisos: [
             {

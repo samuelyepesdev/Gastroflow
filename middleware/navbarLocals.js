@@ -64,6 +64,7 @@ module.exports = function navbarLocals(req, res, next) {
                     hp('sucursales.gestionar') && !!tenant && !tenant.tenant_padre_id && tenant.max_sucursales > 0,
                 promociones: hp('promociones.ver'),
                 reservas: hp('reservas.ver'),
+                temporada: hp('temporada.gestionar'),
                 combos: hp('combos.ver'),
                 servicios: hp('servicios.ver') && cs('servicios'),
                 pos: hp('pos.ver') && cs('ventas'),

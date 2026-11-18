@@ -268,6 +268,7 @@ router.get(
 router.get('/api/bonos/validar/:codigo', requireAuthWithTenant, BonosController.validar);
 router.use('/promociones', requireAuthWithTenant, promocionesRoutes);
 router.use('/reservas', requireAuthWithTenant, require('./tenant/reservas'));
+router.use('/temporada', requireAuthWithTenant, require('./tenant/temporada'));
 router.use('/combos', requireAuthWithTenant, combosRoutes);
 router.use('/combos-armables', requireAuthWithTenant, combosArmablesRoutes);
 router.use('/api/combos-venta', requireAuthWithTenant, combosVentaRoutes);
