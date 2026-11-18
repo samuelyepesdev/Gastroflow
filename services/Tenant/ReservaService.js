@@ -80,6 +80,28 @@ function ocupacionMaxima(reservas, inicio, fin) {
     );
 }
 
+/** ¿La mesa ya tiene una reserva que se cruza con [inicio, fin)? `ignorarId` excluye a la propia reserva. */
+function mesaOcupada(mesaId, reservas, inicio, fin, ignorarId = null) {
+    return reservas.some(r => {
+        if (Number(r.mesa_id) !== Number(mesaId) || (ignorarId !== null && Number(r.id) === Number(ignorarId))) {
+            return false;
+        }
+        const ini = horaAMinutos(r.hora_inicio);
+        return ini !== null && ini < fin && ini + Number(r.duracion_min) > inicio;
+    });
+}
+
+/** Mesas con capacidad definida y suficiente para `personas` que siguen libres en [inicio, fin). */
+function mesasLibres(mesas, reservas, inicio, fin, personas) {
+    return mesas.filter(
+        m =>
+            m.capacidad !== null &&
+            m.capacidad !== undefined &&
+            Number(m.capacidad) >= personas &&
+            !mesaOcupada(m.id, reservas, inicio, fin)
+    );
+}
+
 /** Celular colombiano de 10 dígitos o null (acepta prefijo 57). */
 function normalizarTelefono(valor) {
     const digitos = String(valor || '').replace(/\D/g, '');
@@ -167,6 +189,7 @@ class ReservaService {
             ),
             auto_confirmar:
                 body.auto_confirmar === true || body.auto_confirmar === 1 || body.auto_confirmar === '1' ? 1 : 0,
+            elegir_mesa: body.elegir_mesa === true || body.elegir_mesa === 1 || body.elegir_mesa === '1' ? 1 : 0,
             mensaje_publico: textoOpcional(body.mensaje_publico, 300, 'El mensaje')
         });
         return ReservaService.getConfig(tenantId);
@@ -193,8 +216,35 @@ class ReservaService {
             dias_max_adelanto: c.dias_max_adelanto,
             max_personas_reserva: c.max_personas_reserva,
             auto_confirmar: !!c.auto_confirmar,
+            elegir_mesa: !!c.elegir_mesa,
             mensaje_publico: c.mensaje_publico || ''
         };
+    }
+
+    /** Capacidad por mesa: entero 1..100 o null (sin definir). Devuelve las mesas actualizadas. */
+    static async guardarCapacidades(tenantId, body = {}) {
+        const lista = Array.isArray(body.mesas) ? body.mesas : [];
+        if (lista.length > 500) {
+            throw new ValidationError('Demasiadas mesas en una sola solicitud', 'RESERVA_CAPACIDAD_INVALIDA');
+        }
+        const validas = new Set((await ReservaRepository.findMesasFisicas(tenantId)).map(m => m.id));
+        const items = lista.map(m => {
+            const id = Number.parseInt(m?.id, 10);
+            const vacio = m?.capacidad === null || m?.capacidad === undefined || m?.capacidad === '';
+            const capacidad = vacio ? null : Number.parseInt(m.capacidad, 10);
+            if (!validas.has(id)) {
+                throw new ValidationError('Una de las mesas no existe', 'RESERVA_MESA_INVALIDA');
+            }
+            if (capacidad !== null && (!Number.isInteger(capacidad) || capacidad < 1 || capacidad > 100)) {
+                throw new ValidationError(
+                    'La capacidad debe estar entre 1 y 100 personas',
+                    'RESERVA_CAPACIDAD_INVALIDA'
+                );
+            }
+            return { id, capacidad };
+        });
+        await ReservaRepository.setCapacidades(tenantId, items);
+        return ReservaRepository.findMesasFisicas(tenantId);
     }
 
     // ------------------------------------------------------------------ disponibilidad
@@ -207,6 +257,7 @@ class ReservaService {
         const dia = ReservaService._validarFecha(fecha, config, ahora);
         const n = Number.parseInt(personas, 10) || 1;
         const ocupantes = await ReservaRepository.findOcupantesDelDia(tenantId, dia, conn);
+        const mesas = config.elegir_mesa ? await ReservaRepository.findMesasFisicas(tenantId) : [];
         const hoy = fechaColombia(ahora);
         const minAhora = minutosAhoraColombia(ahora);
         const limiteMin = minAhora + Number(config.anticipacion_min_horas) * 60;
@@ -214,11 +265,39 @@ class ReservaService {
 
         return generarFranjas(config).map(hora => {
             const ini = horaAMinutos(hora);
+            const muyPronto = dia === hoy && ini < limiteMin;
+            if (config.elegir_mesa) {
+                // Modo mesa: el horario sirve si queda al menos una mesa libre y con capacidad suficiente.
+                const cupos = mesasLibres(mesas, ocupantes, ini, ini + duracion, n).length;
+                return { hora, disponible: !muyPronto && cupos > 0, cupos };
+            }
             const ocupadas = ocupacionMaxima(ocupantes, ini, ini + duracion);
             const libres = Math.max(0, Number(config.aforo_maximo) - ocupadas);
-            const muyPronto = dia === hoy && ini < limiteMin;
             return { hora, disponible: !muyPronto && libres >= n, cupos: libres };
         });
+    }
+
+    /**
+     * Mesas libres para una fecha, hora y cantidad de personas (las ocupadas o muy pequeñas no aparecen).
+     * Valida fecha y hora igual que al reservar.
+     */
+    static async mesasDisponibles(tenantId, config, fecha, hora, personas, ahora = new Date()) {
+        const dia = ReservaService._validarFecha(fecha, config, ahora);
+        const ini = horaAMinutos(hora);
+        if (ini === null || !generarFranjas(config).includes(minutosAHora(ini))) {
+            throw new ValidationError('Elige uno de los horarios disponibles', 'RESERVA_HORA_INVALIDA');
+        }
+        const n = Number.parseInt(personas, 10) || 1;
+        const [ocupantes, mesas] = await Promise.all([
+            ReservaRepository.findOcupantesDelDia(tenantId, dia),
+            ReservaRepository.findMesasFisicas(tenantId)
+        ]);
+        return mesasLibres(mesas, ocupantes, ini, ini + Number(config.duracion_min), n).map(m => ({
+            id: m.id,
+            numero: m.numero,
+            descripcion: m.descripcion || '',
+            capacidad: m.capacidad
+        }));
     }
 
     static _validarFecha(fecha, config, ahora = new Date()) {
@@ -312,8 +391,8 @@ class ReservaService {
         }
         const ocasion = body.ocasion && OCASIONES.includes(body.ocasion) ? body.ocasion : null;
         const mesaId = body.mesa_id ? Number.parseInt(body.mesa_id, 10) : null;
-        if (mesaId && !(await ReservaRepository.mesaExiste(tenantId, mesaId))) {
-            throw new ValidationError('La mesa no existe', 'RESERVA_MESA_INVALIDA');
+        if (origen === 'publica' && config.elegir_mesa && !mesaId) {
+            throw new ValidationError('Elige una mesa para tu reserva', 'RESERVA_MESA_REQUERIDA');
         }
 
         const connection = await db.getConnection();
@@ -322,12 +401,35 @@ class ReservaService {
             await ReservaRepository.bloquearTenant(connection, tenantId);
             const ocupantes = await ReservaRepository.findOcupantesDelDia(tenantId, dia, connection);
             const duracion = Number(config.duracion_min);
-            const ocupadas = ocupacionMaxima(ocupantes, ini, ini + duracion);
-            if (!forzar && ocupadas + personas > Number(config.aforo_maximo)) {
-                throw new ConflictError(
-                    'Ese horario ya no tiene cupo para esa cantidad de personas. Elige otro horario.',
-                    'RESERVA_SIN_CUPO'
-                );
+            if (mesaId) {
+                const mesa = await ReservaRepository.findMesaFisica(tenantId, mesaId, connection);
+                if (!mesa) {
+                    throw new ValidationError('La mesa no existe', 'RESERVA_MESA_INVALIDA');
+                }
+                // Público: la capacidad siempre se respeta. Personal: puede forzarla.
+                const sinCapacidad = mesa.capacidad === null || Number(mesa.capacidad) < personas;
+                if (sinCapacidad && (origen === 'publica' || !forzar)) {
+                    throw new ValidationError(
+                        `La mesa ${mesa.numero} no tiene capacidad para ${personas} persona(s)`,
+                        'RESERVA_MESA_CAPACIDAD'
+                    );
+                }
+                if (!forzar && mesaOcupada(mesaId, ocupantes, ini, ini + duracion)) {
+                    throw new ConflictError(
+                        `La mesa ${mesa.numero} ya está reservada a esa hora. Elige otra mesa u otro horario.`,
+                        'RESERVA_MESA_OCUPADA'
+                    );
+                }
+            }
+            // Con mesas por reserva la capacidad la dan las mesas; el aforo solo manda en el modo por aforo.
+            if (!config.elegir_mesa) {
+                const ocupadas = ocupacionMaxima(ocupantes, ini, ini + duracion);
+                if (!forzar && ocupadas + personas > Number(config.aforo_maximo)) {
+                    throw new ConflictError(
+                        'Ese horario ya no tiene cupo para esa cantidad de personas. Elige otro horario.',
+                        'RESERVA_SIN_CUPO'
+                    );
+                }
             }
             const id = await ReservaRepository.create(connection, tenantId, {
                 nombre,
@@ -387,17 +489,54 @@ class ReservaService {
         return { id, estado };
     }
 
-    static async asignarMesa(id, tenantId, mesaId) {
+    /** Asigna (o quita) la mesa de una reserva. Una mesa con otra reserva cruzada se rechaza salvo `forzar`. */
+    static async asignarMesa(id, tenantId, mesaId, forzar = false) {
         const reserva = await ReservaRepository.findById(id, tenantId);
         if (!reserva) {
             throw new NotFoundError('Reserva no encontrada', 'RESERVA_NO_ENCONTRADA');
         }
         const mesa = mesaId ? Number.parseInt(mesaId, 10) : null;
-        if (mesa && !(await ReservaRepository.mesaExiste(tenantId, mesa))) {
-            throw new ValidationError('La mesa no existe', 'RESERVA_MESA_INVALIDA');
+        if (!mesa) {
+            await ReservaRepository.setMesa(id, tenantId, null);
+            return { id, mesa_id: null };
         }
-        await ReservaRepository.setMesa(id, tenantId, mesa);
-        return { id, mesa_id: mesa };
+        const connection = await db.getConnection();
+        try {
+            await connection.beginTransaction();
+            await ReservaRepository.bloquearTenant(connection, tenantId);
+            const datosMesa = await ReservaRepository.findMesaFisica(tenantId, mesa, connection);
+            if (!datosMesa) {
+                throw new ValidationError('La mesa no existe', 'RESERVA_MESA_INVALIDA');
+            }
+            if (!forzar) {
+                if (datosMesa.capacidad !== null && Number(datosMesa.capacidad) < reserva.personas) {
+                    throw new ValidationError(
+                        `La mesa ${datosMesa.numero} solo tiene capacidad para ${datosMesa.capacidad} persona(s)`,
+                        'RESERVA_MESA_CAPACIDAD'
+                    );
+                }
+                const ocupantes = await ReservaRepository.findOcupantesDelDia(tenantId, reserva.fecha, connection);
+                const ini = horaAMinutos(reserva.hora_inicio);
+                if (mesaOcupada(mesa, ocupantes, ini, ini + Number(reserva.duracion_min), id)) {
+                    throw new ConflictError(
+                        `La mesa ${datosMesa.numero} ya tiene otra reserva a esa hora`,
+                        'RESERVA_MESA_OCUPADA'
+                    );
+                }
+            }
+            await connection.query('UPDATE reservas SET mesa_id = ? WHERE id = ? AND tenant_id = ?', [
+                mesa,
+                id,
+                tenantId
+            ]);
+            await connection.commit();
+            return { id, mesa_id: mesa };
+        } catch (error) {
+            await connection.rollback();
+            throw error;
+        } finally {
+            connection.release();
+        }
     }
 
     // ------------------------------------------------------------------ vista pública
@@ -413,8 +552,21 @@ class ReservaService {
             mensaje: c.mensaje_publico || '',
             max_personas: c.max_personas_reserva,
             dias_max_adelanto: c.dias_max_adelanto,
+            elegir_mesa: !!c.elegir_mesa,
             ocasiones: OCASIONES
         };
+    }
+
+    /** Mesas libres para el público: sin datos internos (solo lo que se muestra en el selector). */
+    static async mesasDisponiblesPublico(token, fecha, hora, personas, ahora = new Date()) {
+        const c = await ReservaRepository.getConfigPorToken(String(token || ''));
+        if (!c) {
+            throw new NotFoundError('Este enlace de reservas no está disponible', 'RESERVA_ENLACE_INVALIDO');
+        }
+        if (!c.elegir_mesa) {
+            return [];
+        }
+        return ReservaService.mesasDisponibles(c.tenant_id, c, fecha, hora, personas, ahora);
     }
 
     static async disponibilidadPublica(token, fecha, personas, ahora = new Date()) {
@@ -432,5 +584,7 @@ module.exports = ReservaService;
 module.exports.horaAMinutos = horaAMinutos;
 module.exports.generarFranjas = generarFranjas;
 module.exports.ocupacionMaxima = ocupacionMaxima;
+module.exports.mesaOcupada = mesaOcupada;
+module.exports.mesasLibres = mesasLibres;
 module.exports.normalizarTelefono = normalizarTelefono;
 module.exports.minutosAhoraColombia = minutosAhoraColombia;

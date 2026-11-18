@@ -28,6 +28,7 @@ const limitadorAlta = rateLimit({
 // Rutas base: /reservar
 router.get('/:token', limitador, ReservaPublicaController.pagina);
 router.get('/:token/disponibilidad', limitador, ReservaPublicaController.disponibilidad);
+router.get('/:token/mesas', limitador, ReservaPublicaController.mesas);
 router.post('/:token', limitadorAlta, ReservaPublicaController.crear);
 
 module.exports = router;

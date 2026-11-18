@@ -21,3 +21,4 @@ Branch: feat/reservas-v1 · Delivery: ask-on-risk · Test runner: jest (`npx jes
 
 ## Log
 - L1 (2026-11-18): "reservas v1, y pues trabajamos lo de diciembre de la mano, plantillas y demas, pero recuerda usando  el branding creado y demas respetando eso"
+- L2 (2026-11-18): "Opción A, que el cliente elija la mesa" — plus: "se quiten y se validen que esta ocupado y que no esta ocupado" (tables reserved at an overlapping time must disappear and be validated). Decision: opt-in `elegir_mesa` per restaurant, `mesas.capacidad`, availability and validation per table; aforo mode stays the default.

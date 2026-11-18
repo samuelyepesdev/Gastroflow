@@ -83,6 +83,7 @@
                         <div class="col-12 col-md-6">
                             <label for="rvMesa" class="form-label">Mesa (opcional)</label>
                             <select class="form-select" id="rvMesa"><option value="">Sin asignar</option></select>
+                            <div class="form-text" id="rvMesasInfo" aria-live="polite"></div>
                         </div>
                         <div class="col-12 col-md-6">
                             <label for="rvOcasion" class="form-label">Ocasión</label>
@@ -183,6 +184,20 @@
                                 <label class="form-check-label" for="cfgAutoConfirmar">Confirmar automáticamente las reservas de la página pública</label>
                             </div>
                             <div class="form-text">Desactivado: llegan como <strong>pendientes</strong> y tú las confirmas (recomendado en temporada alta).</div>
+                        </div>
+                        <div class="col-12">
+                            <div class="form-check form-switch">
+                                <input type="checkbox" class="form-check-input" id="cfgElegirMesa" role="switch" <%= config.elegir_mesa ? 'checked' : '' %>>
+                                <label class="form-check-label fw-semibold" for="cfgElegirMesa">Que el cliente elija su mesa</label>
+                            </div>
+                            <div class="form-text">
+                                Activado: la página pública muestra solo las mesas libres a esa hora y con capacidad suficiente; una mesa reservada deja de aparecer.
+                                Solo se ofrecen las mesas que tengan <strong>capacidad</strong> definida abajo. Desactivado: se reserva por aforo y tú asignas la mesa.
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <span class="form-label d-block">Capacidad de tus mesas (personas)</span>
+                            <div class="cfg-mesas" id="cfgMesas"></div>
                         </div>
                     </div>
                 </div>

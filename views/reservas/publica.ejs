@@ -43,6 +43,14 @@
                         <div id="rpHorasInfo" class="form-text" aria-live="polite"></div>
                     </div>
 
+                    <% if (vista.elegir_mesa) { %>
+                    <div class="col-12" id="rpMesaWrap">
+                        <span class="form-label d-block" id="rpMesaLabel">Mesa</span>
+                        <div id="rpMesas" class="rp-mesas" role="radiogroup" aria-labelledby="rpMesaLabel"></div>
+                        <div id="rpMesasInfo" class="form-text" aria-live="polite">Elige primero la hora.</div>
+                    </div>
+                    <% } %>
+
                     <div class="col-12">
                         <label for="rpNombre" class="form-label">Nombre</label>
                         <input type="text" class="form-control form-control-lg" id="rpNombre" name="nombre" maxlength="80" autocomplete="name" required>
@@ -105,7 +113,7 @@
     </footer>
 
     <script>
-        window.RESERVA_PUBLICA = <%- jsonSeguro({ token, hoy, maxPersonas: vista.max_personas }) %>;
+        window.RESERVA_PUBLICA = <%- jsonSeguro({ token, hoy, maxPersonas: vista.max_personas, elegirMesa: !!vista.elegir_mesa }) %>;
     </script>
     <script src="/js/modulos/reservas-publica.js?v=<%= assetV %>"></script>
 </body>
