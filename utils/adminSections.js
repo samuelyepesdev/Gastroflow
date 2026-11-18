@@ -74,6 +74,7 @@ const ADMIN_SECTIONS = [
         collapsible: true,
         items: [
             { key: 'anuncios', label: 'Anuncios', icon: 'bi-megaphone', href: '/admin/anuncios' },
+            { key: 'temporada', label: 'Look de temporada', icon: 'bi-snow2', href: '/admin/temporada' },
             {
                 key: 'soporte',
                 label: 'Soporte técnico',

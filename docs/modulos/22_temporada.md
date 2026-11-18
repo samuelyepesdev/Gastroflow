@@ -31,3 +31,10 @@ Atajos a Reservas, Combos y Promociones. Permiso: `temporada.gestionar` (admin).
 * **Movimiento:** se apaga con `prefers-reduced-motion` y con la opción «Animaciones» desactivada (`body.tema-navidad-quieto`).
 * Archivos: `public/css/core/tema-navidad.css`, `public/js/core/tema-navidad.js`, `views/partials/_tema_navidad.ejs`, `services/Tenant/TemaTemporadaService.js`.
 * `TemaTemporadaService.getActivo` nunca lanza: si falla, la página se ve sin tema.
+
+### 6. Activación por el superadmin (global y por restaurante)
+* **Panel:** `/admin/temporada` («Look de temporada», en Comunicación). Dos partes: un interruptor **para todos los restaurantes** (con fechas, mensaje general y animaciones) y una tabla **por restaurante** con tres opciones: *Seguir lo global*, *Activado* y *Apagado*.
+* **Quién gana:** la decisión explícita de un restaurante (activado o apagado, la tome él o la fuerce el superadmin) **prevalece** sobre lo global. Solo los restaurantes sin decisión (*Seguir lo global*) siguen el interruptor global. Fechas y mensaje: los propios del restaurante si los tiene, si no los globales. Las animaciones quedan apagadas si cualquiera de los dos las apaga.
+* **Datos:** `tema_temporada_global` (una fila, `id = 1`) y `tema_temporada.activo` ahora admite `NULL` = sin decidir. Forzar o devolver a «Seguir lo global» solo cambia `activo`; no borra las fechas ni el mensaje del restaurante.
+* **Para el restaurante:** en su `/temporada`, si hereda el look global, ve un aviso («GastroFlow activó el look navideño para todos…») y puede apagarlo; al guardar queda como decisión propia.
+* Código: `TemaTemporadaService` (`resolver` es la regla de prioridad), `Admin/TemporadaAdminController`, `routes/admin/temporada.js`, `views/admin/temporada/`, `public/js/admin/temporada.js`.
