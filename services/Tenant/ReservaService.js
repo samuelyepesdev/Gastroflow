@@ -115,6 +115,18 @@ class ReservaService {
         return ReservaService._configPublica(config);
     }
 
+    /** Configuración tal como está en BD (la usa el cálculo de disponibilidad del panel). */
+    static async getConfigCompleta(tenantId) {
+        return (
+            (await ReservaRepository.getConfig(tenantId)) ||
+            (await ReservaRepository.asegurarConfig(tenantId, nuevoToken()))
+        );
+    }
+
+    static async listarMesas(tenantId) {
+        return ReservaRepository.findMesasFisicas(tenantId);
+    }
+
     static async guardarConfig(tenantId, body = {}) {
         await ReservaService.getConfig(tenantId);
         const apertura = horaAMinutos(body.hora_apertura);

@@ -465,6 +465,30 @@ const SECCIONES = [
         ]
     },
     {
+        seccion: 'Reservas',
+        permisos: [
+            {
+                nombre: 'reservas.ver',
+                descripcion: 'Ver las reservas del restaurante',
+                modulo: null,
+                roles: ['admin', 'cajero', 'mesero', 'superadmin']
+            },
+            {
+                nombre: 'reservas.gestionar',
+                descripcion:
+                    'Crear reservas, confirmarlas, asignar mesa, cancelarlas o marcarlas como llegada o no se presentó',
+                modulo: null,
+                roles: ['admin', 'cajero', 'mesero', 'superadmin']
+            },
+            {
+                nombre: 'reservas.configurar',
+                descripcion: 'Configurar aforo, horarios y el enlace público de reservas',
+                modulo: null,
+                roles: ADMIN
+            }
+        ]
+    },
+    {
         seccion: 'Fidelización',
         permisos: [
             {

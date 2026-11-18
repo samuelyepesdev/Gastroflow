@@ -31,7 +31,7 @@ class ReservaRepository {
             `SELECT rc.*, t.nombre AS restaurante
              FROM reserva_config rc
              JOIN tenants t ON t.id = rc.tenant_id
-             WHERE rc.token_publico = ? AND rc.activo = 1`,
+             WHERE rc.token_publico = ? AND rc.activo = 1 AND t.activo = 1`,
             [token]
         );
         return rows[0] || null;
@@ -139,6 +139,14 @@ class ReservaRepository {
             tenantId
         ]);
         return result.affectedRows;
+    }
+
+    static async findMesasFisicas(tenantId) {
+        const [rows] = await db.query(
+            "SELECT id, numero FROM mesas WHERE tenant_id = ? AND tipo = 'fisica' ORDER BY numero",
+            [tenantId]
+        );
+        return rows;
     }
 
     static async mesaExiste(tenantId, mesaId) {
