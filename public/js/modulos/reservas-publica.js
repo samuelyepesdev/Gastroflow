@@ -1,18 +1,35 @@
-/* Reservas — página pública. Sin login: solo fetch propio y textContent (nunca innerHTML con datos). */
+/* Reservas — página pública, por pasos. Sin login: solo fetch propio y textContent (nunca innerHTML con datos). */
 (function () {
     'use strict';
 
     const CFG = window.RESERVA_PUBLICA || {};
     const $ = id => document.getElementById(id);
     const base = `/reservar/${encodeURIComponent(CFG.token)}`;
-    let consultaId = 0;
-    let consultaMesasId = 0;
+    const MAX = Number(CFG.maxPersonas) || 12;
+    let consultaHoras = 0;
+    let consultaMesas = 0;
+    let personas = 2;
+
+    const sumarDias = (dia, n) => {
+        const d = new Date(`${dia}T12:00:00Z`);
+        d.setUTCDate(d.getUTCDate() + n);
+        return d.toISOString().slice(0, 10);
+    };
+    const fechaCorta = dia =>
+        new Date(`${dia}T12:00:00Z`).toLocaleDateString('es-CO', {
+            weekday: 'short',
+            day: 'numeric',
+            month: 'short',
+            timeZone: 'UTC'
+        });
+    const horaElegida = () => (document.querySelector('input[name="hora"]:checked') || {}).value || '';
+    const mesaElegida = () => document.querySelector('input[name="mesa_id"]:checked');
+    const plural = n => `${n} ${n === 1 ? 'persona' : 'personas'}`;
 
     function mostrarError(mensaje) {
         const el = $('rpError');
         el.textContent = mensaje || '';
         el.classList.toggle('d-none', !mensaje);
-        if (mensaje) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 
     async function pedir(url, opciones) {
@@ -29,25 +46,68 @@
         return datos;
     }
 
+    // ------------------------------------------------------------------ pasos y resumen
+
+    /** Desbloquea mesa y datos según lo ya elegido, y actualiza el resumen. */
+    function actualizarPasos() {
+        const hora = horaElegida();
+        const mesa = mesaElegida();
+        const mesaOk = !CFG.elegirMesa || !!mesa;
+        const pasoMesa = $('rpPasoMesa');
+        if (pasoMesa) pasoMesa.classList.toggle('rp-bloqueado', !hora);
+        const datosListos = !!hora && mesaOk;
+        $('rpPasoDatos').classList.toggle('rp-bloqueado', !datosListos);
+        $('rpDatos').disabled = !datosListos;
+        $('rpDatosAyuda').classList.toggle('d-none', datosListos);
+
+        const partes = [];
+        if (hora) {
+            if (mesa) partes.push(mesa.dataset.etiqueta);
+            partes.push(plural(personas), fechaCorta($('rpFecha').value), hora);
+        }
+        $('rpResumen').textContent = datosListos ? `Tu reserva: ${partes.join(' · ')}` : '';
+        $('rpResumen').classList.toggle('d-none', !datosListos);
+    }
+
+    function fijarPersonas(n) {
+        personas = Math.min(MAX, Math.max(1, n));
+        $('rpPersonas').value = String(personas);
+        $('rpPersonasTxt').textContent = String(personas);
+        $('rpMenos').disabled = personas <= 1;
+        $('rpMas').disabled = personas >= MAX;
+        cargarHoras();
+    }
+
+    function marcarChips() {
+        const fecha = $('rpFecha').value;
+        document.querySelectorAll('.rp-chip').forEach(c => {
+            c.classList.toggle('activo', sumarDias(CFG.hoy, Number(c.dataset.dia)) === fecha);
+        });
+    }
+
+    // ------------------------------------------------------------------ horas (solo las que tienen lugar)
+
     async function cargarHoras() {
         const cont = $('rpHoras');
         const info = $('rpHorasInfo');
         const fecha = $('rpFecha').value;
-        const personas = Number.parseInt($('rpPersonas').value, 10) || 1;
-        const miConsulta = ++consultaId;
+        const miConsulta = ++consultaHoras;
+        marcarChips();
         info.textContent = '';
         if (!fecha) {
             cont.replaceChildren();
+            actualizarPasos();
             return;
         }
         try {
             const { franjas } = await pedir(
                 `${base}/disponibilidad?fecha=${encodeURIComponent(fecha)}&personas=${personas}`
             );
-            if (miConsulta !== consultaId) return; // llegó una consulta más nueva
-            const previa = (document.querySelector('input[name="hora"]:checked') || {}).value;
+            if (miConsulta !== consultaHoras) return; // llegó una consulta más nueva
+            const previa = horaElegida();
+            const libres = franjas.filter(f => f.disponible);
             cont.replaceChildren(
-                ...franjas.map((f, i) => {
+                ...libres.map((f, i) => {
                     const caja = document.createElement('div');
                     caja.className = 'rp-hora';
                     const radio = document.createElement('input');
@@ -55,8 +115,7 @@
                     radio.name = 'hora';
                     radio.id = `rpHora${i}`;
                     radio.value = f.hora;
-                    radio.disabled = !f.disponible;
-                    radio.checked = f.disponible && f.hora === previa;
+                    radio.checked = f.hora === previa;
                     const etiqueta = document.createElement('label');
                     etiqueta.htmlFor = radio.id;
                     etiqueta.textContent = f.hora;
@@ -64,38 +123,39 @@
                     return caja;
                 })
             );
-            if (!franjas.some(f => f.disponible)) {
-                info.textContent = 'No hay horarios disponibles ese día para esa cantidad de personas. Prueba otra fecha.';
-            }
-            cargarMesas();
+            info.textContent = libres.length
+                ? ''
+                : `No hay horarios para ${plural(personas)} ese día. Prueba otro día o menos personas.`;
         } catch (e) {
-            if (miConsulta !== consultaId) return;
+            if (miConsulta !== consultaHoras) return;
             cont.replaceChildren();
             info.textContent = e.message;
-            cargarMesas();
         }
+        cargarMesas();
+        actualizarPasos();
     }
 
-    // Mesas libres a la hora elegida: las ocupadas o muy pequeñas no aparecen.
+    // ------------------------------------------------------------------ mesas (solo las libres a esa hora)
+
     async function cargarMesas() {
         if (!CFG.elegirMesa) return;
         const cont = $('rpMesas');
         const info = $('rpMesasInfo');
-        const hora = (document.querySelector('input[name="hora"]:checked') || {}).value;
+        const hora = horaElegida();
         const fecha = $('rpFecha').value;
-        const personas = Number.parseInt($('rpPersonas').value, 10) || 1;
-        const miConsulta = ++consultaMesasId;
+        const miConsulta = ++consultaMesas;
         if (!hora || !fecha) {
             cont.replaceChildren();
-            info.textContent = 'Elige primero la hora.';
+            info.textContent = 'Primero elige la hora.';
+            actualizarPasos();
             return;
         }
         try {
             const { mesas } = await pedir(
                 `${base}/mesas?fecha=${encodeURIComponent(fecha)}&hora=${encodeURIComponent(hora)}&personas=${personas}`
             );
-            if (miConsulta !== consultaMesasId) return;
-            const previa = (document.querySelector('input[name="mesa_id"]:checked') || {}).value;
+            if (miConsulta !== consultaMesas) return;
+            const previa = (mesaElegida() || {}).value;
             cont.replaceChildren(
                 ...mesas.map(m => {
                     const caja = document.createElement('div');
@@ -105,6 +165,7 @@
                     radio.name = 'mesa_id';
                     radio.id = `rpMesa${m.id}`;
                     radio.value = String(m.id);
+                    radio.dataset.etiqueta = `Mesa ${m.numero}`;
                     radio.checked = String(m.id) === previa;
                     const etiqueta = document.createElement('label');
                     etiqueta.htmlFor = radio.id;
@@ -120,63 +181,83 @@
                 })
             );
             info.textContent = mesas.length
-                ? ''
-                : `No hay mesas libres a las ${hora} para ${personas} persona(s). Prueba otra hora.`;
+                ? 'Toca la mesa que prefieras.'
+                : `No hay mesas libres a las ${hora} para ${plural(personas)}. Prueba otra hora.`;
         } catch (e) {
-            if (miConsulta !== consultaMesasId) return;
+            if (miConsulta !== consultaMesas) return;
             cont.replaceChildren();
             info.textContent = e.message;
         }
+        actualizarPasos();
     }
+
+    // ------------------------------------------------------------------ enviar
 
     async function enviar(evento) {
         evento.preventDefault();
         mostrarError('');
-        const form = $('rpForm');
-        const hora = (document.querySelector('input[name="hora"]:checked') || {}).value;
+        const hora = horaElegida();
+        const mesa = mesaElegida();
         if (!hora) return mostrarError('Elige una hora.');
-        if (CFG.elegirMesa && !document.querySelector('input[name="mesa_id"]:checked')) {
-            return mostrarError('Elige una mesa.');
-        }
+        if (CFG.elegirMesa && !mesa) return mostrarError('Elige una mesa.');
         if (!$('rpNombre').value.trim()) return mostrarError('Escribe tu nombre.');
         if (!$('rpTelefono').value.trim()) return mostrarError('Escribe tu celular.');
-        if (!$('rpConsent').checked) return mostrarError('Debes autorizar el tratamiento de tus datos para reservar.');
+        if (!$('rpConsent').checked) return mostrarError('Marca la autorización para poder reservar.');
 
         const boton = $('rpEnviar');
         boton.disabled = true;
         try {
-            const datos = Object.fromEntries(new FormData(form));
+            const datos = Object.fromEntries(new FormData($('rpForm')));
             datos.hora = hora;
+            const resumen = [mesa ? mesa.dataset.etiqueta : null, plural(personas), fechaCorta(datos.fecha), hora]
+                .filter(Boolean)
+                .join(' · ');
             const r = await pedir(base, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(datos)
             });
             $('rpFormulario').classList.add('d-none');
-            const listo = $('rpListo');
             $('rpListoTitulo').textContent = r.estado === 'confirmada' ? '¡Reserva confirmada!' : '¡Solicitud recibida!';
+            $('rpListoResumen').textContent = resumen;
             $('rpListoTexto').textContent =
                 r.estado === 'confirmada'
-                    ? `Te esperamos el ${datos.fecha} a las ${hora}.`
-                    : `Recibimos tu solicitud para el ${datos.fecha} a las ${hora}. El restaurante la confirmará contigo por llamada o WhatsApp.`;
+                    ? 'Te esperamos. Si algo cambia, escríbenos o llámanos.'
+                    : 'El restaurante la confirmará contigo por WhatsApp o llamada.';
+            const listo = $('rpListo');
             listo.classList.remove('d-none');
             listo.focus();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         } catch (e) {
             mostrarError(e.message);
-            cargarHoras();
+            cargarHoras(); // el cupo pudo cambiar: se refrescan horas y mesas
         } finally {
             boton.disabled = false;
         }
     }
 
-    $('rpHoras').addEventListener('change', cargarMesas);
+    // ------------------------------------------------------------------ eventos
+
+    $('rpMenos').addEventListener('click', () => fijarPersonas(personas - 1));
+    $('rpMas').addEventListener('click', () => fijarPersonas(personas + 1));
     $('rpFecha').addEventListener('change', cargarHoras);
-    $('rpPersonas').addEventListener('change', cargarHoras);
+    document.querySelectorAll('.rp-chip').forEach(c =>
+        c.addEventListener('click', () => {
+            $('rpFecha').value = sumarDias(CFG.hoy, Number(c.dataset.dia));
+            cargarHoras();
+        })
+    );
+    $('rpHoras').addEventListener('change', () => {
+        cargarMesas();
+        actualizarPasos();
+    });
+    if ($('rpMesas')) $('rpMesas').addEventListener('change', actualizarPasos);
     $('rpForm').addEventListener('submit', enviar);
     $('rpOtra').addEventListener('click', () => {
         $('rpListo').classList.add('d-none');
         $('rpFormulario').classList.remove('d-none');
         cargarHoras();
     });
-    cargarHoras();
+
+    fijarPersonas(Math.min(2, MAX));
 })();

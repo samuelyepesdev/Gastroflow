@@ -21,7 +21,35 @@ body { background: var(--gf-crema); min-height: 100vh; display: flex; flex-direc
 .rp-wrap { width: 100%; max-width: 40rem; margin: -2rem auto 0; padding: 0 1rem 2rem; flex: 1; }
 .rp-card { background: #fff; border: 1px solid var(--gf-linea); border-radius: 1rem; padding: 1.5rem; box-shadow: 0 0.75rem 1.5rem rgba(14, 27, 44, 0.08); }
 .rp-titulo { font-family: var(--gf-font-titulo); font-weight: 700; font-size: 1.2rem; color: var(--gf-tinta); margin-bottom: 1rem; }
-.rp-mensaje { background: var(--gf-coral-suave); color: var(--gf-tinta); border-radius: 0.6rem; padding: 0.6rem 0.8rem; font-size: 0.9rem; }
+.rp-mensaje { background: #fff; color: var(--gf-tinta); border: 1px solid var(--gf-linea); border-left: 4px solid var(--gf-coral); border-radius: 0.6rem; padding: 0.6rem 0.8rem; font-size: 0.9rem; box-shadow: 0 0.5rem 1rem rgba(14, 27, 44, 0.08); }
+
+/* Pasos: cada uno es una tarjeta con su número; los pasos futuros se ven apagados y no se pueden usar. */
+.rp-paso { background: #fff; border: 1px solid var(--gf-linea); border-radius: 1rem; padding: 1.1rem 1.1rem 1.25rem; margin-bottom: 0.9rem; box-shadow: 0 0.5rem 1rem rgba(14, 27, 44, 0.06); transition: opacity 0.2s ease; }
+.rp-paso-titulo { display: flex; align-items: center; gap: 0.6rem; font-family: var(--gf-font-titulo); font-weight: 700; font-size: 1.05rem; color: var(--gf-tinta); margin: 0 0 0.9rem; }
+.rp-num { display: inline-grid; place-items: center; flex: none; width: 1.7rem; height: 1.7rem; border-radius: 50%; background: var(--gf-coral); color: #fff; font-size: 0.9rem; }
+.rp-bloqueado { opacity: 0.55; }
+.rp-bloqueado .rp-num { background: var(--gf-gris); }
+.rp-bloqueado .rp-mesas, .rp-bloqueado fieldset { pointer-events: none; }
+.rp-ayuda { color: var(--gf-gris); font-size: 0.85rem; margin: 0.6rem 0 0; }
+.rp-ayuda:empty { display: none; }
+.rp-fila { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.6rem 1rem; }
+.rp-fila + .rp-fila { margin-top: 1rem; }
+.rp-etiqueta { font-weight: 600; color: var(--gf-tinta); }
+.rp-stepper { display: inline-flex; align-items: center; gap: 0.25rem; border: 1px solid var(--gf-linea); border-radius: 999px; padding: 0.2rem; background: var(--gf-crema); }
+.rp-step-btn { width: 2.6rem; height: 2.6rem; border: 0; border-radius: 50%; background: #fff; color: var(--gf-tinta); font-size: 1.1rem; display: grid; place-items: center; cursor: pointer; }
+.rp-step-btn:hover:not(:disabled) { background: var(--gf-coral); color: #fff; }
+.rp-step-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.rp-step-btn:focus-visible, .rp-chip:focus-visible { outline: 3px solid var(--gf-focus, rgba(255, 90, 54, 0.45)); outline-offset: 2px; }
+.rp-step-valor { min-width: 2.5rem; text-align: center; font-family: var(--gf-font-titulo); font-weight: 700; font-size: 1.3rem; }
+.rp-dia { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
+.rp-dia .form-control { width: auto; }
+.rp-chips { display: flex; gap: 0.4rem; }
+.rp-chip { border: 1px solid var(--gf-linea); background: #fff; color: var(--gf-tinta); border-radius: 999px; padding: 0.4rem 0.9rem; font-weight: 600; cursor: pointer; }
+.rp-chip.activo { background: var(--gf-tinta); border-color: var(--gf-tinta); color: var(--gf-crema); }
+.rp-extra summary { cursor: pointer; color: var(--gf-coral-fuerte); font-weight: 600; }
+.rp-resumen { margin-top: 1rem; padding: 0.7rem 0.9rem; border-radius: 0.6rem; background: var(--gf-tinta); color: var(--gf-crema); font-weight: 600; text-align: center; }
+.rp-resumen:empty { display: none; }
+.rp-listo-resumen { font-family: var(--gf-font-titulo); font-weight: 700; color: var(--gf-tinta); font-size: 1.05rem; }
 .rp-mensaje i { color: var(--gf-coral-fuerte); }
 
 .rp-horas { display: grid; grid-template-columns: repeat(auto-fill, minmax(4.75rem, 1fr)); gap: 0.5rem; }
@@ -66,5 +94,6 @@ body { background: var(--gf-crema); min-height: 100vh; display: flex; flex-direc
 .rp-hp { position: absolute; left: -9999px; }
 
 .rp-listo { text-align: center; }
+.rp-listo:focus { outline: none; }
 .rp-listo-icono { font-size: 2.5rem; color: var(--gf-coral); }
 .rp-pie { display: flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 1rem; color: var(--gf-gris); font-size: 0.8rem; }
