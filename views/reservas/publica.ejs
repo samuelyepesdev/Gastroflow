@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Reservar en <%= vista.restaurante %></title>
+    <link rel="icon" href="/brand/favicon/favicon.svg" type="image/svg+xml">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="/css/core/brand.css?v=<%= assetV %>">
+    <link rel="stylesheet" href="/css/modulos/reservas-publica.css?v=<%= assetV %>">
+</head>
+<body>
+    <header class="rp-cabecera">
+        <h1 class="rp-restaurante"><%= vista.restaurante %></h1>
+        <p class="rp-sub">Reserva tu mesa</p>
+    </header>
+
+    <main class="rp-wrap">
+        <section id="rpFormulario" class="rp-card" aria-labelledby="rpTitulo">
+            <h2 id="rpTitulo" class="rp-titulo">Cuéntanos cuándo vienes</h2>
+            <% if (vista.mensaje) { %>
+                <p class="rp-mensaje"><i class="bi bi-stars"></i> <%= vista.mensaje %></p>
+            <% } %>
+
+            <div id="rpError" class="alert alert-danger d-none" role="alert"></div>
+
+            <form id="rpForm" novalidate autocomplete="on">
+                <div class="row g-3">
+                    <div class="col-6">
+                        <label for="rpPersonas" class="form-label">Personas</label>
+                        <input type="number" class="form-control form-control-lg" id="rpPersonas" name="personas" min="1" max="<%= vista.max_personas %>" value="2" inputmode="numeric" required>
+                    </div>
+                    <div class="col-6">
+                        <label for="rpFecha" class="form-label">Fecha</label>
+                        <input type="date" class="form-control form-control-lg" id="rpFecha" name="fecha" min="<%= hoy %>" value="<%= hoy %>" required>
+                    </div>
+
+                    <div class="col-12">
+                        <span class="form-label d-block" id="rpHoraLabel">Hora</span>
+                        <div id="rpHoras" class="rp-horas" role="radiogroup" aria-labelledby="rpHoraLabel"></div>
+                        <div id="rpHorasInfo" class="form-text" aria-live="polite"></div>
+                    </div>
+
+                    <div class="col-12">
+                        <label for="rpNombre" class="form-label">Nombre</label>
+                        <input type="text" class="form-control form-control-lg" id="rpNombre" name="nombre" maxlength="80" autocomplete="name" required>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label for="rpTelefono" class="form-label">Celular</label>
+                        <input type="tel" class="form-control form-control-lg" id="rpTelefono" name="telefono" inputmode="numeric" maxlength="16" autocomplete="tel" placeholder="3001234567" required>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label for="rpEmail" class="form-label">Correo (opcional)</label>
+                        <input type="email" class="form-control form-control-lg" id="rpEmail" name="email" maxlength="120" autocomplete="email">
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label for="rpOcasion" class="form-label">Ocasión (opcional)</label>
+                        <select class="form-select form-select-lg" id="rpOcasion" name="ocasion">
+                            <option value="">—</option>
+                            <option value="cumpleanos">Cumpleaños</option>
+                            <option value="aniversario">Aniversario</option>
+                            <option value="empresarial">Empresarial</option>
+                            <option value="navidad">Navidad / Fin de año</option>
+                            <option value="otra">Otra</option>
+                        </select>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label for="rpNotas" class="form-label">Notas (opcional)</label>
+                        <input type="text" class="form-control form-control-lg" id="rpNotas" name="notas" maxlength="300" placeholder="Alergias, silla para bebé...">
+                    </div>
+
+                    <input class="rp-hp" name="web" tabindex="-1" autocomplete="off" aria-hidden="true">
+
+                    <div class="col-12">
+                        <div class="form-check rp-consent">
+                            <input class="form-check-input" type="checkbox" id="rpConsent" name="consentimiento" value="1" required>
+                            <label class="form-check-label" for="rpConsent">
+                                Autorizo a <strong><%= vista.restaurante %></strong> a tratar mis datos (nombre, celular y correo) para gestionar esta reserva y contactarme sobre ella.
+                                Puedo pedir que consulten, corrijan o eliminen mis datos en el restaurante.
+                                <a href="/legal/privacidad" target="_blank" rel="noopener">Política de privacidad</a>.
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="col-12 d-grid">
+                        <button type="submit" class="btn btn-primary btn-lg" id="rpEnviar">Reservar</button>
+                    </div>
+                </div>
+            </form>
+        </section>
+
+        <section id="rpListo" class="rp-card rp-listo d-none" aria-live="polite" tabindex="-1">
+            <i class="bi bi-calendar2-check rp-listo-icono" aria-hidden="true"></i>
+            <h2 class="rp-titulo" id="rpListoTitulo">¡Solicitud recibida!</h2>
+            <p id="rpListoTexto"></p>
+            <button type="button" class="btn btn-outline-secondary" id="rpOtra">Hacer otra reserva</button>
+        </section>
+    </main>
+
+    <footer class="rp-pie">
+        <img src="/brand/isotipo/isotipo-color.svg" alt="" width="20" height="20">
+        <span>Reservas con GastroFlow</span>
+    </footer>
+
+    <script>
+        window.RESERVA_PUBLICA = <%- jsonSeguro({ token, hoy, maxPersonas: vista.max_personas }) %>;
+    </script>
+    <script src="/js/modulos/reservas-publica.js?v=<%= assetV %>"></script>
+</body>
+</html>

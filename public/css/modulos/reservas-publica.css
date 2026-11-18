@@ -1,0 +1,51 @@
+/* ============================================================
+   reservas-publica.css — Página pública de reservas (marca "Cloche").
+   Cabecera en Tinta, cuerpo en Crema. Solo tokens de brand.css.
+   ============================================================ */
+
+body { background: var(--gf-crema); min-height: 100vh; display: flex; flex-direction: column; }
+
+.rp-cabecera { background: var(--gf-tinta); color: var(--gf-crema); text-align: center; padding: 2rem 1rem 3.5rem; }
+.rp-restaurante {
+    font-family: var(--gf-font-titulo);
+    font-weight: 800;
+    font-size: clamp(1.4rem, 5vw, 2rem);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--gf-crema);
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+.rp-sub { color: var(--gf-coral); font-weight: 600; margin: 0.35rem 0 0; }
+
+.rp-wrap { width: 100%; max-width: 40rem; margin: -2rem auto 0; padding: 0 1rem 2rem; flex: 1; }
+.rp-card { background: #fff; border: 1px solid var(--gf-linea); border-radius: 1rem; padding: 1.5rem; box-shadow: 0 0.75rem 1.5rem rgba(14, 27, 44, 0.08); }
+.rp-titulo { font-family: var(--gf-font-titulo); font-weight: 700; font-size: 1.2rem; color: var(--gf-tinta); margin-bottom: 1rem; }
+.rp-mensaje { background: var(--gf-coral-suave); color: var(--gf-tinta); border-radius: 0.6rem; padding: 0.6rem 0.8rem; font-size: 0.9rem; }
+.rp-mensaje i { color: var(--gf-coral-fuerte); }
+
+.rp-horas { display: grid; grid-template-columns: repeat(auto-fill, minmax(4.75rem, 1fr)); gap: 0.5rem; }
+.rp-hora { position: relative; }
+.rp-hora input { position: absolute; opacity: 0; inset: 0; cursor: pointer; }
+.rp-hora label {
+    display: block;
+    text-align: center;
+    padding: 0.55rem 0;
+    border: 1px solid var(--gf-linea);
+    border-radius: 0.6rem;
+    background: #fff;
+    color: var(--gf-tinta);
+    font-weight: 600;
+    cursor: pointer;
+}
+.rp-hora input:checked + label { background: var(--gf-coral); border-color: var(--gf-coral); color: #fff; }
+.rp-hora input:focus-visible + label { outline: 3px solid var(--gf-focus, rgba(255, 90, 54, 0.45)); outline-offset: 2px; }
+.rp-hora input:disabled + label { background: var(--gf-arena); color: var(--gf-gris); text-decoration: line-through; cursor: not-allowed; }
+
+.rp-consent { font-size: 0.85rem; color: var(--gf-gris); }
+.rp-consent a { color: var(--gf-coral-fuerte); }
+.rp-hp { position: absolute; left: -9999px; }
+
+.rp-listo { text-align: center; }
+.rp-listo-icono { font-size: 2.5rem; color: var(--gf-coral); }
+.rp-pie { display: flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 1rem; color: var(--gf-gris); font-size: 0.8rem; }
