@@ -18,7 +18,8 @@ const HomeController = require('../app/Http/Controllers/HomeController');
 const DesktopController = require('../app/Http/Controllers/DesktopController');
 
 // Middlewares comunes
-const requireAuthWithTenant = [requireAuth, restrictSuperadminToAdmin, attachTenantContext];
+const temaPanel = require('../middleware/temaPanel');
+const requireAuthWithTenant = [requireAuth, restrictSuperadminToAdmin, attachTenantContext, temaPanel];
 
 // Importar micro-rutas (Cada una delegada a su Controller)
 const authRoutes = require('./auth');
@@ -97,6 +98,8 @@ router.use('/api/qr', require('./qr_api'));
 router.use('/bono', require('./bono_publico'));
 // Tarjeta de sellos del cliente (la abre desde el enlace/QR): sin login, acotada por token.
 router.use('/tarjeta', require('./tarjeta_publica'));
+// Página pública de reservas: sin login, acotada por token del restaurante.
+router.use('/reservar', require('./reservas_publica'));
 // Webhook público de Wompi (cobro de suscripciones) -- se autentica por firma, no por sesión.
 router.use('/webhooks', require('./webhooks'));
 // Resumen para Safe Hub (panel interno de Safe): se autentica con el token HUB_TOKEN, no por sesión.
@@ -265,6 +268,8 @@ router.get(
 // igual que cualquiera que pueda facturar ya puede registrar un abono.
 router.get('/api/bonos/validar/:codigo', requireAuthWithTenant, BonosController.validar);
 router.use('/promociones', requireAuthWithTenant, promocionesRoutes);
+router.use('/reservas', requireAuthWithTenant, require('./tenant/reservas'));
+router.use('/temporada', requireAuthWithTenant, require('./tenant/temporada'));
 router.use('/combos', requireAuthWithTenant, combosRoutes);
 router.use('/combos-armables', requireAuthWithTenant, combosArmablesRoutes);
 router.use('/api/combos-venta', requireAuthWithTenant, combosVentaRoutes);
@@ -323,6 +328,7 @@ router.use('/api/asistente', requireAuthWithTenant, asistenteRoutes);
 // --- RUTA DE NOTIFICACIONES (SSE) ---
 router.get('/api/notifications/subscribe', requireAuthWithTenant, NotificationController.subscribe);
 router.use('/api/anuncios', requireAuthWithTenant, anunciosRoutes);
+router.use('/api/menu-personal', requireAuthWithTenant, require('./tenant/menuPersonal'));
 
 // --- RUTAS DE SUPERADMIN ---
 const requireSuperadmin = [requireAuth, requireRole(ROLES.SUPERADMIN), adminLocals];
@@ -340,6 +346,7 @@ router.use('/admin/rendimiento', requireSuperadmin, adminRendimientoRoutes);
 router.use('/admin/jobs', requireSuperadmin, adminJobsRoutes);
 router.use('/admin/landing', requireSuperadmin, adminLandingRoutes);
 router.use('/admin/anuncios', requireSuperadmin, adminAnunciosRoutes);
+router.use('/admin/temporada', requireSuperadmin, require('./admin/temporada'));
 router.use('/admin/asistente', requireSuperadmin, require('./admin/asistente'));
 router.use('/admin/sucursales', requireSuperadmin, require('./admin/sucursales'));
 

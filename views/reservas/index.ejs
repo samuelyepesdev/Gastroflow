@@ -1,0 +1,220 @@
+<%- include('../partials/layout/head', { titulo: 'Reservas' }) %>
+    <link rel="stylesheet" href="/css/modulos/reservas.css?v=<%= assetV %>">
+</head>
+
+<body>
+    <%- include('../partials/navbar', { user: typeof user !== 'undefined' ? user : null, tenant: typeof tenant !== 'undefined' ? tenant : null }) %>
+
+    <div class="container mt-4 mb-5">
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex flex-column flex-md-row justify-content-between align-items-stretch align-items-md-center gap-3 w-100">
+                    <div class="fw-semibold"><i class="bi bi-calendar2-check me-2"></i>Reservas</div>
+                    <div class="d-flex flex-wrap gap-2">
+                        <% if (puedeConfigurar) { %>
+                            <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#modalConfig">
+                                <i class="bi bi-sliders me-1"></i>Configurar
+                            </button>
+                        <% } %>
+                        <% if (puedeGestionar) { %>
+                            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalReserva" id="btnNuevaReserva">
+                                <i class="bi bi-plus-lg me-1"></i>Nueva reserva
+                            </button>
+                        <% } %>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <% if (!config.activo) { %>
+                    <div class="alert alert-warning small mb-3" role="alert">
+                        La página pública de reservas está <strong>desactivada</strong>. Puedes registrar reservas a mano; para que tus clientes
+                        reserven solos, actívala en <strong>Configurar</strong>.
+                    </div>
+                <% } %>
+
+                <div class="rv-barra mb-3">
+                    <div class="btn-group" role="group" aria-label="Día">
+                        <button type="button" class="btn btn-outline-secondary" id="rvAyer" aria-label="Día anterior"><i class="bi bi-chevron-left"></i></button>
+                        <button type="button" class="btn btn-outline-secondary" id="rvHoy">Hoy</button>
+                        <button type="button" class="btn btn-outline-secondary" id="rvManana" aria-label="Día siguiente"><i class="bi bi-chevron-right"></i></button>
+                    </div>
+                    <input type="date" class="form-control rv-fecha" id="rvFecha" value="<%= hoy %>" aria-label="Fecha">
+                    <div class="rv-resumen" id="rvResumen" aria-live="polite"></div>
+                </div>
+
+                <div id="rvLista" class="rv-lista" aria-live="polite"></div>
+            </div>
+        </div>
+    </div>
+
+    <% if (puedeGestionar) { %>
+    <div class="modal fade" id="modalReserva" tabindex="-1" aria-labelledby="modalReservaTitulo" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalReservaTitulo"><i class="bi bi-calendar-plus me-2"></i>Nueva reserva</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-2">
+                        <div class="col-12 col-md-7">
+                            <label for="rvNombre" class="form-label">Nombre</label>
+                            <input type="text" class="form-control" id="rvNombre" maxlength="80" autocomplete="off">
+                        </div>
+                        <div class="col-12 col-md-5">
+                            <label for="rvTelefono" class="form-label">Celular</label>
+                            <input type="tel" class="form-control" id="rvTelefono" inputmode="numeric" maxlength="16" placeholder="3001234567">
+                        </div>
+                        <div class="col-6 col-md-4">
+                            <label for="rvPersonas" class="form-label">Personas</label>
+                            <input type="number" class="form-control" id="rvPersonas" min="1" value="2">
+                        </div>
+                        <div class="col-6 col-md-4">
+                            <label for="rvFechaNueva" class="form-label">Fecha</label>
+                            <input type="date" class="form-control" id="rvFechaNueva" min="<%= hoy %>" value="<%= hoy %>">
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <label for="rvHora" class="form-label">Hora</label>
+                            <select class="form-select" id="rvHora"></select>
+                        </div>
+                        <div class="col-12">
+                            <div class="form-text" id="rvDisponibilidadInfo"></div>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label for="rvMesa" class="form-label">Mesa (opcional)</label>
+                            <select class="form-select" id="rvMesa"><option value="">Sin asignar</option></select>
+                            <div class="form-text" id="rvMesasInfo" aria-live="polite"></div>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label for="rvOcasion" class="form-label">Ocasión</label>
+                            <select class="form-select" id="rvOcasion">
+                                <option value="">—</option>
+                                <option value="cumpleanos">Cumpleaños</option>
+                                <option value="aniversario">Aniversario</option>
+                                <option value="empresarial">Empresarial</option>
+                                <option value="navidad">Navidad / Fin de año</option>
+                                <option value="otra">Otra</option>
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label for="rvNotas" class="form-label">Notas (opcional)</label>
+                            <textarea class="form-control" id="rvNotas" rows="2" maxlength="300" placeholder="Alergias, silla para bebé, torta..."></textarea>
+                        </div>
+                        <div class="col-12">
+                            <div class="form-check form-switch">
+                                <input type="checkbox" class="form-check-input" id="rvForzar" role="switch">
+                                <label class="form-check-label" for="rvForzar">Permitir aunque supere el aforo</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="btnGuardarReserva"><i class="bi bi-check-lg me-1"></i>Guardar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <% } %>
+
+    <% if (puedeConfigurar) { %>
+    <div class="modal fade" id="modalConfig" tabindex="-1" aria-labelledby="modalConfigTitulo" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalConfigTitulo"><i class="bi bi-sliders me-2"></i>Configurar reservas</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-check form-switch mb-3">
+                        <input type="checkbox" class="form-check-input" id="cfgActivo" role="switch" <%= config.activo ? 'checked' : '' %>>
+                        <label class="form-check-label fw-semibold" for="cfgActivo">Página pública de reservas activa</label>
+                    </div>
+
+                    <div class="rv-enlace mb-4" id="cfgEnlaceWrap">
+                        <label class="form-label" for="cfgEnlace">Enlace para tus clientes</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="cfgEnlace" readonly value="">
+                            <button type="button" class="btn btn-outline-secondary" id="btnCopiarEnlace"><i class="bi bi-clipboard me-1"></i>Copiar</button>
+                            <button type="button" class="btn btn-outline-secondary" id="btnRegenerarEnlace" title="El enlace anterior dejará de funcionar"><i class="bi bi-arrow-repeat me-1"></i>Cambiar enlace</button>
+                        </div>
+                        <div class="form-text">Compártelo en tu Instagram, Google Maps o WhatsApp. Si se filtra, cámbialo: el anterior deja de funcionar.</div>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-6 col-md-3">
+                            <label for="cfgAforo" class="form-label">Aforo (personas)</label>
+                            <input type="number" class="form-control" id="cfgAforo" min="1" value="<%= config.aforo_maximo %>">
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <label for="cfgDuracion" class="form-label">Duración (min)</label>
+                            <input type="number" class="form-control" id="cfgDuracion" min="30" step="15" value="<%= config.duracion_min %>">
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <label for="cfgIntervalo" class="form-label">Cada (min)</label>
+                            <input type="number" class="form-control" id="cfgIntervalo" min="10" step="5" value="<%= config.intervalo_min %>">
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <label for="cfgMaxPersonas" class="form-label">Máx. por reserva</label>
+                            <input type="number" class="form-control" id="cfgMaxPersonas" min="1" value="<%= config.max_personas_reserva %>">
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <label for="cfgApertura" class="form-label">Primera hora</label>
+                            <input type="time" class="form-control" id="cfgApertura" value="<%= config.hora_apertura %>">
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <label for="cfgUltima" class="form-label">Última hora</label>
+                            <input type="time" class="form-control" id="cfgUltima" value="<%= config.hora_ultima %>">
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <label for="cfgAnticipacion" class="form-label">Anticipación (h)</label>
+                            <input type="number" class="form-control" id="cfgAnticipacion" min="0" value="<%= config.anticipacion_min_horas %>">
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <label for="cfgDiasAdelanto" class="form-label">Hasta (días)</label>
+                            <input type="number" class="form-control" id="cfgDiasAdelanto" min="1" value="<%= config.dias_max_adelanto %>">
+                        </div>
+                        <div class="col-12">
+                            <label for="cfgMensaje" class="form-label">Mensaje para tus clientes (opcional)</label>
+                            <input type="text" class="form-control" id="cfgMensaje" maxlength="300" value="<%= config.mensaje_publico %>" placeholder="Ej: Cenas de Navidad y Año Nuevo con menú especial">
+                        </div>
+                        <div class="col-12">
+                            <div class="form-check form-switch">
+                                <input type="checkbox" class="form-check-input" id="cfgAutoConfirmar" role="switch" <%= config.auto_confirmar ? 'checked' : '' %>>
+                                <label class="form-check-label" for="cfgAutoConfirmar">Confirmar automáticamente las reservas de la página pública</label>
+                            </div>
+                            <div class="form-text">Desactivado: llegan como <strong>pendientes</strong> y tú las confirmas (recomendado en temporada alta).</div>
+                        </div>
+                        <div class="col-12">
+                            <div class="form-check form-switch">
+                                <input type="checkbox" class="form-check-input" id="cfgElegirMesa" role="switch" <%= config.elegir_mesa ? 'checked' : '' %>>
+                                <label class="form-check-label fw-semibold" for="cfgElegirMesa">Que el cliente elija su mesa</label>
+                            </div>
+                            <div class="form-text">
+                                Activado: la página pública muestra solo las mesas libres a esa hora y con capacidad suficiente; una mesa reservada deja de aparecer.
+                                Solo se ofrecen las mesas que tengan <strong>capacidad</strong> definida abajo. Desactivado: se reserva por aforo y tú asignas la mesa.
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <span class="form-label d-block">Capacidad de tus mesas (personas)</span>
+                            <div class="cfg-mesas" id="cfgMesas"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="btnGuardarConfig"><i class="bi bi-check-lg me-1"></i>Guardar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <% } %>
+
+    <script>
+        window.RESERVAS = <%- jsonSeguro({ hoy, enlaceBase: config.enlace, puedeGestionar, puedeConfigurar, nombreRestaurante: tenant && tenant.nombre ? tenant.nombre : '' }) %>;
+    </script>
+    <%- include('../partials/layout/scripts', { swal: true }) %>
+    <script src="/js/modulos/reservas.js?v=<%= assetV %>"></script>
+</body>
+
+</html>

@@ -1,0 +1,173 @@
+/* ============================================================
+   tema-navidad.css — Tema visual de Navidad para las páginas públicas del restaurante
+   (reservas y menú QR). Todo cuelga de body.tema-navidad; sin esa clase no hace nada.
+
+   Colores: la página de reservas usa la marca "Cloche" (tokens --gf-*). El menú QR usa la paleta propia de cada
+   restaurante (--primary-color), por eso lleva además body.tema-navidad--qr.
+   Movimiento: se apaga con prefers-reduced-motion y con body.tema-navidad-quieto (opción del restaurante).
+   ============================================================ */
+
+body.tema-navidad {
+    --tn-c1: var(--gf-coral, #ff5a36);
+    --tn-c2: var(--gf-crema, #fff4e8);
+    --tn-c3: #ffffff;
+    --tn-c4: var(--gf-coral-fuerte, #e8431f);
+    --tn-copo: rgba(91, 107, 126, 0.5);
+    --tn-fondo: var(--gf-tinta, #0e1b2c);
+    --tn-texto: var(--gf-crema, #fff4e8);
+    --tn-acento: var(--gf-coral, #ff5a36);
+    --tn-cable: rgba(255, 244, 232, 0.35);
+}
+
+body.tema-navidad--qr {
+    --tn-c1: var(--primary-color, #e63946);
+    --tn-c2: #ffc94d;
+    --tn-c3: #ffe9a8;
+    --tn-c4: var(--primary-color, #e63946);
+    --tn-copo: rgba(120, 130, 140, 0.45);
+    --tn-fondo: var(--primary-color, #e63946);
+    --tn-texto: #ffffff;
+    --tn-acento: #ffffff;
+    --tn-cable: rgba(0, 0, 0, 0.25);
+}
+@supports (color: color-mix(in srgb, red 50%, transparent)) {
+    body.tema-navidad--qr { --tn-copo: color-mix(in srgb, var(--primary-color, #e63946) 45%, transparent); }
+}
+
+/* ---- Luces ---------------------------------------------------------------- */
+.tn-luces { position: relative; height: 42px; pointer-events: none; overflow: hidden; }
+.tn-luces--sobre { position: absolute; top: 0; left: 0; right: 0; z-index: 2; }
+.tn-luces--qr { background: var(--navbar-bg, #fff); }
+/* Panel interno (navbar de cada local y shell del superadmin): tira sobre fondo Tinta y nieve más discreta. */
+.tn-luces--panel { height: 38px; background: var(--gf-tinta, #0e1b2c); }
+body.tema-navidad--panel .tn-copo { opacity: calc(var(--o) * 0.7); }
+.tn-cable { position: absolute; top: 3px; left: -2%; right: -2%; height: 0; border-top: 2px solid var(--tn-cable); border-radius: 50%; }
+.tn-bombillos { list-style: none; margin: 0; padding: 0 10px; display: flex; justify-content: space-between; position: relative; }
+.tn-bombillos li {
+    --c: var(--tn-c1);
+    position: relative;
+    width: 12px;
+    height: 19px;
+    margin-top: 5px;
+    border-radius: 50% 50% 50% 50% / 62% 62% 38% 38%;
+    background: var(--c);
+    box-shadow: 0 0 9px 2px var(--c);
+    animation: tn-parpadeo 2.6s ease-in-out infinite;
+    animation-delay: calc(var(--i) * -0.41s);
+}
+.tn-bombillos li::before { content: ''; position: absolute; top: -5px; left: 3px; width: 6px; height: 6px; background: var(--tn-cable); border-radius: 1px; }
+.tn-bombillos li:nth-child(even) { margin-top: 12px; }
+.tn-bombillos li:nth-child(4n + 2) { --c: var(--tn-c2); }
+.tn-bombillos li:nth-child(4n + 3) { --c: var(--tn-c3); }
+.tn-bombillos li:nth-child(4n) { --c: var(--tn-c4); }
+
+@keyframes tn-parpadeo {
+    0%, 100% { opacity: 1; filter: brightness(1.15); }
+    50% { opacity: 0.45; filter: brightness(0.8); }
+}
+
+/* ---- Adornos colgantes (solo en la cabecera de reservas) ---------------------- */
+.tn-adorno { position: absolute; top: 0; z-index: 3; width: 0; pointer-events: none; transform-origin: top center; animation: tn-balanceo 3.8s ease-in-out infinite; }
+.tn-adorno::before { content: ''; display: block; width: 1px; height: var(--h, 46px); margin: 0 auto; background: var(--tn-cable); }
+.tn-adorno::after {
+    content: '';
+    display: block;
+    width: 26px;
+    height: 26px;
+    margin: 0 0 0 -13px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 32% 30%, #fff 0 9%, var(--tn-c1) 10% 100%);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+.tn-adorno--izq { left: 7%; --h: 40px; }
+.tn-adorno--der { right: 7%; --h: 56px; animation-delay: -1.7s; }
+.tn-adorno--der::after { background: radial-gradient(circle at 32% 30%, #fff 0 9%, var(--tn-c2) 10% 100%); }
+@keyframes tn-balanceo { 0%, 100% { transform: rotate(-6deg); } 50% { transform: rotate(6deg); } }
+
+/* ---- Banner de temporada ----------------------------------------------------- */
+.tn-banner {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin: 0.9rem 1rem;
+    padding: 0.75rem 1rem;
+    border-radius: 0.85rem;
+    background: var(--tn-fondo);
+    color: var(--tn-texto);
+    overflow: hidden;
+    box-shadow: 0 0.5rem 1rem rgba(14, 27, 44, 0.18);
+}
+/* En reservas el banner va claro: la cabecera ya es Tinta y se fundiría con ella. */
+body.tema-navidad:not(.tema-navidad--qr) .tn-banner {
+    background: #fff;
+    color: var(--gf-tinta, #0e1b2c);
+    border: 1px solid var(--gf-linea, #e4dccf);
+    border-left: 4px solid var(--gf-coral, #ff5a36);
+    box-shadow: 0 0.5rem 1rem rgba(14, 27, 44, 0.1);
+}
+.tn-banner::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(110deg, transparent 35%, rgba(255, 255, 255, 0.22) 50%, transparent 65%);
+    transform: translateX(-120%);
+    animation: tn-brillo 5s ease-in-out infinite;
+    pointer-events: none;
+}
+.tn-banner-icono { font-size: 1.6rem; color: var(--tn-acento); flex: none; animation: tn-giro 14s linear infinite; }
+.tn-banner-texto { display: flex; flex-direction: column; line-height: 1.25; min-width: 0; }
+.tn-banner-titulo { font-family: var(--gf-font-titulo, inherit); font-weight: 800; letter-spacing: 0.03em; }
+.tn-banner-msg { font-size: 0.88rem; opacity: 0.92; overflow-wrap: anywhere; }
+.tn-banner-regalo { margin-left: auto; font-size: 1.4rem; color: var(--tn-acento); flex: none; animation: tn-salto 2.8s ease-in-out infinite; }
+body.tema-navidad .rp-wrap > .tn-banner { margin: 0 0 0.9rem; }
+
+@keyframes tn-brillo { 0%, 55% { transform: translateX(-120%); } 100% { transform: translateX(120%); } }
+@keyframes tn-giro { to { rotate: 360deg; } }
+@keyframes tn-salto { 0%, 70%, 100% { transform: translateY(0); } 80% { transform: translateY(-6px) rotate(-8deg); } 90% { transform: translateY(0) rotate(6deg); } }
+
+/* ---- Nieve (la crea tema-navidad.js) ----------------------------------------------- */
+.tn-nieve { position: fixed; inset: 0; z-index: 900; overflow: hidden; pointer-events: none; }
+.tn-copo {
+    position: absolute;
+    top: -30px;
+    left: var(--x);
+    font-size: var(--s);
+    line-height: 1;
+    color: var(--tn-copo);
+    opacity: var(--o);
+    animation: tn-caer var(--d) linear var(--r) infinite, tn-voltear var(--g) linear var(--r) infinite;
+}
+@keyframes tn-caer { from { translate: 0 -5vh; } to { translate: var(--dx) 108vh; } }
+@keyframes tn-voltear { to { rotate: 360deg; } }
+
+/* ---- Confeti de celebración (reserva enviada) ------------------------------------------ */
+.tn-confeti {
+    position: fixed;
+    top: -12px;
+    left: var(--x);
+    z-index: 1100;
+    width: var(--w);
+    height: calc(var(--w) * 0.5);
+    background: var(--k);
+    border-radius: 1px;
+    pointer-events: none;
+    animation: tn-confeti-caer var(--d) cubic-bezier(0.2, 0.7, 0.4, 1) forwards;
+}
+@keyframes tn-confeti-caer {
+    0% { translate: 0 0; rotate: 0deg; opacity: 1; }
+    100% { translate: var(--dx) 105vh; rotate: var(--rot); opacity: 0.9; }
+}
+
+/* ---- Sin movimiento: preferencia del dispositivo u opción del restaurante ------------------- */
+@media (prefers-reduced-motion: reduce) {
+    .tn-nieve, .tn-confeti { display: none; }
+    .tn-bombillos li, .tn-adorno, .tn-banner::after, .tn-banner-icono, .tn-banner-regalo { animation: none; }
+}
+body.tema-navidad-quieto .tn-nieve,
+body.tema-navidad-quieto .tn-confeti { display: none; }
+body.tema-navidad-quieto .tn-bombillos li,
+body.tema-navidad-quieto .tn-adorno,
+body.tema-navidad-quieto .tn-banner::after,
+body.tema-navidad-quieto .tn-banner-icono,
+body.tema-navidad-quieto .tn-banner-regalo { animation: none; }

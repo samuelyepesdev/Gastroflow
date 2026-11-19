@@ -1,0 +1,52 @@
+/* ============================================================
+   temporada.css — Plantillas y vigencia de fin de año (marca "Cloche").
+   Solo tokens de brand.css (--gf-*): sin hex de marca sueltos.
+   ============================================================ */
+
+body { background-color: var(--gf-crema); }
+.card { border: none; box-shadow: 0 0.5rem 1rem rgba(14, 27, 44, 0.06); }
+.card-header { background: #fff; border-bottom: 2px solid var(--gf-crema); font-weight: 600; }
+
+.tp-hero {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.25rem;
+    background: var(--gf-tinta);
+    color: var(--gf-crema);
+    border-radius: 1rem;
+    padding: 1.75rem;
+    margin-bottom: 1.5rem;
+}
+.tp-eyebrow { color: var(--gf-coral); font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; font-size: 0.8rem; margin: 0 0 0.25rem; }
+.tp-hero-titulo { font-family: var(--gf-font-titulo); font-weight: 800; font-size: clamp(1.5rem, 4vw, 2rem); color: var(--gf-crema); margin: 0; }
+.tp-hero-sub { margin: 0.35rem 0 0; color: var(--gf-arena); }
+.tp-hero-sub strong { color: var(--gf-coral); }
+.tp-atajos { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+
+.tp-plantillas { display: grid; grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr)); gap: 1rem; }
+.tp-plantilla { background: var(--gf-crema); border: 1px solid var(--gf-linea); border-radius: 0.85rem; padding: 1rem; }
+.tp-plantilla-cab { display: flex; align-items: center; gap: 0.6rem; }
+.tp-plantilla-cab i { font-size: 1.4rem; color: var(--gf-coral); }
+.tp-plantilla-nombre { font-family: var(--gf-font-titulo); font-weight: 700; font-size: 1.05rem; color: var(--gf-tinta); margin: 0; }
+.tp-plantilla-desc { color: var(--gf-gris); font-size: 0.85rem; margin: 0.4rem 0 0.75rem; }
+
+.tp-lista { max-height: 18rem; overflow: auto; border: 1px solid var(--gf-linea); border-radius: 0.6rem; background: #fff; }
+.tp-prod { display: flex; align-items: center; gap: 0.6rem; padding: 0.45rem 0.75rem; margin: 0; cursor: pointer; border-bottom: 1px solid var(--gf-arena); }
+.tp-prod:hover { background: var(--gf-crema); }
+.tp-prod[hidden] { display: none; }
+.tp-etiqueta { font-size: 0.7rem; font-weight: 600; background: var(--gf-coral-suave); color: var(--gf-coral-fuerte); border-radius: 999px; padding: 0.1rem 0.5rem; }
+
+.tp-sub-titulo { font-family: var(--gf-font-titulo); font-size: 1rem; font-weight: 700; color: var(--gf-tinta); }
+.tp-vigencias { display: flex; flex-direction: column; gap: 0.5rem; }
+.tp-vig { display: grid; grid-template-columns: 1fr auto auto; gap: 0.75rem; align-items: center; padding: 0.6rem 0.8rem; background: #fff; border: 1px solid var(--gf-linea); border-radius: 0.6rem; }
+.tp-vig-ventana { color: var(--gf-gris); font-size: 0.82rem; }
+.tp-estado { font-size: 0.75rem; font-weight: 600; padding: 0.15rem 0.6rem; border-radius: 999px; background: var(--gf-arena); color: var(--gf-gris); }
+.tp-estado--on { background: var(--gf-tinta); color: var(--gf-crema); }
+
+@media (max-width: 575.98px) {
+    .tp-hero { padding: 1.25rem; }
+    .tp-vig { grid-template-columns: 1fr auto; }
+    .tp-estado { grid-column: 1; justify-self: start; }
+}

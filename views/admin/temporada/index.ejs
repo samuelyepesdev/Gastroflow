@@ -1,0 +1,105 @@
+<%- include('../_shell/_open', {
+    title: 'Look de temporada',
+    currentAdminPage: 'temporada',
+    pageCss: '/css/admin/temporada.css'
+}) %>
+
+    <div class="admin-page-header">
+        <h1><i class="bi bi-snow2 me-2"></i>Look de temporada</h1>
+        <p class="mb-0">Decora con luces, nieve y un saludo la página de reservas y el menú QR de los restaurantes. Actívalo para todos o para uno solo.</p>
+    </div>
+
+    <section class="card mb-4" aria-labelledby="tgTitulo">
+        <div class="card-body">
+            <h2 class="tg-titulo" id="tgTitulo">Para todos los restaurantes</h2>
+            <p class="text-muted small">
+                Lo ven todos los restaurantes que <strong>no hayan decidido por su cuenta</strong>. Si un restaurante lo apagó (o tú lo apagaste para él abajo),
+                su decisión prevalece. Fuera de las fechas el look desaparece solo.
+            </p>
+            <div class="form-check form-switch mb-3">
+                <input type="checkbox" class="form-check-input" id="tgActivo" role="switch" <%= global.activo ? 'checked' : '' %>>
+                <label class="form-check-label fw-semibold" for="tgActivo">Activar para todos</label>
+            </div>
+            <div class="row g-3">
+                <div class="col-6 col-md-3">
+                    <label class="form-label" for="tgDesde">Desde</label>
+                    <input type="date" class="form-control" id="tgDesde" value="<%= global.desde || sugerida.desde %>">
+                </div>
+                <div class="col-6 col-md-3">
+                    <label class="form-label" for="tgHasta">Hasta (inclusive)</label>
+                    <input type="date" class="form-control" id="tgHasta" value="<%= global.hasta || sugerida.hasta %>">
+                </div>
+                <div class="col-12 col-md-6">
+                    <label class="form-label" for="tgMensaje">Mensaje general (opcional)</label>
+                    <input type="text" class="form-control" id="tgMensaje" maxlength="160" value="<%= global.mensaje %>" placeholder="Ej: ¡Felices fiestas de parte de todo el equipo!">
+                    <div class="form-text">Cada restaurante puede poner el suyo en su propia página de Temporada.</div>
+                </div>
+                <div class="col-12">
+                    <div class="form-check form-switch">
+                        <input type="checkbox" class="form-check-input" id="tgAnimaciones" role="switch" <%= global.animaciones ? 'checked' : '' %>>
+                        <label class="form-check-label" for="tgAnimaciones">Animaciones (nieve, luces que parpadean y confeti)</label>
+                    </div>
+                    <div class="form-check form-switch mt-2">
+                        <input type="checkbox" class="form-check-input" id="tgPanel" role="switch" <%= global.panel ? 'checked' : '' %>>
+                        <label class="form-check-label" for="tgPanel">Mostrarlo también en los paneles (este panel de superadmin y el de cada local)</label>
+                    </div>
+                    <div class="form-text">No aparece en el POS ni en la cocina. Si un restaurante lo apaga para sus paneles, se respeta.</div>
+                </div>
+            </div>
+            <button type="button" class="btn btn-primary mt-3" id="tgGuardar"><i class="bi bi-check-lg me-1"></i>Guardar</button>
+        </div>
+    </section>
+
+    <section class="card" aria-labelledby="trTitulo">
+        <div class="card-body">
+            <div class="d-flex flex-wrap justify-content-between align-items-end gap-2 mb-3">
+                <div>
+                    <h2 class="tg-titulo mb-1" id="trTitulo">Por restaurante</h2>
+                    <p class="text-muted small mb-0">
+                        <strong>Seguir lo global</strong>: hace lo que diga el interruptor de arriba. <strong>Activado</strong> y <strong>Apagado</strong> fuerzan ese restaurante,
+                        sin importar lo global. El restaurante puede cambiarlo después desde su página de Temporada.
+                    </p>
+                </div>
+                <input type="search" class="form-control tg-buscar" id="trBuscar" placeholder="Buscar restaurante..." autocomplete="off" aria-label="Buscar restaurante">
+            </div>
+
+            <div class="table-responsive">
+                <table class="table align-middle tg-tabla">
+                    <thead>
+                        <tr>
+                            <th scope="col">Restaurante</th>
+                            <th scope="col">Hoy</th>
+                            <th scope="col" class="tg-col-estado">Look navideño</th>
+                        </tr>
+                    </thead>
+                    <tbody id="trLista">
+                        <% restaurantes.forEach(r => { %>
+                            <tr data-id="<%= r.id %>" data-nombre="<%= (r.nombre + ' ' + r.slug).toLowerCase() %>">
+                                <td>
+                                    <strong><%= r.nombre %></strong>
+                                    <div class="text-muted small"><%= r.slug %></div>
+                                </td>
+                                <td>
+                                    <span class="tg-chip <%= r.visible ? 'tg-chip--on' : '' %>" data-visible><%= r.visible ? 'Se ve' : 'No se ve' %></span>
+                                </td>
+                                <td>
+                                    <select class="form-select form-select-sm tg-estado" data-id="<%= r.id %>" aria-label="Look navideño de <%= r.nombre %>">
+                                        <option value="heredar" <%= r.estado === 'heredar' ? 'selected' : '' %>>Seguir lo global</option>
+                                        <option value="activado" <%= r.estado === 'activado' ? 'selected' : '' %>>Activado</option>
+                                        <option value="apagado" <%= r.estado === 'apagado' ? 'selected' : '' %>>Apagado</option>
+                                    </select>
+                                </td>
+                            </tr>
+                        <% }) %>
+                    </tbody>
+                </table>
+            </div>
+            <% if (!restaurantes.length) { %>
+                <p class="text-muted text-center my-4">Aún no hay restaurantes activos.</p>
+            <% } %>
+        </div>
+    </section>
+
+<%- include('../_shell/_close', {
+    extraScripts: '<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script><script src="/js/core/gf.js?v=' + assetV + '"></script><script src="/js/admin/temporada.js?v=' + assetV + '"></script>'
+}) %>

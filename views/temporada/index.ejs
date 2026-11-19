@@ -1,0 +1,170 @@
+<%- include('../partials/layout/head', { titulo: 'Temporada' }) %>
+    <link rel="stylesheet" href="/css/modulos/temporada.css?v=<%= assetV %>">
+</head>
+
+<body>
+    <%- include('../partials/navbar', { user: typeof user !== 'undefined' ? user : null, tenant: typeof tenant !== 'undefined' ? tenant : null }) %>
+
+    <div class="container mt-4 mb-5">
+        <section class="tp-hero" aria-labelledby="tpTitulo">
+            <div>
+                <p class="tp-eyebrow">Fin de año</p>
+                <h1 id="tpTitulo" class="tp-hero-titulo">Prepara tu temporada</h1>
+                <p class="tp-hero-sub">
+                    <% if (diasParaNavidad === null) { %>
+                        Cierra el año con tu mejor menú y prepárate para el próximo diciembre.
+                    <% } else if (diasParaNavidad === 0) { %>
+                        Hoy es Nochebuena.
+                    <% } else { %>
+                        Faltan <strong><%= diasParaNavidad %></strong> día<%= diasParaNavidad === 1 ? '' : 's' %> para Navidad.
+                    <% } %>
+                </p>
+            </div>
+            <div class="tp-atajos">
+                <a class="btn btn-primary" href="/reservas"><i class="bi bi-calendar2-check me-1"></i>Reservas</a>
+                <a class="btn btn-outline-light" href="/combos"><i class="bi bi-box-seam me-1"></i>Crear un combo</a>
+                <a class="btn btn-outline-light" href="/promociones"><i class="bi bi-percent me-1"></i>Promociones</a>
+            </div>
+        </section>
+
+        <section class="card mb-4" aria-labelledby="tpTemaTitulo">
+            <div class="card-header"><span id="tpTemaTitulo"><i class="bi bi-magic me-2"></i>Look navideño</span></div>
+            <div class="card-body">
+                <p class="text-muted small mb-3">
+                    Decora tu <strong>página de reservas</strong> y tu <strong>menú QR</strong> con luces, nieve y un saludo de temporada.
+                    El menú QR conserva los colores de tu restaurante y la página de reservas usa los de GastroFlow.
+                </p>
+                <% if (tema.hereda) { %>
+                    <div class="alert alert-info small" role="status">
+                        <i class="bi bi-info-circle me-1"></i>
+                        <strong>GastroFlow activó el look navideño para todos los restaurantes</strong><%
+                            if (tema.global && (tema.global.desde || tema.global.hasta)) { %> (<%= tema.global.desde || 'ya' %> a <%= tema.global.hasta || 'sin fecha final' %>)<% } %>.
+                        Si no lo quieres, apaga el interruptor y guarda: tu decisión prevalece.
+                    </div>
+                <% } %>
+                <div class="form-check form-switch mb-3">
+                    <input type="checkbox" class="form-check-input" id="tmActivo" role="switch" <%= tema.activo ? 'checked' : '' %>>
+                    <label class="form-check-label fw-semibold" for="tmActivo">Activar el look navideño</label>
+                </div>
+                <div class="row g-3">
+                    <div class="col-6 col-md-3">
+                        <label class="form-label" for="tmDesde">Desde</label>
+                        <input type="date" class="form-control" id="tmDesde" value="<%= tema.desde || temaSugerido.desde %>">
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <label class="form-label" for="tmHasta">Hasta (inclusive)</label>
+                        <input type="date" class="form-control" id="tmHasta" value="<%= tema.hasta || temaSugerido.hasta %>">
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label class="form-label" for="tmMensaje">Mensaje para tus clientes (opcional)</label>
+                        <input type="text" class="form-control" id="tmMensaje" maxlength="160" value="<%= tema.mensaje %>" placeholder="Ej: Cenas de Navidad y Año Nuevo con menú especial">
+                    </div>
+                    <div class="col-12">
+                        <div class="form-check form-switch">
+                            <input type="checkbox" class="form-check-input" id="tmAnimaciones" role="switch" <%= tema.animaciones ? 'checked' : '' %>>
+                            <label class="form-check-label" for="tmAnimaciones">Animaciones (nieve, luces que parpadean y confeti)</label>
+                        </div>
+                        <div class="form-text">Se apagan solas en los dispositivos configurados para reducir el movimiento. Fuera de las fechas el tema desaparece solo.</div>
+                    </div>
+                    <div class="col-12">
+                        <div class="form-check form-switch">
+                            <input type="checkbox" class="form-check-input" id="tmPanel" role="switch" <%= tema.panel ? 'checked' : '' %>>
+                            <label class="form-check-label" for="tmPanel">Mostrarlo también dentro del sistema (el panel del personal)</label>
+                        </div>
+                        <div class="form-text">Luces arriba y nieve en tus pantallas de administración. No aparece en el POS ni en la cocina para no estorbar al trabajar.</div>
+                    </div>
+                </div>
+                <button type="button" class="btn btn-primary mt-3" id="tmGuardar"><i class="bi bi-check-lg me-1"></i>Guardar look navideño</button>
+            </div>
+        </section>
+
+        <section class="card mb-4" aria-labelledby="tpPlantillasTitulo">
+            <div class="card-header"><span id="tpPlantillasTitulo"><i class="bi bi-percent me-2"></i>Plantillas de promoción</span></div>
+            <div class="card-body">
+                <p class="text-muted small mb-3">
+                    Cada plantilla crea una promoción <strong>desactivada</strong> para todo el catálogo, con las fechas de la temporada.
+                    Revísala en <a href="/promociones">Promociones</a> (puedes limitarla a categorías o productos) y actívala cuando quieras.
+                </p>
+                <div class="tp-plantillas">
+                    <% plantillas.forEach(p => { %>
+                        <article class="tp-plantilla" data-plantilla="<%= p.id %>">
+                            <div class="tp-plantilla-cab">
+                                <i class="bi <%= p.icono %>" aria-hidden="true"></i>
+                                <h2 class="tp-plantilla-nombre"><%= p.nombre %></h2>
+                            </div>
+                            <p class="tp-plantilla-desc"><%= p.descripcion %></p>
+                            <div class="row g-2 align-items-end">
+                                <div class="col-4">
+                                    <label class="form-label small" for="pct-<%= p.id %>">Descuento %</label>
+                                    <input type="number" class="form-control form-control-sm tp-pct" id="pct-<%= p.id %>" min="1" max="100" value="<%= p.porcentaje %>">
+                                </div>
+                                <div class="col-4">
+                                    <label class="form-label small" for="ini-<%= p.id %>">Desde</label>
+                                    <input type="date" class="form-control form-control-sm tp-ini" id="ini-<%= p.id %>" value="<%= p.fecha_inicio %>">
+                                </div>
+                                <div class="col-4">
+                                    <label class="form-label small" for="fin-<%= p.id %>">Hasta</label>
+                                    <input type="date" class="form-control form-control-sm tp-fin" id="fin-<%= p.id %>" value="<%= p.fecha_fin %>">
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-primary btn-sm mt-3 tp-crear" data-plantilla="<%= p.id %>">
+                                <i class="bi bi-plus-lg me-1"></i>Crear promoción
+                            </button>
+                        </article>
+                    <% }) %>
+                </div>
+            </div>
+        </section>
+
+        <section class="card" aria-labelledby="tpVigenciaTitulo">
+            <div class="card-header"><span id="tpVigenciaTitulo"><i class="bi bi-calendar-range me-2"></i>Menú de temporada por fechas</span></div>
+            <div class="card-body">
+                <p class="text-muted small mb-3">
+                    Elige los platos o combos de temporada y las fechas. Se muestran como <strong>disponibles</strong> desde la fecha de inicio y se
+                    retiran solos después de la fecha final (Mesas, POS y menú QR). Antes de la fecha de inicio quedan como no disponibles.
+                </p>
+                <div class="row g-3">
+                    <div class="col-12 col-lg-6">
+                        <label class="form-label" for="tpBuscar">Productos y combos</label>
+                        <input type="search" class="form-control mb-2" id="tpBuscar" placeholder="Buscar..." autocomplete="off">
+                        <div class="tp-lista" id="tpProductos" role="group" aria-label="Productos y combos">
+                            <% productos.forEach(p => { %>
+                                <label class="tp-prod" data-nombre="<%= p.nombre.toLowerCase() %>">
+                                    <input type="checkbox" class="form-check-input tp-chk" value="<%= p.id %>">
+                                    <span><%= p.nombre %></span>
+                                    <% if (p.es_combo) { %><span class="tp-etiqueta">Combo</span><% } %>
+                                </label>
+                            <% }) %>
+                        </div>
+                    </div>
+                    <div class="col-12 col-lg-6">
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <label class="form-label" for="tpDesde">Desde</label>
+                                <input type="date" class="form-control" id="tpDesde" min="<%= hoy %>">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label" for="tpHasta">Hasta (inclusive)</label>
+                                <input type="date" class="form-control" id="tpHasta" min="<%= hoy %>">
+                            </div>
+                        </div>
+                        <p class="form-text mb-3"><span id="tpSeleccionados">0 seleccionados</span>. Puedes dejar una sola fecha.</p>
+                        <button type="button" class="btn btn-primary" id="tpAplicar"><i class="bi bi-check-lg me-1"></i>Aplicar fechas</button>
+                    </div>
+                </div>
+
+                <hr class="my-4">
+                <h2 class="tp-sub-titulo">Con fechas configuradas</h2>
+                <div id="tpVigencias" class="tp-vigencias" aria-live="polite"></div>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        window.TEMPORADA = <%- jsonSeguro({ hoy, vigencias }) %>;
+    </script>
+    <%- include('../partials/layout/scripts', { swal: true }) %>
+    <script src="/js/modulos/temporada.js?v=<%= assetV %>"></script>
+</body>
+
+</html>

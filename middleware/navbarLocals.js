@@ -8,6 +8,7 @@
 
 const { MODULE_LABELS } = require('../utils/planPermissions');
 const { asistenteConfigurado } = require('../services/Tenant/Asistente/llm');
+const { normalizarOcultos, menuVisible, hayMas, catalogoParaUsuario } = require('../utils/navbarCatalogo');
 
 module.exports = function navbarLocals(req, res, next) {
     res.locals.moduleLabels = MODULE_LABELS;
@@ -63,6 +64,8 @@ module.exports = function navbarLocals(req, res, next) {
                 sucursales:
                     hp('sucursales.gestionar') && !!tenant && !tenant.tenant_padre_id && tenant.max_sucursales > 0,
                 promociones: hp('promociones.ver'),
+                reservas: hp('reservas.ver'),
+                temporada: hp('temporada.gestionar'),
                 combos: hp('combos.ver'),
                 servicios: hp('servicios.ver') && cs('servicios'),
                 pos: hp('pos.ver') && cs('ventas'),
@@ -77,15 +80,11 @@ module.exports = function navbarLocals(req, res, next) {
                     asistenteConfigurado()
             };
 
-            const hasMas =
-                can.recetas ||
-                can.modificadores ||
-                can.eventos ||
-                can.analitica ||
-                can.proveedores ||
-                can.servicios ||
-                can.clasificacion ||
-                can.cocina;
+            // «Personalizar menú»: el usuario puede ocultar enlaces. `can` conserva el acceso real (otras partes de la
+            // interfaz lo consultan); `canMenu` es lo que la barra dibuja, con lo oculto en false. Solo visual.
+            const ocultos = isSuperadmin ? [] : normalizarOcultos(user && user.nav_oculto);
+            const canMenu = menuVisible(can, ocultos);
+            const hasMas = hayMas(canMenu);
 
             let primaryColor = '#ff5a36';
             let bgStart = '#16283e';
@@ -132,7 +131,11 @@ module.exports = function navbarLocals(req, res, next) {
                 cardPrimary,
                 cardSecondary,
                 can,
-                hasMas
+                canMenu,
+                hasMas,
+                // Para el modal «Personalizar menú»: solo los enlaces a los que el usuario tiene acceso.
+                catalogoMenu: isSuperadmin ? [] : catalogoParaUsuario(can, ocultos),
+                menuOcultos: ocultos
             };
         }
     });

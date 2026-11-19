@@ -5,6 +5,7 @@ const { JWT_CONFIG } = require('../../utils/constants');
 const logger = require('../../utils/logger');
 const CacheService = require('./CacheService');
 const PermisosUsuarioService = require('./PermisosUsuarioService');
+const { normalizarOcultos } = require('../../utils/navbarCatalogo');
 
 // Authentication service
 // Handles user authentication, token generation and password management
@@ -168,6 +169,7 @@ async function getUserById(userId) {
         const [users] = await db.query(
             `
             SELECT u.id, u.username, u.email, u.nombre_completo, u.rol_id, u.tenant_id, u.debe_cambiar_password,
+                   u.nav_oculto,
                    r.nombre AS rol_nombre, r.descripcion AS rol_descripcion,
                    pl.slug AS plan_slug
             FROM usuarios u
@@ -203,7 +205,9 @@ async function getUserById(userId) {
             roles: userRoles.names,
             permisos,
             tenant_id: user.tenant_id,
-            debe_cambiar_password: Boolean(user.debe_cambiar_password)
+            debe_cambiar_password: Boolean(user.debe_cambiar_password),
+            // Enlaces de la barra que el usuario ocultó (solo visual, ver utils/navbarCatalogo.js)
+            nav_oculto: normalizarOcultos(user.nav_oculto)
         };
     } catch (error) {
         logger.error('Error in getUserById', { error: error.message, userId });

@@ -1,0 +1,28 @@
+# Reservas V1 + temporada navideña
+
+Objective: reservations module (no deposit) and December season tooling, using the "Cloche" branding.
+Branch: feat/reservas-v1 · Delivery: ask-on-risk · Test runner: jest (`npx jest <file>`)
+
+## Specs
+- S1: "reservas v1" — reservations V1 without online deposit (Wompi deposit deferred to January).
+- S2: Public reservation page per restaurant (no login, token-scoped, rate-limited, honeypot, Ley 1581 consent evidence).
+- S3: Internal panel: calendar/day list, manual booking, status changes (pendiente, confirmada, sentada, cancelada, no_show), WhatsApp `wa.me` confirmation link, copy public link.
+- S4: Capacity-based availability (max simultaneous guests per slot), overbooking prevented inside a transaction.
+- S5: "trabajamos lo de diciembre de la mano, plantillas y demas" — seasonal tooling: product/combo validity dates and a Christmas template (combo + promotion).
+- S6: "usando el branding creado y demas respetando eso" — all new UI uses `public/css/core/brand.css` tokens (Tinta, Coral, Crema, Arena, Gris; Montserrat + Poppins), no loose brand hex.
+- S7: Permissions only via `utils/permisosCatalogo.js`; errors via `utils/errors.js`; dates via `utils/dateHelpers.js`; `GF.api`/`GF.escapeHtml` on the frontend.
+
+## Tasks
+- T1 (S1,S3,S4,S7) Migration 129 + ReservaRepository + ReservaService + tests — route: inline — status: done (jest 19 tests) — commit ef3db15
+- T2 (S3,S6,S7) Panel routes/controller/view/js/css + permissions + navbar — route: inline — status: done — commit f6fffdd
+- T3 (S2,S6) Public page /reservar/:token — route: inline — status: done — commit e3ce7c9
+- T4 (S5,S6) Migration 130 producto_vigencia (daily cron flips `disponible`, catalog untouched) + /temporada page with 4 promo templates — route: inline — status: done in code, pending commit; migrations 129/130 NOT yet run (local MySQL was down)
+- T5 docs/modulos/21_reservas.md, 22_temporada.md + README index — route: inline — status: done
+
+## Log
+- L1 (2026-11-18): "reservas v1, y pues trabajamos lo de diciembre de la mano, plantillas y demas, pero recuerda usando  el branding creado y demas respetando eso"
+- L2 (2026-11-18): "Opción A, que el cliente elija la mesa" — plus: "se quiten y se validen que esta ocupado y que no esta ocupado" (tables reserved at an overlapping time must disappear and be validated). Decision: opt-in `elegir_mesa` per restaurant, `mesas.capacidad`, availability and validation per table; aforo mode stays the default.
+- L3 (2026-11-18): "En mis restaurantes, reservas y menú QR, y que pues sea bonito llamativo de pronto con una que otra animacion tematica y demas" — plus earlier "usando el branding creado y demas respetando eso". Christmas visual theme (opt-in per restaurant, dated window) on the public reservations page and the QR menu: lights, snow, banner, confetti; reduced-motion respected; QR menu keeps each restaurant's own palette.
+- L4 (2026-11-18): "y se puede activar manualmente desde el superadmin?" then "Hazlo con ambas, la global y la de por restaurante". Superadmin panel /admin/temporada: global switch for all restaurants + per-restaurant heredar/activado/apagado; the restaurant's explicit decision prevails over the global.
+- L5 (2026-11-19): "tambien me gustaria que asi como se muestra en lo de reservas y el menu digital se vea en los diferentes paneles, como superadmin ... lo de la nieve callendo y demas como luces ... que se pueda ver el panel como dashboard y asi dentro de cada local". Theme also in the internal panels (each local's shared navbar pages and the superadmin shell), subtler, with a `panel` opt-out; POS and kitchen excluded.
+- L6 (2026-11-19): "como ya tenemos muchas cosas en el navbar, que en el perfil puedan elegir que mostrar y que no mostrar ... poder desactivarlos, no significa que pierdan el permiso solo es ocultarlo del navbar". Per-user "Personalizar menú" (usuarios.nav_oculto): purely visual, permissions untouched.

@@ -102,6 +102,11 @@
                                                 class="bi bi-credit-card text-muted"></i>Facturación</a>
                                     </li>
                                     <% } %>
+                                <% if (!nav.isSuperadmin && nav.catalogoMenu && nav.catalogoMenu.length) { %>
+                                    <li><button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#modalMenuPersonal"><i
+                                                class="bi bi-layout-text-window-reverse text-muted"></i>Personalizar menú</button>
+                                    </li>
+                                <% } %>
                                 <li><a class="dropdown-item" href="/auth/cambiar-password"><i
                                             class="bi bi-key text-muted"></i>Cambiar contraseña</a>
                                 </li>

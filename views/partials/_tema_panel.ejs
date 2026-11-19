@@ -1,0 +1,11 @@
+<%#
+  Look de temporada dentro del panel de un restaurante. Se incluye desde la barra de navegación compartida solo
+  cuando hay tema activo (res.locals.temaPanel). Marca el body, carga el CSS/JS del tema y pinta las luces.
+  Uso: include('_tema_panel', { tema: temaPanel })
+%>
+<link rel="stylesheet" href="/css/core/tema-navidad.css?v=<%= assetV %>">
+<script>
+    document.body.classList.add('tema-navidad', 'tema-navidad--panel'<%- tema.animaciones ? '' : ", 'tema-navidad-quieto'" %>);
+</script>
+<%- include('_tema_navidad', { parte: 'luces', variante: 'panel', adornos: false }) %>
+<script src="/js/core/tema-navidad.js?v=<%= assetV %>" defer></script>

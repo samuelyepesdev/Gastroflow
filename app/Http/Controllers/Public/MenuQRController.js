@@ -23,6 +23,7 @@ class MenuQRController {
                 modificadores: data.modificadores || {},
                 combos: data.combos || [],
                 brochure: data.brochure || [],
+                tema: data.tema || null,
                 qrToken,
                 tenantSlug,
                 qrSessionId: data.mesa.qr_session_id

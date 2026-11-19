@@ -9,6 +9,9 @@
 <% } %>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script src="/js/admin/shell.js?v=<%= assetV %>"></script>
+<% if (typeof temaPanel !== 'undefined' && temaPanel) { %>
+<script src="/js/core/tema-navidad.js?v=<%= assetV %>"></script>
+<% } %>
 <script src="/js/core/tablas-responsive.js?v=<%= assetV %>"></script>
 <% if (typeof extraScripts !=='undefined' && extraScripts) { %>
     <%- extraScripts %>
