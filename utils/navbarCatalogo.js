@@ -32,7 +32,8 @@ const GRUPOS = [
             { clave: 'sucursales', etiqueta: 'Sucursales', icono: 'bi-diagram-3' },
             { clave: 'promociones', etiqueta: 'Promociones', icono: 'bi-percent' },
             { clave: 'combos', etiqueta: 'Combos', icono: 'bi-box-seam' },
-            { clave: 'temporada', etiqueta: 'Temporada', icono: 'bi-snow2' }
+            { clave: 'temporada', etiqueta: 'Temporada', icono: 'bi-snow2' },
+            { clave: 'resenas', etiqueta: 'Reseñas', icono: 'bi-star-half' }
         ]
     },
     {

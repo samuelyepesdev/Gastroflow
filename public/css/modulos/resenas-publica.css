@@ -1,0 +1,48 @@
+/* ============================================================
+   resenas-publica.css — Página pública de opiniones (marca "Cloche").
+   Cabecera en Tinta, cuerpo en Crema. Solo tokens de brand.css.
+   ============================================================ */
+
+body { background: var(--gf-crema); min-height: 100vh; display: flex; flex-direction: column; }
+
+.rs-cabecera { background: var(--gf-tinta); color: var(--gf-crema); text-align: center; padding: 2rem 1rem 3.5rem; }
+.rs-restaurante {
+    font-family: var(--gf-font-titulo);
+    font-weight: 800;
+    font-size: clamp(1.4rem, 5vw, 2rem);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--gf-crema);
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+.rs-sub { color: var(--gf-coral); font-weight: 600; margin: 0.35rem 0 0; }
+
+.rs-wrap { width: 100%; max-width: 32rem; margin: -2rem auto 0; padding: 0 1rem 2rem; flex: 1; }
+.rs-card { background: #fff; border: 1px solid var(--gf-linea); border-radius: 1rem; padding: 1.5rem; box-shadow: 0 0.75rem 1.5rem rgba(14, 27, 44, 0.08); }
+.rs-centro { text-align: center; }
+.rs-centro:focus { outline: none; }
+.rs-titulo { font-family: var(--gf-font-titulo); font-weight: 700; font-size: 1.2rem; color: var(--gf-tinta); text-align: center; margin-bottom: 1rem; }
+
+/* Estrellas: botones grandes (mínimo 44px de área táctil), se llenan hasta la elegida. */
+.rs-estrellas { display: flex; justify-content: center; gap: 0.25rem; }
+.rs-estrella { width: 3.25rem; height: 3.25rem; border: 0; background: transparent; padding: 0; cursor: pointer; font-size: 2.1rem; line-height: 1; color: var(--gf-linea); transition: transform 0.12s ease, color 0.12s ease; }
+.rs-estrella.activa { color: var(--gf-coral); }
+.rs-estrella:hover { transform: scale(1.12); }
+.rs-estrella:focus-visible { outline: 3px solid var(--gf-focus, rgba(255, 90, 54, 0.45)); outline-offset: 2px; border-radius: 0.5rem; }
+.rs-leyenda { text-align: center; color: var(--gf-gris); font-weight: 600; margin: 0.4rem 0 0; min-height: 1.5rem; }
+
+.rs-detalle { margin-top: 1.25rem; padding-top: 1.25rem; border-top: 1px solid var(--gf-linea); }
+.rs-detalle-titulo { font-weight: 600; color: var(--gf-tinta); margin-bottom: 0.9rem; }
+.rs-ayuda { color: var(--gf-gris); font-size: 0.85rem; }
+.rs-hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+
+.rs-gracias-icono { font-size: 2.4rem; color: var(--gf-coral); display: block; margin-bottom: 0.5rem; }
+.rs-google { margin-top: 1.25rem; padding-top: 1.25rem; border-top: 1px solid var(--gf-linea); }
+
+.rs-pie { display: flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 1rem; color: var(--gf-gris); font-size: 0.85rem; }
+
+@media (prefers-reduced-motion: reduce) {
+    .rs-estrella { transition: none; }
+    .rs-estrella:hover { transform: none; }
+}

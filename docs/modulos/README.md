@@ -15,6 +15,7 @@ Este directorio contiene la documentación lógica y operativa detallada por cad
 * **[22. Temporada](22_temporada.md):** Plantillas de promoción de fin de año y menú de temporada con fechas de inicio y fin.
 * **[23. Menú personalizable](23_menu_personalizable.md):** Cada usuario puede ocultar enlaces de su barra de navegación (solo visual, no cambia permisos).
 * **[24. Calculadora de pérdidas](24_calculadora.md):** Página pública `/calculadora` que capta prospectos (contacto con consentimiento) y panel de superadmin `/admin/leads`.
+* **[25. Reseñas](25_resenas.md):** Página pública `/resena/:token` (QR o enlace) para que los clientes califiquen; las bajas invitan a contarle al dueño qué pasó y el enlace de Google se ofrece a todos.
 * **[12. Modificadores / Toppings](12_modificadores_toppings.md):** Grupos de opciones por producto, precio adicional y descuento de inventario opt-in.
 
 ## 🍳 Inventarios, Recetas y Costos

@@ -66,6 +66,7 @@ module.exports = function navbarLocals(req, res, next) {
                 promociones: hp('promociones.ver'),
                 reservas: hp('reservas.ver'),
                 temporada: hp('temporada.gestionar'),
+                resenas: hp('resenas.ver'),
                 combos: hp('combos.ver'),
                 servicios: hp('servicios.ver') && cs('servicios'),
                 pos: hp('pos.ver') && cs('ventas'),
