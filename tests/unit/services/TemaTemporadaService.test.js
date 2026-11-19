@@ -145,8 +145,16 @@ describe('TemaTemporadaService.guardar y guardarGlobal', () => {
             desde: '2026-12-01',
             hasta: '2027-01-06',
             mensaje: 'Felices fiestas',
-            animaciones: 0
+            animaciones: 0,
+            panel: 1
         });
+    });
+
+    it('«mostrar en paneles» se guarda tal cual y por defecto queda encendido', async () => {
+        await TemaTemporadaService.guardar(1, { activo: true, panel: false });
+        expect(TemaTemporadaRepository.upsert.mock.calls[0][1].panel).toBe(0);
+        await TemaTemporadaService.guardarGlobal({ activo: true });
+        expect(TemaTemporadaRepository.upsertGlobal.mock.calls[0][0].panel).toBe(1);
     });
 
     it('apagar desde el restaurante guarda 0 (no NULL): es una decisión que prevalece sobre lo global', async () => {
@@ -247,5 +255,83 @@ describe('TemaTemporadaService - panel del superadmin', () => {
             statusCode: 404
         });
         expect(TemaTemporadaRepository.setDecision).not.toHaveBeenCalled();
+    });
+});
+
+describe('TemaTemporadaService - paneles internos', () => {
+    const CacheService = require('../../../services/Shared/CacheService');
+
+    beforeEach(() => {
+        jest.clearAllMocks();
+        CacheService.clear();
+    });
+
+    it('resolver: el panel se apaga si cualquiera de los dos (restaurante o global) lo apaga', () => {
+        expect(resolver(fila(), global()).panel).toBe(true);
+        expect(resolver(fila({ panel: 0 }), global()).panel).toBe(false);
+        expect(resolver(null, global({ panel: 0 })).panel).toBe(false);
+    });
+
+    it('getActivoPanel: devuelve el tema del restaurante en el panel', async () => {
+        TemaTemporadaRepository.get.mockResolvedValue(fila({ mensaje: 'Hola' }));
+        TemaTemporadaRepository.getGlobal.mockResolvedValue(null);
+        await expect(TemaTemporadaService.getActivoPanel(1, '2026-12-10')).resolves.toEqual({
+            tema: 'navidad',
+            mensaje: 'Hola',
+            animaciones: true
+        });
+    });
+
+    it('getActivoPanel: respeta «mostrar en paneles» apagado (el público sí lo sigue viendo)', async () => {
+        TemaTemporadaRepository.get.mockResolvedValue(fila({ panel: 0 }));
+        TemaTemporadaRepository.getGlobal.mockResolvedValue(null);
+        await expect(TemaTemporadaService.getActivoPanel(1, '2026-12-10')).resolves.toBeNull();
+        await expect(TemaTemporadaService.getActivo(1, '2026-12-10')).resolves.toMatchObject({ tema: 'navidad' });
+    });
+
+    it('getActivoPanel: cachea el resultado y los cambios de configuración lo invalidan', async () => {
+        TemaTemporadaRepository.get.mockResolvedValue(fila());
+        TemaTemporadaRepository.getGlobal.mockResolvedValue(null);
+        await TemaTemporadaService.getActivoPanel(1, '2026-12-10');
+        await TemaTemporadaService.getActivoPanel(1, '2026-12-10');
+        expect(TemaTemporadaRepository.get).toHaveBeenCalledTimes(1);
+
+        await TemaTemporadaService.guardar(1, { activo: false });
+        TemaTemporadaRepository.get.mockResolvedValue(fila({ activo: 0 }));
+        await expect(TemaTemporadaService.getActivoPanel(1, '2026-12-10')).resolves.toBeNull();
+    });
+
+    it('getActivoPanel: un null también se cachea (no consulta la base en cada página)', async () => {
+        TemaTemporadaRepository.get.mockResolvedValue(null);
+        TemaTemporadaRepository.getGlobal.mockResolvedValue(null);
+        await TemaTemporadaService.getActivoPanel(1, '2026-12-10');
+        await TemaTemporadaService.getActivoPanel(1, '2026-12-10');
+        expect(TemaTemporadaRepository.get).toHaveBeenCalledTimes(1);
+    });
+
+    it('getActivoPanel: si la base falla, el panel se ve sin tema', async () => {
+        const log = jest.spyOn(console, 'error').mockImplementation(() => {});
+        TemaTemporadaRepository.get.mockRejectedValue(new Error('db caída'));
+        await expect(TemaTemporadaService.getActivoPanel(1, '2026-12-10')).resolves.toBeNull();
+        log.mockRestore();
+    });
+
+    it('getActivoPanelAdmin: se ve con lo global activo, en fechas y con paneles encendido', async () => {
+        TemaTemporadaRepository.getGlobal.mockResolvedValue(global({ mensaje: 'Felices fiestas' }));
+        await expect(TemaTemporadaService.getActivoPanelAdmin('2026-12-24')).resolves.toEqual({
+            tema: 'navidad',
+            mensaje: 'Felices fiestas',
+            animaciones: true
+        });
+    });
+
+    it.each([
+        ['apagado', global({ activo: 0 }), '2026-12-24'],
+        ['paneles apagado', global({ panel: 0 }), '2026-12-24'],
+        ['fuera de fechas', global(), '2027-02-01'],
+        ['sin fila global', null, '2026-12-24']
+    ])('getActivoPanelAdmin: no se ve con lo global %s', async (_n, g, hoy) => {
+        TemaTemporadaRepository.getGlobal.mockResolvedValue(g);
+        await expect(TemaTemporadaService.getActivoPanelAdmin(hoy)).resolves.toBeNull();
     });
 });

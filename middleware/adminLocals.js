@@ -13,6 +13,7 @@
 const db = require('../config/database');
 const { asistenteConfigurado } = require('../services/Tenant/Asistente/llm');
 const { ADMIN_SECTIONS, ADMIN_QUICK_LINKS } = require('../utils/adminSections');
+const TemaTemporadaService = require('../services/Tenant/TemaTemporadaService');
 
 module.exports = async function adminLocals(req, res, next) {
     res.locals.adminSections = ADMIN_SECTIONS;
@@ -39,6 +40,8 @@ module.exports = async function adminLocals(req, res, next) {
     }
 
     res.locals.adminBadges = { soporteAbiertos, onboardingPendientes };
+    // Look de temporada en el panel del superadmin (null si no aplica; nunca lanza).
+    res.locals.temaPanel = req.method === 'GET' ? await TemaTemporadaService.getActivoPanelAdmin() : null;
     // El panel del asistente del sistema solo aparece si el servidor tiene la clave del proveedor de IA.
     res.locals.asistenteSistema = asistenteConfigurado();
 

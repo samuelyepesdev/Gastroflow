@@ -15,7 +15,8 @@
                     desde: $('tgDesde').value || null,
                     hasta: $('tgHasta').value || null,
                     mensaje: $('tgMensaje').value,
-                    animaciones: $('tgAnimaciones').checked
+                    animaciones: $('tgAnimaciones').checked,
+                    panel: $('tgPanel').checked
                 },
                 'No se pudo guardar el look de temporada'
             );

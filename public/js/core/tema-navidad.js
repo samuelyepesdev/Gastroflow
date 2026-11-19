@@ -16,7 +16,10 @@
         const cont = document.createElement('div');
         cont.className = 'tn-nieve';
         cont.setAttribute('aria-hidden', 'true');
-        const cantidad = window.innerWidth < 600 ? 16 : 28;
+        const enPanel = body.classList.contains('tema-navidad--panel');
+        const movil = window.innerWidth < 600;
+        // En los paneles de trabajo, menos copos: la pantalla ya está llena de información.
+        const cantidad = enPanel ? (movil ? 10 : 18) : movil ? 16 : 28;
         for (let i = 0; i < cantidad; i++) {
             const copo = document.createElement('i');
             copo.className = 'bi bi-snow2 tn-copo';

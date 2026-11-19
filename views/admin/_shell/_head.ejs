@@ -17,6 +17,9 @@
     <script src="/js/core/gf.js?v=<%= assetV %>"></script>
     <link rel="stylesheet" href="/css/core/gf-marca.css?v=<%= assetV %>">
     <script src="/js/core/gf-marca.js?v=<%= assetV %>"></script>
+    <% if (typeof temaPanel !== 'undefined' && temaPanel) { %>
+        <link rel="stylesheet" href="/css/core/tema-navidad.css?v=<%= assetV %>">
+    <% } %>
     <% if (typeof pageCss !=='undefined' && pageCss) { %>
         <link rel="stylesheet" href="<%= pageCss %>">
     <% } %>
@@ -24,4 +27,4 @@
         <%- extraHead %>
     <% } %>
 </head>
-<body class="admin-shell-body">
+<body class="admin-shell-body<%= typeof temaPanel !== 'undefined' && temaPanel ? ' tema-navidad tema-navidad--panel' + (temaPanel.animaciones ? '' : ' tema-navidad-quieto') : '' %>">

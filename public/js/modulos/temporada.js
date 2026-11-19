@@ -121,7 +121,8 @@
                     desde: $('tmDesde').value || null,
                     hasta: $('tmHasta').value || null,
                     mensaje: $('tmMensaje').value,
-                    animaciones: $('tmAnimaciones').checked
+                    animaciones: $('tmAnimaciones').checked,
+                    panel: $('tmPanel').checked
                 },
                 'No se pudo guardar el look navideño'
             );

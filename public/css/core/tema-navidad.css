@@ -38,6 +38,9 @@ body.tema-navidad--qr {
 .tn-luces { position: relative; height: 42px; pointer-events: none; overflow: hidden; }
 .tn-luces--sobre { position: absolute; top: 0; left: 0; right: 0; z-index: 2; }
 .tn-luces--qr { background: var(--navbar-bg, #fff); }
+/* Panel interno (navbar de cada local y shell del superadmin): tira sobre fondo Tinta y nieve más discreta. */
+.tn-luces--panel { height: 38px; background: var(--gf-tinta, #0e1b2c); }
+body.tema-navidad--panel .tn-copo { opacity: calc(var(--o) * 0.7); }
 .tn-cable { position: absolute; top: 3px; left: -2%; right: -2%; height: 0; border-top: 2px solid var(--tn-cable); border-radius: 50%; }
 .tn-bombillos { list-style: none; margin: 0; padding: 0 10px; display: flex; justify-content: space-between; position: relative; }
 .tn-bombillos li {

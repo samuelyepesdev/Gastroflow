@@ -66,6 +66,13 @@
                         </div>
                         <div class="form-text">Se apagan solas en los dispositivos configurados para reducir el movimiento. Fuera de las fechas el tema desaparece solo.</div>
                     </div>
+                    <div class="col-12">
+                        <div class="form-check form-switch">
+                            <input type="checkbox" class="form-check-input" id="tmPanel" role="switch" <%= tema.panel ? 'checked' : '' %>>
+                            <label class="form-check-label" for="tmPanel">Mostrarlo también dentro del sistema (el panel del personal)</label>
+                        </div>
+                        <div class="form-text">Luces arriba y nieve en tus pantallas de administración. No aparece en el POS ni en la cocina para no estorbar al trabajar.</div>
+                    </div>
                 </div>
                 <button type="button" class="btn btn-primary mt-3" id="tmGuardar"><i class="bi bi-check-lg me-1"></i>Guardar look navideño</button>
             </div>
