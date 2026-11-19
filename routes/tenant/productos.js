@@ -12,6 +12,29 @@ const multer = require('multer');
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
 const BaseRequest = require('../../app/Http/Requests/BaseRequest');
 const StoreProductoRequest = require('../../app/Http/Requests/Tenant/StoreProductoRequest');
+const CartaFotoController = require('../../app/Http/Controllers/Tenant/CartaFotoController');
+const rateLimit = require('express-rate-limit');
+
+// Leer una carta con IA cuesta dinero y tarda: se limita por persona (no por IP: un restaurante comparte red).
+const limitarLecturaCarta = rateLimit({
+    keyGenerator: req => `carta:${req.tenant?.id}:${req.user?.id}`,
+    windowMs: 60 * 60 * 1000,
+    max: 8,
+    standardHeaders: true,
+    legacyHeaders: false,
+    validate: { keyGeneratorIpFallback: false },
+    message: { error: 'Ya leíste varias cartas seguidas. Intenta de nuevo en un rato.' }
+});
+
+// multer devuelve su propio error si la foto es muy grande: se convierte en un 400 claro en vez de un 500.
+const subirFotoCarta = (req, res, next) =>
+    upload.single('imagen')(req, res, err => {
+        if (!err) {
+            return next();
+        }
+        const mensaje = err.code === 'LIMIT_FILE_SIZE' ? 'La foto pesa más de 5 MB.' : 'No se pudo recibir la foto.';
+        return res.status(400).json({ error: mensaje, codigo: 'CARTA_IMAGEN_INVALIDA' });
+    });
 
 // GET /productos - Show products page (solo del tenant)
 router.get('/', requirePermission('productos.ver'), ProductosController.index);
@@ -63,6 +86,18 @@ router.post(
     upload.single('archivo'),
     ProductosController.import
 );
+
+// POST /productos/importar-carta/analizar - Lee una foto de la carta y devuelve un borrador (no guarda nada)
+router.post(
+    '/importar-carta/analizar',
+    requirePermission('productos.crear'),
+    limitarLecturaCarta,
+    subirFotoCarta,
+    CartaFotoController.analizar
+);
+
+// POST /productos/importar-carta/confirmar - Crea los productos que el dueño revisó
+router.post('/importar-carta/confirmar', requirePermission('productos.crear'), CartaFotoController.confirmar);
 
 // PATCH /productos/:id/favorito - Toggle favorite
 router.patch('/:id/favorito', requirePermission('productos.editar'), ProductosController.toggleFavorite);

@@ -1,5 +1,6 @@
 <%- include('../partials/layout/head', { titulo: 'Gestión de Productos' }) %>
     <link rel="stylesheet" href="/css/modulos/productos.css?v=<%= assetV %>">
+    <link rel="stylesheet" href="/css/modulos/carta_foto.css?v=<%= assetV %>">
     <% const activeAccent = colorAcento(typeof tenant !== 'undefined' ? tenant : null) %>
     <%- include('../partials/layout/accent-vars', { color: activeAccent, selector: ':root' }) %>
 </head>
@@ -31,6 +32,11 @@
                     </button>
                     <input type="file" id="archivoImport" accept=".xlsx" class="d-none">
                 <% } %>
+                <% if (typeof cartaFotoDisponible !== 'undefined' && cartaFotoDisponible && user && user.permisos && user.permisos.includes('productos.crear')) { %>
+                    <button id="btnCartaFoto" class="btn-premium-outline" data-bs-toggle="modal" data-bs-target="#cartaFotoModal">
+                        <i class="bi bi-camera"></i> Carta desde foto
+                    </button>
+                <% } %>
                 <% if (user && user.permisos && user.permisos.includes('productos.crear')) { %>
                     <button class="btn-premium-action" data-bs-toggle="modal" data-bs-target="#nuevoProductoModal">
                         <i class="bi bi-plus-lg"></i> Nuevo producto
@@ -58,6 +64,7 @@
     <!-- Modals -->
     <%- include('_modal_costeo') %>
     <%- include('_modal_modificadores') %>
+    <% if (typeof cartaFotoDisponible !== 'undefined' && cartaFotoDisponible) { %><%- include('_modal_carta_foto') %><% } %>
     <%- include('_modal_form', { categorias: categorias, tenant: typeof tenant !== 'undefined' ? tenant : null }) %>
 
     <!-- Base Scripts -->
@@ -72,6 +79,9 @@
     <!-- Load main script -->
     <script src="/js/modulos/productos/productos_core.js?v=<%= assetV %>"></script>
     <script src="/js/modulos/productos/productos_ui.js?v=<%= assetV %>"></script>
+    <% if (typeof cartaFotoDisponible !== 'undefined' && cartaFotoDisponible) { %>
+    <script src="/js/modulos/productos/carta_foto.js?v=<%= assetV %>"></script>
+    <% } %>
 </body>
 
 </html>
