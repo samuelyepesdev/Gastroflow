@@ -328,6 +328,7 @@ router.use('/api/asistente', requireAuthWithTenant, asistenteRoutes);
 // --- RUTA DE NOTIFICACIONES (SSE) ---
 router.get('/api/notifications/subscribe', requireAuthWithTenant, NotificationController.subscribe);
 router.use('/api/anuncios', requireAuthWithTenant, anunciosRoutes);
+router.use('/api/menu-personal', requireAuthWithTenant, require('./tenant/menuPersonal'));
 
 // --- RUTAS DE SUPERADMIN ---
 const requireSuperadmin = [requireAuth, requireRole(ROLES.SUPERADMIN), adminLocals];

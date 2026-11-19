@@ -37,13 +37,13 @@
                     <%
                     /* En móvil los enlaces se agrupan en secciones plegables (nav-grupo); en escritorio los
                        grupos no generan caja (display: contents) y la barra se ve igual. */
-                    const hayComercial = nav.can.finanzas || nav.can.bonos || nav.can.fidelizacion || nav.can.sucursales || nav.can.promociones || nav.can.combos || nav.can.temporada;
-                    const hayCatalogo = nav.can.productos || nav.can.clientes || (nav.can.inventario && !nav.can.proveedores && !nav.can.recetas);
+                    const hayComercial = nav.canMenu.finanzas || nav.canMenu.bonos || nav.canMenu.fidelizacion || nav.canMenu.sucursales || nav.canMenu.promociones || nav.canMenu.combos || nav.canMenu.temporada;
+                    const hayCatalogo = nav.canMenu.productos || nav.canMenu.clientes || (nav.canMenu.inventario && !nav.canMenu.proveedores && !nav.canMenu.recetas);
                 %>
                     <li class="nav-grupo">
                         <button type="button" class="nav-grupo-h d-lg-none" aria-expanded="false"><span>Operación</span><i class="bi bi-chevron-down"></i></button>
                         <ul class="nav-grupo-items">
-                    <% if (nav.can.dashboard) { %>
+                    <% if (nav.canMenu.dashboard) { %>
                         <li class="nav-item"><a class="nav-link" href="/dashboard"><i
                                     class="bi bi-speedometer2"></i>Dashboard</a></li>
                         <% } else { %>
@@ -51,32 +51,32 @@
                             </li>
                             <% } %>
 
-                                <% if (nav.can.mesas) { %>
+                                <% if (nav.canMenu.mesas) { %>
                                     <li class="nav-item"><a class="nav-link" href="/mesas"><i
                                                 class="bi bi-grid-3x3-gap"></i>Mesas</a></li>
                                     <% } %>
 
-                                    <% if (nav.can.reservas) { %>
+                                    <% if (nav.canMenu.reservas) { %>
                                         <li class="nav-item"><a class="nav-link" href="/reservas"><i
                                                     class="bi bi-calendar2-check"></i>Reservas</a></li>
                                         <% } %>
 
-                                        <% if (nav.can.pos) { %>
+                                        <% if (nav.canMenu.pos) { %>
                                             <li class="nav-item"><a class="nav-link" href="/pos"><i
                                                         class="bi bi-lightning-charge"></i>POS</a></li>
                                             <% } %>
 
-                                        <% if (nav.can.ventas) { %>
+                                        <% if (nav.canMenu.ventas) { %>
                                             <li class="nav-item"><a class="nav-link" href="/ventas"><i
                                                         class="bi bi-receipt"></i>Ventas</a></li>
                                             <% } %>
 
-                                                <% if (nav.can.caja) { %>
+                                                <% if (nav.canMenu.caja) { %>
                                                     <li class="nav-item"><a class="nav-link" href="/caja"><i
                                                                 class="bi bi-wallet2"></i>Caja</a></li>
                                                     <% } %>
 
-                                                <% if (nav.can.cocina) { %>
+                                                <% if (nav.canMenu.cocina) { %>
                                                     <li class="nav-item"><a class="nav-link" href="/cocina"><i
                                                                 class="bi bi-fire"></i>Cocina</a></li>
                                                     <% } %>
@@ -88,37 +88,37 @@
                         <button type="button" class="nav-grupo-h d-lg-none" aria-expanded="false"><span>Comercial y gestión</span><i class="bi bi-chevron-down"></i></button>
                         <ul class="nav-grupo-items">
                     <% } %>
-                                                <% if (nav.can.finanzas) { %>
+                                                <% if (nav.canMenu.finanzas) { %>
                                                     <li class="nav-item"><a class="nav-link" href="/finanzas"><i
                                                                 class="bi bi-pie-chart"></i>Finanzas</a></li>
                                                     <% } %>
 
-                                                <% if (nav.can.bonos) { %>
+                                                <% if (nav.canMenu.bonos) { %>
                                                     <li class="nav-item"><a class="nav-link" href="/bonos"><i
                                                                 class="bi bi-gift"></i>Bonos</a></li>
                                                     <% } %>
 
-                                                <% if (nav.can.fidelizacion) { %>
+                                                <% if (nav.canMenu.fidelizacion) { %>
                                                     <li class="nav-item"><a class="nav-link" href="/fidelizacion"><i
                                                                 class="bi bi-stars"></i>Fidelización</a></li>
                                                     <% } %>
 
-                                                <% if (nav.can.sucursales) { %>
+                                                <% if (nav.canMenu.sucursales) { %>
                                                     <li class="nav-item"><a class="nav-link" href="/sucursales"><i
                                                                 class="bi bi-diagram-3"></i>Sucursales</a></li>
                                                     <% } %>
 
-                                                <% if (nav.can.promociones) { %>
+                                                <% if (nav.canMenu.promociones) { %>
                                                     <li class="nav-item"><a class="nav-link" href="/promociones"><i
                                                                 class="bi bi-percent"></i>Promociones</a></li>
                                                     <% } %>
 
-                                                <% if (nav.can.combos) { %>
+                                                <% if (nav.canMenu.combos) { %>
                                                     <li class="nav-item"><a class="nav-link" href="/combos"><i
                                                                 class="bi bi-box-seam"></i>Combos</a></li>
                                                     <% } %>
 
-                                                <% if (nav.can.temporada) { %>
+                                                <% if (nav.canMenu.temporada) { %>
                                                     <li class="nav-item"><a class="nav-link" href="/temporada"><i
                                                                 class="bi bi-snow2"></i>Temporada</a></li>
                                                     <% } %>
@@ -135,23 +135,23 @@
                         <button type="button" class="nav-grupo-h d-lg-none" aria-expanded="false"><span>Catálogo y clientes</span><i class="bi bi-chevron-down"></i></button>
                         <ul class="nav-grupo-items">
                     <% } %>
-                                                                <% if (nav.can.productos) { %>
+                                                                <% if (nav.canMenu.productos) { %>
                                                                     <li class="nav-item"><a class="nav-link"
                                                                             href="/productos"><i
                                                                                 class="bi bi-box-seam"></i>Productos</a>
                                                                     </li>
                                                                     <% } %>
 
-                                                                        <% if (nav.can.clientes) { %>
+                                                                        <% if (nav.canMenu.clientes) { %>
                                                                             <li class="nav-item"><a class="nav-link"
                                                                                     href="/clientes"><i
                                                                                         class="bi bi-people"></i>Clientes</a>
                                                                             </li>
                                                                             <% } %>
 
-                                                                                <% if (nav.can.inventario &&
-                                                                                    !nav.can.proveedores &&
-                                                                                    !nav.can.recetas) { %>
+                                                                                <% if (nav.canMenu.inventario &&
+                                                                                    !nav.canMenu.proveedores &&
+                                                                                    !nav.canMenu.recetas) { %>
                                                                                     <li class="nav-item"><a
                                                                                             class="nav-link"
                                                                                             href="/inventario"><i
@@ -177,15 +177,15 @@
                                                                                                 <ul
                                                                                                     class="dropdown-menu">
                                                                                                     <% if
-                                                                                                        (nav.can.recetas
+                                                                                                        (nav.canMenu.recetas
                                                                                                         ||
-                                                                                                        nav.can.modificadores
+                                                                                                        nav.canMenu.modificadores
                                                                                                         ||
-                                                                                                        (nav.can.inventario
+                                                                                                        (nav.canMenu.inventario
                                                                                                         &&
-                                                                                                        (nav.can.proveedores
+                                                                                                        (nav.canMenu.proveedores
                                                                                                         ||
-                                                                                                        nav.can.recetas)))
+                                                                                                        nav.canMenu.recetas)))
                                                                                                         { %>
                                                                                                         <li>
                                                                                                             <h6
@@ -194,11 +194,11 @@
                                                                                                             </h6>
                                                                                                         </li>
                                                                                                         <% if
-                                                                                                            (nav.can.inventario
+                                                                                                            (nav.canMenu.inventario
                                                                                                             &&
-                                                                                                            (nav.can.proveedores
+                                                                                                            (nav.canMenu.proveedores
                                                                                                             ||
-                                                                                                            nav.can.recetas))
+                                                                                                            nav.canMenu.recetas))
                                                                                                             { %>
                                                                                                             <li><a class="dropdown-item"
                                                                                                                     href="/inventario"><i
@@ -206,7 +206,7 @@
                                                                                                             </li>
                                                                                                             <% } %>
                                                                                                                 <% if
-                                                                                                                    (nav.can.recetas)
+                                                                                                                    (nav.canMenu.recetas)
                                                                                                                     { %>
                                                                                                                     <li><a class="dropdown-item"
                                                                                                                             href="/recetas"><i
@@ -215,7 +215,7 @@
                                                                                                                     <% }
                                                                                                                         %>
                                                                                                                         <% if
-                                                                                                                            (nav.can.modificadores)
+                                                                                                                            (nav.canMenu.modificadores)
                                                                                                                             { %>
                                                                                                                             <li><a class="dropdown-item"
                                                                                                                                     href="/modificadores"><i
@@ -227,7 +227,7 @@
                                                                                                                                     %>
 
                                                                                                                             <% if
-                                                                                                                                (nav.can.proveedores)
+                                                                                                                                (nav.canMenu.proveedores)
                                                                                                                                 {
                                                                                                                                 %>
                                                                                                                                 <li><a class="dropdown-item"
@@ -239,21 +239,21 @@
                                                                                                                                             class="bi bi-cart-check text-primary"></i>Órdenes de Compra</a>
                                                                                                                                 </li>
                                                                                                                                 <% } %>
-                                                                                                                                <% if (nav.can.cocina) { %>
+                                                                                                                                <% if (nav.canMenu.cocina) { %>
                                                                                                                                 <li><a class="dropdown-item"
                                                                                                                                         href="/estaciones"><i
                                                                                                                                             class="bi bi-diagram-3 text-primary"></i>Estaciones de Cocina</a>
                                                                                                                                 </li>
                                                                                                                                 <% } %>
-                                                                                                                                <% if (nav.can.servicios) { %>
+                                                                                                                                <% if (nav.canMenu.servicios) { %>
                                                                                                                                 <li><a class="dropdown-item" href="/servicios"><i class="bi bi-gear-wide-connected text-secondary"></i>Servicios</a></li>
                                                                                                                                 <% } %>
 
                                                                                                                                     <% if
-                                                                                                                                        (nav.can.analitica
+                                                                                                                                        (nav.canMenu.analitica
                                                                                                                                         ||
-                                                                                                                                        nav.can.eventos ||
-                                                                                                                                        nav.can.clasificacion)
+                                                                                                                                        nav.canMenu.eventos ||
+                                                                                                                                        nav.canMenu.clasificacion)
                                                                                                                                         {
                                                                                                                                         %>
                                                                                                                                         <li>
@@ -269,7 +269,7 @@
                                                                                                                                             </h6>
                                                                                                                                         </li>
                                                                                                                                                 <% if
-                                                                                                                                                    (nav.can.eventos)
+                                                                                                                                                    (nav.canMenu.eventos)
                                                                                                                                                     {
                                                                                                                                                     %>
                                                                                                                                                     <li><a class="dropdown-item"
@@ -279,7 +279,7 @@
                                                                                                                                                     <% }
                                                                                                                                                         %>
                                                                                                                                                         <% if
-                                                                                                                                                            (nav.can.analitica)
+                                                                                                                                                            (nav.canMenu.analitica)
                                                                                                                                                             {
                                                                                                                                                             %>
                                                                                                                                                             <li><a class="dropdown-item"
@@ -288,7 +288,7 @@
                                                                                                                                                             </li>
                                                                                                                                                             <% }
                                                                                                                                                                 %>
-                                                                                                                                                                <% if (nav.can.clasificacion) { %>
+                                                                                                                                                                <% if (nav.canMenu.clasificacion) { %>
                                                                                                                                                                 <li><a class="dropdown-item" href="/clasificacion"><i class="bi bi-trophy text-warning"></i>Clasificación</a></li>
                                                                                                                                                                 <% } %>
                                                                                                                                                                                                                                 <% } %>
@@ -297,7 +297,7 @@
                                                                                             <% } %>
 
                                                                                                 <% if
-                                                                                                    (nav.can.configuracion)
+                                                                                                    (nav.canMenu.configuracion)
                                                                                                     { %>
                                                                                                     <li
                                                                                                         class="nav-item">

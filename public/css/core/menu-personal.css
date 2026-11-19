@@ -1,0 +1,21 @@
+/* ============================================================
+   menu-personal.css — Modal «Personalizar menú» (marca "Cloche": solo tokens de brand.css).
+   ============================================================ */
+
+.mp-nota { color: var(--gf-gris); font-size: 0.9rem; margin-bottom: 0.75rem; }
+.mp-nota strong { color: var(--gf-tinta); }
+.mp-acciones { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.5rem; }
+.mp-contador { font-weight: 600; color: var(--gf-tinta); font-size: 0.9rem; }
+.mp-atajos .btn-link { color: var(--gf-coral-fuerte); text-decoration: none; font-weight: 600; }
+
+.mp-grupo { margin-top: 1rem; }
+.mp-grupo-titulo { font-family: var(--gf-font-titulo); font-weight: 700; color: var(--gf-tinta); border-bottom: 2px solid var(--gf-crema); padding-bottom: 0.35rem; margin-bottom: 0.6rem; }
+.mp-items { display: grid; grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); gap: 0.5rem; }
+.mp-item { display: flex; align-items: center; gap: 0.6rem; margin: 0; padding: 0.5rem 0.75rem; border: 1px solid var(--gf-linea); border-radius: 0.6rem; background: var(--gf-crema); cursor: pointer; }
+.mp-item:hover { border-color: var(--gf-coral); }
+.mp-item i { color: var(--gf-coral); font-size: 1.1rem; flex: none; }
+.mp-item-nombre { flex: 1; font-weight: 500; color: var(--gf-tinta); line-height: 1.2; }
+.mp-item:has(.mp-check:not(:checked)) { background: #fff; }
+.mp-item:has(.mp-check:not(:checked)) .mp-item-nombre { color: var(--gf-gris); text-decoration: line-through; }
+.mp-item:has(.mp-check:not(:checked)) i { color: var(--gf-gris); }
+.mp-pie { margin: 1rem 0 0; font-size: 0.8rem; color: var(--gf-gris); }
