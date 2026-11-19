@@ -119,6 +119,8 @@ async function attachTenantContext(req, res, next) {
             if (Array.isArray(freshUser.permisos)) {
                 req.user.permisos = freshUser.permisos;
             }
+            // Preferencia visual del menú (no afecta permisos): la usa navbarLocals.
+            req.user.nav_oculto = Array.isArray(freshUser.nav_oculto) ? freshUser.nav_oculto : [];
             // El rol sale de la BD, no del JWT: un cambio de rol aplica de inmediato.
             if (freshUser.rol) {
                 req.user.rol = freshUser.rol;

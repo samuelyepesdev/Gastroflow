@@ -1,0 +1,56 @@
+<%#
+  Modal «Personalizar menú»: cada usuario decide qué enlaces de la barra de navegación ve.
+  Solo es visual (no cambia permisos). Lo muestra el botón del menú del usuario (_navbar_user.ejs).
+  Requiere nav.catalogoMenu (middleware/navbarLocals.js).
+%>
+<% if (!nav.isSuperadmin && nav.catalogoMenu && nav.catalogoMenu.length) { %>
+<link rel="stylesheet" href="/css/core/menu-personal.css?v=<%= assetV %>">
+<div class="modal fade" id="modalMenuPersonal" tabindex="-1" aria-labelledby="modalMenuPersonalTitulo" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalMenuPersonalTitulo"><i class="bi bi-layout-text-window-reverse me-2"></i>Personalizar menú</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mp-nota">
+                    Elige qué enlaces quieres ver en la barra de arriba. <strong>Ocultar un enlace no te quita el permiso</strong>:
+                    solo lo quita de tu menú, y puedes volver a mostrarlo cuando quieras.
+                </p>
+                <div class="mp-acciones">
+                    <span class="mp-contador" id="mpContador" aria-live="polite"></span>
+                    <span class="mp-atajos">
+                        <button type="button" class="btn btn-link btn-sm" id="mpMostrarTodos">Mostrar todos</button>
+                        <button type="button" class="btn btn-link btn-sm" id="mpOcultarTodos">Ocultar todos</button>
+                    </span>
+                </div>
+
+                <% nav.catalogoMenu.forEach(function (grupo) { %>
+                    <section class="mp-grupo">
+                        <h6 class="mp-grupo-titulo"><%= grupo.titulo %></h6>
+                        <div class="mp-items">
+                            <% grupo.items.forEach(function (item) { %>
+                                <label class="mp-item" for="mp-<%= item.clave %>">
+                                    <i class="bi <%= item.icono %>" aria-hidden="true"></i>
+                                    <span class="mp-item-nombre"><%= item.etiqueta %></span>
+                                    <span class="form-check form-switch m-0">
+                                        <input class="form-check-input mp-check" type="checkbox" role="switch" id="mp-<%= item.clave %>"
+                                               data-clave="<%= item.clave %>" <%= item.oculto ? '' : 'checked' %>>
+                                    </span>
+                                </label>
+                            <% }); %>
+                        </div>
+                    </section>
+                <% }); %>
+                <p class="mp-pie">«Configuración» y este menú de usuario siempre se mantienen visibles.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary me-auto" id="mpRestablecer"><i class="bi bi-arrow-counterclockwise me-1"></i>Restablecer</button>
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="mpGuardar"><i class="bi bi-check-lg me-1"></i>Guardar</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="/js/core/menu-personal.js?v=<%= assetV %>" defer></script>
+<% } %>

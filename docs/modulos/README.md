@@ -13,6 +13,7 @@ Este directorio contiene la documentación lógica y operativa detallada por cad
 * **[15. KDS por Estación](15_kds_estaciones.md):** Segunda vista de la cola de cocina, agrupada por estación (fría/caliente/bebidas o las que defina el tenant) con alerta de demora.
 * **[21. Reservas](21_reservas.md):** Reservas por aforo con página pública (enlace del restaurante) y panel interno; sin anticipo en línea (V1).
 * **[22. Temporada](22_temporada.md):** Plantillas de promoción de fin de año y menú de temporada con fechas de inicio y fin.
+* **[23. Menú personalizable](23_menu_personalizable.md):** Cada usuario puede ocultar enlaces de su barra de navegación (solo visual, no cambia permisos).
 * **[12. Modificadores / Toppings](12_modificadores_toppings.md):** Grupos de opciones por producto, precio adicional y descuento de inventario opt-in.
 
 ## 🍳 Inventarios, Recetas y Costos
