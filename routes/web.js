@@ -100,6 +100,8 @@ router.use('/bono', require('./bono_publico'));
 router.use('/tarjeta', require('./tarjeta_publica'));
 // Página pública de reservas: sin login, acotada por token del restaurante.
 router.use('/reservar', require('./reservas_publica'));
+// Calculadora pública de pérdidas (gancho de la landing): sin login, límite por IP.
+router.use('/calculadora', require('./calculadora_publica'));
 // Webhook público de Wompi (cobro de suscripciones) -- se autentica por firma, no por sesión.
 router.use('/webhooks', require('./webhooks'));
 // Resumen para Safe Hub (panel interno de Safe): se autentica con el token HUB_TOKEN, no por sesión.
@@ -347,6 +349,7 @@ router.use('/admin/jobs', requireSuperadmin, adminJobsRoutes);
 router.use('/admin/landing', requireSuperadmin, adminLandingRoutes);
 router.use('/admin/anuncios', requireSuperadmin, adminAnunciosRoutes);
 router.use('/admin/temporada', requireSuperadmin, require('./admin/temporada'));
+router.use('/admin/leads', requireSuperadmin, require('./admin/leads'));
 router.use('/admin/asistente', requireSuperadmin, require('./admin/asistente'));
 router.use('/admin/sucursales', requireSuperadmin, require('./admin/sucursales'));
 

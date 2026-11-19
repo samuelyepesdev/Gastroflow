@@ -27,7 +27,8 @@ const ADMIN_SECTIONS = [
                 badgeKey: 'onboardingPendientes'
             },
             { key: 'planes', label: 'Planes & Add-ons', icon: 'bi-layers', href: '/admin/planes' },
-            { key: 'landing', label: 'Landing Page', icon: 'bi-palette', href: '/admin/landing' }
+            { key: 'landing', label: 'Landing Page', icon: 'bi-palette', href: '/admin/landing' },
+            { key: 'leads', label: 'Prospectos', icon: 'bi-person-lines-fill', href: '/admin/leads' }
         ]
     },
     {

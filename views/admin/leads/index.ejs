@@ -1,0 +1,53 @@
+<%- include('../_shell/_open', {
+    title: 'Prospectos',
+    currentAdminPage: 'leads'
+}) %>
+
+    <div class="admin-page-header">
+        <h1><i class="bi bi-person-lines-fill me-2"></i>Prospectos</h1>
+        <p class="mb-0">Dueños de restaurantes que usaron la calculadora de pérdidas (<code>/calculadora</code>). Contáctalos por WhatsApp y márcalos al terminar.</p>
+    </div>
+
+    <section class="card mb-4">
+        <div class="card-body">
+            <% if (leads.length) { %>
+            <div class="table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Restaurante</th>
+                            <th>Contacto</th>
+                            <th class="text-end">Pierde / mes</th>
+                            <th class="text-end">Recuperable / mes</th>
+                            <th>Fecha</th>
+                            <th class="text-center">Contactado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% leads.forEach(l => { %>
+                        <tr>
+                            <td class="fw-semibold"><%= l.restaurante %></td>
+                            <td>
+                                <a href="https://wa.me/57<%= l.telefono %>" target="_blank" rel="noopener noreferrer"><i class="bi bi-whatsapp me-1"></i><%= l.telefono %></a>
+                                <% if (l.email) { %><div class="small text-muted"><%= l.email %></div><% } %>
+                            </td>
+                            <td class="text-end">$ <%= Number(l.perdida_mes).toLocaleString('es-CO') %></td>
+                            <td class="text-end">$ <%= Number(l.recuperable_mes).toLocaleString('es-CO') %></td>
+                            <td class="small"><%= new Date(l.created_at).toLocaleString('es-CO', { timeZone: 'America/Bogota', dateStyle: 'medium', timeStyle: 'short' }) %></td>
+                            <td class="text-center">
+                                <input type="checkbox" class="form-check-input lead-contactado" data-id="<%= l.id %>" aria-label="Contactado: <%= l.restaurante %>" <%= l.contactado ? 'checked' : '' %>>
+                            </td>
+                        </tr>
+                        <% }) %>
+                    </tbody>
+                </table>
+            </div>
+            <% } else { %>
+                <p class="text-muted text-center my-4">Aún no hay prospectos. Comparte el enlace <code>/calculadora</code> en tu landing y redes.</p>
+            <% } %>
+        </div>
+    </section>
+
+<%- include('../_shell/_close', {
+    extraScripts: '<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script><script src="/js/core/gf.js?v=' + assetV + '"></script><script src="/js/admin/leads.js?v=' + assetV + '"></script>'
+}) %>
