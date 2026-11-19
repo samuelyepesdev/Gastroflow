@@ -1,6 +1,7 @@
 const ProductService = require('../../../../services/Tenant/ProductService');
 const CategoryService = require('../../../../services/Admin/CategoryService');
 const RecetaService = require('../../../../services/Tenant/RecetaService');
+const { asistenteConfigurado } = require('../../../../services/Tenant/Asistente/llm');
 let ExcelJS;
 
 class ProductosController {
@@ -25,7 +26,9 @@ class ProductosController {
                 recetasPorProducto: recetasPorProducto || {},
                 user: req.user,
                 tenant: req.tenant,
-                allowedByPlan: res.locals.allowedByPlan || {}
+                allowedByPlan: res.locals.allowedByPlan || {},
+                // Sin clave de Groq no se ofrece importar la carta desde una foto (fallaría siempre).
+                cartaFotoDisponible: asistenteConfigurado()
             });
         } catch (error) {
             console.error('Error al obtener productos:', error);
