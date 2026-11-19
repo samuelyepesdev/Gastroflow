@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Tu opinión sobre <%= vista.restaurante %></title>
+    <link rel="icon" href="/brand/favicon/favicon.svg" type="image/svg+xml">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="/css/core/brand.css?v=<%= assetV %>">
+    <link rel="stylesheet" href="/css/modulos/resenas-publica.css?v=<%= assetV %>">
+</head>
+<body>
+    <header class="rs-cabecera">
+        <h1 class="rs-restaurante"><%= vista.restaurante %></h1>
+        <p class="rs-sub">Tu opinión nos ayuda a mejorar</p>
+    </header>
+
+    <main class="rs-wrap">
+        <section id="rsFormulario" class="rs-card">
+            <h2 class="rs-titulo" id="rsPregunta">¿Cómo estuvo tu visita?</h2>
+
+            <div class="rs-estrellas" id="rsEstrellas" role="radiogroup" aria-labelledby="rsPregunta">
+                <% for (let i = 1; i <= 5; i++) { %>
+                <button type="button" class="rs-estrella" role="radio" aria-checked="false" data-valor="<%= i %>" aria-label="<%= i %> <%= i === 1 ? 'estrella' : 'estrellas' %>">
+                    <i class="bi bi-star-fill" aria-hidden="true"></i>
+                </button>
+                <% } %>
+            </div>
+            <p class="rs-leyenda" id="rsLeyenda" aria-live="polite">Toca una estrella</p>
+
+            <form id="rsForm" class="rs-detalle d-none" novalidate>
+                <p class="rs-detalle-titulo" id="rsDetalleTitulo"></p>
+
+                <label for="rsComentario" class="form-label">Cuéntanos más (opcional)</label>
+                <textarea class="form-control mb-3" id="rsComentario" name="comentario" rows="3" maxlength="500"></textarea>
+
+                <div id="rsContacto" class="d-none">
+                    <p class="rs-ayuda">Si quieres que el restaurante te escriba para resolverlo, déjanos tu contacto (opcional).</p>
+                    <div class="mb-3">
+                        <label for="rsNombre" class="form-label">Nombre</label>
+                        <input type="text" class="form-control" id="rsNombre" name="nombre" maxlength="80" autocomplete="name">
+                    </div>
+                    <div class="mb-3">
+                        <label for="rsTelefono" class="form-label">Celular</label>
+                        <input type="tel" class="form-control" id="rsTelefono" name="telefono" inputmode="numeric" maxlength="16" autocomplete="tel" placeholder="3001234567">
+                    </div>
+                    <div class="form-check mb-3 d-none" id="rsConsentWrap">
+                        <input class="form-check-input" type="checkbox" id="rsConsent" name="consentimiento" value="1">
+                        <label class="form-check-label" for="rsConsent">
+                            Autorizo a <strong><%= vista.restaurante %></strong> a usar mi celular para contactarme sobre esta opinión.
+                            <a href="/legal/privacidad" target="_blank" rel="noopener">Política de privacidad</a>.
+                        </label>
+                    </div>
+                </div>
+
+                <input class="rs-hp" name="web" tabindex="-1" autocomplete="off" aria-hidden="true">
+
+                <div id="rsError" class="alert alert-danger d-none" role="alert"></div>
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-primary btn-lg" id="rsEnviar">Enviar opinión</button>
+                </div>
+            </form>
+        </section>
+
+        <section id="rsGracias" class="rs-card rs-centro d-none" aria-live="polite" tabindex="-1">
+            <i class="bi bi-heart-fill rs-gracias-icono" aria-hidden="true"></i>
+            <h2 class="rs-titulo">¡Gracias por tu opinión!</h2>
+            <p id="rsGraciasTexto"><%= vista.mensaje_gracias || 'La leemos con atención para mejorar cada visita.' %></p>
+            <% if (vista.google_url) { %>
+            <div class="rs-google">
+                <p class="mb-2">Si quieres, también puedes contarlo en Google para que otras personas lo vean.</p>
+                <a class="btn btn-outline-secondary" href="<%= vista.google_url %>" target="_blank" rel="noopener noreferrer"><i class="bi bi-google me-1" aria-hidden="true"></i>Dejar reseña en Google</a>
+            </div>
+            <% } %>
+        </section>
+    </main>
+
+    <footer class="rs-pie">
+        <img src="/brand/isotipo/isotipo-color.svg" alt="" width="20" height="20">
+        <span>Opiniones con GastroFlow</span>
+    </footer>
+
+    <script>
+        window.RESENA_PUBLICA = <%- jsonSeguro({ token }) %>;
+    </script>
+    <script src="/js/modulos/resenas-publica.js?v=<%= assetV %>"></script>
+</body>
+</html>

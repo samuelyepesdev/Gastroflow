@@ -102,6 +102,8 @@ router.use('/tarjeta', require('./tarjeta_publica'));
 router.use('/reservar', require('./reservas_publica'));
 // Calculadora pública de pérdidas (gancho de la landing): sin login, límite por IP.
 router.use('/calculadora', require('./calculadora_publica'));
+// Página pública de reseñas: sin login, acotada por token del restaurante.
+router.use('/resena', require('./resenas_publica'));
 // Webhook público de Wompi (cobro de suscripciones) -- se autentica por firma, no por sesión.
 router.use('/webhooks', require('./webhooks'));
 // Resumen para Safe Hub (panel interno de Safe): se autentica con el token HUB_TOKEN, no por sesión.
@@ -271,6 +273,7 @@ router.get(
 router.get('/api/bonos/validar/:codigo', requireAuthWithTenant, BonosController.validar);
 router.use('/promociones', requireAuthWithTenant, promocionesRoutes);
 router.use('/reservas', requireAuthWithTenant, require('./tenant/reservas'));
+router.use('/resenas', requireAuthWithTenant, require('./tenant/resenas'));
 router.use('/temporada', requireAuthWithTenant, require('./tenant/temporada'));
 router.use('/combos', requireAuthWithTenant, combosRoutes);
 router.use('/combos-armables', requireAuthWithTenant, combosArmablesRoutes);
