@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>¿Cuánto pierde tu restaurante cada mes? | GastroFlow</title>
+    <meta name="description" content="Calcula en un minuto cuánto dinero pierdes al mes por reservas que no llegan y por merma en tu cocina.">
+    <link rel="icon" href="/brand/favicon/favicon.svg" type="image/svg+xml">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="/css/core/brand.css?v=<%= assetV %>">
+    <link rel="stylesheet" href="/css/modulos/calculadora.css?v=<%= assetV %>">
+</head>
+<body>
+    <% const wa = 'https://wa.me/' + (settings.whatsapp_number || '') + '?text=' + encodeURIComponent('Hola, hice la calculadora de pérdidas de GastroFlow y quiero ver cómo recuperarlas'); %>
+    <header class="ca-cabecera">
+        <a class="ca-marca" href="/"><img src="/brand/isotipo/isotipo-color.svg" alt="" width="28" height="28"><span>GASTROFLOW</span></a>
+        <h1 class="ca-titulo">¿Cuánto pierde tu restaurante cada mes?</h1>
+        <p class="ca-sub">Responde 6 datos y mira cuánto se te va en reservas que no llegan y en merma. Toma un minuto.</p>
+    </header>
+
+    <main class="ca-wrap">
+        <form id="caForm" novalidate>
+            <section class="ca-paso" aria-labelledby="caP1">
+                <h2 class="ca-paso-titulo" id="caP1"><span class="ca-num">1</span>Tus reservas</h2>
+                <div class="row g-3">
+                    <div class="col-6">
+                        <label class="form-label" for="caReservas">Reservas por semana</label>
+                        <input type="text" class="form-control" id="caReservas" name="reservas_semana" inputmode="numeric" value="30" required>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label" for="caPersonas">Personas por reserva</label>
+                        <input type="text" class="form-control" id="caPersonas" name="personas_reserva" inputmode="numeric" value="3" required>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label" for="caTicket">Gasto por persona ($)</label>
+                        <input type="text" class="form-control" id="caTicket" name="ticket_persona" inputmode="numeric" data-dinero value="45000" required>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label" for="caNoShow">% que no llega</label>
+                        <input type="text" class="form-control" id="caNoShow" name="no_show_pct" inputmode="numeric" value="15" required>
+                    </div>
+                </div>
+                <p class="ca-ayuda">Si no lo sabes, deja 15%: es lo habitual en restaurantes sin recordatorios.</p>
+            </section>
+
+            <section class="ca-paso" aria-labelledby="caP2">
+                <h2 class="ca-paso-titulo" id="caP2"><span class="ca-num">2</span>Tu cocina</h2>
+                <div class="row g-3">
+                    <div class="col-12 col-sm-7">
+                        <label class="form-label" for="caVentas">Ventas del mes ($)</label>
+                        <input type="text" class="form-control" id="caVentas" name="ventas_mes" inputmode="numeric" data-dinero value="30000000" required>
+                    </div>
+                    <div class="col-12 col-sm-5">
+                        <label class="form-label" for="caMerma">% que se pierde en merma</label>
+                        <input type="text" class="form-control" id="caMerma" name="merma_pct" inputmode="numeric" value="5" required>
+                    </div>
+                </div>
+                <p class="ca-ayuda">Merma: lo que se daña, se desperdicia o se descuadra en inventario. Entre 3% y 8% es común.</p>
+            </section>
+
+            <section class="ca-paso" aria-labelledby="caP3">
+                <h2 class="ca-paso-titulo" id="caP3"><span class="ca-num">3</span>¿A dónde te enviamos el detalle?</h2>
+                <div class="mb-3">
+                    <label class="form-label" for="caRestaurante">Nombre de tu restaurante</label>
+                    <input type="text" class="form-control" id="caRestaurante" name="restaurante" maxlength="80" autocomplete="organization" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label" for="caTelefono">Celular (WhatsApp)</label>
+                    <input type="tel" class="form-control" id="caTelefono" name="telefono" inputmode="numeric" maxlength="16" autocomplete="tel" placeholder="3001234567" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label" for="caEmail">Correo (opcional)</label>
+                    <input type="email" class="form-control" id="caEmail" name="email" maxlength="120" autocomplete="email">
+                </div>
+
+                <input class="ca-hp" name="web" tabindex="-1" autocomplete="off" aria-hidden="true">
+
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" id="caConsent" name="consentimiento" value="1" required>
+                    <label class="form-check-label" for="caConsent">
+                        Autorizo a <strong>GastroFlow</strong> a usar mis datos para mostrarme este resultado y contactarme sobre el sistema.
+                        <a href="/legal/privacidad" target="_blank" rel="noopener">Política de privacidad</a>.
+                    </label>
+                </div>
+
+                <div id="caError" class="alert alert-danger d-none" role="alert"></div>
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-primary btn-lg" id="caEnviar">Ver cuánto pierdo</button>
+                </div>
+            </section>
+        </form>
+
+        <section id="caResultado" class="ca-resultado d-none" aria-live="polite" tabindex="-1">
+            <p class="ca-res-etiqueta">Hoy pierdes aproximadamente</p>
+            <p class="ca-res-total"><span id="caTotalMes"></span><small>/mes</small></p>
+            <p class="ca-res-anio">Son <strong id="caTotalAnio"></strong> al año.</p>
+
+            <ul class="ca-res-detalle">
+                <li><i class="bi bi-calendar-x" aria-hidden="true"></i><span>Reservas que no llegan</span><b id="caNoShowMes"></b></li>
+                <li><i class="bi bi-basket" aria-hidden="true"></i><span>Merma en cocina</span><b id="caMermaMes"></b></li>
+            </ul>
+
+            <div class="ca-recupera">
+                <p class="mb-1">Con recordatorios de reserva y control de inventario podrías recuperar cerca de</p>
+                <p class="ca-recupera-valor"><span id="caRecuperaMes"></span><small>/mes</small></p>
+                <p class="ca-nota">Estimación orientativa: supone recuperar 40% de las reservas perdidas y 30% de la merma. Tu resultado real depende de cómo operes.</p>
+            </div>
+
+            <div class="d-grid gap-2 mt-3">
+                <a class="btn btn-primary btn-lg" href="/auth/registro">Crear cuenta gratis <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+                <a class="btn btn-outline-secondary" href="<%= wa %>" target="_blank" rel="noopener noreferrer"><i class="bi bi-whatsapp me-1" aria-hidden="true"></i>Hablar con nosotros por WhatsApp</a>
+                <button type="button" class="btn btn-link" id="caOtra">Calcular de nuevo</button>
+            </div>
+        </section>
+    </main>
+
+    <footer class="ca-pie">
+        <img src="/brand/isotipo/isotipo-color.svg" alt="" width="20" height="20">
+        <span>GastroFlow · Gestión para restaurantes</span>
+    </footer>
+
+    <script src="/js/modulos/calculadora.js?v=<%= assetV %>"></script>
+</body>
+</html>
