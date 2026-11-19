@@ -18,7 +18,8 @@ const HomeController = require('../app/Http/Controllers/HomeController');
 const DesktopController = require('../app/Http/Controllers/DesktopController');
 
 // Middlewares comunes
-const requireAuthWithTenant = [requireAuth, restrictSuperadminToAdmin, attachTenantContext];
+const temaPanel = require('../middleware/temaPanel');
+const requireAuthWithTenant = [requireAuth, restrictSuperadminToAdmin, attachTenantContext, temaPanel];
 
 // Importar micro-rutas (Cada una delegada a su Controller)
 const authRoutes = require('./auth');

@@ -5,7 +5,7 @@
  */
 const db = require('../../config/database');
 
-const COLUMNAS = `tema, activo, mensaje, animaciones,
+const COLUMNAS = `tema, activo, mensaje, animaciones, panel,
                   DATE_FORMAT(desde, '%Y-%m-%d') AS desde, DATE_FORMAT(hasta, '%Y-%m-%d') AS hasta`;
 
 class TemaTemporadaRepository {
@@ -16,11 +16,12 @@ class TemaTemporadaRepository {
 
     static async upsert(tenantId, d) {
         await db.query(
-            `INSERT INTO tema_temporada (tenant_id, tema, activo, desde, hasta, mensaje, animaciones)
-             VALUES (?, ?, ?, ?, ?, ?, ?)
+            `INSERT INTO tema_temporada (tenant_id, tema, activo, desde, hasta, mensaje, animaciones, panel)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
              ON DUPLICATE KEY UPDATE tema = VALUES(tema), activo = VALUES(activo), desde = VALUES(desde),
-                 hasta = VALUES(hasta), mensaje = VALUES(mensaje), animaciones = VALUES(animaciones)`,
-            [tenantId, d.tema, d.activo, d.desde, d.hasta, d.mensaje, d.animaciones]
+                 hasta = VALUES(hasta), mensaje = VALUES(mensaje), animaciones = VALUES(animaciones),
+                 panel = VALUES(panel)`,
+            [tenantId, d.tema, d.activo, d.desde, d.hasta, d.mensaje, d.animaciones, d.panel]
         );
     }
 
@@ -33,11 +34,12 @@ class TemaTemporadaRepository {
 
     static async upsertGlobal(d) {
         await db.query(
-            `INSERT INTO tema_temporada_global (id, tema, activo, desde, hasta, mensaje, animaciones)
-             VALUES (1, ?, ?, ?, ?, ?, ?)
+            `INSERT INTO tema_temporada_global (id, tema, activo, desde, hasta, mensaje, animaciones, panel)
+             VALUES (1, ?, ?, ?, ?, ?, ?, ?)
              ON DUPLICATE KEY UPDATE tema = VALUES(tema), activo = VALUES(activo), desde = VALUES(desde),
-                 hasta = VALUES(hasta), mensaje = VALUES(mensaje), animaciones = VALUES(animaciones)`,
-            [d.tema, d.activo, d.desde, d.hasta, d.mensaje, d.animaciones]
+                 hasta = VALUES(hasta), mensaje = VALUES(mensaje), animaciones = VALUES(animaciones),
+                 panel = VALUES(panel)`,
+            [d.tema, d.activo, d.desde, d.hasta, d.mensaje, d.animaciones, d.panel]
         );
     }
 
@@ -59,7 +61,7 @@ class TemaTemporadaRepository {
     /** Todos los restaurantes activos con su decisión de tema (si la tienen). */
     static async listarRestaurantes() {
         const [rows] = await db.query(
-            `SELECT t.id, t.nombre, t.slug, tt.tema, tt.activo, tt.mensaje, tt.animaciones,
+            `SELECT t.id, t.nombre, t.slug, tt.tema, tt.activo, tt.mensaje, tt.animaciones, tt.panel,
                     DATE_FORMAT(tt.desde, '%Y-%m-%d') AS desde, DATE_FORMAT(tt.hasta, '%Y-%m-%d') AS hasta,
                     (tt.tenant_id IS NOT NULL) AS tiene_fila
              FROM tenants t

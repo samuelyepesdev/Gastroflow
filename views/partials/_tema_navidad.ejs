@@ -5,7 +5,7 @@
     include('../partials/_tema_navidad', { parte: 'banner', tema })   // tema = { mensaje }
 %>
 <% if (parte === 'luces') { %>
-    <div class="tn-luces <%= variante === 'sobre' ? 'tn-luces--sobre' : 'tn-luces--qr' %>" aria-hidden="true">
+    <div class="tn-luces tn-luces--<%= ['sobre', 'qr', 'panel'].includes(variante) ? variante : 'qr' %>" aria-hidden="true">
         <div class="tn-cable"></div>
         <ul class="tn-bombillos">
             <% for (let i = 0; i < 18; i++) { %><li style="--i: <%= i %>"></li><% } %>

@@ -9,7 +9,10 @@
 const TemaTemporadaRepository = require('../../repositories/Tenant/TemaTemporadaRepository');
 const { ValidationError, NotFoundError } = require('../../utils/errors');
 const { hoyColombia, toFechaDia } = require('../../utils/dateHelpers');
+const CacheService = require('../Shared/CacheService');
 
+const CLAVE_CACHE_PANEL = 'tema:panel:';
+const TTL_CACHE_PANEL_SEGUNDOS = 60;
 const TEMAS = ['navidad'];
 const ESTADOS = { heredar: null, activado: 1, apagado: 0 };
 const SI = v => v === true || v === 1 || v === '1' || v === 'true';
@@ -20,6 +23,7 @@ function enVentana(desde, hasta, hoy) {
 }
 
 const decidio = fila => !!fila && fila.activo !== null && fila.activo !== undefined;
+const apagado = v => v === 0 || v === false;
 
 /**
  * Combina la decisión del restaurante con lo global.
@@ -46,7 +50,9 @@ function resolver(fila, global) {
         desde: fila?.desde || global?.desde || null,
         hasta: fila?.hasta || global?.hasta || null,
         mensaje: fila?.mensaje || global?.mensaje || '',
-        animaciones: !(quietoGlobal || quietoFila)
+        animaciones: !(quietoGlobal || quietoFila),
+        // Paneles del sistema: igual que las animaciones, si cualquiera de los dos lo apaga, no se ve en el panel.
+        panel: !(apagado(global?.panel) || apagado(fila?.panel))
     };
 }
 
@@ -68,7 +74,8 @@ function normalizar(body) {
         desde,
         hasta,
         mensaje: mensaje || null,
-        animaciones: body.animaciones === undefined ? 1 : SI(body.animaciones) ? 1 : 0
+        animaciones: body.animaciones === undefined ? 1 : SI(body.animaciones) ? 1 : 0,
+        panel: body.panel === undefined ? 1 : SI(body.panel) ? 1 : 0
     };
 }
 
@@ -91,6 +98,7 @@ class TemaTemporadaService {
             hasta: fila?.hasta || '',
             mensaje: fila?.mensaje || '',
             animaciones: fila ? !!fila.animaciones : true,
+            panel: fila ? !!fila.panel : true,
             global: global?.activo
                 ? { desde: global.desde || '', hasta: global.hasta || '', mensaje: global.mensaje || '' }
                 : null
@@ -107,7 +115,21 @@ class TemaTemporadaService {
     /** Guarda la decisión del restaurante: queda explícita (1 o 0) y prevalece sobre lo global. */
     static async guardar(tenantId, body = {}) {
         await TemaTemporadaRepository.upsert(tenantId, normalizar(body));
+        TemaTemporadaService.invalidarCachePaneles();
         return TemaTemporadaService.getConfig(tenantId);
+    }
+
+    /** Resuelve el tema de un restaurante para hoy: {tema, mensaje, animaciones, panel} o null. Puede lanzar. */
+    static async _resolverHoy(tenantId, hoy) {
+        const [fila, global] = await Promise.all([
+            TemaTemporadaRepository.get(tenantId),
+            TemaTemporadaRepository.getGlobal()
+        ]);
+        const r = resolver(fila, global);
+        if (!r.activo || !enVentana(r.desde, r.hasta, hoy)) {
+            return null;
+        }
+        return { tema: r.tema, mensaje: r.mensaje, animaciones: r.animaciones, panel: r.panel };
     }
 
     /**
@@ -116,19 +138,59 @@ class TemaTemporadaService {
      */
     static async getActivo(tenantId, hoy = hoyColombia()) {
         try {
-            const [fila, global] = await Promise.all([
-                TemaTemporadaRepository.get(tenantId),
-                TemaTemporadaRepository.getGlobal()
-            ]);
-            const r = resolver(fila, global);
-            if (!r.activo || !enVentana(r.desde, r.hasta, hoy)) {
-                return null;
-            }
-            return { tema: r.tema, mensaje: r.mensaje, animaciones: r.animaciones };
+            const t = await TemaTemporadaService._resolverHoy(tenantId, hoy);
+            return t ? { tema: t.tema, mensaje: t.mensaje, animaciones: t.animaciones } : null;
         } catch (error) {
             console.error('Error al leer el tema de temporada:', error.message);
             return null;
         }
+    }
+
+    /**
+     * Tema para el panel interno de un restaurante (navbar, dashboard...). Igual que getActivo, pero respeta la
+     * opción «mostrar en los paneles». Cacheado 60 s por restaurante y día. Nunca lanza.
+     */
+    static async getActivoPanel(tenantId, hoy = hoyColombia()) {
+        const clave = `${CLAVE_CACHE_PANEL}${tenantId}:${hoy}`;
+        const guardado = CacheService.get(clave);
+        if (guardado) {
+            return guardado.tema;
+        }
+        try {
+            const t = await TemaTemporadaService._resolverHoy(tenantId, hoy);
+            const tema = t && t.panel ? { tema: t.tema, mensaje: t.mensaje, animaciones: t.animaciones } : null;
+            CacheService.set(clave, { tema }, TTL_CACHE_PANEL_SEGUNDOS);
+            return tema;
+        } catch (error) {
+            console.error('Error al leer el tema de temporada del panel:', error.message);
+            return null;
+        }
+    }
+
+    /** Tema para el panel del superadmin: se ve cuando lo global está activo, en fechas y con «paneles» encendido. */
+    static async getActivoPanelAdmin(hoy = hoyColombia()) {
+        const clave = `${CLAVE_CACHE_PANEL}admin:${hoy}`;
+        const guardado = CacheService.get(clave);
+        if (guardado) {
+            return guardado.tema;
+        }
+        try {
+            const g = await TemaTemporadaRepository.getGlobal();
+            const visible = !!g && !!g.activo && !apagado(g.panel) && enVentana(g.desde, g.hasta, hoy);
+            const tema = visible
+                ? { tema: g.tema || 'navidad', mensaje: g.mensaje || '', animaciones: !!g.animaciones }
+                : null;
+            CacheService.set(clave, { tema }, TTL_CACHE_PANEL_SEGUNDOS);
+            return tema;
+        } catch (error) {
+            console.error('Error al leer el tema de temporada del panel admin:', error.message);
+            return null;
+        }
+    }
+
+    /** Los cambios de configuración se ven de inmediato en los paneles. */
+    static invalidarCachePaneles() {
+        CacheService.deleteByPrefix(CLAVE_CACHE_PANEL);
     }
 
     // ------------------------------------------------------------------ superadmin
@@ -141,13 +203,15 @@ class TemaTemporadaService {
             desde: g?.desde || '',
             hasta: g?.hasta || '',
             mensaje: g?.mensaje || '',
-            animaciones: g ? !!g.animaciones : true
+            animaciones: g ? !!g.animaciones : true,
+            panel: g ? !!g.panel : true
         };
     }
 
     /** Activa o apaga el look para todos los restaurantes que no hayan decidido por su cuenta. */
     static async guardarGlobal(body = {}) {
         await TemaTemporadaRepository.upsertGlobal(normalizar(body));
+        TemaTemporadaService.invalidarCachePaneles();
         return TemaTemporadaService.getGlobal();
     }
 
@@ -180,6 +244,7 @@ class TemaTemporadaService {
             throw new NotFoundError('Restaurante no encontrado', 'TEMA_RESTAURANTE_NO_ENCONTRADO');
         }
         await TemaTemporadaRepository.setDecision(id, ESTADOS[estado]);
+        TemaTemporadaService.invalidarCachePaneles();
         return { id, estado };
     }
 }

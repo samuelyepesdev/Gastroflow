@@ -6,5 +6,8 @@
 <div class="admin-shell">
     <%- include('_sidebar') %>
     <div class="admin-shell-main">
+        <% if (typeof temaPanel !== 'undefined' && temaPanel) { %>
+            <%- include('../../partials/_tema_navidad', { parte: 'luces', variante: 'panel', adornos: false }) %>
+        <% } %>
         <%- include('_header', { pageTitle: typeof pageTitle !=='undefined' ? pageTitle : title }) %>
         <main class="admin-shell-content">

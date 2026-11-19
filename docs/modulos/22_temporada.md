@@ -38,3 +38,11 @@ Atajos a Reservas, Combos y Promociones. Permiso: `temporada.gestionar` (admin).
 * **Datos:** `tema_temporada_global` (una fila, `id = 1`) y `tema_temporada.activo` ahora admite `NULL` = sin decidir. Forzar o devolver a «Seguir lo global» solo cambia `activo`; no borra las fechas ni el mensaje del restaurante.
 * **Para el restaurante:** en su `/temporada`, si hereda el look global, ve un aviso («GastroFlow activó el look navideño para todos…») y puede apagarlo; al guardar queda como decisión propia.
 * Código: `TemaTemporadaService` (`resolver` es la regla de prioridad), `Admin/TemporadaAdminController`, `routes/admin/temporada.js`, `views/admin/temporada/`, `public/js/admin/temporada.js`.
+
+### 7. Look de temporada dentro de los paneles
+* **Dónde:** en las páginas del panel de cada local (barra de navegación compartida: dashboard, productos, reservas, etc.) y en el panel del superadmin. Tira de luces sobre la barra y nieve discreta (menos copos que en las páginas públicas). No lleva banner, adornos ni confeti.
+* **Excepciones:** no aparece en el **POS** (`/pos`) ni en la **cocina** (`/cocina`), pantallas de trabajo donde la nieve estorbaría o gastaría recursos en equipos modestos. La lista está en `middleware/temaPanel.js` (`RUTAS_OPERATIVAS`).
+* **Cuándo:** el mismo look que en las páginas públicas (misma prioridad restaurante > global y mismas fechas). En el panel del superadmin se ve cuando lo global está activo y dentro de sus fechas.
+* **Opción «mostrar en los paneles»** (`panel`, por defecto encendida) en `tema_temporada` y `tema_temporada_global`: si el restaurante **o** el global la apagan, el panel de ese restaurante no lleva el look, pero las páginas públicas sí.
+* **Rendimiento:** el resultado se cachea 60 s por restaurante y día (`getActivoPanel`); cualquier cambio de configuración invalida la caché de inmediato. Nunca rompe la página: si falla, el panel se ve normal.
+* Código: `middleware/temaPanel.js` (restaurantes), `middleware/adminLocals.js` (superadmin), `views/partials/_tema_panel.ejs`, shell de admin (`views/admin/_shell/`).
