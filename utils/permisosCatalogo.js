@@ -501,6 +501,29 @@ const SECCIONES = [
         ]
     },
     {
+        seccion: 'Reseñas',
+        permisos: [
+            {
+                nombre: 'resenas.ver',
+                descripcion: 'Ver las calificaciones y comentarios que dejan los clientes',
+                modulo: null,
+                roles: ADMIN
+            },
+            {
+                nombre: 'resenas.gestionar',
+                descripcion: 'Marcar como atendidas las reseñas que requieren respuesta',
+                modulo: null,
+                roles: ADMIN
+            },
+            {
+                nombre: 'resenas.configurar',
+                descripcion: 'Activar la página de reseñas, pegar el enlace de Google y cambiar el enlace público',
+                modulo: null,
+                roles: ADMIN
+            }
+        ]
+    },
+    {
         seccion: 'Fidelización',
         permisos: [
             {

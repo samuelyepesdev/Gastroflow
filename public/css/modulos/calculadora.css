@@ -1,0 +1,39 @@
+/* ============================================================
+   calculadora.css — Calculadora pública de pérdidas (marca "Cloche").
+   Cabecera en Tinta, cuerpo en Crema. Solo tokens de brand.css.
+   ============================================================ */
+
+body { background: var(--gf-crema); min-height: 100vh; display: flex; flex-direction: column; }
+
+.ca-cabecera { background: var(--gf-tinta); color: var(--gf-crema); text-align: center; padding: 1.5rem 1rem 3.5rem; }
+.ca-marca { display: inline-flex; align-items: center; gap: 0.5rem; color: var(--gf-crema); text-decoration: none; font-family: var(--gf-font-titulo); font-weight: 800; letter-spacing: 0.12em; font-size: 0.95rem; margin-bottom: 1.25rem; }
+.ca-titulo { font-family: var(--gf-font-titulo); font-weight: 800; font-size: clamp(1.5rem, 5.5vw, 2.3rem); color: var(--gf-crema); margin: 0 auto; max-width: 30rem; }
+.ca-sub { color: #d9d2c5; margin: 0.6rem auto 0; max-width: 30rem; }
+
+.ca-wrap { width: 100%; max-width: 40rem; margin: -2rem auto 0; padding: 0 1rem 2rem; flex: 1; }
+.ca-paso { background: #fff; border: 1px solid var(--gf-linea); border-radius: 1rem; padding: 1.1rem 1.1rem 1.25rem; margin-bottom: 0.9rem; box-shadow: 0 0.5rem 1rem rgba(14, 27, 44, 0.06); }
+.ca-paso-titulo { display: flex; align-items: center; gap: 0.6rem; font-family: var(--gf-font-titulo); font-weight: 700; font-size: 1.05rem; color: var(--gf-tinta); margin: 0 0 0.9rem; }
+.ca-num { display: inline-grid; place-items: center; flex: none; width: 1.7rem; height: 1.7rem; border-radius: 50%; background: var(--gf-coral); color: #fff; font-size: 0.9rem; }
+.ca-ayuda { color: var(--gf-gris); font-size: 0.85rem; margin: 0.75rem 0 0; }
+.ca-hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+
+.ca-resultado { background: #fff; border: 1px solid var(--gf-linea); border-radius: 1rem; padding: 1.5rem; box-shadow: 0 0.75rem 1.5rem rgba(14, 27, 44, 0.08); text-align: center; }
+.ca-resultado:focus { outline: none; }
+.ca-res-etiqueta { color: var(--gf-gris); margin: 0; font-weight: 600; }
+.ca-res-total { font-family: var(--gf-font-titulo); font-weight: 800; font-size: clamp(2rem, 9vw, 3rem); color: var(--gf-coral-fuerte); margin: 0.2rem 0 0; line-height: 1.1; }
+.ca-res-total small, .ca-recupera-valor small { font-size: 1rem; font-weight: 600; color: var(--gf-gris); margin-left: 0.2rem; }
+.ca-res-anio { color: var(--gf-tinta); margin: 0.4rem 0 1rem; }
+.ca-res-detalle { list-style: none; margin: 0 0 1rem; padding: 0; text-align: left; }
+.ca-res-detalle li { display: flex; align-items: center; gap: 0.6rem; padding: 0.6rem 0; border-top: 1px solid var(--gf-linea); }
+.ca-res-detalle li span { flex: 1; }
+.ca-res-detalle li i { color: var(--gf-coral-fuerte); }
+.ca-recupera { background: var(--gf-tinta); color: var(--gf-crema); border-radius: 0.8rem; padding: 1rem; }
+.ca-recupera-valor { font-family: var(--gf-font-titulo); font-weight: 800; font-size: 2rem; color: var(--gf-coral); margin: 0; }
+.ca-nota { color: #b9c2cf; font-size: 0.8rem; margin: 0.5rem 0 0; }
+
+.ca-pie { display: flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 1rem; color: var(--gf-gris); font-size: 0.85rem; }
+
+@media (prefers-reduced-motion: no-preference) {
+    .ca-resultado:not(.d-none) { animation: ca-aparece 0.35s ease both; }
+}
+@keyframes ca-aparece { from { opacity: 0; transform: translateY(0.5rem); } to { opacity: 1; transform: none; } }

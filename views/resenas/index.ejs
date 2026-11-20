@@ -1,0 +1,99 @@
+<%- include('../partials/layout/head', { titulo: 'Reseñas' }) %>
+    <link rel="stylesheet" href="/css/modulos/resenas.css?v=<%= assetV %>">
+</head>
+
+<body>
+    <%- include('../partials/navbar', { user: typeof user !== 'undefined' ? user : null, tenant: typeof tenant !== 'undefined' ? tenant : null }) %>
+
+    <div class="container mt-4 mb-5">
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex flex-column flex-md-row justify-content-between align-items-stretch align-items-md-center gap-3 w-100">
+                    <div class="fw-semibold"><i class="bi bi-star-half me-2"></i>Reseñas de clientes</div>
+                    <% if (puedeConfigurar) { %>
+                        <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#modalConfig">
+                            <i class="bi bi-sliders me-1"></i>Configurar
+                        </button>
+                    <% } %>
+                </div>
+            </div>
+            <div class="card-body">
+                <% if (!config.activo) { %>
+                    <div class="alert alert-warning small mb-3" role="alert">
+                        La página de opiniones está <strong>desactivada</strong>. Actívala en <strong>Configurar</strong> y comparte el enlace
+                        o el código QR con tus clientes.
+                    </div>
+                <% } %>
+
+                <div class="rs-resumen mb-4" id="rsResumen" aria-live="polite"></div>
+
+                <div class="rs-filtros mb-3" role="group" aria-label="Filtrar reseñas">
+                    <button type="button" class="rs-filtro activo" data-filtro="todas">Todas</button>
+                    <button type="button" class="rs-filtro" data-filtro="porAtender">Por atender <span class="badge text-bg-danger d-none" id="rsPorAtender"></span></button>
+                </div>
+
+                <div id="rsLista" class="rs-lista" aria-live="polite"></div>
+            </div>
+        </div>
+    </div>
+
+    <% if (puedeConfigurar) { %>
+    <div class="modal fade" id="modalConfig" tabindex="-1" aria-labelledby="modalConfigTitulo" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalConfigTitulo"><i class="bi bi-sliders me-2"></i>Configurar reseñas</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-check form-switch mb-3">
+                        <input type="checkbox" class="form-check-input" id="cfgActivo" role="switch" <%= config.activo ? 'checked' : '' %>>
+                        <label class="form-check-label fw-semibold" for="cfgActivo">Página de opiniones activa</label>
+                    </div>
+
+                    <div class="row g-3 align-items-center mb-4">
+                        <div class="col-12 col-md-8">
+                            <label class="form-label" for="cfgEnlace">Enlace para tus clientes</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="cfgEnlace" readonly value="<%= config.enlace || '' %>">
+                                <button type="button" class="btn btn-outline-secondary" id="btnCopiarEnlace"><i class="bi bi-clipboard me-1"></i>Copiar</button>
+                                <button type="button" class="btn btn-outline-secondary" id="btnRegenerarEnlace" title="El enlace y el QR anteriores dejarán de funcionar"><i class="bi bi-arrow-repeat me-1"></i>Cambiar</button>
+                            </div>
+                            <div class="form-text">Ponlo en la cuenta, en una tarjeta en la mesa o en tu WhatsApp. Si cambias el enlace, el QR impreso anterior deja de funcionar.</div>
+                        </div>
+                        <div class="col-12 col-md-4 text-center">
+                            <img id="cfgQr" class="rs-qr" alt="Código QR del enlace de opiniones" width="160" height="160" <%- config.qr ? 'src="' + config.qr + '"' : '' %>>
+                            <a class="btn btn-sm btn-outline-secondary mt-2" id="btnDescargarQr" download="qr-opiniones.png" <%- config.qr ? 'href="' + config.qr + '"' : '' %>><i class="bi bi-download me-1"></i>Descargar QR</a>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label" for="cfgGoogle">Enlace de reseñas de Google (opcional)</label>
+                        <input type="url" class="form-control" id="cfgGoogle" maxlength="500" value="<%= config.google_url %>" placeholder="https://g.page/r/.../review">
+                        <div class="form-text">
+                            Búscalo en tu perfil de Google Business → <strong>Pedir reseñas</strong>. Se ofrece a <strong>todos</strong> tus clientes al terminar,
+                            con cualquier calificación: Google no permite mostrarlo solo a quienes están contentos.
+                        </div>
+                    </div>
+                    <div>
+                        <label class="form-label" for="cfgMensaje">Mensaje de agradecimiento (opcional)</label>
+                        <input type="text" class="form-control" id="cfgMensaje" maxlength="200" value="<%= config.mensaje_gracias %>" placeholder="Gracias por visitarnos, te esperamos pronto">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="btnGuardarConfig"><i class="bi bi-check-lg me-1"></i>Guardar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <% } %>
+
+    <script>
+        window.RESENAS = <%- jsonSeguro({ puedeGestionar, puedeConfigurar }) %>;
+    </script>
+    <%- include('../partials/layout/scripts', { swal: true }) %>
+    <script src="/js/modulos/resenas.js?v=<%= assetV %>"></script>
+</body>
+
+</html>

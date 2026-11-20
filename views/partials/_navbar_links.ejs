@@ -37,7 +37,7 @@
                     <%
                     /* En móvil los enlaces se agrupan en secciones plegables (nav-grupo); en escritorio los
                        grupos no generan caja (display: contents) y la barra se ve igual. */
-                    const hayComercial = nav.canMenu.finanzas || nav.canMenu.bonos || nav.canMenu.fidelizacion || nav.canMenu.sucursales || nav.canMenu.promociones || nav.canMenu.combos || nav.canMenu.temporada;
+                    const hayComercial = nav.canMenu.finanzas || nav.canMenu.bonos || nav.canMenu.fidelizacion || nav.canMenu.sucursales || nav.canMenu.promociones || nav.canMenu.combos || nav.canMenu.temporada || nav.canMenu.resenas;
                     const hayCatalogo = nav.canMenu.productos || nav.canMenu.clientes || (nav.canMenu.inventario && !nav.canMenu.proveedores && !nav.canMenu.recetas);
                 %>
                     <li class="nav-grupo">
@@ -121,6 +121,11 @@
                                                 <% if (nav.canMenu.temporada) { %>
                                                     <li class="nav-item"><a class="nav-link" href="/temporada"><i
                                                                 class="bi bi-snow2"></i>Temporada</a></li>
+                                                    <% } %>
+
+                                                <% if (nav.canMenu.resenas) { %>
+                                                    <li class="nav-item"><a class="nav-link" href="/resenas"><i
+                                                                class="bi bi-star-half"></i>Reseñas</a></li>
                                                     <% } %>
 
                                                 <% if (hayComercial) { %>

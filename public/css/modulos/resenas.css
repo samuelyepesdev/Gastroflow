@@ -1,0 +1,42 @@
+/* ============================================================
+   resenas.css — Panel de reseñas (marca "Cloche").
+   Solo tokens de brand.css (--gf-*): sin hex de marca sueltos.
+   ============================================================ */
+
+body { background-color: var(--gf-crema); }
+.card { border: none; box-shadow: 0 0.5rem 1rem rgba(14, 27, 44, 0.06); }
+.card-header { background: #fff; border-bottom: 2px solid var(--gf-crema); font-weight: 600; }
+
+.rs-resumen { display: grid; grid-template-columns: auto 1fr; gap: 1rem 1.5rem; align-items: center; padding: 1rem; background: #fff; border: 1px solid var(--gf-linea); border-radius: 0.75rem; }
+.rs-promedio { text-align: center; }
+.rs-promedio-valor { font-family: var(--gf-font-titulo); font-weight: 800; font-size: 2.6rem; line-height: 1; color: var(--gf-tinta); }
+.rs-promedio-estrellas { color: var(--gf-coral); letter-spacing: 0.1em; }
+.rs-promedio-total { color: var(--gf-gris); font-size: 0.85rem; }
+.rs-barras { display: flex; flex-direction: column; gap: 0.3rem; min-width: 0; }
+.rs-barra { display: grid; grid-template-columns: 2.4rem 1fr 2rem; align-items: center; gap: 0.5rem; font-size: 0.85rem; color: var(--gf-gris); }
+.rs-barra-pista { height: 0.5rem; background: var(--gf-arena); border-radius: 999px; overflow: hidden; }
+.rs-barra-relleno { display: block; height: 100%; background: var(--gf-coral); border-radius: 999px; }
+.rs-vacio-resumen { grid-column: 1 / -1; text-align: center; color: var(--gf-gris); margin: 0; }
+
+.rs-filtros { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.rs-filtro { border: 1px solid var(--gf-linea); background: #fff; color: var(--gf-tinta); border-radius: 999px; padding: 0.4rem 0.9rem; font-weight: 600; cursor: pointer; }
+.rs-filtro.activo { background: var(--gf-tinta); border-color: var(--gf-tinta); color: var(--gf-crema); }
+.rs-filtro:focus-visible { outline: 3px solid var(--gf-focus, rgba(255, 90, 54, 0.45)); outline-offset: 2px; }
+
+.rs-lista { display: flex; flex-direction: column; gap: 0.75rem; }
+.rs-item { padding: 0.9rem 1rem; background: #fff; border: 1px solid var(--gf-linea); border-left: 4px solid var(--gf-linea); border-radius: 0.75rem; }
+.rs-item--baja { border-left-color: var(--gf-coral); }
+.rs-item--atendida { opacity: 0.7; }
+.rs-item-cab { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem; }
+.rs-item-estrellas { color: var(--gf-coral); letter-spacing: 0.1em; }
+.rs-item-fecha { color: var(--gf-gris); font-size: 0.85rem; }
+.rs-item-texto { margin: 0.4rem 0 0; overflow-wrap: anywhere; }
+.rs-item-contacto { margin-top: 0.4rem; font-size: 0.9rem; }
+.rs-item-acciones { margin-top: 0.6rem; }
+.rs-vacio { text-align: center; color: var(--gf-gris); padding: 2rem 1rem; }
+
+.rs-qr { max-width: 100%; height: auto; border: 1px solid var(--gf-linea); border-radius: 0.5rem; background: #fff; }
+
+@media (max-width: 575.98px) {
+    .rs-resumen { grid-template-columns: 1fr; }
+}
