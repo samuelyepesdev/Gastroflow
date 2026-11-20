@@ -118,7 +118,7 @@ modificar algo, explica que eso se hace en el panel.
 El modelo solo puede invocar estas, y solo las que el usuario puede usar (permiso Y módulo del plan):
 `agregar_items` (hasta 20 líneas, cantidad 1–50), `cancelar_item` (solo `pendiente`), `liberar_mesa`,
 `liberar_mesas_vacias` (una sola confirmación para liberar todas las mesas ocupadas sin items activos ni abonos, máx. 30; cada una se revisa de nuevo bajo bloqueo al ejecutar y las que ya tienen productos se omiten),
-`consultar_mesa`, `mesas_libres`, `estado_mesas` (total de mesas y cuáles están libres u ocupadas), `consultar_menu`, `ventas_hoy` y `ventas_periodo` (permiso `ventas.ver`; periodos hoy, ayer, 7 días, mes, mes pasado, año, histórico o dos fechas, con comparación y top de productos).
+`consultar_mesa`, `mesas_libres`, `estado_mesas` (total de mesas del salón y cuáles están libres u ocupadas; cuenta solo `mesas.tipo = 'fisica'`, no las filas virtuales `POS-n`/`WA-xxxx` que crean los pedidos del POS y de WhatsApp), `consultar_menu`, `ventas_hoy` y `ventas_periodo` (permiso `ventas.ver`; periodos hoy, ayer, 7 días, mes, mes pasado, año, histórico o dos fechas, con comparación y top de productos).
 
 El dinero se entrega al modelo ya escrito en pesos colombianos (`utils/pesosTexto.js`, campos `*_texto` + `moneda`) y el prompt le exige usarlos tal cual: así no inventa monedas (euros) ni deja cifras sin puntos de miles.
 

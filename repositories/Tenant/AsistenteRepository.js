@@ -23,6 +23,23 @@ class AsistenteRepository {
     }
 
     /**
+     * Solo las mesas del salón (`tipo = 'fisica'`). Las filas `virtual` (POS-n del POS, WA-xxxx de WhatsApp) son
+     * una por pedido, se reutilizan y nunca se borran: contarlas da un total inflado ("11 mesas" en un local de 4).
+     * @param {number} tenantId
+     * @returns {Promise<Array<{id:number, numero:string, descripcion:string|null, tipo:string, estado:string}>>}
+     */
+    static async listarMesasFisicas(tenantId) {
+        const [mesas] = await db.query(
+            `SELECT id, numero, descripcion, tipo, estado
+             FROM mesas
+             WHERE tenant_id = ? AND tipo = 'fisica'
+             ORDER BY CAST(numero AS UNSIGNED), numero`,
+            [tenantId]
+        );
+        return mesas;
+    }
+
+    /**
      * Mesas ocupadas cuyo pedido abierto no tiene ningún item activo ni abonos (nada que perder al liberarlas).
      * Es solo la propuesta: al liberar, LiberarMesaService vuelve a revisar los items bajo bloqueo.
      * @param {number} tenantId
@@ -32,7 +49,7 @@ class AsistenteRepository {
         const [mesas] = await db.query(
             `SELECT m.id, m.numero, m.descripcion, m.tipo, m.estado
              FROM mesas m
-             WHERE m.tenant_id = ? AND m.estado = 'ocupada'
+             WHERE m.tenant_id = ? AND m.tipo = 'fisica' AND m.estado = 'ocupada'
                AND NOT EXISTS (
                    SELECT 1 FROM pedidos p
                    WHERE p.mesa_id = m.id AND p.tenant_id = m.tenant_id
