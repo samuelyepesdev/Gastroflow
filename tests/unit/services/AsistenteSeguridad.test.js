@@ -20,6 +20,7 @@ jest.mock('../../../services/Tenant/Asistente/AsistenteResolverService', () => (
 jest.mock('../../../repositories/Tenant/AsistenteRepository', () => ({
     nombreAsistente: jest.fn(),
     listarMesas: jest.fn(),
+    listarMesasFisicas: jest.fn(),
     pedidoAbiertoDeMesa: jest.fn(),
     itemDelTenant: jest.fn()
 }));

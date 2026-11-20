@@ -8,11 +8,11 @@ module.exports = {
     permiso: 'mesas.ver',
     modulo: 'mesas',
     descripcion:
-        'Resumen de TODAS las mesas del restaurante: cuántas hay en total, cuáles están libres y cuáles ocupadas. Úsala para "cuántas mesas hay", "qué mesas están ocupadas" o "cómo está el salón".',
+        'Resumen de las mesas del salón del restaurante (no cuenta los pedidos de domicilio ni del POS): cuántas hay en total, cuáles están libres y cuáles ocupadas. Úsala para "cuántas mesas hay", "qué mesas están ocupadas" o "cómo está el salón".',
     parametros: { type: 'object', properties: {} },
 
     async preparar(ctx) {
-        const mesas = await AsistenteRepository.listarMesas(ctx.tenantId);
+        const mesas = await AsistenteRepository.listarMesasFisicas(ctx.tenantId);
         const libres = mesas.filter(m => m.estado === 'libre');
         const ocupadas = mesas.filter(m => m.estado === 'ocupada');
         const otras = mesas.filter(m => m.estado !== 'libre' && m.estado !== 'ocupada');
