@@ -9,7 +9,7 @@ module.exports = {
     parametros: { type: 'object', properties: {} },
 
     async preparar(ctx) {
-        const mesas = await AsistenteRepository.listarMesas(ctx.tenantId);
+        const mesas = await AsistenteRepository.listarMesasFisicas(ctx.tenantId);
         const libres = mesas.filter(m => m.estado === 'libre');
         return { tipo: 'resultado', datos: { mesas: libres.map(etiquetaMesa), total: libres.length } };
     }

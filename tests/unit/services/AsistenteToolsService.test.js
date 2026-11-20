@@ -15,6 +15,7 @@ jest.mock('../../../services/Tenant/Asistente/AsistenteResolverService', () => (
 }));
 jest.mock('../../../repositories/Tenant/AsistenteRepository', () => ({
     listarMesas: jest.fn(),
+    listarMesasFisicas: jest.fn(),
     mesasOcupadasSinItems: jest.fn(),
     pedidoAbiertoDeMesa: jest.fn(),
     itemDelTenant: jest.fn()
@@ -96,7 +97,7 @@ describe('AsistenteToolsService', () => {
         it('sin tenant en el contexto no ejecuta nada', async () => {
             const r = await AsistenteToolsService.preparar(ctx({ tenantId: null }), 'mesas_libres', {});
             expect(r.tipo).toBe('error');
-            expect(AsistenteRepository.listarMesas).not.toHaveBeenCalled();
+            expect(AsistenteRepository.listarMesasFisicas).not.toHaveBeenCalled();
         });
 
         it('los argumentos que no son un objeto se rechazan', async () => {
@@ -595,7 +596,7 @@ describe('AsistenteToolsService', () => {
         });
 
         it('mesas_libres lista solo las libres del tenant', async () => {
-            AsistenteRepository.listarMesas.mockResolvedValue([
+            AsistenteRepository.listarMesasFisicas.mockResolvedValue([
                 { id: 1, numero: '1', descripcion: null, estado: 'libre' },
                 { id: 2, numero: '2', descripcion: 'Barra', estado: 'ocupada' },
                 { id: 3, numero: '3', descripcion: 'Terraza', estado: 'libre' }
@@ -603,36 +604,35 @@ describe('AsistenteToolsService', () => {
 
             const r = await AsistenteToolsService.preparar(ctx(), 'mesas_libres', {});
 
-            expect(AsistenteRepository.listarMesas).toHaveBeenCalledWith(5);
+            // Solo mesas físicas: las "POS-n" y "WA-xxxx" son filas virtuales de pedidos, no mesas del salón.
+            expect(AsistenteRepository.listarMesasFisicas).toHaveBeenCalledWith(5);
+            expect(AsistenteRepository.listarMesas).not.toHaveBeenCalled();
             expect(r.datos.total).toBe(2);
             expect(r.datos.mesas).toEqual(['mesa 1', 'mesa 3 (Terraza)']);
         });
 
-        it('estado_mesas resume TODAS las mesas del tenant: total, libres y ocupadas con sus conteos', async () => {
-            AsistenteRepository.listarMesas.mockResolvedValue([
+        it('estado_mesas resume las mesas FÍSICAS del tenant: total, libres y ocupadas con sus conteos', async () => {
+            AsistenteRepository.listarMesasFisicas.mockResolvedValue([
                 { id: 1, numero: '1', descripcion: null, estado: 'libre' },
                 { id: 2, numero: '2', descripcion: 'Barra', estado: 'ocupada' },
                 { id: 3, numero: '3', descripcion: 'Terraza', estado: 'libre' },
                 { id: 4, numero: '4', descripcion: null, estado: 'ocupada' },
-                { id: 5, numero: 'D', descripcion: 'Domicilio', estado: 'ocupada' },
                 { id: 6, numero: '6', descripcion: null, estado: 'reservada' }
             ]);
 
             const r = await AsistenteToolsService.preparar(ctx(), 'estado_mesas', {});
 
-            expect(AsistenteRepository.listarMesas).toHaveBeenCalledWith(5);
+            expect(AsistenteRepository.listarMesasFisicas).toHaveBeenCalledWith(5);
+            expect(AsistenteRepository.listarMesas).not.toHaveBeenCalled();
             expect(r.tipo).toBe('resultado');
-            expect(r.datos.total).toBe(6);
+            expect(r.datos.total).toBe(5);
             expect(r.datos.libres).toEqual({ cantidad: 2, mesas: ['mesa 1', 'mesa 3 (Terraza)'] });
-            expect(r.datos.ocupadas).toEqual({
-                cantidad: 3,
-                mesas: ['mesa 2 (Barra)', 'mesa 4', 'mesa D (Domicilio)']
-            });
+            expect(r.datos.ocupadas).toEqual({ cantidad: 2, mesas: ['mesa 2 (Barra)', 'mesa 4'] });
             expect(r.datos.otras).toEqual({ cantidad: 1, mesas: ['mesa 6'] });
         });
 
         it('estado_mesas sin mesas devuelve ceros, sin inventar nada', async () => {
-            AsistenteRepository.listarMesas.mockResolvedValue([]);
+            AsistenteRepository.listarMesasFisicas.mockResolvedValue([]);
 
             const r = await AsistenteToolsService.preparar(ctx(), 'estado_mesas', {});
 
@@ -649,7 +649,7 @@ describe('AsistenteToolsService', () => {
             );
 
             expect(sinPermiso.tipo).toBe('error');
-            expect(AsistenteRepository.listarMesas).not.toHaveBeenCalled();
+            expect(AsistenteRepository.listarMesasFisicas).not.toHaveBeenCalled();
         });
 
         it('consultar_menu devuelve precio y disponibilidad, y las coincidencias si es ambiguo', async () => {
